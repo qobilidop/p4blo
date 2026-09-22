@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  actions: write # magic-nix-cache stores the Nix store in the Actions cache
+
+jobs:
+  python:
+    name: Python (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+      - name: Sync Python environment
+        run: nix develop -c uv sync --locked
+      - name: Lint
+        run: nix develop -c uv run ruff check .
+      - name: Format
+        run: nix develop -c uv run ruff format --check .
+      - name: Type check
+        run: nix develop -c uv run pyright
+      - name: Test
+        run: nix develop -c uv run pytest
+
+  schema:
+    name: Schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+      - name: Lint schema
+        run: nix develop -c buf lint
+      - name: Generated code is current
+        run: |
+          nix develop -c buf generate
+          git diff --exit-code -- python/p4blo/v0
