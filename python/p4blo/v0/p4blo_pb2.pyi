@@ -117,18 +117,18 @@ class Program(_message.Message):
     extern_types: _containers.RepeatedCompositeFieldContainer[ExternType]
     extern_instances: _containers.RepeatedCompositeFieldContainer[ExternInstance]
     blocks: _containers.RepeatedCompositeFieldContainer[Block]
-    headers: int
-    metadata: int
+    headers: str
+    metadata: str
     exports: _containers.RepeatedCompositeFieldContainer[Export]
-    def __init__(self, name: _Optional[str] = ..., errors: _Optional[_Iterable[str]] = ..., header_types: _Optional[_Iterable[_Union[HeaderType, _Mapping]]] = ..., struct_types: _Optional[_Iterable[_Union[StructType, _Mapping]]] = ..., enum_types: _Optional[_Iterable[_Union[EnumType, _Mapping]]] = ..., extern_types: _Optional[_Iterable[_Union[ExternType, _Mapping]]] = ..., extern_instances: _Optional[_Iterable[_Union[ExternInstance, _Mapping]]] = ..., blocks: _Optional[_Iterable[_Union[Block, _Mapping]]] = ..., headers: _Optional[int] = ..., metadata: _Optional[int] = ..., exports: _Optional[_Iterable[_Union[Export, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., errors: _Optional[_Iterable[str]] = ..., header_types: _Optional[_Iterable[_Union[HeaderType, _Mapping]]] = ..., struct_types: _Optional[_Iterable[_Union[StructType, _Mapping]]] = ..., enum_types: _Optional[_Iterable[_Union[EnumType, _Mapping]]] = ..., extern_types: _Optional[_Iterable[_Union[ExternType, _Mapping]]] = ..., extern_instances: _Optional[_Iterable[_Union[ExternInstance, _Mapping]]] = ..., blocks: _Optional[_Iterable[_Union[Block, _Mapping]]] = ..., headers: _Optional[str] = ..., metadata: _Optional[str] = ..., exports: _Optional[_Iterable[_Union[Export, _Mapping]]] = ...) -> None: ...
 
 class Export(_message.Message):
     __slots__ = ("role", "block")
     ROLE_FIELD_NUMBER: _ClassVar[int]
     BLOCK_FIELD_NUMBER: _ClassVar[int]
     role: str
-    block: int
-    def __init__(self, role: _Optional[str] = ..., block: _Optional[int] = ...) -> None: ...
+    block: str
+    def __init__(self, role: _Optional[str] = ..., block: _Optional[str] = ...) -> None: ...
 
 class Type(_message.Message):
     __slots__ = ("bits", "boolean", "header", "struct", "enum_type", "error", "stack")
@@ -141,12 +141,12 @@ class Type(_message.Message):
     STACK_FIELD_NUMBER: _ClassVar[int]
     bits: int
     boolean: BoolType
-    header: int
-    struct: int
-    enum_type: int
+    header: str
+    struct: str
+    enum_type: str
     error: ErrorType
     stack: StackType
-    def __init__(self, bits: _Optional[int] = ..., boolean: _Optional[_Union[BoolType, _Mapping]] = ..., header: _Optional[int] = ..., struct: _Optional[int] = ..., enum_type: _Optional[int] = ..., error: _Optional[_Union[ErrorType, _Mapping]] = ..., stack: _Optional[_Union[StackType, _Mapping]] = ...) -> None: ...
+    def __init__(self, bits: _Optional[int] = ..., boolean: _Optional[_Union[BoolType, _Mapping]] = ..., header: _Optional[str] = ..., struct: _Optional[str] = ..., enum_type: _Optional[str] = ..., error: _Optional[_Union[ErrorType, _Mapping]] = ..., stack: _Optional[_Union[StackType, _Mapping]] = ...) -> None: ...
 
 class BoolType(_message.Message):
     __slots__ = ()
@@ -160,9 +160,9 @@ class StackType(_message.Message):
     __slots__ = ("header", "size")
     HEADER_FIELD_NUMBER: _ClassVar[int]
     SIZE_FIELD_NUMBER: _ClassVar[int]
-    header: int
+    header: str
     size: int
-    def __init__(self, header: _Optional[int] = ..., size: _Optional[int] = ...) -> None: ...
+    def __init__(self, header: _Optional[str] = ..., size: _Optional[int] = ...) -> None: ...
 
 class Field(_message.Message):
     __slots__ = ("name", "type")
@@ -173,34 +173,28 @@ class Field(_message.Message):
     def __init__(self, name: _Optional[str] = ..., type: _Optional[_Union[Type, _Mapping]] = ...) -> None: ...
 
 class HeaderType(_message.Message):
-    __slots__ = ("id", "name", "fields")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "fields")
     NAME_FIELD_NUMBER: _ClassVar[int]
     FIELDS_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     fields: _containers.RepeatedCompositeFieldContainer[Field]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., fields: _Optional[_Iterable[_Union[Field, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., fields: _Optional[_Iterable[_Union[Field, _Mapping]]] = ...) -> None: ...
 
 class StructType(_message.Message):
-    __slots__ = ("id", "name", "fields")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "fields")
     NAME_FIELD_NUMBER: _ClassVar[int]
     FIELDS_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     fields: _containers.RepeatedCompositeFieldContainer[Field]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., fields: _Optional[_Iterable[_Union[Field, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., fields: _Optional[_Iterable[_Union[Field, _Mapping]]] = ...) -> None: ...
 
 class EnumType(_message.Message):
-    __slots__ = ("id", "name", "members")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "members")
     NAME_FIELD_NUMBER: _ClassVar[int]
     MEMBERS_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     members: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., members: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., members: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class Literal(_message.Message):
     __slots__ = ("bits", "boolean", "enum_member", "error")
@@ -211,8 +205,8 @@ class Literal(_message.Message):
     bits: BitsLiteral
     boolean: bool
     enum_member: EnumLiteral
-    error: int
-    def __init__(self, bits: _Optional[_Union[BitsLiteral, _Mapping]] = ..., boolean: _Optional[bool] = ..., enum_member: _Optional[_Union[EnumLiteral, _Mapping]] = ..., error: _Optional[int] = ...) -> None: ...
+    error: str
+    def __init__(self, bits: _Optional[_Union[BitsLiteral, _Mapping]] = ..., boolean: _Optional[bool] = ..., enum_member: _Optional[_Union[EnumLiteral, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class BitsLiteral(_message.Message):
     __slots__ = ("width", "value")
@@ -226,43 +220,37 @@ class EnumLiteral(_message.Message):
     __slots__ = ("enum_type", "member")
     ENUM_TYPE_FIELD_NUMBER: _ClassVar[int]
     MEMBER_FIELD_NUMBER: _ClassVar[int]
-    enum_type: int
-    member: int
-    def __init__(self, enum_type: _Optional[int] = ..., member: _Optional[int] = ...) -> None: ...
+    enum_type: str
+    member: str
+    def __init__(self, enum_type: _Optional[str] = ..., member: _Optional[str] = ...) -> None: ...
 
 class Var(_message.Message):
-    __slots__ = ("id", "name", "type")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "type")
     NAME_FIELD_NUMBER: _ClassVar[int]
     TYPE_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     type: Type
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., type: _Optional[_Union[Type, _Mapping]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., type: _Optional[_Union[Type, _Mapping]] = ...) -> None: ...
 
 class Param(_message.Message):
-    __slots__ = ("id", "name", "type", "direction")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "type", "direction")
     NAME_FIELD_NUMBER: _ClassVar[int]
     TYPE_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     type: Type
     direction: Direction
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., type: _Optional[_Union[Type, _Mapping]] = ..., direction: _Optional[_Union[Direction, str]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., type: _Optional[_Union[Type, _Mapping]] = ..., direction: _Optional[_Union[Direction, str]] = ...) -> None: ...
 
 class ExternType(_message.Message):
-    __slots__ = ("id", "name", "constructor_params", "methods")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "constructor_params", "methods")
     NAME_FIELD_NUMBER: _ClassVar[int]
     CONSTRUCTOR_PARAMS_FIELD_NUMBER: _ClassVar[int]
     METHODS_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     constructor_params: _containers.RepeatedCompositeFieldContainer[Param]
     methods: _containers.RepeatedCompositeFieldContainer[Method]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., constructor_params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., methods: _Optional[_Iterable[_Union[Method, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., constructor_params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., methods: _Optional[_Iterable[_Union[Method, _Mapping]]] = ...) -> None: ...
 
 class Method(_message.Message):
     __slots__ = ("name", "params", "returns")
@@ -275,20 +263,17 @@ class Method(_message.Message):
     def __init__(self, name: _Optional[str] = ..., params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., returns: _Optional[_Union[Type, _Mapping]] = ...) -> None: ...
 
 class ExternInstance(_message.Message):
-    __slots__ = ("id", "name", "extern_type", "args")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "extern_type", "args")
     NAME_FIELD_NUMBER: _ClassVar[int]
     EXTERN_TYPE_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
-    extern_type: int
+    extern_type: str
     args: _containers.RepeatedCompositeFieldContainer[Literal]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., extern_type: _Optional[int] = ..., args: _Optional[_Iterable[_Union[Literal, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., extern_type: _Optional[str] = ..., args: _Optional[_Iterable[_Union[Literal, _Mapping]]] = ...) -> None: ...
 
 class Block(_message.Message):
-    __slots__ = ("id", "name", "kind", "params", "locals", "actions", "tables", "states", "start_state", "body")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "kind", "params", "locals", "actions", "tables", "states", "start_state", "body")
     NAME_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
     PARAMS_FIELD_NUMBER: _ClassVar[int]
@@ -298,7 +283,6 @@ class Block(_message.Message):
     STATES_FIELD_NUMBER: _ClassVar[int]
     START_STATE_FIELD_NUMBER: _ClassVar[int]
     BODY_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     kind: BlockKind
     params: _containers.RepeatedCompositeFieldContainer[Param]
@@ -306,55 +290,55 @@ class Block(_message.Message):
     actions: _containers.RepeatedCompositeFieldContainer[Action]
     tables: _containers.RepeatedCompositeFieldContainer[Table]
     states: _containers.RepeatedCompositeFieldContainer[State]
-    start_state: int
+    start_state: str
     body: _containers.RepeatedCompositeFieldContainer[Stmt]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., kind: _Optional[_Union[BlockKind, str]] = ..., params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., locals: _Optional[_Iterable[_Union[Var, _Mapping]]] = ..., actions: _Optional[_Iterable[_Union[Action, _Mapping]]] = ..., tables: _Optional[_Iterable[_Union[Table, _Mapping]]] = ..., states: _Optional[_Iterable[_Union[State, _Mapping]]] = ..., start_state: _Optional[int] = ..., body: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., kind: _Optional[_Union[BlockKind, str]] = ..., params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., locals: _Optional[_Iterable[_Union[Var, _Mapping]]] = ..., actions: _Optional[_Iterable[_Union[Action, _Mapping]]] = ..., tables: _Optional[_Iterable[_Union[Table, _Mapping]]] = ..., states: _Optional[_Iterable[_Union[State, _Mapping]]] = ..., start_state: _Optional[str] = ..., body: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ...) -> None: ...
 
 class Action(_message.Message):
-    __slots__ = ("id", "name", "params", "body")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "params", "body")
     NAME_FIELD_NUMBER: _ClassVar[int]
     PARAMS_FIELD_NUMBER: _ClassVar[int]
     BODY_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     params: _containers.RepeatedCompositeFieldContainer[Param]
     body: _containers.RepeatedCompositeFieldContainer[Stmt]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., body: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., params: _Optional[_Iterable[_Union[Param, _Mapping]]] = ..., body: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ...) -> None: ...
 
 class Key(_message.Message):
-    __slots__ = ("expr", "match_kind")
+    __slots__ = ("expr", "match_kind", "name")
     EXPR_FIELD_NUMBER: _ClassVar[int]
     MATCH_KIND_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
     expr: Expr
     match_kind: MatchKind
-    def __init__(self, expr: _Optional[_Union[Expr, _Mapping]] = ..., match_kind: _Optional[_Union[MatchKind, str]] = ...) -> None: ...
+    name: str
+    def __init__(self, expr: _Optional[_Union[Expr, _Mapping]] = ..., match_kind: _Optional[_Union[MatchKind, str]] = ..., name: _Optional[str] = ...) -> None: ...
 
 class Table(_message.Message):
-    __slots__ = ("id", "name", "keys", "actions", "default_action", "const_default_action", "const_entries")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "keys", "actions", "default_action", "const_default_action", "const_entries", "size")
     NAME_FIELD_NUMBER: _ClassVar[int]
     KEYS_FIELD_NUMBER: _ClassVar[int]
     ACTIONS_FIELD_NUMBER: _ClassVar[int]
     DEFAULT_ACTION_FIELD_NUMBER: _ClassVar[int]
     CONST_DEFAULT_ACTION_FIELD_NUMBER: _ClassVar[int]
     CONST_ENTRIES_FIELD_NUMBER: _ClassVar[int]
-    id: int
+    SIZE_FIELD_NUMBER: _ClassVar[int]
     name: str
     keys: _containers.RepeatedCompositeFieldContainer[Key]
-    actions: _containers.RepeatedScalarFieldContainer[int]
+    actions: _containers.RepeatedScalarFieldContainer[str]
     default_action: ActionCall
     const_default_action: bool
     const_entries: _containers.RepeatedCompositeFieldContainer[Entry]
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., keys: _Optional[_Iterable[_Union[Key, _Mapping]]] = ..., actions: _Optional[_Iterable[int]] = ..., default_action: _Optional[_Union[ActionCall, _Mapping]] = ..., const_default_action: _Optional[bool] = ..., const_entries: _Optional[_Iterable[_Union[Entry, _Mapping]]] = ...) -> None: ...
+    size: int
+    def __init__(self, name: _Optional[str] = ..., keys: _Optional[_Iterable[_Union[Key, _Mapping]]] = ..., actions: _Optional[_Iterable[str]] = ..., default_action: _Optional[_Union[ActionCall, _Mapping]] = ..., const_default_action: _Optional[bool] = ..., const_entries: _Optional[_Iterable[_Union[Entry, _Mapping]]] = ..., size: _Optional[int] = ...) -> None: ...
 
 class ActionCall(_message.Message):
     __slots__ = ("action", "args")
     ACTION_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
-    action: int
+    action: str
     args: _containers.RepeatedCompositeFieldContainer[Literal]
-    def __init__(self, action: _Optional[int] = ..., args: _Optional[_Iterable[_Union[Literal, _Mapping]]] = ...) -> None: ...
+    def __init__(self, action: _Optional[str] = ..., args: _Optional[_Iterable[_Union[Literal, _Mapping]]] = ...) -> None: ...
 
 class Entry(_message.Message):
     __slots__ = ("keys", "action", "priority")
@@ -393,16 +377,14 @@ class TernaryValue(_message.Message):
     def __init__(self, value: _Optional[str] = ..., mask: _Optional[str] = ...) -> None: ...
 
 class State(_message.Message):
-    __slots__ = ("id", "name", "body", "transition")
-    ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("name", "body", "transition")
     NAME_FIELD_NUMBER: _ClassVar[int]
     BODY_FIELD_NUMBER: _ClassVar[int]
     TRANSITION_FIELD_NUMBER: _ClassVar[int]
-    id: int
     name: str
     body: _containers.RepeatedCompositeFieldContainer[Stmt]
     transition: Transition
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., body: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ..., transition: _Optional[_Union[Transition, _Mapping]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., body: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ..., transition: _Optional[_Union[Transition, _Mapping]] = ...) -> None: ...
 
 class Transition(_message.Message):
     __slots__ = ("direct", "select")
@@ -417,10 +399,10 @@ class Target(_message.Message):
     STATE_FIELD_NUMBER: _ClassVar[int]
     ACCEPT_FIELD_NUMBER: _ClassVar[int]
     REJECT_FIELD_NUMBER: _ClassVar[int]
-    state: int
+    state: str
     accept: Accept
     reject: Reject
-    def __init__(self, state: _Optional[int] = ..., accept: _Optional[_Union[Accept, _Mapping]] = ..., reject: _Optional[_Union[Reject, _Mapping]] = ...) -> None: ...
+    def __init__(self, state: _Optional[str] = ..., accept: _Optional[_Union[Accept, _Mapping]] = ..., reject: _Optional[_Union[Reject, _Mapping]] = ...) -> None: ...
 
 class Accept(_message.Message):
     __slots__ = ()
@@ -530,25 +512,25 @@ class Apply(_message.Message):
     __slots__ = ("table", "hit")
     TABLE_FIELD_NUMBER: _ClassVar[int]
     HIT_FIELD_NUMBER: _ClassVar[int]
-    table: int
+    table: str
     hit: LValue
-    def __init__(self, table: _Optional[int] = ..., hit: _Optional[_Union[LValue, _Mapping]] = ...) -> None: ...
+    def __init__(self, table: _Optional[str] = ..., hit: _Optional[_Union[LValue, _Mapping]] = ...) -> None: ...
 
 class CallAction(_message.Message):
     __slots__ = ("action", "args")
     ACTION_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
-    action: int
+    action: str
     args: _containers.RepeatedCompositeFieldContainer[Arg]
-    def __init__(self, action: _Optional[int] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ...) -> None: ...
+    def __init__(self, action: _Optional[str] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ...) -> None: ...
 
 class CallBlock(_message.Message):
     __slots__ = ("block", "args")
     BLOCK_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
-    block: int
+    block: str
     args: _containers.RepeatedCompositeFieldContainer[Arg]
-    def __init__(self, block: _Optional[int] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ...) -> None: ...
+    def __init__(self, block: _Optional[str] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ...) -> None: ...
 
 class CallExtern(_message.Message):
     __slots__ = ("instance", "method", "args", "result")
@@ -556,11 +538,11 @@ class CallExtern(_message.Message):
     METHOD_FIELD_NUMBER: _ClassVar[int]
     ARGS_FIELD_NUMBER: _ClassVar[int]
     RESULT_FIELD_NUMBER: _ClassVar[int]
-    instance: int
-    method: int
+    instance: str
+    method: str
     args: _containers.RepeatedCompositeFieldContainer[Arg]
     result: LValue
-    def __init__(self, instance: _Optional[int] = ..., method: _Optional[int] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ..., result: _Optional[_Union[LValue, _Mapping]] = ...) -> None: ...
+    def __init__(self, instance: _Optional[str] = ..., method: _Optional[str] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ..., result: _Optional[_Union[LValue, _Mapping]] = ...) -> None: ...
 
 class Arg(_message.Message):
     __slots__ = ("out",)
@@ -614,8 +596,8 @@ class Verify(_message.Message):
     CONDITION_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     condition: Expr
-    error: int
-    def __init__(self, condition: _Optional[_Union[Expr, _Mapping]] = ..., error: _Optional[int] = ...) -> None: ...
+    error: str
+    def __init__(self, condition: _Optional[_Union[Expr, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class Emit(_message.Message):
     __slots__ = ("value",)
@@ -638,7 +620,7 @@ class Expr(_message.Message):
     MUX_FIELD_NUMBER: _ClassVar[int]
     LOOKAHEAD_FIELD_NUMBER: _ClassVar[int]
     literal: Literal
-    var: int
+    var: str
     member: Member
     index: Index
     last_index: LastIndex
@@ -649,15 +631,15 @@ class Expr(_message.Message):
     is_valid: IsValid
     mux: Mux
     lookahead: Lookahead
-    def __init__(self, literal: _Optional[_Union[Literal, _Mapping]] = ..., var: _Optional[int] = ..., member: _Optional[_Union[Member, _Mapping]] = ..., index: _Optional[_Union[Index, _Mapping]] = ..., last_index: _Optional[_Union[LastIndex, _Mapping]] = ..., unary: _Optional[_Union[Unary, _Mapping]] = ..., binary: _Optional[_Union[Binary, _Mapping]] = ..., cast: _Optional[_Union[Cast, _Mapping]] = ..., slice: _Optional[_Union[Slice, _Mapping]] = ..., is_valid: _Optional[_Union[IsValid, _Mapping]] = ..., mux: _Optional[_Union[Mux, _Mapping]] = ..., lookahead: _Optional[_Union[Lookahead, _Mapping]] = ...) -> None: ...
+    def __init__(self, literal: _Optional[_Union[Literal, _Mapping]] = ..., var: _Optional[str] = ..., member: _Optional[_Union[Member, _Mapping]] = ..., index: _Optional[_Union[Index, _Mapping]] = ..., last_index: _Optional[_Union[LastIndex, _Mapping]] = ..., unary: _Optional[_Union[Unary, _Mapping]] = ..., binary: _Optional[_Union[Binary, _Mapping]] = ..., cast: _Optional[_Union[Cast, _Mapping]] = ..., slice: _Optional[_Union[Slice, _Mapping]] = ..., is_valid: _Optional[_Union[IsValid, _Mapping]] = ..., mux: _Optional[_Union[Mux, _Mapping]] = ..., lookahead: _Optional[_Union[Lookahead, _Mapping]] = ...) -> None: ...
 
 class Member(_message.Message):
     __slots__ = ("base", "field")
     BASE_FIELD_NUMBER: _ClassVar[int]
     FIELD_FIELD_NUMBER: _ClassVar[int]
     base: Expr
-    field: int
-    def __init__(self, base: _Optional[_Union[Expr, _Mapping]] = ..., field: _Optional[int] = ...) -> None: ...
+    field: str
+    def __init__(self, base: _Optional[_Union[Expr, _Mapping]] = ..., field: _Optional[str] = ...) -> None: ...
 
 class Index(_message.Message):
     __slots__ = ("base", "index")
@@ -736,19 +718,19 @@ class LValue(_message.Message):
     MEMBER_FIELD_NUMBER: _ClassVar[int]
     INDEX_FIELD_NUMBER: _ClassVar[int]
     NEXT_FIELD_NUMBER: _ClassVar[int]
-    var: int
+    var: str
     member: LMember
     index: LIndex
     next: Next
-    def __init__(self, var: _Optional[int] = ..., member: _Optional[_Union[LMember, _Mapping]] = ..., index: _Optional[_Union[LIndex, _Mapping]] = ..., next: _Optional[_Union[Next, _Mapping]] = ...) -> None: ...
+    def __init__(self, var: _Optional[str] = ..., member: _Optional[_Union[LMember, _Mapping]] = ..., index: _Optional[_Union[LIndex, _Mapping]] = ..., next: _Optional[_Union[Next, _Mapping]] = ...) -> None: ...
 
 class LMember(_message.Message):
     __slots__ = ("base", "field")
     BASE_FIELD_NUMBER: _ClassVar[int]
     FIELD_FIELD_NUMBER: _ClassVar[int]
     base: LValue
-    field: int
-    def __init__(self, base: _Optional[_Union[LValue, _Mapping]] = ..., field: _Optional[int] = ...) -> None: ...
+    field: str
+    def __init__(self, base: _Optional[_Union[LValue, _Mapping]] = ..., field: _Optional[str] = ...) -> None: ...
 
 class LIndex(_message.Message):
     __slots__ = ("base", "index")
@@ -771,11 +753,13 @@ class Entries(_message.Message):
     def __init__(self, tables: _Optional[_Iterable[_Union[TableEntries, _Mapping]]] = ...) -> None: ...
 
 class TableEntries(_message.Message):
-    __slots__ = ("table", "entries", "default_action")
+    __slots__ = ("block", "table", "entries", "default_action")
+    BLOCK_FIELD_NUMBER: _ClassVar[int]
     TABLE_FIELD_NUMBER: _ClassVar[int]
     ENTRIES_FIELD_NUMBER: _ClassVar[int]
     DEFAULT_ACTION_FIELD_NUMBER: _ClassVar[int]
-    table: int
+    block: str
+    table: str
     entries: _containers.RepeatedCompositeFieldContainer[Entry]
     default_action: ActionCall
-    def __init__(self, table: _Optional[int] = ..., entries: _Optional[_Iterable[_Union[Entry, _Mapping]]] = ..., default_action: _Optional[_Union[ActionCall, _Mapping]] = ...) -> None: ...
+    def __init__(self, block: _Optional[str] = ..., table: _Optional[str] = ..., entries: _Optional[_Iterable[_Union[Entry, _Mapping]]] = ..., default_action: _Optional[_Union[ActionCall, _Mapping]] = ...) -> None: ...

@@ -34,33 +34,36 @@ class Bits:
 
 @dataclass(frozen=True, slots=True)
 class EnumValue:
-    enum_type: int
-    member: int
+    enum_type: str
+    member: str
 
 
 @dataclass(frozen=True, slots=True)
 class ErrorValue:
-    """Index into Program.errors; 0 is NoError."""
+    """A name from Program.errors; "NoError" means no error."""
 
-    index: int
+    name: str
+
+
+NO_ERROR = ErrorValue("NoError")
 
 
 @dataclass(slots=True)
 class Header:
-    type_id: int
+    type_name: str
     valid: bool
     fields: list[Value]
 
 
 @dataclass(slots=True)
 class Struct:
-    type_id: int
+    type_name: str
     fields: list[Value]
 
 
 @dataclass(slots=True)
 class Stack:
-    header_type: int
+    header_type: str
     elements: list[Header]
     next_index: int
 
@@ -77,14 +80,14 @@ def zero(type: pb.Type, index: Index) -> Value:
             return False
         case "header":
             decl = index.header_types[type.header]
-            return Header(decl.id, False, [zero(f.type, index) for f in decl.fields])
+            return Header(decl.name, False, [zero(f.type, index) for f in decl.fields])
         case "struct":
             decl = index.struct_types[type.struct]
-            return Struct(decl.id, [zero(f.type, index) for f in decl.fields])
+            return Struct(decl.name, [zero(f.type, index) for f in decl.fields])
         case "enum_type":
-            return EnumValue(type.enum_type, 0)
+            return EnumValue(type.enum_type, index.enum_types[type.enum_type].members[0])
         case "error":
-            return ErrorValue(0)
+            return NO_ERROR
         case "stack":
             header = pb.Type(header=type.stack.header)
             elements = [zero(header, index) for _ in range(type.stack.size)]
@@ -96,10 +99,10 @@ def zero(type: pb.Type, index: Index) -> Value:
 def copy(value: Value) -> Value:
     """A deep copy; immutable values are returned as they are."""
     match value:
-        case Header(type_id, valid, fields):
-            return Header(type_id, valid, [copy(f) for f in fields])
-        case Struct(type_id, fields):
-            return Struct(type_id, [copy(f) for f in fields])
+        case Header(type_name, valid, fields):
+            return Header(type_name, valid, [copy(f) for f in fields])
+        case Struct(type_name, fields):
+            return Struct(type_name, [copy(f) for f in fields])
         case Stack(header_type, elements, next_index):
             return Stack(header_type, [copy(e) for e in elements], next_index)  # type: ignore[misc]
         case _:

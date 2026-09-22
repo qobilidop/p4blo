@@ -42,6 +42,37 @@ one that says so.
 - **Two testing directories only: `corpus/` and `tests/`.** Vectors sit
   beside the program they test; oracle drivers and the differential
   loop are tests and live with the tests.
+- **References by scoped name, not integer id.** The first draft used
+  global integer ids. Switched the same day, on Bili's pointer to ONNX
+  and on 4ward's stated principle, because the text format is the
+  golden format and must read like the program; the hand-written
+  forwarder is the first beneficiary. Scopes are P4's and the
+  validator resolves every reference once. Lean pays with string-keyed
+  maps, which costs nothing the project claims.
+- **Typed oneofs, not an ONNX-style generic node.** ONNX's single
+  `NodeProto` with a string `op_type` suits an operator set of
+  hundreds that evolves separately from the file format. P4's core has
+  about twenty fixed operators, and a schema whose messages are the
+  grammar is what the Lean decoder and the readers need.
+- **No type annotations on expressions.** 4ward, p4c and SpecTec
+  annotate every node. p4blo does not: leaves are typed, operators
+  determine their result, values carry widths at run time, and the
+  validator computes every type once. Annotations would double the
+  goldens and add a consistency check for no semantic gain.
+- **Dedicated nodes for packet and header operations.** extract, emit,
+  lookahead, advance, verify, isValid, setValid, setInvalid, push and
+  pop are statements and expressions of the IR, not method calls on
+  `packet_in`, `packet_out` and headers as in SpecTec, p4c and 4ward.
+  The calling convention has no packet value, and the Lean side is
+  simpler without method dispatch. "Externs" means declared externs
+  only. The printer reverses this.
+- **`int<N>` out by scope for v0.** Present in every prior IR and in
+  core P4, but no corpus program needs it and it doubles the arithmetic
+  rules. Additive when wanted.
+- **Table `size` kept as an informative field.** It has no meaning; the
+  printer needs it for a faithful roundtrip.
+- **Field numbers 100 and above reserved for annotations**, as 4ward
+  reserves 100 for source info, so semantics and metadata never mix.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

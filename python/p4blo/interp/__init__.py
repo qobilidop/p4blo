@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from p4blo.interp.tables import InstalledEntries
-from p4blo.interp.values import Bits, Struct, Value
+from p4blo.interp.values import NO_ERROR, Bits, ErrorValue, Struct, Value
 from p4blo.ir import Index
 
 
@@ -35,16 +35,17 @@ class ExternResult:
 class ExternBinding(Protocol):
     """A Python implementation bound to one extern instance.
 
-    `method` is the index into the extern type's methods; `args` holds one
-    value per parameter in order, with the current value for out and inout
+    `method` is the method's name in the extern type; `args` holds one value
+    per parameter in order, with the current value for out and inout
     parameters. The binding is called after the registry has checked arity
     and widths, so it may trust its inputs.
     """
 
-    def call(self, method: int, args: list[Value]) -> ExternResult: ...
+    def call(self, method: str, args: list[Value]) -> ExternResult: ...
 
 
-type Externs = Mapping[int, ExternBinding]
+type Externs = Mapping[str, ExternBinding]
+"""Bindings by extern instance name."""
 
 
 @dataclass(slots=True)
@@ -52,12 +53,12 @@ class ParseOutcome:
     headers: Struct
     metadata: Struct
     consumed_bits: int
-    # Index into Program.errors; 0 is NoError and means the parser accepted.
-    error: int
+    # A name from Program.errors; NoError means the parser accepted.
+    error: ErrorValue = NO_ERROR
 
     @property
     def accepted(self) -> bool:
-        return self.error == 0
+        return self.error == NO_ERROR
 
 
 class InterpError(Exception):
@@ -70,7 +71,7 @@ class InterpError(Exception):
 
 def run_parser(
     index: Index,
-    block: int,
+    block: str,
     packet: bytes,
     metadata: Struct,
     externs: Externs,
@@ -84,7 +85,7 @@ def run_parser(
 
 def run_control(
     index: Index,
-    block: int,
+    block: str,
     headers: Struct,
     metadata: Struct,
     entries: InstalledEntries,
@@ -96,7 +97,7 @@ def run_control(
 
 def run_deparser(
     index: Index,
-    block: int,
+    block: str,
     headers: Struct,
     externs: Externs,
 ) -> bytes:

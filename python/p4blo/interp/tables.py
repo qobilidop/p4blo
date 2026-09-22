@@ -2,6 +2,7 @@
 
 See docs/semantics.md, "Tables": exact, longest prefix, and largest priority
 among ternary matches; const entries first; the default action on a miss.
+Tables are block-scoped, so they are addressed by `(block, table)` names.
 """
 
 from __future__ import annotations
@@ -26,6 +27,10 @@ class Match:
     hit: bool
 
 
+type TableRef = tuple[str, str]
+"""`(block name, table name)`."""
+
+
 @dataclass(slots=True)
 class InstalledEntries:
     """Everything installed in every table of a program.
@@ -36,18 +41,18 @@ class InstalledEntries:
     """
 
     index: Index
-    entries: dict[int, list[pb.Entry]] = field(default_factory=dict)
-    default_actions: dict[int, pb.ActionCall | None] = field(default_factory=dict)
+    entries: dict[TableRef, list[pb.Entry]] = field(default_factory=dict)
+    default_actions: dict[TableRef, pb.ActionCall | None] = field(default_factory=dict)
 
     @classmethod
     def build(cls, index: Index, host: pb.Entries | None = None) -> InstalledEntries:
         raise NotImplementedError
 
-    def install(self, table: int, entry: pb.Entry) -> None:
+    def install(self, table: TableRef, entry: pb.Entry) -> None:
         raise NotImplementedError
 
-    def set_default(self, table: int, action: pb.ActionCall | None) -> None:
+    def set_default(self, table: TableRef, action: pb.ActionCall | None) -> None:
         raise NotImplementedError
 
-    def lookup(self, table: int, keys: list[Bits]) -> Match:
+    def lookup(self, table: TableRef, keys: list[Bits]) -> Match:
         raise NotImplementedError

@@ -21,7 +21,7 @@ Section references are to the P4-16 language specification, version
 Every value of type `bit<N>` is an unsigned integer in `[0, 2^N)`. A
 value carries its width at run time; the interpreters never infer a
 width from context. `bool` is `true` or `false`. Enum and error values
-are member indices into their declaration. Header, struct and stack
+are members of their declaration, compared by name. Header, struct and stack
 values are described below.
 
 - **Arithmetic on `bit<N>`.** `+`, `-` and `*` wrap modulo `2^N`
@@ -49,7 +49,8 @@ values are described below.
   bits.
 - **Uninitialized variables.** A block-local variable or an `out`
   parameter that is read before it is written has the value `0` for
-  `bit<N>`, `false` for `bool`, member `0` for enums and errors, and
+  `bit<N>`, `false` for `bool`, the first member for enums and
+  `NoError` for errors, and
   the recursively zero value with every header invalid for compound
   types. P4 leaves this undefined (§6.8); zero is chosen because it is
   the least surprising value, it is what BMv2 does at packet start,
@@ -137,11 +138,14 @@ matches v1model, where the controls run after a parser rejection with
   as at the previous entry raises `ParserTimeout` (§12.11 leaves the
   bound to the target). This is the no-consumption revisit rule from
   the design doc. Sub-parser states count as states of the enclosing
-  run.
-- **Errors.** The IR's error set begins with core.p4's, in this order
-  at these indices: `NoError` 0, `PacketTooShort` 1, `NoMatch` 2,
-  `StackOutOfBounds` 3, `HeaderTooShort` 4, `ParserTimeout` 5,
-  `ParserInvalidArgument` 6. A program may declare more after them.
+  run. Whether the oracles agree is checked in step 4; a program that
+  loops without consuming is a bug in the program, so the corpus never
+  exercises the rule against an oracle.
+- **Errors.** The IR's error set begins with core.p4's, in this order:
+  `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
+  `HeaderTooShort`, `ParserTimeout`, `ParserInvalidArgument`. A program
+  may declare more after them. The order is fixed so that every reader
+  agrees on the position of each core error.
   `HeaderTooShort` and `ParserInvalidArgument` are never raised by the
   IR because varbit and the extract-with-length form are out of scope;
   they are reserved so that indices agree with every reader.

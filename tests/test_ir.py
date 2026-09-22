@@ -9,19 +9,19 @@ def tiny() -> pb.Program:
         """
         name: "tiny"
         errors: "NoError"
-        header_types { id: 1 name: "h" fields { name: "f" type { bits: 8 } } }
-        struct_types { id: 2 name: "H" fields { name: "h" type { header: 1 } } }
-        struct_types { id: 3 name: "M" }
-        headers: 2
-        metadata: 3
+        header_types { name: "h" fields { name: "f" type { bits: 8 } } }
+        struct_types { name: "H" fields { name: "h" type { header: "h" } } }
+        struct_types { name: "M" }
+        headers: "H"
+        metadata: "M"
         blocks {
-          id: 4 name: "p" kind: BLOCK_KIND_PARSER
-          params { id: 5 name: "hdr" type { struct: 2 } direction: DIRECTION_OUT }
-          params { id: 6 name: "meta" type { struct: 3 } direction: DIRECTION_INOUT }
-          states { id: 7 name: "start" transition { direct { accept {} } } }
-          start_state: 7
+          name: "p" kind: BLOCK_KIND_PARSER
+          params { name: "hdr" type { struct: "H" } direction: DIRECTION_OUT }
+          params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+          states { name: "start" transition { direct { accept {} } } }
+          start_state: "start"
         }
-        exports { role: "parser" block: 4 }
+        exports { role: "parser" block: "p" }
         """
     )
 
@@ -39,21 +39,37 @@ def test_binary_and_json_roundtrip() -> None:
 
 def test_index() -> None:
     index = ir.Index.build(tiny())
-    assert set(index.all) == {1, 2, 3, 4, 5, 6, 7}
-    assert index.owner[5] == 4
-    assert index.owner[7] == 4
+    assert index.program_names == {"h", "H", "M", "p"}
+    scope = index.scopes["p"]
+    assert set(scope.vars) == {"hdr", "meta"}
+    assert set(scope.states) == {"start"}
     assert index.exported("parser").name == "p"
+    assert index.field_index("H", "h") == 0
+    assert index.errors == {"NoError": 0}
 
 
-def test_index_rejects_duplicate_ids() -> None:
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda p: p.struct_types.add(name="H"),
+        lambda p: p.blocks.add(name="H"),
+        lambda p: p.blocks[0].params.add(name="hdr"),
+        lambda p: p.blocks[0].locals.add(name="p"),
+        lambda p: p.blocks[0].states.add(name="hdr"),
+        lambda p: p.header_types.add(name=""),
+        lambda p: p.errors.append("NoError"),
+    ],
+)
+def test_index_rejects_name_clashes(mutate) -> None:
     program = tiny()
-    program.struct_types[1].id = 2
-    with pytest.raises(ir.DuplicateId):
+    mutate(program)
+    with pytest.raises(ir.DuplicateName):
         ir.Index.build(program)
 
 
-def test_index_rejects_zero_id() -> None:
+def test_action_params_may_shadow_nothing() -> None:
     program = tiny()
-    program.blocks[0].states[0].id = 0
-    with pytest.raises(ir.DuplicateId):
+    action = program.blocks[0].actions.add(name="a")
+    action.params.add(name="hdr", type=pb.Type(bits=1), direction=pb.DIRECTION_NONE)
+    with pytest.raises(ir.DuplicateName):
         ir.Index.build(program)

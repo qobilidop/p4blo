@@ -117,9 +117,14 @@ names. That is the gain of being free of frontend sugar, and it is
 what keeps the Lean semantics free of type inference. Every frontend,
 Python now, others later, owes the IR the same elaboration.
 
-Names are ids. The program carries a flat string table and every
-other message refers to it by index. The text format stays readable
-through the printer and through comments, not by inlining strings.
+Declarations are referenced by name, scoped as P4 scopes them, and
+never looked up dynamically: the validator resolves every reference
+once. This follows ONNX and 4ward rather than BMv2's integer ids, so
+that the text format reads like the program it encodes and a schema
+change shows up as a readable diff. Expressions carry no type
+annotations: every leaf has a known type, every operator's result is
+determined by its operands, and run-time values carry their width, so
+no interpreter infers anything and the goldens stay half the size.
 
 The schema lives at `proto/p4blo/v0/p4blo.proto` under the package
 `p4blo.v0`. The version is `v0` because the schema is expected to
@@ -158,8 +163,8 @@ into a header stack. The bound is the no-consumption revisit rule: a
 state that consumed no bits since it was last entered may not be
 entered again, and doing so is a parse error. Fuel was rejected
 because it makes the meaning of a program depend on a number nobody
-specifies, and because the revisit rule is what BMv2 effectively
-implements, so the oracle agrees with it.
+specifies. Whether the oracles behave the same way is checked in step
+4 and is not assumed.
 
 ### Metadata contract
 
@@ -277,8 +282,11 @@ Three exclusion categories; only the third makes p4blo a subset.
   direct counters and meters, clone and recirculate as operations.
 - **Out by elaboration:** generics, `int`, implicit casts, tuples,
   `switch` on action runs, and other sugar the frontend removes.
-- **Out by scope, each threatening no claim:** varbit, header unions,
-  value sets, `exit`, `return`, extern function objects.
+- **Out by scope, each threatening no claim:** `int<N>`, varbit,
+  header unions, value sets, `exit`, `return`, `for`, extern function
+  objects. Each is an additive change to the schema if it is ever
+  wanted; `int<N>` in particular is one more `Type` kind and a signed
+  variant of each arithmetic rule.
 
 **In:** `bit<N>`, `bool`, enums and errors, headers, structs, header
 stacks with push, pop and index arithmetic; parser states with
@@ -530,6 +538,14 @@ testing table logic in pytest, until a p4c bridge exists.
   second oracle.
 - [p4c](https://github.com/p4lang/p4c): the source of corpus programs
   and their STF vectors.
+- [ONNX](https://github.com/onnx/onnx): the precedent for a readable
+  protobuf IR: references by name, a checker that owns what the schema
+  cannot say. Its generic node with a string operator type is not
+  followed, because P4's core has a fixed handful of operators and the
+  typed schema is the grammar the Lean side decodes.
+
+A construct-by-construct survey of the P4 IRs is in
+[notes/prior-art-ir.md](notes/prior-art-ir.md).
 
 ## Appendix: naming
 
