@@ -9,8 +9,8 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 
 | Claim | Experiment | Status |
 |---|---|---|
-| 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green so far: nine corpus programs fit with named elaborations only; coverage table in flight |
-| 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green so far: every corpus vector passes on P4-SpecTec (14 files, 9 programs); BMv2 optional second oracle not run |
+| 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
+| 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec (15 files, 10 programs); BMv2 optional second oracle not run |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
 | 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | green: Lean interpreter (181 checks); 18,000 random cases over nine programs with zero divergences, 200 per program in CI; theorem `P4blo.extract_emit` proved with core Lean only |
 
@@ -24,7 +24,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | 3 | eDSL, four corpus programs, two architectures, metadata contract | done: nine programs authored in the eDSL, both architectures, contract check |
 | 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | printer, oracle build, translation, replay and CI job landed; forwarder passes both sides |
 | 5 | Lean interpreter, extern models, DRT, the theorem | done |
-| 6 | Coverage table, README claim matrix, write-up | done: coverage table (177 rows, none undecided), README, `docs/writeup.md`; second review in flight |
+| 6 | Coverage table, README claim matrix, write-up | done: coverage table (177 rows, none undecided), README, `docs/writeup.md`; both reviews kept under docs/notes/reviews and their findings fixed |
 
 ## Corpus
 
@@ -39,6 +39,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | parser_error | p4c `parser_error-bmv2` | eDSL, landed | p4c STF, 2 packets, passing | pass on P4-SpecTec |
 | verify_error | p4c `issue1824-bmv2` | eDSL, landed | p4c STF, 1 packet, passing | pass on P4-SpecTec |
 | priority | p4c `table-entries-priority-bmv2` | eDSL, landed | p4c STF, 3 packets, passing | pass on P4-SpecTec |
+| register_bounds | own program from the second review | eDSL, landed | 9 hand-derived packets, passing | pass on P4-SpecTec |
 
 ## Blocked
 

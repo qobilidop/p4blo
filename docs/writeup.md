@@ -165,7 +165,7 @@ teach it by use, not hide it.
 
 ### The corpus
 
-Nine programs under `corpus/`, each with its eDSL source, its IR golden,
+Ten programs under `corpus/`, each with its eDSL source, its IR golden,
 a README naming what was elaborated away, and vectors in STF, the text
 format p4c and P4-SpecTec already use. Eight come from p4c's own test
 suite with the STF file beside them, picked after the survey in
@@ -206,6 +206,10 @@ hand-derived and later confirmed by the oracle.
 - `priority`, `table-entries-priority-bmv2`: `@priority` on const
   entries, mapped from p4c's smaller-wins counter onto the IR's
   larger-wins numbering.
+- `register_bounds`, written after the second review found that no
+  random input could reach an out-of-range register index: a
+  four-cell register indexed by a header byte, so reads past the end
+  return zero and writes there vanish, visibly.
 
 Each README's "Elaborated away" list is the evidence for claim 1: every
 rewrite is named, and none is an escape hatch.
@@ -238,8 +242,8 @@ typechecked with `p4test` through Docker when Docker is available.
 
 The oracle is P4-SpecTec's simulator, pinned at commit `2730cfd9` and
 driven by `oracle/run.py` through its `sim` command on the same STF
-vectors the Python side replays. Every vector file passes, 14 files over
-nine programs, in its own CI job. It is the spec's own mechanization,
+vectors the Python side replays. Every vector file passes, 15 files over
+ten programs, in its own CI job. It is the spec's own mechanization,
 which is a stronger authority than a behavioral model for a semantics
 project, and it runs natively without Docker.
 
@@ -281,8 +285,8 @@ across a case sequence on both sides. Two sides agree when their outputs
 are equal as sequences of port and bytes, or when both report an error;
 anything else is a divergence that prints as a replayable STF vector.
 
-The recorded sweep is 18,000 random cases over the nine programs with
-zero divergences (`docs/status.md`); CI runs 200 per program on every
+The recorded sweep is 18,000 random cases over nine programs with
+zero divergences, before the tenth was added (`docs/status.md`); CI runs 200 per program on every
 push (`.github/workflows/lean.yml`, `tests/test_drt.py`). One slice,
 reproduced while writing this:
 
@@ -320,12 +324,12 @@ result and, honestly, what would make it fail that has not been tested.
 
 The experiment: the schema and its contract fit in a few pages, and no
 corpus program needs an escape hatch. The result: 669 lines of proto, and
-nine programs authored with named elaborations only. `docs/coverage.md`
+ten programs authored with named elaborations only. `docs/coverage.md`
 walks every production of SpecTec's IL: 177 rows, of which 84 are in, 38
 are elaborated with the rewrite named, 26 are excluded by elaboration, 10
 by thesis, 19 by scope, and none is undecided.
 
-Untested: nine programs. They are small, they were chosen for the
+Untested: ten programs. They are small, they were chosen for the
 constructs p4blo covers, and none has a constructor parameter, a
 function, a header union or `int<N>`. The elaborated rows that no corpus
 program has exercised, functions inlined, newtypes, named arguments, are
@@ -337,7 +341,7 @@ run.
 
 The experiment: corpus programs, printed to P4 under the v1model shim and
 run through an external oracle, match the reference interpreter packet
-for packet. The result: all 14 vector files pass on P4-SpecTec, with no
+for packet. The result: all 15 vector files pass on P4-SpecTec, with no
 divergence to explain.
 
 Untested: one oracle. BMv2, the optional second, has not been run. The
