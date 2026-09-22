@@ -716,6 +716,49 @@ def test_else_follows_its_own_if_in_both_branches() -> None:
     assert body[1] == stmt(f"conditional {{ condition {{ {cond(4)} }} then {{ {set_x(40)} }} }}")
 
 
+def test_elif_nests_as_the_else_if_ladder() -> None:
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                b.assign(x, 10)
+            with b.elif_(x == 2):
+                # An if_ inside an arm does not capture the ladder's next arm.
+                with b.if_(x == 5):
+                    b.assign(x, 50)
+            with b.elif_(x == 3):
+                b.assign(x, 30)
+            with b.else_():
+                b.assign(x, 40)
+            with pytest.raises(EdslError, match="elif_ must follow an if_"):
+                with b.elif_(x == 6):
+                    pass
+    body = p.build().blocks[0].body
+    assert len(body) == 1
+    assert body[0] == stmt(
+        f"""
+        conditional {{
+          condition {{ {cond(1)} }}
+          then {{ {set_x(10)} }}
+          otherwise {{
+            conditional {{
+              condition {{ {cond(2)} }}
+              then {{ conditional {{ condition {{ {cond(5)} }} then {{ {set_x(50)} }} }} }}
+              otherwise {{
+                conditional {{
+                  condition {{ {cond(3)} }}
+                  then {{ {set_x(30)} }}
+                  otherwise {{ {set_x(40)} }}
+                }}
+              }}
+            }}
+          }}
+        }}
+        """
+    )
+
+
 def test_else_after_a_closed_else_is_refused() -> None:
     # The inner if_ is the last statement of the else; closing the else
     # must not leave it open for a stray else_ at the outer level.

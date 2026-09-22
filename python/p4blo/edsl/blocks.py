@@ -332,17 +332,41 @@ class Stmts:
         self._emit(stmt)
         self._open_ifs[-1] = stmt
 
+    def _continue_if(self, what: str) -> pb.Stmt:
+        """The `if` at this nesting level that `what` continues; it takes it,
+        so that only one `else_` can."""
+        stmt = self._open_ifs[-1]
+        if stmt is None:
+            raise EdslError(f"{what} must follow an if_ block directly")
+        self._open_ifs[-1] = None
+        return stmt
+
     @contextmanager
     def else_(self) -> Iterator[Self]:
         """The `else` of the `if_` block just closed at this nesting level."""
-        stmt = self._open_ifs[-1]
-        if stmt is None:
-            raise EdslError("else_ must follow an if_ block directly")
-        self._open_ifs[-1] = None
+        stmt = self._continue_if("else_")
         otherwise: list[pb.Stmt] = []
         with self._nested(otherwise):
             yield self
         stmt.conditional.otherwise.extend(otherwise)
+
+    @contextmanager
+    def elif_(self, condition: Operand) -> Iterator[Self]:
+        """`else if (condition) { ... }`: an `else_` holding one `if_`.
+
+        The ladder nests as P4's does, each arm the sole statement of the
+        previous arm's `else`, and the next `elif_` or `else_` at this
+        level continues the innermost `if`.
+        """
+        stmt = self._continue_if("elif_")
+        otherwise: list[pb.Stmt] = []
+        with self._nested(otherwise):
+            with self.if_(condition):
+                yield self
+        stmt.conditional.otherwise.extend(otherwise)
+        # `extend` copies, so the arm the ladder continues is the copy now
+        # inside `stmt`, not the message `if_` built.
+        self._open_ifs[-1] = stmt.conditional.otherwise[-1]
 
     def _args(self, params: Sequence[pb.Param], args: Sequence[Operand], what: str) -> list[pb.Arg]:
         """Arguments against parameters: in and directionless take an
