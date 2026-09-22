@@ -17,9 +17,9 @@
 #     flags 0, fragOffset 0         0x0000
 #     ttl       0x40                64
 #     protocol  0x11                UDP
-#     hdrChecksum 0x0000            never computed: the checksum externs are
-#                                   deferred, so this field is carried through
-#                                   unchanged and is wrong on purpose
+#     hdrChecksum 0x0000            wrong on input and never checked, since
+#                                   verify_checksum is deferred; the control
+#                                   recomputes it on the way out
 #     srcAddr   0a 00 01 01         10.0.1.1
 #     dstAddr   0a 00 02 02         10.0.2.2
 #   payload, 6 bytes                de ad be ef ca fe
@@ -37,10 +37,22 @@
 #   hdr.ipv4.ttl         = 0x40 - 1 = 0x3f
 #
 # The assignments are in that order, so srcAddr takes the *old* dstAddr.
+#
+# hdr.ipv4 is still valid at the end of the control, so csum.compute runs
+# over the eleven non-checksum fields of the rewritten header. Concatenated
+# in header order they are these 16-bit words (the checksum's own slot is
+# absent, so the words after ttl/protocol are the addresses directly):
+#
+#   4500 001a 0001 0000 3f11 0a00 0101 0a00 0202
+#
+# Their sum is 0x9b2f, with no carry out of 16 bits to fold back, and the
+# one's complement 0xffff - 0x9b2f = 0x64d0 is written to hdrChecksum. The
+# emitted header, with 0x64d0 in its checksum slot, sums to 0xffff.
+#
 # meta.drop stays false, so the deparser's 34 bytes plus the 6 retained
 # payload bytes leave on port 2.
 
 add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 ipv4_forward(dstAddr:0x000000000202, port:2)
 
 packet 0 000000000101 000000000001 0800 4500001a0001000040110000 0a000101 0a000202 deadbeefcafe
-expect 2 000000000202 000000000101 0800 4500001a000100003f110000 0a000101 0a000202 deadbeefcafe
+expect 2 000000000202 000000000101 0800 4500001a000100003f1164d0 0a000101 0a000202 deadbeefcafe
