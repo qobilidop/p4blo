@@ -22,6 +22,7 @@ errors: "ParserTimeout"
 errors: "ParserInvalidArgument"
 errors: "BadVersion"
 header_types { name: "h8" fields { name: "f" type { bits: 8 } } }
+header_types { name: "h0" }
 header_types {
   name: "mixed"
   fields { name: "a" type { bits: 3 } }
@@ -33,6 +34,7 @@ struct_types {
   fields { name: "e" type { header: "h8" } }
   fields { name: "hs" type { stack { header: "h8" size: 2 } } }
   fields { name: "w" type { header: "mixed" } }
+  fields { name: "z" type { header: "h0" } }
 }
 struct_types {
   name: "M"
@@ -158,6 +160,20 @@ def test_lookahead_past_the_end_is_packet_too_short() -> None:
     assert out.error == ErrorValue("PacketTooShort")
 
 
+def test_extract_of_a_zero_width_header_sets_valid_and_consumes_nothing() -> None:
+    hdr_z = 'member { base { var: "hdr" } field: "z" }'
+    out = run(state("start", f"body {{ extract {{ target {{ {hdr_z} }} }} }}", ACCEPT), b"")
+    assert out.accepted and out.consumed_bits == 0
+    assert out.headers.fields[3] == Header("h0", True, [])
+    # It consumes nothing, so a loop over it hits the revisit rule.
+    loop = state(
+        "start",
+        f"body {{ extract {{ target {{ {hdr_z} }} }} }}",
+        'transition { direct { state: "start" } }',
+    )
+    assert run(loop, b"\x01").error == ErrorValue("ParserTimeout")
+
+
 def test_advance_skips_bits() -> None:
     body = f"""
     body {{ advance {{ bits {{ literal {{ {bits(32, 8)} }} }} }} }}
@@ -273,6 +289,13 @@ def test_verify_raises_its_error_when_the_condition_is_false() -> None:
 
 def test_explicit_reject_is_not_accepted_and_has_no_error() -> None:
     out = run(state("start", "", "transition { direct { reject {} } }"), b"\x01")
+    assert not out.accepted
+    assert out.error == NO_ERROR
+
+
+def test_verify_with_no_error_is_an_explicit_reject() -> None:
+    body = 'body { verify { condition { literal { boolean: false } } error: "NoError" } }'
+    out = run(state("start", body, ACCEPT), b"\x01")
     assert not out.accepted
     assert out.error == NO_ERROR
 

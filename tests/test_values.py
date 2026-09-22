@@ -91,6 +91,17 @@ def test_struct_and_stack_equality_are_elementwise() -> None:
     assert not values.equal(a, b)
 
 
+def test_stack_equality_ignores_next_index() -> None:
+    idx = index()
+    a = values.zero(pb.Type(struct="S"), idx)
+    b = values.zero(pb.Type(struct="S"), idx)
+    assert isinstance(b, Struct)
+    stack = b.fields[1]
+    assert isinstance(stack, Stack)
+    stack.next_index = 2
+    assert values.equal(a, b)
+
+
 def test_scalar_equality_is_by_value_and_name() -> None:
     assert values.equal(Bits(8, 3), Bits(8, 3))
     assert not values.equal(Bits(8, 3), Bits(16, 3))

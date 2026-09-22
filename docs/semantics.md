@@ -35,8 +35,8 @@ values are described below.
 - **Comparison.** `<`, `<=`, `>`, `>=` compare as unsigned integers.
   `==` and `!=` are defined on every type: on `bit<N>` and `bool` by
   value, on enums and errors by member, on headers by validity and
-  then fieldwise, on structs fieldwise, on stacks elementwise
-  (§8.16, §8.17).
+  then fieldwise, on structs fieldwise, on stacks elementwise over all
+  `S` elements and not on `nextIndex` (§8.16, §8.17).
 - **Casts.** `bit<N>` to `bit<M>` truncates to the low `M` bits when
   `M < N` and zero-extends when `M > N`. `bool` to `bit<1>` maps
   `false` to `0` and `true` to `1`; `bit<1>` to `bool` is the inverse.
@@ -106,6 +106,8 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
   and sets `nextIndex` to `min(nextIndex + n, S)`. **`pop_front(n)`**
   shifts toward lower indices, makes the last `n` invalid with zero
   fields, and sets `nextIndex` to `max(nextIndex - n, 0)` (§8.18).
+  With `n > S` both behave as `n = S`: every element becomes invalid
+  and `nextIndex` goes to `S` or `0`.
 
 ## Parsers
 
@@ -126,19 +128,25 @@ rejection with `parser_error` set.
   header's width, the extract raises `PacketTooShort`, consumes
   nothing, and leaves the target as it was (§12.8.2).
 - **Extract sets the target valid** and fills every field from the
-  packet, most significant bit first.
+  packet, most significant bit first. A header type with no fields has
+  width zero: extracting it sets validity, consumes nothing even at
+  the end of the packet, and counts as no consumption for the loop
+  bound below.
 - **`lookahead<T>`** reads `width(T)` bits without moving the cursor;
   past the end it raises `PacketTooShort`. `T` is `bit<N>`, `bool`
   (one bit, `1` is `true`) or a header; when `T` is a header the
   result is valid.
 - **`advance(n)`** moves the cursor by `n` bits; past the end it
   raises `PacketTooShort` and the cursor does not move.
-- **`verify(cond, err)`** raises `err` when `cond` is `false`.
+- **`verify(cond, err)`** raises `err` when `cond` is `false`. `err`
+  may be `NoError`, and then the outcome is the same as an explicit
+  `reject`: not accepted, error `NoError`.
 - **`select`** evaluates the key expressions once, then tries the
   cases in order and takes the first that matches. A key set entry is
-  an exact value, a value with a mask, a closed range, or don't-care.
-  With no matching case, the transition is to `reject` with error
-  `NoMatch` (§12.6).
+  an exact value, a value with a mask, a closed range, or don't-care;
+  a mask or a range applies only to a `bit<N>` key, so a `bool`, enum
+  or error key takes an exact value or don't-care. With no matching
+  case, the transition is to `reject` with error `NoMatch` (§12.6).
 - **`reject`** is a transition like any other. Reached explicitly, it
   rejects with `NoError`; reached because an extract, lookahead,
   advance, verify or select raised, it rejects with that error. This
@@ -205,7 +213,9 @@ A table match is evaluated over the installed entries; the program's
   default action; when the program declares none, it is `NoAction`,
   which does nothing (§14.2.1.4).
 - **`hit`** is `true` when an entry matched and `false` on a miss,
-  including a miss that ran the default action.
+  including a miss that ran the default action. It is written after
+  the chosen action has run, so an action that writes the same lvalue
+  is overwritten, as `t.apply().hit` reads the result of the apply.
 - **Key expressions** are evaluated once, before matching. An entry
   value wider than the key is rejected at installation, as is an LPM
   value with a set bit outside its prefix and a ternary value with a

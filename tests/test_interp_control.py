@@ -286,6 +286,34 @@ def test_apply_runs_the_matching_action_and_records_hit() -> None:
     assert out.n == Bits(8, 3) and out.flag is True
 
 
+def test_hit_is_written_after_the_action_runs() -> None:
+    decls = f"""
+    actions {{
+      name: "clear"
+      body {{ assign {{ target {{ {META_FLAG} }} value {{ literal {{ boolean: false }} }} }} }}
+    }}
+    tables {{
+      name: "tbl"
+      keys {{ expr {{ {E_F} }} match_kind: MATCH_KIND_EXACT name: "hdr.e.f" }}
+      actions: "clear"
+    }}
+    """
+    entries = """
+    tables { block: "C" table: "tbl" entries { keys { exact: "5" } action { action: "clear" } } }
+    """
+    body = assign(E_F, bits(8, 5)) + stmt(f'apply {{ table: "tbl" hit {{ {META_FLAG} }} }}')
+    assert run(body, decls, entries=entries).flag is True
+
+
+def test_push_and_pop_of_more_than_the_size_clip_to_the_size() -> None:
+    push = stmt(f"push {{ stack {{ {HDR_HS} }} count: 5 }}")
+    out = run(push, headers=stack_of(1, 2, 1))
+    assert all(not e.valid for e in out.hs.elements) and out.hs.next_index == 2
+    pop = stmt(f"pop {{ stack {{ {HDR_HS} }} count: 5 }}")
+    out = run(pop, headers=stack_of(1, 2, 1))
+    assert all(not e.valid for e in out.hs.elements) and out.hs.next_index == 0
+
+
 def test_apply_on_a_miss_runs_the_default_and_hit_is_false() -> None:
     body = (
         assign(E_F, bits(8, 6))
