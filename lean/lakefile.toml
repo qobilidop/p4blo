@@ -1,0 +1,20 @@
+# p4blo's Lean side: the IR as Lean data, a JSON decoder for programs, and
+# (later) the normative interpreter. Lean core only; no Mathlib.
+name = "p4blo"
+version = "0.1.0"
+defaultTargets = ["P4blo", "p4blo-lean"]
+testDriver = "tests"
+
+[[lean_lib]]
+name = "P4blo"
+
+# The pipe endpoint for differential testing: reads a JSON program, decodes
+# it, builds the index and prints a summary.
+[[lean_exe]]
+name = "p4blo-lean"
+root = "Main"
+
+# `lake test` runs this against Tests/forwarder.json.
+[[lean_exe]]
+name = "tests"
+root = "Tests.Main"
