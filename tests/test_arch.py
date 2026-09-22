@@ -140,6 +140,26 @@ def test_a_contract_field_of_the_wrong_type_refuses_to_load(field: str, message:
         arch.load(program(metadata=field))
 
 
+def test_a_missing_role_is_refused_at_load() -> None:
+    """The validator does not know which roles an architecture needs, so
+    the loader resolves them: a program without them never reaches a packet."""
+    full = program(metadata=EGRESS)
+    without = pb.Program()
+    without.CopyFrom(full)
+    del without.exports[:]
+    with pytest.raises(arch.LoadError, match="exports no 'parser' block"):
+        arch.load(without)
+    without.exports.add(role="parser", block="P")
+    without.exports.add(role="control", block="C")
+    with pytest.raises(arch.LoadError, match="exports no 'deparser' block"):
+        arch.load(without)
+    # The filter runs without a deparser when asked for only what it needs.
+    loaded = arch.load(without, roles=("parser", "control"))
+    assert dict(loaded.blocks) == {"parser": "P", "control": "C"}
+    assert Filter().run(loaded, loaded.entries(), 0, b"\x01") == [(0, b"\x01")]
+    assert dict(arch.load(full).blocks) == {"parser": "P", "control": "C", "deparser": "D"}
+
+
 def test_the_contract_is_the_design_table() -> None:
     table = {(f.name, f.provided) for f in CONTRACT.fields}
     assert table == {

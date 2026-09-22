@@ -6,7 +6,8 @@ and packets, that calls the program's blocks and acts on the metadata they
 leave. Two are here, a filter and a switch, and neither contains P4.
 
     contract.py   the metadata contract and the view of M it gives
-    loader.py     validate, bind externs, check the contract; once per program
+    loader.py     validate, bind externs, check the contract, resolve the
+                  exported roles; once per program
     filter.py     parser and control; the packet leaves as it came, or not
     switch.py     all three blocks; drop, flood or unicast over a few ports
 """
@@ -18,7 +19,7 @@ from typing import Protocol
 from p4blo import stf
 from p4blo.arch.contract import CONTRACT, Contract, ContractError, Field, Metadata
 from p4blo.arch.filter import Filter
-from p4blo.arch.loader import Loaded, load
+from p4blo.arch.loader import ROLES, Loaded, LoadError, load
 from p4blo.arch.switch import Switch
 from p4blo.interp.tables import InstalledEntries
 from p4blo.v0 import p4blo_pb2 as pb
@@ -53,8 +54,10 @@ __all__ = [
     "ContractError",
     "Field",
     "Filter",
+    "LoadError",
     "Loaded",
     "Metadata",
+    "ROLES",
     "Switch",
     "load",
     "stf_driver",
