@@ -1114,6 +1114,31 @@ def test_call_cycle_message_and_path() -> None:
     assert diag.path == "blocks[2].body[1].call_block"
 
 
+def test_action_call_cycle() -> None:
+    def recurse(p: pb.Program) -> None:
+        p.blocks[ING].actions[0].body.add().CopyFrom(stmt(call_action("drop")))
+
+    assert v.CALL_CYCLE in broken(recurse)
+
+
+def test_mutual_action_call_cycle_message_and_path() -> None:
+    program = valid()
+    fwd = call_action("fwd", arg_in(lit(9, "1")), arg_in(B8))
+    program.blocks[ING].actions[0].body.add().CopyFrom(stmt(fwd))  # drop -> fwd
+    program.blocks[ING].actions[1].body.add().CopyFrom(stmt(call_action("drop")))  # fwd -> drop
+    (diag,) = v.validate(program)
+    assert diag.code == v.CALL_CYCLE
+    assert "drop -> fwd -> drop" in diag.message
+    assert diag.path == "blocks[1].actions[1].body[2].call_action"
+
+
+def test_actions_may_call_actions_without_a_cycle() -> None:
+    program = valid()
+    fwd = call_action("fwd", arg_in(lit(9, "1")), arg_in(B8))
+    program.blocks[ING].actions[0].body.add().CopyFrom(stmt(fwd))
+    assert codes(program) == []
+
+
 @pytest.mark.parametrize(
     "text",
     [

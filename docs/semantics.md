@@ -174,8 +174,9 @@ else, and every extern instance is state supplied by the caller.
 - **Action calls** from a control body pass arguments in the same
   way. Actions invoked by a table receive their action data as
   directionless parameters, which are read-only like `in` parameters.
-- **Recursion** between blocks is a validator error, so no run can
-  fail to terminate; every construct in the IR is bounded.
+- **Recursion** between blocks is a validator error. Actions may call
+  actions; the call graph of actions and blocks together is acyclic,
+  so every run terminates; every construct in the IR is bounded.
 
 ## Tables
 

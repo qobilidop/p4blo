@@ -47,7 +47,7 @@ Expressions, lvalues and statements
   ARG_TYPE            an argument's type against its param
   CALL_KIND           a parser calling a non-parser, or a control a non-control
   CALL_ALIAS          two arguments of one call that may alias (see check_args)
-  CALL_CYCLE          a cycle in the block call graph
+  CALL_CYCLE          a cycle in the block call graph, or among one block's actions
   EXTERN_RESULT       a result lvalue missing, unexpected or of the wrong type
 Parsers
   PARSER_TRANSITION   a state without a transition, or a target without a kind
@@ -72,7 +72,7 @@ Externs
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import cast
 
@@ -410,6 +410,8 @@ class _Validator:
     block_paths: dict[str, str] = field(default_factory=dict)
     # Block call graph: caller name -> [(callee name, path of the call)].
     calls: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+    # The same for the actions of the block being checked, reset per block.
+    action_calls: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
 
     def report(self, code: str, message: str, path: str) -> None:
         self.diagnostics.append(Diagnostic(code, message, path))
@@ -750,8 +752,10 @@ class _Validator:
                 self.report(BLOCK_KIND_SHAPE, f"a {kind} has a body, not states", f"{path}.states")
             if block.start_state:
                 self.report(BLOCK_KIND_SHAPE, f"a {kind} has no start state", f"{path}.start_state")
+        self.action_calls = {}
         for i, action in enumerate(block.actions):
             self.check_action(action, scope, f"{path}.actions[{i}]")
+        self.report_cycles(scope.names.actions, self.action_calls, "action")
         for i, table in enumerate(block.tables):
             self.check_table(table, scope, f"{path}.tables[{i}]")
         for i, state in enumerate(block.states):
@@ -796,19 +800,28 @@ class _Validator:
                 )
 
     def check_call_graph(self) -> None:
-        """No cycle among CallBlock edges, so every run terminates."""
+        """No cycle among CallBlock edges, so every run terminates. Actions
+        are checked the same way per block, so the call graph of blocks and
+        actions together is acyclic (docs/semantics.md, "Controls")."""
+        self.report_cycles(self.idx.blocks, self.calls, "block")
+
+    def report_cycles(
+        self, nodes: Iterable[str], edges: dict[str, list[tuple[str, str]]], what: str
+    ) -> None:
+        """Every cycle in `edges` over `nodes`, reported at the call that
+        closes it."""
         white, grey, black = 0, 1, 2
-        color: dict[str, int] = dict.fromkeys(self.idx.blocks, white)
+        color: dict[str, int] = dict.fromkeys(nodes, white)
 
         def visit(name: str, trail: list[str]) -> None:
             color[name] = grey
-            for callee, path in self.calls.get(name, ()):
+            for callee, path in edges.get(name, ()):
                 if callee not in color:
                     continue
                 if color[callee] == grey:
                     chain = [*trail, name]
                     cycle = " -> ".join([*chain[chain.index(callee) :], callee])
-                    self.report(CALL_CYCLE, f"block calls form a cycle: {cycle}", path)
+                    self.report(CALL_CYCLE, f"{what} calls form a cycle: {cycle}", path)
                 elif color[callee] == white:
                     visit(callee, [*trail, name])
             color[name] = black
@@ -899,8 +912,11 @@ class _Validator:
         action = self.resolve_local(
             stmt.action, scope.names.actions, "action", scope, f"{path}.action"
         )
-        if action is not None:
-            self.check_args(stmt.args, action.params, scope, path)
+        if action is None:
+            return
+        if scope.action is not None:
+            self.action_calls.setdefault(scope.action.name, []).append((action.name, path))
+        self.check_args(stmt.args, action.params, scope, path)
 
     def check_call_block(self, stmt: pb.CallBlock, scope: Scope, path: str) -> None:
         callee = self.resolve(stmt.block, self.idx.blocks, "block", f"{path}.block")
