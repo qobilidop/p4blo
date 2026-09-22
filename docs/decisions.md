@@ -137,6 +137,15 @@ one that says so.
   The filter forwards the original bytes, so a vector that expects a
   rewritten packet fails under it by construction; the filter tests
   rewrite expectations to the input bytes.
+- **Printed ternary entries are not const.** p4c 1.2.5 refuses
+  priorities on `const entries` and rejects `@priority`, so the printer
+  emits a ternary table's const entries as ordinary `entries` with
+  `largest_priority_wins = true`, sorted by descending priority. The
+  oracle therefore sees host-mutable entries where the IR has const
+  ones; nothing in the vectors depends on the difference.
+- **Independent review after each step.** Step 1's review is kept at
+  `docs/notes/reviews/step1.md`; its confirmed findings are fixed on
+  main and its rulings are in `docs/semantics.md`.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
