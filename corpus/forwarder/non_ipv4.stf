@@ -1,0 +1,35 @@
+# forwarder: a non-IPv4 frame is never touched by the table.
+#
+# An ARP request, 42 bytes:
+#
+#   ethernet_t, 14 bytes
+#     dstAddr   ff:ff:ff:ff:ff:ff   broadcast
+#     srcAddr   00:00:00:00:00:01   host 1
+#     etherType 0x0806              ARP
+#   ARP, 28 bytes, never parsed
+#     htype 0x0001 ptype 0x0800 hlen 06 plen 04 oper 0x0001
+#     sha 00:00:00:00:00:01  spa 10.0.1.1
+#     tha 00:00:00:00:00:00  tpa 10.0.2.2
+#
+# The parser extracts hdr.ethernet and selects on etherType. 0x0806 is not
+# 0x0800, so the only other case, the don't-care one, matches and the parser
+# accepts. hdr.ipv4 was never extracted, so it is invalid, and the 28 ARP
+# bytes are payload the driver retains.
+#
+# The control's body is `if (is_valid(hdr.ipv4))`, which is false, so
+# ipv4_lpm is never applied and no action runs. The metadata is therefore
+# still what the driver handed in: meta.drop is false and meta.egress_port
+# is 0, both from the zero initialization of M. The packet is not dropped;
+# it leaves on port 0.
+#
+# The deparser emits hdr.ethernet, 14 bytes, and then hdr.ipv4, which is
+# invalid and so emits nothing. The driver appends the 28 retained bytes.
+# The output is the input, unchanged.
+#
+# This vector is the one that says what the step-1 architecture does with a
+# control that decides nothing: egress_port 0 is a real decision, not a
+# missing one. An architecture that wanted "no decision means drop" would
+# have to declare that in its metadata contract.
+
+packet 0 ffffffffffff 000000000001 0806 0001080006040001 000000000001 0a000101 000000000000 0a000202
+expect 0 ffffffffffff 000000000001 0806 0001080006040001 000000000001 0a000101 000000000000 0a000202

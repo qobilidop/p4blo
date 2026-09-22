@@ -1,0 +1,34 @@
+# forwarder: a truncated IPv4 frame is a parse error, and the control still
+# runs.
+#
+# An 18-byte frame: a full ethernet_t claiming IPv4, and then only 4 bytes
+# where 20 are needed.
+#
+#   ethernet_t, 14 bytes
+#     dstAddr   00:00:00:00:01:01
+#     srcAddr   00:00:00:00:00:01
+#     etherType 0x0800              IPv4, so the parser takes parse_ipv4
+#   4 bytes                         45 00 00 1a, the start of an IPv4 header
+#
+# In parse_ipv4 the extract of hdr.ipv4 needs 160 bits and 32 remain.
+# docs/semantics.md, "Parsers": the extract raises PacketTooShort, consumes
+# nothing, and leaves the target as it was, which is invalid. The parser
+# stops there with 14 bytes consumed and the error set; hdr.ethernet keeps
+# what parse_ethernet put in it.
+#
+# The driver runs the control anyway, with those partial headers. That is
+# v1model's behavior, where the controls run after a parser rejection with
+# parser_error set, and it is what the step-1 architecture does here. The
+# control sees is_valid(hdr.ipv4) = false, so ipv4_lpm is never applied and
+# the metadata is untouched: egress_port 0, drop false.
+#
+# The deparser emits hdr.ethernet, 14 bytes, and nothing for the invalid
+# hdr.ipv4. The driver appends the 4 bytes the parser did not consume. The
+# output is the input, unchanged, on port 0.
+#
+# The interesting part is that the 4 unparsed bytes survive as payload
+# rather than being swallowed by the failed extract: the extract consumed
+# nothing, so the cursor is still at 14 bytes.
+
+packet 0 000000000101 000000000001 0800 4500001a
+expect 0 000000000101 000000000001 0800 4500001a

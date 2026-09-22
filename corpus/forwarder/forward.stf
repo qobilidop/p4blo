@@ -1,0 +1,46 @@
+# forwarder: a hit on the lpm table forwards the packet.
+#
+# One entry, 10.0.2.0/24 -> port 2 with a new destination MAC. The input
+# packet is destined for 10.0.2.2, so it matches, and ipv4_forward runs.
+#
+# The input frame, 40 bytes:
+#
+#   ethernet_t, 14 bytes
+#     dstAddr   00:00:00:00:01:01   the switch
+#     srcAddr   00:00:00:00:00:01   host 1
+#     etherType 0x0800              IPv4, so the parser takes parse_ipv4
+#   ipv4_t, 20 bytes
+#     version 4, ihl 5              0x45
+#     diffserv  0x00
+#     totalLen  0x001a              26 = 20 header + 6 payload
+#     identification 0x0001
+#     flags 0, fragOffset 0         0x0000
+#     ttl       0x40                64
+#     protocol  0x11                UDP
+#     hdrChecksum 0x0000            never computed: the checksum externs are
+#                                   deferred, so this field is carried through
+#                                   unchanged and is wrong on purpose
+#     srcAddr   0a 00 01 01         10.0.1.1
+#     dstAddr   0a 00 02 02         10.0.2.2
+#   payload, 6 bytes                de ad be ef ca fe
+#
+# The parser consumes 34 bytes and accepts; the 6 payload bytes are retained
+# and re-appended by the driver after the deparser.
+#
+# hdr.ipv4 is valid, so the control applies ipv4_lpm. The key is
+# hdr.ipv4.dstAddr = 0x0a000202, which the /24 entry covers, so
+# ipv4_forward(dstAddr = 00:00:00:00:02:02, port = 2) runs:
+#
+#   meta.egress_port     = 2
+#   hdr.ethernet.srcAddr = hdr.ethernet.dstAddr   00:00:00:00:01:01
+#   hdr.ethernet.dstAddr = 00:00:00:00:02:02
+#   hdr.ipv4.ttl         = 0x40 - 1 = 0x3f
+#
+# The assignments are in that order, so srcAddr takes the *old* dstAddr.
+# meta.drop stays false, so the deparser's 34 bytes plus the 6 retained
+# payload bytes leave on port 2.
+
+add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 ipv4_forward(dstAddr:0x000000000202, port:2)
+
+packet 0 000000000101 000000000001 0800 4500001a0001000040110000 0a000101 0a000202 deadbeefcafe
+expect 2 000000000202 000000000101 0800 4500001a000100003f110000 0a000101 0a000202 deadbeefcafe
