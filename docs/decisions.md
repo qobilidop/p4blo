@@ -146,6 +146,17 @@ one that says so.
 - **Independent review after each step.** Step 1's review is kept at
   `docs/notes/reviews/step1.md`; its confirmed findings are fixed on
   main and its rulings are in `docs/semantics.md`.
+- **P4-SpecTec oracle pinned and translated.** Commit `2730cfd9`
+  (2026-09-22) built by `oracle/build.sh` with opam outside the flake.
+  Its simulator has no longest-prefix rule: lpm entries match as
+  ternary and ties need priorities, so `oracle/run.py` translates each
+  lpm `add` into a wildcard at the key's full width with
+  `priority = prefix length`. The oracle therefore confirms outputs but
+  does not independently check longest-prefix; BMv2 would. `no_packet`
+  is unsupported there and becomes a comment; the end-of-file leftover
+  check carries the assertion. Known gap: printed const lpm entries
+  carry no priorities, so a program whose const lpm entries overlap
+  will fail on this oracle until the printer adds them.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
