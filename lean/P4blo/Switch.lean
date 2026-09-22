@@ -21,7 +21,11 @@ The rules, all from docs/design.md:
   the packet goes to `egress_port`.
 
 The metadata contract fields are each optional and only checked when
-present, by name and type (docs/design.md, "Metadata contract").
+present, by name and type (docs/design.md, "Metadata contract"). As in
+`python/p4blo/arch/contract.py`, an undeclared field reads as its zero
+value and ignores writes: a program without `egress_port` unicasts to
+port 0. The deparser runs before the fate is read, as in
+`python/p4blo/arch/switch.py`, so its extern calls happen on a drop too.
 -/
 
 namespace P4blo
@@ -109,7 +113,7 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat) (pack
     initial ← setField initial f.position (.bits (Bits.wrap w ingress))
   let parsed ← runParser sw.index sw.parser packet initial externs
   if parsed.consumedBits % 8 != 0 then
-    let why := s!"the parser consumed {parsed.consumedBits} bits, not a multiple of eight; packet dropped"
+    let why := s!"parser consumed {parsed.consumedBits} bits, not whole bytes; packet dropped"
     return ({ outputs := [], diagnostic := some why }, parsed.externs)
   let mut provided := parsed.metadata
   if let some f := sw.parserError then
@@ -127,7 +131,7 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat) (pack
       | some f => do
         let port ← (← getField metadata f.position).expectBits
         pure [(port.value, out)]
-      | none => pure []
+      | none => pure [(0, out)]
   pure ({ outputs }, externs)
 
 end Switch
