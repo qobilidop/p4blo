@@ -38,27 +38,46 @@ def expectStack (v : Value) : M (String × List Value × Nat) := liftExcept v.ex
 /-- The value of a literal. -/
 def literalValue (lit : Literal) : Value := lit.toValue
 
+/-- The fields of widths `ws` read out of `raw`, first field in the high
+bits: field `i` is the `ws[i]` bits of `raw` just above its low
+`ws[i+1] + ⋯` bits. The pure core of `extract` and `lookahead`;
+`P4blo.Theorems` proves it the inverse of `packFields`. -/
+def unpackFields : List Nat → Nat → List Nat
+  | [], _ => []
+  | w :: ws, raw => (raw >>> ws.sum) % 2 ^ w :: unpackFields ws raw
+
+/-- The `(width, value)` pairs concatenated, first pair in the high bits:
+`packFields [(w₁, v₁), …, (wₖ, vₖ)]` is `v₁ <<< (w₂ + ⋯ + wₖ) ||| ⋯ ||| vₖ`.
+The pure core of `emit`. -/
+def packFields : List (Nat × Nat) → Nat
+  | [] => 0
+  | (_, v) :: fs => (v <<< (fs.map Prod.fst).sum) ||| packFields fs
+
+/-- Field `f` holding `chunk`, a `width`-bit number: a boolean is `1`,
+anything else is bits. -/
+def fieldFromBits (f : Field) (width chunk : Nat) : Value :=
+  if f.type == .boolean then .bool (chunk == 1) else .bits (Bits.wrap width chunk)
+
 /-- A valid header of `typeName` whose fields hold `raw`, first field in
 the high bits (docs/semantics.md, "Extract sets the target valid"). -/
 def headerFromBits (typeName : String) (raw : Nat) (index : Index) : Except String Value := do
   let some decl := index.headerTypes[typeName]? | throw s!"unknown header type '{typeName}'"
-  let mut remaining ← widthOf (.header typeName) index
-  let mut fields : List Value := []
-  for f in decl.fields do
-    let width ← widthOf f.type index
-    remaining := remaining - width
-    let chunk := (raw >>> remaining) % 2 ^ width
-    fields := fields ++ [if f.type == .boolean then .bool (chunk == 1) else .bits (Bits.wrap width chunk)]
+  let widths ← decl.fields.mapM fun f => widthOf f.type index
+  let fields := (decl.fields.zip (widths.zip (unpackFields widths raw))).map fun p =>
+    fieldFromBits p.1 p.2.1 p.2.2
   pure (.header typeName true fields)
+
+/-- The `(width, value)` of one header field; a boolean is one bit. -/
+def fieldBits : Value → Except String (Nat × Nat)
+  | .bool b => pure (1, if b then 1 else 0)
+  | .bits b => pure (b.width, b.value)
+  | v => throw s!"expected bits, got {v.kindName}"
 
 /-- The `(width, value)` of a header's fields concatenated, first field in
 the high bits; the inverse of `headerFromBits`. -/
-def headerToBits (fields : List Value) : Except String (Nat × Nat) :=
-  fields.foldlM (init := (0, 0)) fun (width, value) f =>
-    match f with
-    | .bool b => pure (width + 1, (value <<< 1) ||| (if b then 1 else 0))
-    | .bits b => pure (width + b.width, (value <<< b.width) ||| b.value)
-    | v => throw s!"expected bits, got {v.kindName}"
+def headerToBits (fields : List Value) : Except String (Nat × Nat) := do
+  let fs ← fields.mapM fieldBits
+  pure ((fs.map Prod.fst).sum, packFields fs)
 
 /-- The value of `ty` that `raw` spells: what `lookahead<T>` returns. -/
 def valueFromBits (ty : Ty) (raw : Nat) (index : Index) : Except String Value :=
