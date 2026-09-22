@@ -42,6 +42,13 @@ class Expr:
 
     `node` is None for `stack.next`, which the schema allows only as an
     lvalue; `lvalue` is None for anything that is not a path.
+
+    A field is reached as an attribute, `hdr.ipv4.ttl`, except when its
+    name is one of this class's own: `type`, `types`, `node`, `lvalue`,
+    `pb`, `lval`, `width`, `next`, `last`, `last_index`, `is_literal`,
+    `is_valid`, `cast`, `add_sat`, `sub_sat` and `field` itself. Those
+    attributes win, so `hdr.eth.type` is the expression's `pb.Type`, not
+    the member; `hdr.eth.field("type")` always means the field.
     """
 
     __slots__ = ("types", "type", "node", "lvalue")
@@ -92,6 +99,10 @@ class Expr:
     def __getattr__(self, name: str) -> Expr:
         if name.startswith("_"):
             raise AttributeError(name)
+        return self.field(name)
+
+    def field(self, name: str) -> Expr:
+        """The field `name` of a header or struct value, whatever its name."""
         fields = self.types.fields(self.type)
         if fields is None:
             raise EdslError(f"{type_str(self.type)} has no fields, so no field {name!r}")
@@ -145,6 +156,12 @@ class Expr:
         """`stack.lastIndex`, a bit<32>."""
         self._stack("last_index")
         return Expr(self.types, BIT32, pb.Expr(last_index=pb.LastIndex(stack=self.pb)))
+
+    @property
+    def last(self) -> Expr:
+        """`stack.last`, which is `stack[stack.lastIndex]`: an lvalue when
+        the stack is one."""
+        return self[self.last_index]
 
     def is_valid(self) -> Expr:
         if self.type.WhichOneof("kind") != "header":
@@ -345,10 +362,19 @@ def constant(types: TypeTable, value: Operand, type: pb.Type) -> pb.Literal:
     return expr.pb.literal
 
 
-def concat(left: Expr, right: Expr) -> Expr:
-    """`left ++ right`, of width the sum, `left` in the high bits."""
+def concat(left: Expr, right: Expr, *rest: Expr) -> Expr:
+    """`left ++ right ++ ...`, of width the sum, the first operand in the
+    high bits. More than two operands chain from the left, as P4's `++`
+    associates: `concat(a, b, c)` is `concat(concat(a, b), c)`."""
+    out = _concat(left, right)
+    for operand in rest:
+        out = _concat(out, operand)
+    return out
+
+
+def _concat(left: Expr, right: Expr) -> Expr:
     if not isinstance(left, Expr) or not isinstance(right, Expr):
-        raise EdslError("concat needs two Exprs; an int has no width of its own here")
+        raise EdslError("concat needs Exprs; an int has no width of its own here")
     if not (is_bits(left.type) and is_bits(right.type)):
         raise EdslError(f"concat needs bit<N> operands, got {left!r} and {right!r}")
     node = pb.Expr(binary=pb.Binary(op=pb.BINARY_OP_CONCAT, left=left.pb, right=right.pb))

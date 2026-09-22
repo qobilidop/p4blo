@@ -242,8 +242,11 @@ class Stmts:
 
     def __init__(self, block: Block, stmts: list[pb.Stmt]) -> None:
         self.block = block
+        # One statement list per open block, innermost last, and beside each
+        # the `if` its last statement is, so that `else_` knows what it
+        # continues at its own nesting level and nothing deeper.
         self._targets: list[list[pb.Stmt]] = [stmts]
-        self._open_if: pb.Stmt | None = None
+        self._open_ifs: list[pb.Stmt | None] = [None]
 
     @property
     def types(self) -> TypeTable:
@@ -270,7 +273,18 @@ class Stmts:
 
     def _emit(self, stmt: pb.Stmt) -> None:
         self._targets[-1].append(stmt)
-        self._open_if = None
+        self._open_ifs[-1] = None
+
+    @contextmanager
+    def _nested(self, stmts: list[pb.Stmt]) -> Iterator[None]:
+        """Statements emitted inside the `with` go to `stmts`."""
+        self._targets.append(stmts)
+        self._open_ifs.append(None)
+        try:
+            yield
+        finally:
+            self._targets.pop()
+            self._open_ifs.pop()
 
     def assign(self, target: Expr, value: Operand) -> None:
         """`target = value`; an int value takes the target's type."""
@@ -279,35 +293,80 @@ class Stmts:
         rhs = literal(self.types, value, target.type)
         self._emit(pb.Stmt(assign=pb.Assign(target=target.lval, value=rhs.pb)))
 
+    def assign_slice(self, target: Expr, hi: int, lo: int, value: int) -> None:
+        """`target[hi:lo] = value`, the named elaboration of P4's slice lvalue.
+
+        The IR has no slice lvalue: a slice may be read, never written. P4
+        allows the write, and it means the read-modify-write
+
+            target = (target & ~mask) | (value << lo)
+
+        where `mask` covers bits `hi` down to `lo`. That is what this emits,
+        with `mask`, `value` and `lo` each a `bit<W>` literal at the target's
+        width W, so that nothing is inferred and no cast appears. `value` is
+        an int that fits the slice.
+        """
+        if not isinstance(target, Expr) or target.lvalue is None:
+            raise EdslError(f"assign_slice needs a bit<N> lvalue target, got {target!r}")
+        if not is_bits(target.type):
+            raise EdslError(f"assign_slice needs a bit<N> target, got {type_str(target.type)}")
+        width = target.type.bits
+        if not (isinstance(hi, int) and isinstance(lo, int) and 0 <= lo <= hi < width):
+            raise EdslError(f"slice [{hi}:{lo}] is out of range for {type_str(target.type)}")
+        size = hi - lo + 1
+        if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < (1 << size):
+            raise EdslError(f"{value!r} does not fit in the {size}-bit slice [{hi}:{lo}]")
+        mask = literal(self.types, ((1 << size) - 1) << lo, target.type)
+        shifted = literal(self.types, value, target.type) << lo
+        self.assign(target, (target & ~mask) | shifted)
+
     @contextmanager
     def if_(self, condition: Operand) -> Iterator[Self]:
         """`if (condition) { ... }`; statements inside the `with` form the branch."""
         cond = literal(self.types, condition, boolean)
         stmt = pb.Stmt(conditional=pb.If(condition=cond.pb))
         then: list[pb.Stmt] = []
-        self._targets.append(then)
-        try:
+        with self._nested(then):
             yield self
-        finally:
-            self._targets.pop()
         stmt.conditional.then.extend(then)
         self._emit(stmt)
-        self._open_if = stmt
+        self._open_ifs[-1] = stmt
+
+    def _continue_if(self, what: str) -> pb.Stmt:
+        """The `if` at this nesting level that `what` continues; it takes it,
+        so that only one `else_` can."""
+        stmt = self._open_ifs[-1]
+        if stmt is None:
+            raise EdslError(f"{what} must follow an if_ block directly")
+        self._open_ifs[-1] = None
+        return stmt
 
     @contextmanager
     def else_(self) -> Iterator[Self]:
-        """The `else` of the `if_` block just closed."""
-        stmt = self._open_if
-        if stmt is None:
-            raise EdslError("else_ must follow an if_ block directly")
-        self._open_if = None
+        """The `else` of the `if_` block just closed at this nesting level."""
+        stmt = self._continue_if("else_")
         otherwise: list[pb.Stmt] = []
-        self._targets.append(otherwise)
-        try:
+        with self._nested(otherwise):
             yield self
-        finally:
-            self._targets.pop()
         stmt.conditional.otherwise.extend(otherwise)
+
+    @contextmanager
+    def elif_(self, condition: Operand) -> Iterator[Self]:
+        """`else if (condition) { ... }`: an `else_` holding one `if_`.
+
+        The ladder nests as P4's does, each arm the sole statement of the
+        previous arm's `else`, and the next `elif_` or `else_` at this
+        level continues the innermost `if`.
+        """
+        stmt = self._continue_if("elif_")
+        otherwise: list[pb.Stmt] = []
+        with self._nested(otherwise):
+            with self.if_(condition):
+                yield self
+        stmt.conditional.otherwise.extend(otherwise)
+        # `extend` copies, so the arm the ladder continues is the copy now
+        # inside `stmt`, not the message `if_` built.
+        self._open_ifs[-1] = stmt.conditional.otherwise[-1]
 
     def _args(self, params: Sequence[pb.Param], args: Sequence[Operand], what: str) -> list[pb.Arg]:
         """Arguments against parameters: in and directionless take an

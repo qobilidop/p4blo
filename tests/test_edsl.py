@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import importlib.util
 from collections.abc import Callable
+from functools import reduce
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 from google.protobuf import text_format
@@ -36,7 +38,16 @@ from p4blo.edsl import (
 from p4blo.edsl import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "corpus" / "forwarder"
+CORPUS = Path(__file__).resolve().parent.parent / "corpus"
+
+
+def corpus_module(name: str) -> ModuleType:
+    """The eDSL source of corpus program `name`, imported."""
+    spec = importlib.util.spec_from_file_location(name, CORPUS / name / f"{name}.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def block(text: str) -> pb.Block:
@@ -84,11 +95,8 @@ def base() -> Program:
 
 
 def test_forwarder_equals_the_golden() -> None:
-    spec = importlib.util.spec_from_file_location("forwarder", CORPUS / "forwarder.py")
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    assert module.build() == ir.load_text(CORPUS / "forwarder.txtpb")
+    golden = ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
+    assert corpus_module("forwarder").build() == golden
 
 
 # ---------------------------------------------------------------------------
@@ -646,6 +654,280 @@ def test_lpm_entries_and_reflected_operators() -> None:
         """,
         pb.Table(),
     )
+
+
+# ---------------------------------------------------------------------------
+# Control flow
+# ---------------------------------------------------------------------------
+
+
+def stmt(text: str) -> pb.Stmt:
+    return text_format.Parse(text, pb.Stmt())
+
+
+def cond(value: int) -> str:
+    return f"binary {{ op: BINARY_OP_EQ left {{ {META_X} }} right {{ {bits(8, value)} }} }}"
+
+
+def set_x(value: int) -> str:
+    return f"assign {{ target {{ {META_X} }} value {{ {bits(8, value)} }} }}"
+
+
+def test_else_follows_its_own_if_in_both_branches() -> None:
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                with b.if_(x == 2):
+                    b.assign(x, 20)
+                with b.else_():
+                    b.assign(x, 21)
+            with b.else_():
+                with b.if_(x == 3):
+                    b.assign(x, 30)
+                with b.else_():
+                    b.assign(x, 31)
+            with b.if_(x == 4):
+                b.assign(x, 40)
+    body = p.build().blocks[0].body
+    assert len(body) == 2
+    assert body[0] == stmt(
+        f"""
+        conditional {{
+          condition {{ {cond(1)} }}
+          then {{
+            conditional {{
+              condition {{ {cond(2)} }}
+              then {{ {set_x(20)} }}
+              otherwise {{ {set_x(21)} }}
+            }}
+          }}
+          otherwise {{
+            conditional {{
+              condition {{ {cond(3)} }}
+              then {{ {set_x(30)} }}
+              otherwise {{ {set_x(31)} }}
+            }}
+          }}
+        }}
+        """
+    )
+    assert body[1] == stmt(f"conditional {{ condition {{ {cond(4)} }} then {{ {set_x(40)} }} }}")
+
+
+def test_elif_nests_as_the_else_if_ladder() -> None:
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                b.assign(x, 10)
+            with b.elif_(x == 2):
+                # An if_ inside an arm does not capture the ladder's next arm.
+                with b.if_(x == 5):
+                    b.assign(x, 50)
+            with b.elif_(x == 3):
+                b.assign(x, 30)
+            with b.else_():
+                b.assign(x, 40)
+            with pytest.raises(EdslError, match="elif_ must follow an if_"):
+                with b.elif_(x == 6):
+                    pass
+    body = p.build().blocks[0].body
+    assert len(body) == 1
+    assert body[0] == stmt(
+        f"""
+        conditional {{
+          condition {{ {cond(1)} }}
+          then {{ {set_x(10)} }}
+          otherwise {{
+            conditional {{
+              condition {{ {cond(2)} }}
+              then {{ conditional {{ condition {{ {cond(5)} }} then {{ {set_x(50)} }} }} }}
+              otherwise {{
+                conditional {{
+                  condition {{ {cond(3)} }}
+                  then {{ {set_x(30)} }}
+                  otherwise {{ {set_x(40)} }}
+                }}
+              }}
+            }}
+          }}
+        }}
+        """
+    )
+
+
+def test_else_after_a_closed_else_is_refused() -> None:
+    # The inner if_ is the last statement of the else; closing the else
+    # must not leave it open for a stray else_ at the outer level.
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                b.assign(x, 10)
+            with b.else_():
+                with b.if_(x == 2):
+                    b.assign(x, 20)
+            with pytest.raises(EdslError, match="else_ must follow an if_"):
+                with b.else_():
+                    b.assign(x, 30)
+    assert p.build().blocks[0].body[0] == stmt(
+        f"""
+        conditional {{
+          condition {{ {cond(1)} }}
+          then {{ {set_x(10)} }}
+          otherwise {{ conditional {{ condition {{ {cond(2)} }} then {{ {set_x(20)} }} }} }}
+        }}
+        """
+    )
+
+
+def test_else_at_the_start_of_a_branch_is_refused() -> None:
+    # A sibling if_ outside the branch is not the one just closed inside it.
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                b.assign(x, 10)
+            with b.if_(x == 2):
+                with pytest.raises(EdslError, match="else_ must follow an if_"):
+                    with b.else_():
+                        b.assign(x, 20)
+                b.assign(x, 21)
+    assert p.build().blocks[0].body[1] == stmt(
+        f"conditional {{ condition {{ {cond(2)} }} then {{ {set_x(21)} }} }}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Expressions
+# ---------------------------------------------------------------------------
+
+
+def test_stack_last_is_the_element_at_last_index() -> None:
+    p = base()
+    c = p.control("C")
+    last = c.hdr.stack.last
+    spelled = c.hdr.stack[c.hdr.stack.last_index]
+    assert last.type == spelled.type == pb.Type(header="v")
+    assert last.pb == spelled.pb
+    assert last.lval == spelled.lval
+    assert last.tag.pb == text_format.Parse(
+        f"""
+        member {{
+          base {{
+            index {{ base {{ {HDR_STACK} }} index {{ last_index {{ stack {{ {HDR_STACK} }} }} }} }}
+          }}
+          field: "tag"
+        }}
+        """,
+        pb.Expr(),
+    )
+    with pytest.raises(EdslError, match="needs a stack"):
+        _ = c.hdr.h.last
+
+
+def test_field_reaches_a_field_an_attribute_shadows() -> None:
+    p = Program("t")
+    eth = p.header("eth", type=bit(16), next=bit(8), src=bit(48))
+    p.headers = p.struct("H", eth=eth)
+    p.metadata = p.struct("M")
+    c = p.control("C")
+    # The wart: the builder's own attribute wins over the field.
+    assert c.hdr.eth.type == pb.Type(header="eth")
+    with pytest.raises(EdslError, match="needs a stack"):
+        _ = c.hdr.eth.next
+    # field() always means the IR field, and is what the attribute means otherwise.
+    for name in ("type", "next", "src"):
+        f = c.hdr.eth.field(name)
+        assert f.type == eth.fields[name]
+        assert f.pb == text_format.Parse(member(member(var("hdr"), "eth"), name), pb.Expr())
+        assert f.lval == text_format.Parse(member(member(var("hdr"), "eth"), name), pb.LValue())
+    assert c.hdr.eth.field("src").pb == c.hdr.eth.src.pb
+    with pytest.raises(EdslError, match="no field 'nope'"):
+        c.hdr.eth.field("nope")
+    with pytest.raises(EdslError, match="has no fields"):
+        c.hdr.eth.src.field("type")
+
+
+def test_concat_chains_from_the_left() -> None:
+    p = base()
+    c = p.control("C")
+    f, g, tag = c.hdr.h.f, c.hdr.h.g, c.hdr.stack[0].tag
+    three = concat(f, g, tag)
+    assert three.type == bit(28)
+    assert three.pb == concat(concat(f, g), tag).pb
+    assert three.pb == reduce(concat, [f, g, tag]).pb
+    with pytest.raises(EdslError, match="needs Exprs"):
+        concat(f, 1, g)  # pyright: ignore[reportArgumentType]
+
+
+def test_assign_slice_is_the_read_modify_write() -> None:
+    # The shape the stacks corpus writes by hand: every literal at the
+    # target's width, the shift kept even when `lo` is 0.
+    p = base()
+    with p.control("C") as c:
+        f = c.hdr.h.f
+        with c.body() as b:
+            b.assign_slice(f, 5, 3, 0b101)
+            b.assign_slice(f, 0, 0, 1)
+            corpus_module("stacks").set_slice(b, f, 5, 3, 0b101)
+    body = p.build().blocks[0].body
+    assert body[0] == stmt(
+        f"""
+        assign {{
+          target {{ {HDR_H_F} }}
+          value {{
+            binary {{
+              op: BINARY_OP_BIT_OR
+              left {{
+                binary {{
+                  op: BINARY_OP_BIT_AND
+                  left {{ {HDR_H_F} }}
+                  right {{ unary {{ op: UNARY_OP_COMPLEMENT operand {{ {bits(8, 0b111000)} }} }} }}
+                }}
+              }}
+              right {{
+                binary {{ op: BINARY_OP_SHL left {{ {bits(8, 0b101)} }} right {{ {bits(8, 3)} }} }}
+              }}
+            }}
+          }}
+        }}
+        """
+    )
+    assert body[1] == stmt(
+        f"""
+        assign {{
+          target {{ {HDR_H_F} }}
+          value {{
+            binary {{
+              op: BINARY_OP_BIT_OR
+              left {{
+                binary {{
+                  op: BINARY_OP_BIT_AND
+                  left {{ {HDR_H_F} }}
+                  right {{ unary {{ op: UNARY_OP_COMPLEMENT operand {{ {bits(8, 1)} }} }} }}
+                }}
+              }}
+              right {{
+                binary {{ op: BINARY_OP_SHL left {{ {bits(8, 1)} }} right {{ {bits(8, 0)} }} }}
+              }}
+            }}
+          }}
+        }}
+        """
+    )
+    assert body[2] == body[0]
+    with pytest.raises(EdslError, match="out of range"):
+        b.assign_slice(f, 8, 0, 1)
+    with pytest.raises(EdslError, match="does not fit"):
+        b.assign_slice(f, 2, 1, 4)
+    with pytest.raises(EdslError, match="lvalue"):
+        b.assign_slice(f + 1, 2, 1, 1)
 
 
 # ---------------------------------------------------------------------------
