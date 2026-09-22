@@ -30,11 +30,12 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 
 | Program | Source | Rewritten | Vectors | Oracle |
 |---|---|---|---|---|
-| forwarder | p4lang tutorial basic | eDSL source rebuilds the golden; no checksum yet | 5 hand-derived STF files, passing | pending |
+| forwarder | p4lang tutorial basic | golden generated from the eDSL source; checksum16 computes hdrChecksum, verify deferred | 5 hand-derived STF files with correct IPv4 checksums, passing | pending |
 | acl | p4c `ternary2-bmv2` | no | p4c STF, 6 adds, 4 packets | pending |
 | stacks | p4c `header-stack-ops-bmv2` | no | p4c STF, 15 packets | pending |
-| stateful | p4c `issue1097-2-bmv2` + own vectors | no | p4c STF, 2 packets | pending |
-| companions | `parser_error-bmv2`, `issue1824-bmv2`, `table-entries-priority-bmv2`, `issue655-bmv2`, lpm const-entries | no | p4c STF | pending |
+| stateful | p4c `issue1097-2-bmv2` + own vectors | eDSL source rebuilds the golden; register and counter bound | p4c STF, 2 packets, plus 6 of ours across packets, passing | pending |
+| csum16 | p4c `issue655-bmv2` | eDSL source rebuilds the golden; checksum16 bound | p4c STF, 6 packets, passing | pending |
+| companions | `parser_error-bmv2`, `issue1824-bmv2`, `table-entries-priority-bmv2`, lpm const-entries | no | p4c STF | pending |
 
 ## Blocked
 
