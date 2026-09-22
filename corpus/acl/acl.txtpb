@@ -1,0 +1,921 @@
+name: "acl"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "data_h"
+  fields {
+    name: "f1"
+    type {
+      bits: 32
+    }
+  }
+  fields {
+    name: "f2"
+    type {
+      bits: 32
+    }
+  }
+  fields {
+    name: "h1"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "b1"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "b2"
+    type {
+      bits: 8
+    }
+  }
+}
+header_types {
+  name: "extra_h"
+  fields {
+    name: "h"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "b1"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "b2"
+    type {
+      bits: 8
+    }
+  }
+}
+struct_types {
+  name: "packet_t"
+  fields {
+    name: "data"
+    type {
+      header: "data_h"
+    }
+  }
+  fields {
+    name: "extra"
+    type {
+      stack {
+        header: "extra_h"
+        size: 4
+      }
+    }
+  }
+}
+struct_types {
+  name: "Meta"
+  fields {
+    name: "egress_port"
+    type {
+      bits: 9
+    }
+  }
+}
+blocks {
+  name: "p"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdrs"
+    type {
+      struct: "packet_t"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Meta"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdrs"
+            }
+            field: "data"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        state: "extra"
+      }
+    }
+  }
+  states {
+    name: "extra"
+    body {
+      extract {
+        target {
+          next {
+            stack {
+              member {
+                base {
+                  var: "hdrs"
+                }
+                field: "extra"
+              }
+            }
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  last_index {
+                    stack {
+                      member {
+                        base {
+                          var: "hdrs"
+                        }
+                        field: "extra"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            field: "b2"
+          }
+        }
+        cases {
+          sets {
+            masked {
+              value {
+                bits {
+                  width: 8
+                  value: "128"
+                }
+              }
+              mask {
+                bits {
+                  width: 8
+                  value: "128"
+                }
+              }
+            }
+          }
+          target {
+            state: "extra"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "ingress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdrs"
+    type {
+      struct: "packet_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Meta"
+    }
+    direction: DIRECTION_INOUT
+  }
+  locals {
+    name: "ex1_run"
+    type {
+      bits: 8
+    }
+  }
+  actions {
+    name: "setb1"
+    params {
+      name: "port"
+      type {
+        bits: 9
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdrs"
+                }
+                field: "data"
+              }
+            }
+            field: "b1"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          var: "port"
+        }
+      }
+    }
+  }
+  actions {
+    name: "noop"
+  }
+  actions {
+    name: "setbyte"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  literal {
+                    bits {
+                      width: 32
+                      value: "0"
+                    }
+                  }
+                }
+              }
+            }
+            field: "b1"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "ex1_run"
+        }
+        value {
+          literal {
+            bits {
+              width: 8
+              value: "4"
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "setbyte_1"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdrs"
+                }
+                field: "data"
+              }
+            }
+            field: "b2"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+  }
+  actions {
+    name: "setbyte_2"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  literal {
+                    bits {
+                      width: 32
+                      value: "1"
+                    }
+                  }
+                }
+              }
+            }
+            field: "b1"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+  }
+  actions {
+    name: "setbyte_3"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  literal {
+                    bits {
+                      width: 32
+                      value: "2"
+                    }
+                  }
+                }
+              }
+            }
+            field: "b2"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+  }
+  actions {
+    name: "act1"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  literal {
+                    bits {
+                      width: 32
+                      value: "0"
+                    }
+                  }
+                }
+              }
+            }
+            field: "b1"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "ex1_run"
+        }
+        value {
+          literal {
+            bits {
+              width: 8
+              value: "1"
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "act2"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  literal {
+                    bits {
+                      width: 32
+                      value: "0"
+                    }
+                  }
+                }
+              }
+            }
+            field: "b1"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "ex1_run"
+        }
+        value {
+          literal {
+            bits {
+              width: 8
+              value: "2"
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "act3"
+    params {
+      name: "val"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdrs"
+                    }
+                    field: "extra"
+                  }
+                }
+                index {
+                  literal {
+                    bits {
+                      width: 32
+                      value: "0"
+                    }
+                  }
+                }
+              }
+            }
+            field: "b1"
+          }
+        }
+        value {
+          var: "val"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "ex1_run"
+        }
+        value {
+          literal {
+            bits {
+              width: 8
+              value: "3"
+            }
+          }
+        }
+      }
+    }
+  }
+  tables {
+    name: "test1"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdrs"
+              }
+              field: "data"
+            }
+          }
+          field: "f1"
+        }
+      }
+      match_kind: MATCH_KIND_TERNARY
+      name: "data.f1"
+    }
+    actions: "setb1"
+    actions: "noop"
+    default_action {
+      action: "noop"
+    }
+  }
+  tables {
+    name: "ex1"
+    keys {
+      expr {
+        member {
+          base {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdrs"
+                  }
+                  field: "extra"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "0"
+                  }
+                }
+              }
+            }
+          }
+          field: "h"
+        }
+      }
+      match_kind: MATCH_KIND_TERNARY
+      name: "extra[0].h"
+    }
+    actions: "setbyte"
+    actions: "act1"
+    actions: "act2"
+    actions: "act3"
+    actions: "noop"
+    default_action {
+      action: "noop"
+    }
+  }
+  tables {
+    name: "tbl1"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdrs"
+              }
+              field: "data"
+            }
+          }
+          field: "f2"
+        }
+      }
+      match_kind: MATCH_KIND_TERNARY
+      name: "data.f2"
+    }
+    actions: "setbyte_1"
+    actions: "noop"
+    default_action {
+      action: "noop"
+    }
+  }
+  tables {
+    name: "tbl2"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdrs"
+              }
+              field: "data"
+            }
+          }
+          field: "f2"
+        }
+      }
+      match_kind: MATCH_KIND_TERNARY
+      name: "data.f2"
+    }
+    actions: "setbyte_2"
+    actions: "noop"
+    default_action {
+      action: "noop"
+    }
+  }
+  tables {
+    name: "tbl3"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdrs"
+              }
+              field: "data"
+            }
+          }
+          field: "f2"
+        }
+      }
+      match_kind: MATCH_KIND_TERNARY
+      name: "data.f2"
+    }
+    actions: "setbyte_3"
+    actions: "noop"
+    default_action {
+      action: "noop"
+    }
+  }
+  body {
+    apply {
+      table: "test1"
+    }
+  }
+  body {
+    assign {
+      target {
+        var: "ex1_run"
+      }
+      value {
+        literal {
+          bits {
+            width: 8
+            value: "0"
+          }
+        }
+      }
+    }
+  }
+  body {
+    apply {
+      table: "ex1"
+    }
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_EQ
+          left {
+            var: "ex1_run"
+          }
+          right {
+            literal {
+              bits {
+                width: 8
+                value: "1"
+              }
+            }
+          }
+        }
+      }
+      then {
+        apply {
+          table: "tbl1"
+        }
+      }
+      otherwise {
+        conditional {
+          condition {
+            binary {
+              op: BINARY_OP_EQ
+              left {
+                var: "ex1_run"
+              }
+              right {
+                literal {
+                  bits {
+                    width: 8
+                    value: "2"
+                  }
+                }
+              }
+            }
+          }
+          then {
+            apply {
+              table: "tbl2"
+            }
+          }
+          otherwise {
+            conditional {
+              condition {
+                binary {
+                  op: BINARY_OP_EQ
+                  left {
+                    var: "ex1_run"
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "3"
+                      }
+                    }
+                  }
+                }
+              }
+              then {
+                apply {
+                  table: "tbl3"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "deparser"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdrs"
+    type {
+      struct: "packet_t"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdrs"
+          }
+          field: "data"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdrs"
+          }
+          field: "extra"
+        }
+      }
+    }
+  }
+}
+headers: "packet_t"
+metadata: "Meta"
+exports {
+  role: "parser"
+  block: "p"
+}
+exports {
+  role: "control"
+  block: "ingress"
+}
+exports {
+  role: "deparser"
+  block: "deparser"
+}
