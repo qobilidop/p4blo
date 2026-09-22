@@ -145,6 +145,11 @@ def checkAction (i : Installed) (ref : TableRef) (decl : Table) (call : ActionCa
   if call.args.length != action.params.length then
     throw s!"action '{action.name}' takes {action.params.length} arguments"
   for (param, arg) in action.params.zip call.args do
+    match arg, param.type with
+    | .bits width _, .bits n =>
+      if width != n then
+        throw s!"argument for {action.name}.{param.name} is bit<{width}>, not bit<{n}>"
+    | _, _ => pure ()
     if !literalFits arg param.type then
       throw s!"argument for {action.name}.{param.name} has the wrong type"
 

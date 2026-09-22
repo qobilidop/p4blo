@@ -489,7 +489,7 @@ def tableTests : T Unit := do
   for (what, ref, keys, action, priority, fragment) in rejects do
     checkError s!"install rejects: {what}" (do (← installed).install ref (entry keys action priority)) fragment
   checkError "install rejects action data of the wrong width"
-    (do (← installed).install exact (entry [.exact 1] { action := "set", args := [.bits 16 1] })) "wrong type"
+    (do (← installed).install exact (entry [.exact 1] { action := "set", args := [.bits 16 1] })) "is bit<16>, not"
   checkError "install rejects a duplicate exact entry"
     (do (← (← installed).install exact (entry [.exact 1] (call "set" [1]))).install exact (entry [.exact 1] (call "set" [2])))
     "duplicate"
