@@ -293,6 +293,33 @@ class Stmts:
         rhs = literal(self.types, value, target.type)
         self._emit(pb.Stmt(assign=pb.Assign(target=target.lval, value=rhs.pb)))
 
+    def assign_slice(self, target: Expr, hi: int, lo: int, value: int) -> None:
+        """`target[hi:lo] = value`, the named elaboration of P4's slice lvalue.
+
+        The IR has no slice lvalue: a slice may be read, never written. P4
+        allows the write, and it means the read-modify-write
+
+            target = (target & ~mask) | (value << lo)
+
+        where `mask` covers bits `hi` down to `lo`. That is what this emits,
+        with `mask`, `value` and `lo` each a `bit<W>` literal at the target's
+        width W, so that nothing is inferred and no cast appears. `value` is
+        an int that fits the slice.
+        """
+        if not isinstance(target, Expr) or target.lvalue is None:
+            raise EdslError(f"assign_slice needs a bit<N> lvalue target, got {target!r}")
+        if not is_bits(target.type):
+            raise EdslError(f"assign_slice needs a bit<N> target, got {type_str(target.type)}")
+        width = target.type.bits
+        if not (isinstance(hi, int) and isinstance(lo, int) and 0 <= lo <= hi < width):
+            raise EdslError(f"slice [{hi}:{lo}] is out of range for {type_str(target.type)}")
+        size = hi - lo + 1
+        if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < (1 << size):
+            raise EdslError(f"{value!r} does not fit in the {size}-bit slice [{hi}:{lo}]")
+        mask = literal(self.types, ((1 << size) - 1) << lo, target.type)
+        shifted = literal(self.types, value, target.type) << lo
+        self.assign(target, (target & ~mask) | shifted)
+
     @contextmanager
     def if_(self, condition: Operand) -> Iterator[Self]:
         """`if (condition) { ... }`; statements inside the `with` form the branch."""

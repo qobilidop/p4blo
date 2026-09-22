@@ -11,6 +11,7 @@ import importlib.util
 from collections.abc import Callable
 from functools import reduce
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 from google.protobuf import text_format
@@ -37,7 +38,16 @@ from p4blo.edsl import (
 from p4blo.edsl import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "corpus" / "forwarder"
+CORPUS = Path(__file__).resolve().parent.parent / "corpus"
+
+
+def corpus_module(name: str) -> ModuleType:
+    """The eDSL source of corpus program `name`, imported."""
+    spec = importlib.util.spec_from_file_location(name, CORPUS / name / f"{name}.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def block(text: str) -> pb.Block:
@@ -85,11 +95,8 @@ def base() -> Program:
 
 
 def test_forwarder_equals_the_golden() -> None:
-    spec = importlib.util.spec_from_file_location("forwarder", CORPUS / "forwarder.py")
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    assert module.build() == ir.load_text(CORPUS / "forwarder.txtpb")
+    golden = ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
+    assert corpus_module("forwarder").build() == golden
 
 
 # ---------------------------------------------------------------------------
@@ -791,6 +798,70 @@ def test_concat_chains_from_the_left() -> None:
     assert three.pb == reduce(concat, [f, g, tag]).pb
     with pytest.raises(EdslError, match="needs Exprs"):
         concat(f, 1, g)  # pyright: ignore[reportArgumentType]
+
+
+def test_assign_slice_is_the_read_modify_write() -> None:
+    # The shape the stacks corpus writes by hand: every literal at the
+    # target's width, the shift kept even when `lo` is 0.
+    p = base()
+    with p.control("C") as c:
+        f = c.hdr.h.f
+        with c.body() as b:
+            b.assign_slice(f, 5, 3, 0b101)
+            b.assign_slice(f, 0, 0, 1)
+            corpus_module("stacks").set_slice(b, f, 5, 3, 0b101)
+    body = p.build().blocks[0].body
+    assert body[0] == stmt(
+        f"""
+        assign {{
+          target {{ {HDR_H_F} }}
+          value {{
+            binary {{
+              op: BINARY_OP_BIT_OR
+              left {{
+                binary {{
+                  op: BINARY_OP_BIT_AND
+                  left {{ {HDR_H_F} }}
+                  right {{ unary {{ op: UNARY_OP_COMPLEMENT operand {{ {bits(8, 0b111000)} }} }} }}
+                }}
+              }}
+              right {{
+                binary {{ op: BINARY_OP_SHL left {{ {bits(8, 0b101)} }} right {{ {bits(8, 3)} }} }}
+              }}
+            }}
+          }}
+        }}
+        """
+    )
+    assert body[1] == stmt(
+        f"""
+        assign {{
+          target {{ {HDR_H_F} }}
+          value {{
+            binary {{
+              op: BINARY_OP_BIT_OR
+              left {{
+                binary {{
+                  op: BINARY_OP_BIT_AND
+                  left {{ {HDR_H_F} }}
+                  right {{ unary {{ op: UNARY_OP_COMPLEMENT operand {{ {bits(8, 1)} }} }} }}
+                }}
+              }}
+              right {{
+                binary {{ op: BINARY_OP_SHL left {{ {bits(8, 1)} }} right {{ {bits(8, 0)} }} }}
+              }}
+            }}
+          }}
+        }}
+        """
+    )
+    assert body[2] == body[0]
+    with pytest.raises(EdslError, match="out of range"):
+        b.assign_slice(f, 8, 0, 1)
+    with pytest.raises(EdslError, match="does not fit"):
+        b.assign_slice(f, 2, 1, 4)
+    with pytest.raises(EdslError, match="lvalue"):
+        b.assign_slice(f + 1, 2, 1, 1)
 
 
 # ---------------------------------------------------------------------------
