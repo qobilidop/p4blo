@@ -166,6 +166,15 @@ class Key:
     match_kind: pb.MatchKind
     name: str = ""
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.expr, Expr):
+            hint = ""
+            if isinstance(self.expr, pb.Type):
+                # `hdr.eth.type` is the Expr's own attribute (expr.py, the
+                # shadowing rule), the usual way a pb.Type gets here.
+                hint = "; a field named like an Expr attribute is reached as .field(name)"
+            raise EdslError(f"a key is an Expr, got {self.expr!r}{hint}")
+
 
 def exact(expr: Expr, name: str = "") -> Key:
     return Key(expr, pb.MATCH_KIND_EXACT, name)

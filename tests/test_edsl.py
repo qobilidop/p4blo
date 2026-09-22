@@ -852,6 +852,15 @@ def test_field_reaches_a_field_an_attribute_shadows() -> None:
         c.hdr.eth.field("nope")
     with pytest.raises(EdslError, match="has no fields"):
         c.hdr.eth.src.field("type")
+    # A key built on the shadowed attribute fails where it is written, in
+    # the eDSL's words, not two calls later with an AttributeError.
+    c.action("nop")
+    for key in (exact, lpm, ternary):
+        with pytest.raises(EdslError, match=r"(?s)a key is an Expr, got .*\.field\(name\)"):
+            key(c.hdr.eth.type)  # pyright: ignore[reportArgumentType]
+    with pytest.raises(EdslError, match="a key is an Expr, got 3"):
+        exact(3)  # pyright: ignore[reportArgumentType]
+    c.table("t", keys=[exact(c.hdr.eth.field("type"))], actions=["nop"])
 
 
 def test_concat_chains_from_the_left() -> None:
