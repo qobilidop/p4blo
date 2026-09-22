@@ -221,10 +221,15 @@ def call_extern(ce: pb.CallExtern, env: Env) -> None:
         argument_value(param, arg, env) for param, arg in zip(method.params, ce.args, strict=True)
     ]
     result = env.externs[instance.name].call(ce.method, args)
-    outs = iter(result.outs)
-    for param, arg in zip(method.params, ce.args, strict=True):
-        if param.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT):
-            write_lvalue(arg.lvalue, next(outs), env)
+    written = [
+        arg
+        for param, arg in zip(method.params, ce.args, strict=True)
+        if param.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT)
+    ]
+    if len(result.outs) != len(written):
+        raise InterpError(f"method {ce.method!r} produced {len(result.outs)} out values")
+    for arg, value in zip(written, result.outs, strict=True):
+        write_lvalue(arg.lvalue, value, env)
     if ce.HasField("result"):
         if result.returns is None:
             raise InterpError(f"method {ce.method!r} returned nothing")
