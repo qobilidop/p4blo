@@ -2,7 +2,7 @@
 
 ## The pipe protocol
 
-`p4blo-lean run <program.json> [--ports N]` reads one JSON object per
+`p4blo-lean run [--ports N] <program.json>` reads one JSON object per
 line from stdin and writes one per line to stdout:
 
     request:  {"entries": <pb.Entries as protobuf JSON, proto field names>,
@@ -156,13 +156,13 @@ def parse_reply(line: str) -> Outcome:
 class LeanRunner:
     """A `p4blo-lean run` process, one case per round trip.
 
-    `command` is the executable and any leading arguments; `run <program>
-    --ports N` is appended. Use as a context manager so the process is
+    `command` is the executable and any leading arguments; `run --ports N
+    <program>` is appended. Use as a context manager so the process is
     always reaped.
     """
 
     def __init__(self, command: Sequence[str | Path], program_json: Path, ports: int) -> None:
-        self.command = [str(c) for c in command] + ["run", str(program_json), "--ports", str(ports)]
+        self.command = [str(c) for c in command] + ["run", "--ports", str(ports), str(program_json)]
         self.process: subprocess.Popen[str] | None = None
         self.stderr: IO[bytes] | None = None
 
@@ -229,7 +229,7 @@ class LeanRunner:
     def probe(command: Sequence[str | Path], program_json: Path, ports: int = 4) -> str | None:
         """None when `command` accepts `run` on the program and exits cleanly
         at end of input; otherwise why not, for a skip message."""
-        argv = [str(c) for c in command] + ["run", str(program_json), "--ports", str(ports)]
+        argv = [str(c) for c in command] + ["run", "--ports", str(ports), str(program_json)]
         try:
             done = subprocess.run(
                 argv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60
