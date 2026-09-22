@@ -1111,21 +1111,30 @@ VLAN_TYPE_AT_0 = member(index(HDR_VLAN, lit(32, "0")), "type")
 VLAN_TYPE_AT_1 = member(index(HDR_VLAN, lit(32, "1")), "type")
 
 
+def with_two(program: pb.Program) -> pb.Program:
+    """Add an action `two(inout bit<16> a, inout bit<16> b)` to `ing`, and
+    make Counter.read take bit<16>, so header fields fit both."""
+    action = program.blocks[ING].actions.add(name="two")
+    action.params.add(name="a", type=pb.Type(bits=16), direction=pb.DIRECTION_INOUT)
+    action.params.add(name="b", type=pb.Type(bits=16), direction=pb.DIRECTION_INOUT)
+    read_bits16(program)
+    return program
+
+
 @pytest.mark.parametrize(
     "text",
     [
         call_block("sub", arg_out(HDR), arg_out(HDR)),
-        call_extern("read", arg_in(T16), arg_out(T16)),
-        # the whole header and one of its fields
-        call_extern("read", arg_in(member(HDR_ETH, "type")), arg_out(member(HDR_ETH, "type"))),
+        call_action("two", arg_out(T16), arg_out(T16)),
+        # a header field and the whole header
+        call_action("two", arg_out(member(HDR_ETH, "type")), arg_out(member(HDR_ETH, "type"))),
         # the same stack element, once by computed index and once by literal
-        call_extern("read", arg_in(VLAN_TYPE_AT_IDX), arg_out(VLAN_TYPE_AT_1)),
-        call_extern("read", arg_in(VLAN_TYPE_AT_1), arg_out(VLAN_TYPE_AT_IDX)),
+        call_action("two", arg_out(VLAN_TYPE_AT_IDX), arg_out(VLAN_TYPE_AT_1)),
+        call_action("two", arg_out(VLAN_TYPE_AT_1), arg_out(VLAN_TYPE_AT_IDX)),
     ],
 )
 def test_call_alias(text: str) -> None:
-    program = valid()
-    read_bits16(program)
+    program = with_two(valid())
     add_stmt(program, ING, text)
     assert v.CALL_ALIAS in codes(program)
 
@@ -1133,17 +1142,19 @@ def test_call_alias(text: str) -> None:
 @pytest.mark.parametrize(
     "text",
     [
+        # an in argument may overlap an out one: it is copied in first
+        call_extern("read", arg_in(T16), arg_out(T16)),
+        call_extern("read", arg_in(member(HDR_ETH, "type")), arg_out(member(HDR_ETH, "type"))),
+        call_extern("read", arg_in(VLAN_TYPE_AT_IDX), arg_out(VLAN_TYPE_AT_1)),
+        call_extern("read", arg_in(VLAN_TYPE_AT_1), arg_out(VLAN_TYPE_AT_IDX)),
         # sibling fields of one header
-        call_extern("read", arg_in(member(HDR_ETH, "type")), arg_out(VLAN_TYPE_AT_0)),
+        call_action("two", arg_out(member(HDR_ETH, "type")), arg_out(VLAN_TYPE_AT_0)),
         # different stack elements by literal index
-        call_extern("read", arg_in(VLAN_TYPE_AT_0), arg_out(VLAN_TYPE_AT_1)),
-        # a computed value cannot alias
-        call_extern("read", arg_in(binary("ADD", VLAN_TYPE_AT_1, B16)), arg_out(VLAN_TYPE_AT_1)),
+        call_action("two", arg_out(VLAN_TYPE_AT_0), arg_out(VLAN_TYPE_AT_1)),
     ],
 )
 def test_no_alias(text: str) -> None:
-    program = valid()
-    read_bits16(program)
+    program = with_two(valid())
     add_stmt(program, ING, text)
     assert codes(program) == []
 

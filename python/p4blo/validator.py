@@ -982,15 +982,16 @@ class _Validator:
         Aliasing is judged statically and conservatively: two arguments may
         alias when their access paths (variable, then fields and indices)
         agree wherever both are known; a computed index is unknown and
-        matches any index. An `in` argument takes part only when it is
-        itself an lvalue-shaped expression; a computed value cannot alias.
-        Any `out` argument that may alias another argument is an error, so
-        copy-in/copy-out order never matters.
+        matches any index. Only `out` and `inout` arguments take part: an
+        `in` argument is copied in before anything is written back, so its
+        overlapping an out argument changes nothing (§6.8). Two out or inout
+        arguments that may alias are an error, so copy-back order never
+        matters (docs/semantics.md, "Block calls").
         """
         if len(args) != len(params):
             self.report(ARG_COUNT, f"expected {len(params)} arguments, got {len(args)}", path)
             return
-        accesses: list[tuple[str, Access | None, bool]] = []
+        accesses: list[tuple[str, Access | None]] = []
         for i, (arg, param) in enumerate(zip(args, params, strict=True)):
             apath = f"{path}.args[{i}]"
             kind = arg.WhichOneof("kind")
@@ -1016,24 +1017,20 @@ class _Validator:
                 continue
             if kind == "expr":
                 t = self.type_of(arg.expr, scope, f"{apath}.expr")
-                access = self.expr_access(arg.expr)
             else:
                 t = self.type_of_lvalue(arg.lvalue, scope, f"{apath}.lvalue")
-                access = self.lvalue_access(arg.lvalue)
+                accesses.append((apath, self.lvalue_access(arg.lvalue)))
             if t is not None and self.type_ok(param.type) and not same_type(t, param.type):
                 self.report(
                     ARG_TYPE,
                     f"argument is {describe(t)}, param {param.name!r} is {describe(param.type)}",
                     apath,
                 )
-            accesses.append((apath, access, wants_out))
-        for j, (apath, b, b_out) in enumerate(accesses):
-            for _, a, a_out in accesses[:j]:
-                if a is None or b is None or not (a_out or b_out):
-                    continue
-                if may_alias(a, b):
-                    self.report(CALL_ALIAS, "argument may alias an earlier out argument", apath)
-                    break
+        for j, (apath, b) in enumerate(accesses):
+            if b is None:
+                continue
+            if any(a is not None and may_alias(a, b) for _, a in accesses[:j]):
+                self.report(CALL_ALIAS, "argument may alias an earlier out argument", apath)
 
     def check_extract(self, stmt: pb.Extract, scope: Scope, path: str) -> None:
         """The target is a header lvalue, or `stack.next`, which is allowed
@@ -1339,20 +1336,6 @@ class _Validator:
             case "next":
                 base = self.lvalue_access(lvalue.next.stack)
                 return None if base is None else (*base, None)
-            case _:
-                return None
-
-    def expr_access(self, expr: pb.Expr) -> Access | None:
-        """The storage an lvalue-shaped expression reads, else None."""
-        match expr.WhichOneof("kind"):
-            case "var":
-                return (expr.var,)
-            case "member":
-                base = self.expr_access(expr.member.base)
-                return None if base is None else (*base, expr.member.field)
-            case "index":
-                base = self.expr_access(expr.index.base)
-                return None if base is None else (*base, self.static_index(expr.index.index))
             case _:
                 return None
 

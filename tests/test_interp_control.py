@@ -321,6 +321,23 @@ def test_direct_action_call_passes_directional_arguments() -> None:
     assert out.n == Bits(8, 42) and out.flag is True
 
 
+def test_an_in_argument_overlapping_an_inout_one_is_copied_in_first() -> None:
+    decls = """
+    actions {
+      name: "add_to"
+      params { name: "a" type { bits: 8 } direction: DIRECTION_IN }
+      params { name: "b" type { bits: 8 } direction: DIRECTION_INOUT }
+      body { assign { target { var: "b" } value { binary {
+        op: BINARY_OP_ADD left { var: "a" } right { var: "b" } } } } }
+    }
+    """
+    call = stmt(
+        f'call_action {{ action: "add_to" '
+        f"args {{ expr {{ {META_N} }} }} args {{ lvalue {{ {META_N} }} }} }}"
+    )
+    assert run(assign(META_N, bits(8, 21)) + call, decls).n == Bits(8, 42)
+
+
 def test_an_out_parameter_starts_at_zero() -> None:
     decls = """
     actions {

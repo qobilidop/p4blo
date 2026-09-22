@@ -172,8 +172,10 @@ else, and every extern instance is state supplied by the caller.
 
 - **Block calls.** A sub-block call copies `in` arguments in, runs the
   block, and copies `out` and `inout` arguments back in parameter
-  order. Two arguments that alias the same storage are a validator
-  error, so copy order never matters (§6.8).
+  order. Two `out` or `inout` arguments that alias the same storage
+  are a validator error, so copy order never matters; an `in` argument
+  may overlap them, since it is copied in before anything is written
+  (§6.8).
 - **Action calls** from a control body pass arguments in the same
   way. Actions invoked by a table receive their action data as
   directionless parameters, which are read-only like `in` parameters.
