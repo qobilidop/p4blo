@@ -1,14 +1,651 @@
 // p4blo v0: P4's semantic core as an IR, architecture-free.
 //
-// This file is the normative syntax of the IR. Its shape is designed for the
-// whole of P4's core and is expected to change while v0 lasts.
+// This file is the normative syntax of the IR. It is post-elaboration: every
+// width is resolved, every name is an id, there are no generics, no
+// arbitrary-precision int, no implicit casts, no tuples. The meaning of a
+// program is given by the Lean interpreter under lean/, with the closed
+// behaviors listed in docs/semantics.md.
+//
+// Ids. Every declaration carries a `uint32 id`, unique across the whole
+// program and never 0, so that an unset reference (proto default 0) is
+// always an error. References are ids. Names are for humans and the printer
+// and carry no meaning, except that the printer needs them unique within
+// their P4 scope. Fields, enum members, errors and extern methods are
+// referenced by position in their declaration.
+//
+// Contract. What the schema cannot express, the validator enforces:
+//   - ids unique and every reference resolves to a declaration of the
+//     expected kind;
+//   - the program typechecks: operand widths agree, casts are among the
+//     allowed pairs, lvalues are assignable, arguments match directions;
+//   - each block kind contains only its statements (see Stmt);
+//   - exported blocks have the signature of their role (see Export);
+//   - parser state graphs are well formed and select cases are constants of
+//     the key widths;
+//   - tables with a ternary key require priorities; entries fit their keys;
+//   - block calls form no cycle; extern instances match their types;
+//   - the error list begins with core.p4's errors in the fixed order given
+//     in docs/semantics.md.
 
 syntax = "proto3";
 
 package p4blo.v0;
 
-// A complete p4blo program. Filled in during step 1 of docs/design.md.
+// ---------------------------------------------------------------------------
+// Program
+// ---------------------------------------------------------------------------
+
 message Program {
-  // Human-readable program name; carries no meaning.
+  // Human-readable name; carries no meaning.
   string name = 1;
+  // Error values by index. The first seven are core.p4's, in the order
+  // NoError, PacketTooShort, NoMatch, StackOutOfBounds, HeaderTooShort,
+  // ParserTimeout, ParserInvalidArgument. A program may add more.
+  repeated string errors = 2;
+  repeated HeaderType header_types = 3;
+  repeated StructType struct_types = 4;
+  repeated EnumType enum_types = 5;
+  repeated ExternType extern_types = 6;
+  // Extern instances are program-level state. A P4 block that owns extern
+  // state and is instantiated more than once is elaborated into one block
+  // per instantiation; the IR has no block instances.
+  repeated ExternInstance extern_instances = 7;
+  repeated Block blocks = 8;
+  // The struct type of the headers value H and of the metadata value M.
+  uint32 headers = 9;
+  uint32 metadata = 10;
+  // The blocks the program offers to an architecture, by role.
+  repeated Export exports = 11;
+}
+
+// An architecture declares the roles it needs, each with a block kind; the
+// program supplies a block per role. The check is structural: the role name
+// is a label, and the block must have the calling convention of its kind:
+//   parser:   (out H, inout M) over the packet
+//   control:  (inout H, inout M)
+//   deparser: (in H) over the packet
+message Export {
+  string role = 1;
+  uint32 block = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+message Type {
+  oneof kind {
+    // bit<N>, N >= 1.
+    uint32 bits = 1;
+    BoolType boolean = 2;
+    // Id of a HeaderType.
+    uint32 header = 3;
+    // Id of a StructType.
+    uint32 struct = 4;
+    // Id of an EnumType.
+    uint32 enum_type = 5;
+    ErrorType error = 6;
+    StackType stack = 7;
+  }
+}
+
+message BoolType {}
+
+message ErrorType {}
+
+// A header stack of `size` headers of type `header`.
+message StackType {
+  uint32 header = 1;
+  uint32 size = 2;
+}
+
+message Field {
+  string name = 1;
+  Type type = 2;
+}
+
+// Header fields are bits or boolean; varbit is out of scope.
+message HeaderType {
+  uint32 id = 1;
+  string name = 2;
+  repeated Field fields = 3;
+}
+
+// Struct fields may be any type, including headers, structs and stacks.
+message StructType {
+  uint32 id = 1;
+  string name = 2;
+  repeated Field fields = 3;
+}
+
+// A plain enum. Serializable enums are elaborated to bits and literals.
+message EnumType {
+  uint32 id = 1;
+  string name = 2;
+  repeated string members = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Literals
+// ---------------------------------------------------------------------------
+
+message Literal {
+  oneof value {
+    BitsLiteral bits = 1;
+    bool boolean = 2;
+    EnumLiteral enum_member = 3;
+    // Index into Program.errors.
+    uint32 error = 4;
+  }
+}
+
+// A bit<width> value written in decimal, in [0, 2^width).
+message BitsLiteral {
+  uint32 width = 1;
+  string value = 2;
+}
+
+message EnumLiteral {
+  uint32 enum_type = 1;
+  // Index into EnumType.members.
+  uint32 member = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Variables and parameters
+// ---------------------------------------------------------------------------
+
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  // Directionless: action data.
+  DIRECTION_NONE = 1;
+  DIRECTION_IN = 2;
+  DIRECTION_OUT = 3;
+  DIRECTION_INOUT = 4;
+}
+
+message Var {
+  uint32 id = 1;
+  string name = 2;
+  Type type = 3;
+}
+
+message Param {
+  uint32 id = 1;
+  string name = 2;
+  Type type = 3;
+  Direction direction = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Externs
+// ---------------------------------------------------------------------------
+
+// An extern type is monomorphic: every method has concrete parameter types.
+// A P4 extern with type parameters is elaborated into one ExternType per
+// distinct instantiation.
+message ExternType {
+  uint32 id = 1;
+  string name = 2;
+  repeated Param constructor_params = 3;
+  repeated Method methods = 4;
+}
+
+message Method {
+  string name = 1;
+  repeated Param params = 2;
+  // Absent for a method that returns nothing.
+  optional Type returns = 3;
+}
+
+message ExternInstance {
+  uint32 id = 1;
+  string name = 2;
+  uint32 extern_type = 3;
+  repeated Literal args = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Blocks
+// ---------------------------------------------------------------------------
+
+enum BlockKind {
+  BLOCK_KIND_UNSPECIFIED = 0;
+  BLOCK_KIND_PARSER = 1;
+  BLOCK_KIND_CONTROL = 2;
+  BLOCK_KIND_DEPARSER = 3;
+}
+
+// A block is a function. It performs no effects: it reads and writes its
+// parameters, the packet when it is a parser or deparser, and the externs
+// it calls, and nothing else. A parser has states and a start state and no
+// body; a control or deparser has a body and no states.
+message Block {
+  uint32 id = 1;
+  string name = 2;
+  BlockKind kind = 3;
+  repeated Param params = 4;
+  repeated Var locals = 5;
+  repeated Action actions = 6;
+  repeated Table tables = 7;
+  repeated State states = 8;
+  uint32 start_state = 9;
+  repeated Stmt body = 10;
+}
+
+message Action {
+  uint32 id = 1;
+  string name = 2;
+  // Directionless params are action data, supplied by table entries.
+  repeated Param params = 3;
+  repeated Stmt body = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Tables
+// ---------------------------------------------------------------------------
+
+enum MatchKind {
+  MATCH_KIND_UNSPECIFIED = 0;
+  MATCH_KIND_EXACT = 1;
+  MATCH_KIND_LPM = 2;
+  MATCH_KIND_TERNARY = 3;
+}
+
+message Key {
+  Expr expr = 1;
+  MatchKind match_kind = 2;
+}
+
+message Table {
+  uint32 id = 1;
+  string name = 2;
+  repeated Key keys = 3;
+  // Ids of the actions an entry may invoke.
+  repeated uint32 actions = 4;
+  // Runs on a miss. Absent means NoAction: do nothing.
+  optional ActionCall default_action = 5;
+  // A const default action cannot be changed by the host.
+  bool const_default_action = 6;
+  // Installed before any host entry and never removed.
+  repeated Entry const_entries = 7;
+}
+
+message ActionCall {
+  uint32 action = 1;
+  repeated Literal args = 2;
+}
+
+message Entry {
+  // One per table key, in order.
+  repeated KeyValue keys = 1;
+  ActionCall action = 2;
+  // Required when the table has a ternary key; larger wins.
+  uint32 priority = 3;
+}
+
+// Values are decimal, of the key's width.
+message KeyValue {
+  oneof kind {
+    string exact = 1;
+    LpmValue lpm = 2;
+    TernaryValue ternary = 3;
+  }
+}
+
+message LpmValue {
+  string value = 1;
+  uint32 prefix_len = 2;
+}
+
+message TernaryValue {
+  string value = 1;
+  string mask = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Parser states
+// ---------------------------------------------------------------------------
+
+message State {
+  uint32 id = 1;
+  string name = 2;
+  repeated Stmt body = 3;
+  Transition transition = 4;
+}
+
+message Transition {
+  oneof kind {
+    Target direct = 1;
+    Select select = 2;
+  }
+}
+
+message Target {
+  oneof kind {
+    uint32 state = 1;
+    Accept accept = 2;
+    Reject reject = 3;
+  }
+}
+
+message Accept {}
+
+message Reject {}
+
+// Cases are tried in order; the first whose every key set matches wins.
+// No match transitions to reject with error NoMatch.
+message Select {
+  repeated Expr keys = 1;
+  repeated SelectCase cases = 2;
+}
+
+message SelectCase {
+  // One per select key, in order.
+  repeated KeySet sets = 1;
+  Target target = 2;
+}
+
+message KeySet {
+  oneof kind {
+    Literal exact = 1;
+    MaskedValue masked = 2;
+    RangeValue range = 3;
+    DontCare dont_care = 4;
+  }
+}
+
+// Matches when (key & mask) == (value & mask).
+message MaskedValue {
+  Literal value = 1;
+  Literal mask = 2;
+}
+
+// Matches when lo <= key <= hi.
+message RangeValue {
+  Literal lo = 1;
+  Literal hi = 2;
+}
+
+message DontCare {}
+
+// ---------------------------------------------------------------------------
+// Statements
+// ---------------------------------------------------------------------------
+
+// Where each statement may appear:
+//   any block:       assign, if, call_block, call_extern, set_valid,
+//                    set_invalid, push, pop
+//   control:         apply, call_action
+//   parser:          extract, advance, verify
+//   deparser:        emit
+message Stmt {
+  oneof kind {
+    Assign assign = 1;
+    If if = 2;
+    Apply apply = 3;
+    CallAction call_action = 4;
+    CallBlock call_block = 5;
+    CallExtern call_extern = 6;
+    SetValid set_valid = 7;
+    SetInvalid set_invalid = 8;
+    Push push = 9;
+    Pop pop = 10;
+    Extract extract = 11;
+    Advance advance = 12;
+    Verify verify = 13;
+    Emit emit = 14;
+  }
+}
+
+message Assign {
+  LValue target = 1;
+  Expr value = 2;
+}
+
+message If {
+  Expr condition = 1;
+  repeated Stmt then = 2;
+  repeated Stmt else = 3;
+}
+
+// Apply a table. `hit`, when present, receives whether an entry matched.
+message Apply {
+  uint32 table = 1;
+  optional LValue hit = 2;
+}
+
+message CallAction {
+  uint32 action = 1;
+  repeated Arg args = 2;
+}
+
+// Call a sub-parser or sub-control. A parser may only call parsers and a
+// control only controls.
+message CallBlock {
+  uint32 block = 1;
+  repeated Arg args = 2;
+}
+
+message CallExtern {
+  uint32 instance = 1;
+  // Index into ExternType.methods.
+  uint32 method = 2;
+  repeated Arg args = 3;
+  // Receives the return value when the method has one.
+  optional LValue result = 4;
+}
+
+// An `in` argument is an expression; an `out` or `inout` argument is an
+// lvalue, copied back after the call.
+message Arg {
+  oneof kind {
+    Expr in = 1;
+    LValue out = 2;
+  }
+}
+
+message SetValid {
+  LValue header = 1;
+}
+
+message SetInvalid {
+  LValue header = 1;
+}
+
+message Push {
+  LValue stack = 1;
+  uint32 count = 2;
+}
+
+message Pop {
+  LValue stack = 1;
+  uint32 count = 2;
+}
+
+// Extract a fixed-size header from the packet into `target`.
+message Extract {
+  LValue target = 1;
+}
+
+// Skip `bits` bits of the packet.
+message Advance {
+  Expr bits = 1;
+}
+
+// Raise `error` unless `condition` holds.
+message Verify {
+  Expr condition = 1;
+  uint32 error = 2;
+}
+
+// Emit a header, or every header in a struct or stack, to the packet.
+message Emit {
+  Expr value = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Expressions
+// ---------------------------------------------------------------------------
+
+// Expressions carry no type annotations. Every leaf has a known type, every
+// operator's result type is determined by its operands, and values carry
+// their width at run time, so no interpreter infers anything.
+message Expr {
+  oneof kind {
+    Literal literal = 1;
+    // Id of a Param or Var.
+    uint32 var = 2;
+    Member member = 3;
+    Index index = 4;
+    LastIndex last_index = 5;
+    Unary unary = 6;
+    Binary binary = 7;
+    Cast cast = 8;
+    Slice slice = 9;
+    IsValid is_valid = 10;
+    Mux mux = 11;
+    Lookahead lookahead = 12;
+  }
+}
+
+// Field `field` (by position) of a header or struct.
+message Member {
+  Expr base = 1;
+  uint32 field = 2;
+}
+
+// Element `index` of a stack.
+message Index {
+  Expr base = 1;
+  Expr index = 2;
+}
+
+// stack.lastIndex, a bit<32>.
+message LastIndex {
+  Expr stack = 1;
+}
+
+enum UnaryOp {
+  UNARY_OP_UNSPECIFIED = 0;
+  // Logical not, on boolean.
+  UNARY_OP_NOT = 1;
+  // Bitwise complement, on bits.
+  UNARY_OP_COMPLEMENT = 2;
+  // Two's complement negation modulo 2^N, on bits.
+  UNARY_OP_NEGATE = 3;
+}
+
+message Unary {
+  UnaryOp op = 1;
+  Expr operand = 2;
+}
+
+enum BinaryOp {
+  BINARY_OP_UNSPECIFIED = 0;
+  // bits x bits -> bits, equal widths, wrapping.
+  BINARY_OP_ADD = 1;
+  BINARY_OP_SUB = 2;
+  BINARY_OP_MUL = 3;
+  // Saturating.
+  BINARY_OP_ADD_SAT = 4;
+  BINARY_OP_SUB_SAT = 5;
+  BINARY_OP_BIT_AND = 6;
+  BINARY_OP_BIT_OR = 7;
+  BINARY_OP_BIT_XOR = 8;
+  // bits x bits -> bits, left width; any right width.
+  BINARY_OP_SHL = 9;
+  BINARY_OP_SHR = 10;
+  // bits x bits -> bits, width is the sum.
+  BINARY_OP_CONCAT = 11;
+  // any x any -> boolean, same type.
+  BINARY_OP_EQ = 12;
+  BINARY_OP_NE = 13;
+  // bits x bits -> boolean, equal widths, unsigned.
+  BINARY_OP_LT = 14;
+  BINARY_OP_LE = 15;
+  BINARY_OP_GT = 16;
+  BINARY_OP_GE = 17;
+  // boolean x boolean -> boolean, short-circuit.
+  BINARY_OP_AND = 18;
+  BINARY_OP_OR = 19;
+}
+
+message Binary {
+  BinaryOp op = 1;
+  Expr left = 2;
+  Expr right = 3;
+}
+
+// Allowed: bits to bits of any width; boolean to bit<1>; bit<1> to boolean.
+message Cast {
+  Type to = 1;
+  Expr operand = 2;
+}
+
+// operand[hi:lo], width hi - lo + 1, with lo <= hi < width(operand).
+message Slice {
+  Expr operand = 1;
+  uint32 hi = 2;
+  uint32 lo = 3;
+}
+
+message IsValid {
+  Expr header = 1;
+}
+
+// condition ? then : else, same type on both branches.
+message Mux {
+  Expr condition = 1;
+  Expr then = 2;
+  Expr else = 3;
+}
+
+// Read a value of `type` from the packet without consuming it. Parser only.
+message Lookahead {
+  Type type = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Lvalues
+// ---------------------------------------------------------------------------
+
+message LValue {
+  oneof kind {
+    uint32 var = 1;
+    LMember member = 2;
+    LIndex index = 3;
+    // stack.next: parser only, the target of an extract into a stack.
+    Next next = 4;
+  }
+}
+
+message LMember {
+  LValue base = 1;
+  uint32 field = 2;
+}
+
+message LIndex {
+  LValue base = 1;
+  Expr index = 2;
+}
+
+message Next {
+  LValue stack = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Host-installed state
+// ---------------------------------------------------------------------------
+
+// What a host installs before packets run. Not part of a program.
+message Entries {
+  repeated TableEntries tables = 1;
+}
+
+message TableEntries {
+  uint32 table = 1;
+  repeated Entry entries = 2;
+  // Overrides the program's default action unless it is const.
+  optional ActionCall default_action = 3;
 }
