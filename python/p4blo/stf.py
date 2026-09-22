@@ -27,6 +27,10 @@ the program's key expression reads: `hdr.ipv4.dstAddr`.
 `<priority>` is required on a table with a ternary key and rejected on one
 without. Larger wins, as docs/semantics.md says.
 
+`<port>` is a decimal number that fits `bit<9>`, the width of a port in the
+metadata contract; whether it is a port of the architecture replaying the
+vector is the architecture's to say.
+
 ## Numbers
 
 A number is decimal (`42`), hexadecimal (`0x2a`) or binary (`0b101010`). A
@@ -341,7 +345,12 @@ def _parse_port_and_hex(
     port_text, _, hex_text = rest.partition(" ")
     if not _INT_RE.match(port_text):
         raise StfError(f"line {line}: {port_text!r} is not a port")
-    return int(port_text), _parse_hex_bytes(hex_text, line, wildcards=wildcards)
+    port = int(port_text)
+    if port >= 2**9:
+        # Ports are bit<9> everywhere a program can see them (the metadata
+        # contract), so a wider one is the vector's mistake, not a packet's.
+        raise StfError(f"line {line}: port {port} does not fit in bit<9>")
+    return port, _parse_hex_bytes(hex_text, line, wildcards=wildcards)
 
 
 def _split_call(rest: str, line: int) -> tuple[str, tuple[ActionArg, ...], str]:

@@ -276,6 +276,46 @@ def test_unicast_goes_to_egress_port_with_the_payload_appended() -> None:
     assert Filter().run(loaded, loaded.entries(), 2, b"\x01payload") == [(3, b"\x01payload")]
 
 
+def egress_to(port: int) -> pb.Program:
+    return program(metadata=EGRESS, control=assign(meta("egress_port"), bits(9, port)))
+
+
+@pytest.mark.parametrize("port", [4, 511])
+def test_an_egress_port_the_switch_does_not_have_drops_with_a_diagnostic(port: int) -> None:
+    """The filter has no port count and passes any bit<9> port through;
+    511, BMv2's drop port, is just an out-of-range port here."""
+    loaded = arch.load(egress_to(port))
+    switch = Switch(ports=4)
+    assert switch.run(loaded, loaded.entries(), 0, b"\x01") == []
+    assert switch.diagnostics == [f"egress_port {port} is not a port of this switch"]
+    assert Filter().run(loaded, loaded.entries(), 0, b"\x01") == [(port, b"\x01")]
+
+
+def test_the_last_port_is_a_port() -> None:
+    loaded = arch.load(egress_to(3))
+    switch = Switch(ports=4)
+    assert switch.run(loaded, loaded.entries(), 0, b"\x01") == [(3, b"\x01")]
+    assert switch.diagnostics == []
+
+
+def test_an_ingress_port_the_switch_does_not_have_is_the_callers_error() -> None:
+    loaded = arch.load(counting_program())
+    switch = Switch(ports=4)
+    with pytest.raises(ValueError, match="ingress_port 4 is not a port of this switch"):
+        switch.run(loaded, loaded.entries(), 4, b"\x00")
+    with pytest.raises(ValueError, match="ingress_port 600 is not a port of this switch"):
+        switch.run(loaded, loaded.entries(), 600, b"\x00")
+    # Before anything runs: the register was never touched.
+    assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
+
+
+def test_an_ingress_port_wider_than_bit9_is_the_callers_error_under_the_filter() -> None:
+    loaded = arch.load(counting_program())
+    with pytest.raises(ValueError, match="ingress_port 512 does not fit in bit<9>"):
+        Filter().run(loaded, loaded.entries(), 512, b"\x00")
+    assert Filter().run(loaded, loaded.entries(), 511, b"\x00") == [(0, b"\x00")]
+
+
 # ---------------------------------------------------------------------------
 # Rules every architecture shares
 # ---------------------------------------------------------------------------

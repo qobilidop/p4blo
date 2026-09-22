@@ -18,7 +18,11 @@ The rules, all from docs/design.md:
 - the output packet is the deparser's bytes followed by the payload, the
   bytes after the ones the parser consumed;
 - `drop` wins; then `flood` sends to every port but the ingress one; else
-  the packet goes to `egress_port`.
+  the packet goes to `egress_port`;
+- ports are `0` to `ports - 1` (docs/decisions.md, "Port rules"): an
+  ingress port outside them is the caller's error, before anything runs;
+  an `egress_port` outside them drops the packet with a diagnostic. 511,
+  BMv2's drop port, is just an out-of-range port here.
 
 The metadata contract fields are each optional and only checked when
 present, by name and type (docs/design.md, "Metadata contract"). As in
@@ -105,11 +109,12 @@ private def flag (m : Value) (f : Option MetaField) : Except String Bool := do
 /-- Run one packet arriving on `ingress` through the three blocks. -/
 def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat) (packet : ByteArray) :
     Except String (SwitchResult × Externs) := do
+  if ingress ≥ sw.ports then throw s!"ingress_port {ingress} is not a port of this switch"
+  if ingress ≥ 2 ^ 9 then throw s!"ingress_port {ingress} does not fit in bit<9>"
   let installed ← Installed.build sw.index (some host)
   let mut initial ← Value.zero (.struct sw.metadataType) sw.index
   if let some f := sw.ingressPort then
     let .bits w := f.type | throw "unreachable"
-    if ingress ≥ 2 ^ w then throw s!"ingress port {ingress} does not fit in bit<{w}>"
     initial ← setField initial f.position (.bits (Bits.wrap w ingress))
   let parsed ← runParser sw.index sw.parser packet initial externs
   if parsed.consumedBits % 8 != 0 then
@@ -123,16 +128,16 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat) (pack
   let (emitted, externs) ← runDeparser sw.index sw.deparser headers externs
   let payload := packet.extract (parsed.consumedBits / 8) packet.size
   let out := emitted ++ payload
-  let outputs ←
-    if ← flag metadata sw.drop then pure []
-    else if ← flag metadata sw.flood then
-      pure ((List.range sw.ports).filter (· != ingress) |>.map (·, out))
-    else match sw.egressPort with
-      | some f => do
-        let port ← (← getField metadata f.position).expectBits
-        pure [(port.value, out)]
-      | none => pure [(0, out)]
-  pure ({ outputs }, externs)
+  if ← flag metadata sw.drop then return ({ outputs := [] }, externs)
+  if ← flag metadata sw.flood then
+    return ({ outputs := (List.range sw.ports).filter (· != ingress) |>.map (·, out) }, externs)
+  let egress ← match sw.egressPort with
+    | some f => do pure (← (← getField metadata f.position).expectBits).value
+    | none => pure 0
+  if egress ≥ sw.ports then
+    let why := s!"egress_port {egress} is not a port of this switch"
+    return ({ outputs := [], diagnostic := some why }, externs)
+  pure ({ outputs := [(egress, out)] }, externs)
 
 end Switch
 

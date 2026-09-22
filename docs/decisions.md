@@ -196,3 +196,17 @@ one that says so.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
+- **Port rules.** A switch's ports are `0` to `ports - 1`, and both
+  architectures and Lean's `Switch` apply the same two rules. An
+  `egress_port` outside that range drops the packet with the
+  diagnostic "egress_port N is not a port of this switch", the way a
+  misaligned parse is dropped; the filter has no port count and passes
+  any `bit<9>` port through. An `ingress_port` outside the range is
+  the caller's error, raised before anything runs (a `ValueError` from
+  the architecture's `run`, an `error` reply from `p4blo-lean run`),
+  and so is one that does not fit `bit<9>` under the filter; the STF
+  parser rejects such a port with its line. 511, BMv2's drop port, is
+  just an out-of-range port here: a program that writes it without
+  `drop` is dropped by these architectures for that reason and by
+  BMv2 for its own, and the oracle does not judge fates through the
+  port count anyway.

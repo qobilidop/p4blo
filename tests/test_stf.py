@@ -112,6 +112,8 @@ def test_blank_lines_and_comments_are_skipped() -> None:
         "packet 0 012",  # odd number of hex digits
         "packet 0 00**",  # wildcards are not allowed in an input packet
         "expect zero 0011",
+        "packet 512 00",  # a port is a bit<9>
+        "expect 600 00",
         "add t 1 hdr.f:12*3 a()",  # `*` needs 0x or 0b
         "add t hdr.f:0x12/x a()",
         "no_packet 1",

@@ -115,6 +115,34 @@ def replay (sw : Switch) (v : StfVector) : T Unit := do
       if let some d := result.diagnostic then IO.println s!"     diagnostic: {d}"
       check name ok
 
+/-- The port rules of docs/decisions.md, as `tests/test_arch.py` checks them
+on the Python switch: an ingress port outside `[0, ports)` is the caller's
+error before anything runs, an egress port outside it drops the packet with
+a diagnostic, and 511 is just such a port. -/
+def portRuleTests (sw : Switch) : T Unit := do
+  let some externs := (Externs.bind sw.index).toOption | check "port rules: externs bind" false
+  let some packet := hexToBytes? "0000000001010000000000010800\
+    4500001a00010000401100000a0001010a000202deadbeefcafe" |>.toOption
+    | check "port rules: packet decodes" false
+  let noEntries : Entries := { tables := [] }
+  checkError "ingress port beyond the count" (sw.run externs noEntries 4 packet)
+    "ingress_port 4 is not a port of this switch"
+  checkError "ingress port beyond bit<9>" (sw.run externs noEntries 600 packet)
+    "ingress_port 600 is not a port of this switch"
+  -- Forward every packet to `port`; the fate is the output ports and the
+  -- diagnostic.
+  let fate (port : Nat) : Except String (List Nat × Option String) :=
+    let host : Entries :=
+      { tables := [{ block := "MyIngress", table := "ipv4_lpm", entries := [],
+                     defaultAction := some { action := "ipv4_forward",
+                                             args := [.bits 48 0, .bits 9 port] } }] }
+    (sw.run externs host 0 packet).map fun (r, _) => (r.outputs.map (·.1), r.diagnostic)
+  checkOk "egress port beyond the count drops with a diagnostic" (fate 7)
+    (· == ([], some "egress_port 7 is not a port of this switch"))
+  checkOk "egress port 511 is out of range" (fate 511)
+    (· == ([], some "egress_port 511 is not a port of this switch"))
+  checkOk "the last port is a port" (fate 3) (· == ([3], none))
+
 def forwarderReplayTests (program : Program) (vectorsText : String) : T Unit := do
   let loaded := do
     let index ← Index.build program
@@ -129,3 +157,4 @@ def forwarderReplayTests (program : Program) (vectorsText : String) : T Unit := 
     check "five forwarder vectors" (vectors.map (·.name) == ["forward", "lpm_precedence", "miss", "non_ipv4", "too_short"])
     for v in vectors do
       replay sw v
+    portRuleTests sw

@@ -6,6 +6,10 @@ otherwise the original bytes leave on `egress_port`. There is no deparser,
 so whatever the control did to the headers never reaches the wire; a
 program that rewrites headers still runs here unchanged, its rewrites
 merely go unseen.
+
+The filter has no port count: any `bit<9>` egress port passes through, and
+an ingress port that does not fit `bit<9>` is the caller's error, a
+`ValueError` before anything runs (docs/decisions.md, "Port rules").
 """
 
 from __future__ import annotations
@@ -25,6 +29,8 @@ class Filter:
         self, loaded: Loaded, entries: InstalledEntries, ingress_port: int, packet: bytes
     ) -> list[tuple[int, bytes]]:
         index, externs, meta = loaded.index, loaded.externs, loaded.metadata
+        if not 0 <= ingress_port < 2**9:
+            raise ValueError(f"ingress_port {ingress_port} does not fit in bit<9>")
 
         m = meta.zero()
         meta.write(m, "ingress_port", ingress_port)
