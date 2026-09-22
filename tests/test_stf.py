@@ -231,12 +231,18 @@ def test_a_plain_number_on_a_ternary_key_is_an_exact_match(ternary: ir.Index) ->
         "add ipv4_lpm hdr.ipv4.dstAddr:0x0a0001010a/24 drop()",  # too wide for bit<32>
         "add ipv4_lpm hdr.ipv4.dstAddr:1/33 drop()",
         "add ipv4_lpm hdr.ipv4.dstAddr:0x**01 drop()",  # a mask on an lpm key
+        "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000201/24 drop()",  # bits below the prefix
         "add ipv4_lpm hdr.ipv4.dstAddr:1 ipv4_forward(dstAddr:1, port:512)",
     ],
 )
 def test_entries_that_do_not_fit_the_forwarder(forwarder: ir.Index, line: str) -> None:
     with pytest.raises(stf.StfError):
         resolve(forwarder, line)
+
+
+def test_a_non_canonical_lpm_value_is_reported_with_its_line(forwarder: ir.Index) -> None:
+    with pytest.raises(stf.StfError, match=r"line 2: .*below its /24 prefix"):
+        resolve(forwarder, "\nadd ipv4_lpm hdr.ipv4.dstAddr:0x0a000201/24 drop()\n")
 
 
 @pytest.mark.parametrize(
