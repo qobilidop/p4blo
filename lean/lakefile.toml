@@ -14,7 +14,13 @@ name = "P4blo"
 name = "p4blo-lean"
 root = "Main"
 
-# `lake test` runs this against Tests/forwarder.json.
+# The test modules under Tests/, so that the test driver can import them.
+[[lean_lib]]
+name = "Tests"
+globs = ["Tests.+"]
+
+# `lake test` runs this against Tests/forwarder.json and
+# Tests/forwarder_vectors.json.
 [[lean_exe]]
 name = "tests"
 root = "Tests.Main"

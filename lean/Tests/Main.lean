@@ -1,8 +1,11 @@
-import P4blo
+import Tests.Check
+import Tests.Interp
+import Tests.Forwarder
 
 /-!
-Tests for the decoder and the index, run by `lake test` from the `lean/`
-directory (the fixture path may also be given as the first argument).
+Tests for the decoder, the index and the interpreter, run by `lake test`
+from the `lean/` directory (the fixture paths may also be given as
+arguments: the program JSON, then the vectors JSON).
 
 `Tests/forwarder.json` is `p4blo.ir.dump_json` of
 `corpus/forwarder/forwarder.txtpb`; regenerate it from the repository root
@@ -14,26 +17,6 @@ with
 -/
 
 open P4blo
-
-/-- A test log: failures so far. -/
-abbrev T := StateT (List String) IO
-
-/-- Record `name` as failed unless `ok`. -/
-def check (name : String) (ok : Bool) : T Unit := do
-  if ok then IO.println s!"ok   {name}"
-  else
-    IO.println s!"FAIL {name}"
-    modify (· ++ [name])
-
-/-- `check` that an `Except` failed with a message containing `fragment`. -/
-def checkError (name : String) (r : Except String α) (fragment : String) : T Unit :=
-  match r with
-  | .error e =>
-    if (e.splitOn fragment).length > 1 then check name true
-    else do
-      IO.println s!"     got: {e}"
-      check name false
-  | .ok _ => check s!"{name} (unexpectedly succeeded)" false
 
 def forwarderTests (p : Program) : T Unit := do
   check "program name" (p.name == "forwarder")
@@ -161,7 +144,9 @@ def negativeTests : T Unit := do
 
 def main (args : List String) : IO UInt32 := do
   let fixture := args.head?.getD "Tests/forwarder.json"
+  let vectors := (args.drop 1).head?.getD "Tests/forwarder_vectors.json"
   let text ← IO.FS.readFile fixture
+  let vectorsText ← IO.FS.readFile vectors
   let ((), failures) ← (do
     match Program.fromJsonString text with
     | .ok p =>
@@ -169,10 +154,12 @@ def main (args : List String) : IO UInt32 := do
       forwarderTests p
       roundtripTests p
       indexTests p
+      forwarderReplayTests p vectorsText
     | .error e =>
       IO.println s!"     got: {e}"
       check "fixture decodes" false
-    negativeTests).run []
+    negativeTests
+    interpTests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0
