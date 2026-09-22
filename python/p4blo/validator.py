@@ -919,6 +919,10 @@ class _Validator:
         self.check_args(stmt.args, action.params, scope, path)
 
     def check_call_block(self, stmt: pb.CallBlock, scope: Scope, path: str) -> None:
+        if scope.action is not None:
+            # P4 forbids applying a control or parser from an action (§14.1).
+            self.report(BLOCK_KIND_STMT, "call_block is not allowed inside an action", path)
+            return
         callee = self.resolve(stmt.block, self.idx.blocks, "block", f"{path}.block")
         if callee is None:
             return

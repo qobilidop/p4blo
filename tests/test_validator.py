@@ -775,9 +775,17 @@ def test_block_kind_stmt_in_parser(text: str) -> None:
     assert v.BLOCK_KIND_STMT in broken(lambda p: add_parser_stmt(p, PARSE_IPV4, text))
 
 
-def test_block_kind_stmt_in_action() -> None:
+@pytest.mark.parametrize(
+    "text",
+    [
+        f"emit {{ value {{ {HDR_IPV4} }} }}",
+        'apply { table: "route" }',
+        call_block("sub", arg_out(HDR), arg_out(META)),
+    ],
+)
+def test_block_kind_stmt_in_action(text: str) -> None:
     def mutate(p: pb.Program) -> None:
-        p.blocks[ING].actions[0].body.add().CopyFrom(stmt(f"emit {{ value {{ {HDR_IPV4} }} }}"))
+        p.blocks[ING].actions[0].body.add().CopyFrom(stmt(text))
 
     assert v.BLOCK_KIND_STMT in broken(mutate)
 
