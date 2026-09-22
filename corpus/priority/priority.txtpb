@@ -1,0 +1,285 @@
+name: "priority"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "hdr"
+  fields {
+    name: "e"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "t"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "l"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "r"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "v"
+    type {
+      bits: 8
+    }
+  }
+}
+struct_types {
+  name: "Header_t"
+  fields {
+    name: "h"
+    type {
+      header: "hdr"
+    }
+  }
+}
+struct_types {
+  name: "Meta_t"
+  fields {
+    name: "egress_port"
+    type {
+      bits: 9
+    }
+  }
+}
+blocks {
+  name: "p"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "h"
+    type {
+      struct: "Header_t"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Meta_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "h"
+            }
+            field: "h"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "ingress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "h"
+    type {
+      struct: "Header_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Meta_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  actions {
+    name: "a"
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          literal {
+            bits {
+              width: 9
+              value: "0"
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "a_with_control_params"
+    params {
+      name: "x"
+      type {
+        bits: 9
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          var: "x"
+        }
+      }
+    }
+  }
+  tables {
+    name: "t_ternary"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "h"
+              }
+              field: "h"
+            }
+          }
+          field: "t"
+        }
+      }
+      match_kind: MATCH_KIND_TERNARY
+    }
+    actions: "a"
+    actions: "a_with_control_params"
+    default_action {
+      action: "a"
+    }
+    const_entries {
+      keys {
+        ternary {
+          value: "1"
+          mask: "15"
+        }
+      }
+      action {
+        action: "a_with_control_params"
+        args {
+          bits {
+            width: 9
+            value: "1"
+          }
+        }
+      }
+      priority: 1
+    }
+    const_entries {
+      keys {
+        ternary {
+          value: "4481"
+          mask: "65535"
+        }
+      }
+      action {
+        action: "a_with_control_params"
+        args {
+          bits {
+            width: 9
+            value: "2"
+          }
+        }
+      }
+      priority: 2
+    }
+    const_entries {
+      keys {
+        ternary {
+          value: "4097"
+          mask: "61455"
+        }
+      }
+      action {
+        action: "a_with_control_params"
+        args {
+          bits {
+            width: 9
+            value: "3"
+          }
+        }
+      }
+      priority: 3
+    }
+  }
+  body {
+    apply {
+      table: "t_ternary"
+    }
+  }
+}
+blocks {
+  name: "deparser"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "h"
+    type {
+      struct: "Header_t"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "h"
+          }
+          field: "h"
+        }
+      }
+    }
+  }
+}
+headers: "Header_t"
+metadata: "Meta_t"
+exports {
+  role: "parser"
+  block: "p"
+}
+exports {
+  role: "control"
+  block: "ingress"
+}
+exports {
+  role: "deparser"
+  block: "deparser"
+}
