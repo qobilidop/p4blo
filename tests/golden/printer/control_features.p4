@@ -148,18 +148,22 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
     }
 }
 
-control TagsDeparser(packet_out packet, in tag_t[3] tags) {
+control Summarize(in tag_t[3] tags, out bit<8> first) {
     apply {
-        packet.emit(tags);
+        first = tags[32w0].v;
     }
 }
 
 control MainDeparser(packet_out packet, in headers hdr) {
-    TagsDeparser() TagsDeparser_inst;
+    Summarize() Summarize_inst;
+    bit<8> first = 8w0;
     apply {
         packet.emit(hdr.eth);
-        TagsDeparser_inst.apply(packet, hdr.tags);
-        packet.emit(hdr.ipv4);
+        Summarize_inst.apply(hdr.tags, first);
+        packet.emit(hdr.tags);
+        if (first != 8w0) {
+            packet.emit(hdr.ipv4);
+        }
     }
 }
 

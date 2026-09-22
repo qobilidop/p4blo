@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from google.protobuf import text_format
 
-from p4blo import ir, printer
+from p4blo import ir, printer, validator
 from p4blo.printer import PrintError, print_expr, print_lvalue, print_stmt, print_type
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -285,7 +285,8 @@ exports {{ role: "control" block: "TopIngress" }}
 exports {{ role: "deparser" block: "TopDeparser" }}
 """
 
-# Every control construct: a sub-control and a sub-deparser, locals of every
+# Every control construct: sub-controls called from a control and from a
+# deparser, locals of every
 # scalar type, actions with data and with an in parameter, an lpm table
 # with const entries and a key name, a ternary table with priorities and a
 # const default, an enum key, hit, push, pop, setValid, setInvalid, every
@@ -629,16 +630,37 @@ blocks {{
   name: "MainDeparser"
   kind: BLOCK_KIND_DEPARSER
   params {{ name: "hdr" type {{ struct: "headers" }} direction: DIRECTION_IN }}
+  locals {{ name: "first" type {{ bits: 8 }} }}
   body {{ emit {{ value {{ <hdr.eth> }} }} }}
-  body {{ call_block {{ block: "TagsDeparser" args {{ expr {{ <hdr.tags> }} }} }} }}
-  body {{ emit {{ value {{ <hdr.ipv4> }} }} }}
+  body {{
+    call_block {{
+      block: "Summarize"
+      args {{ expr {{ <hdr.tags> }} }}
+      args {{ lvalue {{ var: "first" }} }}
+    }}
+  }}
+  body {{ emit {{ value {{ <hdr.tags> }} }} }}
+  body {{
+    conditional {{
+      condition {{ binary {{ op: BINARY_OP_NE left {{ var: "first" }} right {{ <8w0> }} }} }}
+      then {{ emit {{ value {{ <hdr.ipv4> }} }} }}
+    }}
+  }}
 }}
 
 blocks {{
-  name: "TagsDeparser"
-  kind: BLOCK_KIND_DEPARSER
+  name: "Summarize"
+  kind: BLOCK_KIND_CONTROL
   params {{ name: "tags" type {{ stack {{ header: "tag_t" size: 3 }} }} direction: DIRECTION_IN }}
-  body {{ emit {{ value {{ var: "tags" }} }} }}
+  params {{ name: "first" type {{ bits: 8 }} direction: DIRECTION_OUT }}
+  body {{
+    assign {{
+      target {{ var: "first" }}
+      value {{
+        member {{ base {{ index {{ base {{ var: "tags" }} index {{ <32w0> }} }} }} field: "v" }}
+      }}
+    }}
+  }}
 }}
 
 exports {{ role: "parser" block: "EthParser" }}
@@ -879,6 +901,11 @@ def p4test(path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", [*GOLDENS, "forwarder"])
+def test_golden_program_is_valid(name: str) -> None:
+    assert validator.validate(golden_program(name)) == []
 
 
 @pytest.mark.parametrize("name", [*GOLDENS, "forwarder"])
