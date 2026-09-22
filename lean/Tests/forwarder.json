@@ -1,0 +1,562 @@
+{
+  "name": "forwarder",
+  "errors": [
+    "NoError",
+    "PacketTooShort",
+    "NoMatch",
+    "StackOutOfBounds",
+    "HeaderTooShort",
+    "ParserTimeout",
+    "ParserInvalidArgument"
+  ],
+  "header_types": [
+    {
+      "name": "ethernet_t",
+      "fields": [
+        {
+          "name": "dstAddr",
+          "type": {
+            "bits": 48
+          }
+        },
+        {
+          "name": "srcAddr",
+          "type": {
+            "bits": 48
+          }
+        },
+        {
+          "name": "etherType",
+          "type": {
+            "bits": 16
+          }
+        }
+      ]
+    },
+    {
+      "name": "ipv4_t",
+      "fields": [
+        {
+          "name": "version",
+          "type": {
+            "bits": 4
+          }
+        },
+        {
+          "name": "ihl",
+          "type": {
+            "bits": 4
+          }
+        },
+        {
+          "name": "diffserv",
+          "type": {
+            "bits": 8
+          }
+        },
+        {
+          "name": "totalLen",
+          "type": {
+            "bits": 16
+          }
+        },
+        {
+          "name": "identification",
+          "type": {
+            "bits": 16
+          }
+        },
+        {
+          "name": "flags",
+          "type": {
+            "bits": 3
+          }
+        },
+        {
+          "name": "fragOffset",
+          "type": {
+            "bits": 13
+          }
+        },
+        {
+          "name": "ttl",
+          "type": {
+            "bits": 8
+          }
+        },
+        {
+          "name": "protocol",
+          "type": {
+            "bits": 8
+          }
+        },
+        {
+          "name": "hdrChecksum",
+          "type": {
+            "bits": 16
+          }
+        },
+        {
+          "name": "srcAddr",
+          "type": {
+            "bits": 32
+          }
+        },
+        {
+          "name": "dstAddr",
+          "type": {
+            "bits": 32
+          }
+        }
+      ]
+    }
+  ],
+  "struct_types": [
+    {
+      "name": "headers",
+      "fields": [
+        {
+          "name": "ethernet",
+          "type": {
+            "header": "ethernet_t"
+          }
+        },
+        {
+          "name": "ipv4",
+          "type": {
+            "header": "ipv4_t"
+          }
+        }
+      ]
+    },
+    {
+      "name": "metadata",
+      "fields": [
+        {
+          "name": "ingress_port",
+          "type": {
+            "bits": 9
+          }
+        },
+        {
+          "name": "egress_port",
+          "type": {
+            "bits": 9
+          }
+        },
+        {
+          "name": "drop",
+          "type": {
+            "boolean": {}
+          }
+        }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "name": "MyParser",
+      "kind": "BLOCK_KIND_PARSER",
+      "params": [
+        {
+          "name": "hdr",
+          "type": {
+            "struct": "headers"
+          },
+          "direction": "DIRECTION_OUT"
+        },
+        {
+          "name": "meta",
+          "type": {
+            "struct": "metadata"
+          },
+          "direction": "DIRECTION_INOUT"
+        }
+      ],
+      "states": [
+        {
+          "name": "start",
+          "transition": {
+            "direct": {
+              "state": "parse_ethernet"
+            }
+          }
+        },
+        {
+          "name": "parse_ethernet",
+          "body": [
+            {
+              "extract": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "var": "hdr"
+                    },
+                    "field": "ethernet"
+                  }
+                }
+              }
+            }
+          ],
+          "transition": {
+            "select": {
+              "keys": [
+                {
+                  "member": {
+                    "base": {
+                      "member": {
+                        "base": {
+                          "var": "hdr"
+                        },
+                        "field": "ethernet"
+                      }
+                    },
+                    "field": "etherType"
+                  }
+                }
+              ],
+              "cases": [
+                {
+                  "sets": [
+                    {
+                      "exact": {
+                        "bits": {
+                          "width": 16,
+                          "value": "2048"
+                        }
+                      }
+                    }
+                  ],
+                  "target": {
+                    "state": "parse_ipv4"
+                  }
+                },
+                {
+                  "sets": [
+                    {
+                      "dont_care": {}
+                    }
+                  ],
+                  "target": {
+                    "accept": {}
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "parse_ipv4",
+          "body": [
+            {
+              "extract": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "var": "hdr"
+                    },
+                    "field": "ipv4"
+                  }
+                }
+              }
+            }
+          ],
+          "transition": {
+            "direct": {
+              "accept": {}
+            }
+          }
+        }
+      ],
+      "start_state": "start"
+    },
+    {
+      "name": "MyIngress",
+      "kind": "BLOCK_KIND_CONTROL",
+      "params": [
+        {
+          "name": "hdr",
+          "type": {
+            "struct": "headers"
+          },
+          "direction": "DIRECTION_INOUT"
+        },
+        {
+          "name": "meta",
+          "type": {
+            "struct": "metadata"
+          },
+          "direction": "DIRECTION_INOUT"
+        }
+      ],
+      "actions": [
+        {
+          "name": "NoAction"
+        },
+        {
+          "name": "drop",
+          "body": [
+            {
+              "assign": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "var": "meta"
+                    },
+                    "field": "drop"
+                  }
+                },
+                "value": {
+                  "literal": {
+                    "boolean": true
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "ipv4_forward",
+          "params": [
+            {
+              "name": "dstAddr",
+              "type": {
+                "bits": 48
+              },
+              "direction": "DIRECTION_NONE"
+            },
+            {
+              "name": "port",
+              "type": {
+                "bits": 9
+              },
+              "direction": "DIRECTION_NONE"
+            }
+          ],
+          "body": [
+            {
+              "assign": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "var": "meta"
+                    },
+                    "field": "egress_port"
+                  }
+                },
+                "value": {
+                  "var": "port"
+                }
+              }
+            },
+            {
+              "assign": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "member": {
+                        "base": {
+                          "var": "hdr"
+                        },
+                        "field": "ethernet"
+                      }
+                    },
+                    "field": "srcAddr"
+                  }
+                },
+                "value": {
+                  "member": {
+                    "base": {
+                      "member": {
+                        "base": {
+                          "var": "hdr"
+                        },
+                        "field": "ethernet"
+                      }
+                    },
+                    "field": "dstAddr"
+                  }
+                }
+              }
+            },
+            {
+              "assign": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "member": {
+                        "base": {
+                          "var": "hdr"
+                        },
+                        "field": "ethernet"
+                      }
+                    },
+                    "field": "dstAddr"
+                  }
+                },
+                "value": {
+                  "var": "dstAddr"
+                }
+              }
+            },
+            {
+              "assign": {
+                "target": {
+                  "member": {
+                    "base": {
+                      "member": {
+                        "base": {
+                          "var": "hdr"
+                        },
+                        "field": "ipv4"
+                      }
+                    },
+                    "field": "ttl"
+                  }
+                },
+                "value": {
+                  "binary": {
+                    "op": "BINARY_OP_SUB",
+                    "left": {
+                      "member": {
+                        "base": {
+                          "member": {
+                            "base": {
+                              "var": "hdr"
+                            },
+                            "field": "ipv4"
+                          }
+                        },
+                        "field": "ttl"
+                      }
+                    },
+                    "right": {
+                      "literal": {
+                        "bits": {
+                          "width": 8,
+                          "value": "1"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "tables": [
+        {
+          "name": "ipv4_lpm",
+          "keys": [
+            {
+              "expr": {
+                "member": {
+                  "base": {
+                    "member": {
+                      "base": {
+                        "var": "hdr"
+                      },
+                      "field": "ipv4"
+                    }
+                  },
+                  "field": "dstAddr"
+                }
+              },
+              "match_kind": "MATCH_KIND_LPM"
+            }
+          ],
+          "actions": [
+            "ipv4_forward",
+            "drop",
+            "NoAction"
+          ],
+          "default_action": {
+            "action": "drop"
+          },
+          "size": 1024
+        }
+      ],
+      "body": [
+        {
+          "conditional": {
+            "condition": {
+              "is_valid": {
+                "header": {
+                  "member": {
+                    "base": {
+                      "var": "hdr"
+                    },
+                    "field": "ipv4"
+                  }
+                }
+              }
+            },
+            "then": [
+              {
+                "apply": {
+                  "table": "ipv4_lpm"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "MyDeparser",
+      "kind": "BLOCK_KIND_DEPARSER",
+      "params": [
+        {
+          "name": "hdr",
+          "type": {
+            "struct": "headers"
+          },
+          "direction": "DIRECTION_IN"
+        }
+      ],
+      "body": [
+        {
+          "emit": {
+            "value": {
+              "member": {
+                "base": {
+                  "var": "hdr"
+                },
+                "field": "ethernet"
+              }
+            }
+          }
+        },
+        {
+          "emit": {
+            "value": {
+              "member": {
+                "base": {
+                  "var": "hdr"
+                },
+                "field": "ipv4"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "headers": "headers",
+  "metadata": "metadata",
+  "exports": [
+    {
+      "role": "parser",
+      "block": "MyParser"
+    },
+    {
+      "role": "control",
+      "block": "MyIngress"
+    },
+    {
+      "role": "deparser",
+      "block": "MyDeparser"
+    }
+  ]
+}
