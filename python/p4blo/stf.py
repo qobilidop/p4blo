@@ -62,7 +62,9 @@ The outputs of a `packet` must equal, exactly and in order, the `expect`
 statements that follow it, up to the next `packet`. `no_packet` asserts that
 the preceding `packet` produced nothing. An output that no `expect` claims
 and an `expect` that no output satisfies are both failures, and so is an
-output on the right port with the wrong bytes.
+output on the right port with the wrong bytes. A `packet` with no `expect`
+after it therefore already asserts that nothing came out; `no_packet` says
+the same thing in writing, so that a drop looks deliberate.
 
 This is stricter than p4c's runner, which collects expectations per port and
 tolerates unclaimed output. p4blo is a semantics project: an output packet
@@ -73,20 +75,30 @@ catch.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Sequence
+from dataclasses import dataclass, field
+
+from p4blo.ir import Index
+from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = [
     "Add",
     "ActionArg",
     "Expect",
+    "Failure",
     "Key",
     "NoPacket",
     "Packet",
+    "ReplayFailed",
+    "RunPacket",
     "SetDefault",
     "StfError",
     "Statement",
     "Wait",
+    "assert_replay",
     "parse",
+    "replay",
+    "to_entries",
 ]
 
 
@@ -397,3 +409,324 @@ def _parse_setdefault(rest: str, line: int) -> SetDefault:
     if not table or " " in table:
         raise StfError(f"line {line}: setdefault takes a table and an action")
     return SetDefault(line, table, action, args)
+
+
+# ---------------------------------------------------------------------------
+# Name resolution
+# ---------------------------------------------------------------------------
+
+
+def dotted(expr: pb.Expr) -> str:
+    """Render a key expression as the dotted path a vector writes.
+
+    Only a chain of field accesses off a variable has one; anything else has
+    to be given a `name` on the table's key.
+    """
+    match expr.WhichOneof("kind"):
+        case "var":
+            return expr.var
+        case "member":
+            return f"{dotted(expr.member.base)}.{expr.member.field}"
+        case kind:
+            raise StfError(f"a {kind} key expression has no dotted name; name the key")
+
+
+def key_name(key: pb.Key) -> str:
+    return key.name or dotted(key.expr)
+
+
+def _type_of(index: Index, block: str, expr: pb.Expr) -> pb.Type:
+    """The type of a key expression, enough of it to get a key's width."""
+    match expr.WhichOneof("kind"):
+        case "var":
+            return index.scopes[block].vars[expr.var].type
+        case "member":
+            base = _type_of(index, block, expr.member.base)
+            owner = base.header or base.struct
+            if not owner:
+                raise StfError(f"{dotted(expr.member.base)} has no fields")
+            fields = index.fields(owner)
+            return fields[index.field_index(owner, expr.member.field)].type
+        case "slice":
+            return pb.Type(bits=expr.slice.hi - expr.slice.lo + 1)
+        case "cast":
+            return expr.cast.to
+        case "literal" if expr.literal.WhichOneof("value") == "bits":
+            return pb.Type(bits=expr.literal.bits.width)
+        case kind:
+            raise StfError(f"cannot take the width of a {kind} key")
+
+
+def _key_width(index: Index, block: str, key: pb.Key) -> int:
+    width = _type_of(index, block, key.expr).bits
+    if width == 0:
+        raise StfError(f"key {key_name(key)!r} is not a bit<N>")
+    return width
+
+
+def _find_table(index: Index, written: str, line: int) -> tuple[str, pb.Table]:
+    """Find the block that declares a table, by the table's unqualified name.
+
+    Tables are block-scoped, so a name that two blocks declare is ambiguous
+    unless the vector wrote it qualified with the block.
+    """
+    simple = written.rsplit(".", 1)[-1]
+    found = [
+        (block, scope.tables[simple])
+        for block, scope in index.scopes.items()
+        if simple in scope.tables
+    ]
+    if len(found) > 1:
+        qualifiers = set(written.split(".")[:-1])
+        narrowed = [pair for pair in found if pair[0] in qualifiers]
+        if len(narrowed) == 1:
+            return narrowed[0]
+        blocks = ", ".join(sorted(block for block, _ in found))
+        raise StfError(f"line {line}: table {simple!r} is declared in {blocks}")
+    if not found:
+        raise StfError(f"line {line}: no table named {simple!r}")
+    return found[0]
+
+
+def _find_action(index: Index, block: str, table: pb.Table, written: str, line: int) -> pb.Action:
+    """Resolve an action name against the actions the table may invoke.
+
+    p4c's vectors write the action qualified by its control, `ingress.setb1`,
+    so only the last component is matched.
+    """
+    simple = written.rsplit(".", 1)[-1]
+    if simple not in table.actions:
+        allowed = ", ".join(table.actions)
+        raise StfError(f"line {line}: {table.name} cannot run {simple!r}; it has {allowed}")
+    return index.scopes[block].actions[simple]
+
+
+# ---------------------------------------------------------------------------
+# Entries
+# ---------------------------------------------------------------------------
+
+
+def _fits(value: int, width: int, what: str, line: int) -> str:
+    if not 0 <= value < (1 << width):
+        raise StfError(f"line {line}: {what} does not fit in {width} bits")
+    return str(value)
+
+
+def _key_value(key: pb.Key, width: int, written: Key, line: int) -> pb.KeyValue:
+    """One entry key, in the form the table's match kind asks for."""
+    if written.width is not None and written.width > width:
+        raise StfError(f"line {line}: {written.name} is wider than its {width}-bit key")
+    value = _fits(written.value, width, f"{written.name}={written.value}", line)
+    match key.match_kind:
+        case pb.MATCH_KIND_EXACT:
+            if written.mask is not None or written.prefix_len is not None:
+                raise StfError(f"line {line}: {written.name} is an exact key")
+            return pb.KeyValue(exact=value)
+        case pb.MATCH_KIND_LPM:
+            if written.mask is not None:
+                raise StfError(f"line {line}: an lpm key takes value/prefixlen, not a mask")
+            prefix = width if written.prefix_len is None else written.prefix_len
+            if prefix > width:
+                raise StfError(f"line {line}: prefix /{prefix} exceeds the {width}-bit key")
+            return pb.KeyValue(lpm=pb.LpmValue(value=value, prefix_len=prefix))
+        case pb.MATCH_KIND_TERNARY:
+            if written.prefix_len is not None:
+                raise StfError(f"line {line}: a ternary key takes a mask, not a prefix")
+            # A plain number on a ternary key is an exact match.
+            mask = (1 << width) - 1 if written.mask is None else written.mask
+            return pb.KeyValue(
+                ternary=pb.TernaryValue(value=value, mask=_fits(mask, width, "the mask", line))
+            )
+        case _:
+            raise StfError(f"line {line}: key {written.name!r} has no match kind")
+
+
+def _action_call(action: pb.Action, args: Sequence[ActionArg], line: int) -> pb.ActionCall:
+    """Put the written arguments in parameter order, at the declared widths."""
+    written = {arg.name: arg for arg in args}
+    if len(written) != len(args):
+        raise StfError(f"line {line}: {action.name} has a repeated argument")
+    call = pb.ActionCall(action=action.name)
+    for param in action.params:
+        arg = written.pop(param.name, None)
+        if arg is None:
+            raise StfError(f"line {line}: {action.name} needs an argument {param.name!r}")
+        if not param.type.bits:
+            raise StfError(f"line {line}: {action.name}.{param.name} is not a bit<N>")
+        value = _fits(arg.value, param.type.bits, f"{param.name}={arg.value}", line)
+        call.args.add().bits.CopyFrom(pb.BitsLiteral(width=param.type.bits, value=value))
+    if written:
+        extra = ", ".join(sorted(written))
+        raise StfError(f"line {line}: {action.name} has no parameter {extra}")
+    return call
+
+
+def _entry(index: Index, block: str, table: pb.Table, add: Add) -> pb.Entry:
+    written = {key.name: key for key in add.keys}
+    if len(written) != len(add.keys):
+        raise StfError(f"line {add.line}: a key is given twice")
+    entry = pb.Entry()
+    for key in table.keys:
+        name = key_name(key)
+        value = written.pop(name, None)
+        if value is None:
+            raise StfError(f"line {add.line}: {table.name} needs a key {name!r}")
+        entry.keys.append(_key_value(key, _key_width(index, block, key), value, add.line))
+    if written:
+        extra = ", ".join(sorted(written))
+        raise StfError(f"line {add.line}: {table.name} has no key {extra}")
+    ternary = any(key.match_kind == pb.MATCH_KIND_TERNARY for key in table.keys)
+    if ternary and add.priority is None:
+        raise StfError(f"line {add.line}: {table.name} is ternary, so an entry needs a priority")
+    if not ternary and add.priority is not None:
+        raise StfError(f"line {add.line}: {table.name} has no ternary key, so a priority is noise")
+    entry.priority = add.priority or 0
+    action = _find_action(index, block, table, add.action, add.line)
+    entry.action.CopyFrom(_action_call(action, add.args, add.line))
+    return entry
+
+
+def to_entries(index: Index, statements: Iterable[Statement]) -> pb.Entries:
+    """Resolve every `add` and `setdefault` against a program.
+
+    Names become the names the IR uses, values take their keys' widths, and
+    each table's entries stay in the order the file installed them. Anything
+    else in `statements` is ignored, so a whole file can be handed over.
+    """
+    entries = pb.Entries()
+    tables: dict[tuple[str, str], pb.TableEntries] = {}
+
+    def table_entries(written: str, line: int) -> tuple[str, pb.Table, pb.TableEntries]:
+        block, table = _find_table(index, written, line)
+        found = tables.get((block, table.name))
+        if found is None:
+            found = entries.tables.add(block=block, table=table.name)
+            tables[block, table.name] = found
+        return block, table, found
+
+    for statement in statements:
+        match statement:
+            case Add():
+                block, table, into = table_entries(statement.table, statement.line)
+                into.entries.append(_entry(index, block, table, statement))
+            case SetDefault():
+                block, table, into = table_entries(statement.table, statement.line)
+                action = _find_action(index, block, table, statement.action, statement.line)
+                into.default_action.CopyFrom(_action_call(action, statement.args, statement.line))
+            case _:
+                pass
+    return entries
+
+
+# ---------------------------------------------------------------------------
+# Replay
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Failure:
+    """One way a vector file did not hold, with the line that claimed it."""
+
+    line: int
+    message: str
+
+    def __str__(self) -> str:
+        return f"line {self.line}: {self.message}"
+
+
+class ReplayFailed(AssertionError):
+    """One or more expectations did not hold."""
+
+
+# Given the entries installed so far, an ingress port and a packet, return
+# the packets the architecture emitted, as (port, bytes) in order.
+type RunPacket = Callable[[pb.Entries, int, bytes], list[tuple[int, bytes]]]
+
+
+@dataclass(slots=True)
+class _Run:
+    """One `packet` and everything claimed about its output."""
+
+    packet: Packet
+    entries: pb.Entries
+    expects: list[Expect] = field(default_factory=list)
+    no_packet: NoPacket | None = None
+
+
+def _runs(index: Index, statements: Sequence[Statement]) -> tuple[list[_Run], list[Failure]]:
+    """Group the statements into one run per `packet`, with the entries
+    installed before it and the expectations that follow it."""
+    runs: list[_Run] = []
+    failures: list[Failure] = []
+    installed: list[Add | SetDefault] = []
+    for statement in statements:
+        match statement:
+            case Add() | SetDefault():
+                installed.append(statement)
+            case Packet():
+                runs.append(_Run(statement, to_entries(index, installed)))
+            case Expect():
+                if not runs:
+                    failures.append(Failure(statement.line, "expect before any packet"))
+                else:
+                    runs[-1].expects.append(statement)
+            case NoPacket():
+                if not runs:
+                    failures.append(Failure(statement.line, "no_packet before any packet"))
+                elif runs[-1].expects:
+                    failures.append(Failure(statement.line, "no_packet after an expect"))
+                else:
+                    runs[-1].no_packet = statement
+            case Wait():
+                pass
+    return runs, failures
+
+
+def replay(index: Index, statements: Sequence[Statement], run_packet: RunPacket) -> list[Failure]:
+    """Replay a vector file against `run_packet`, collecting every failure.
+
+    Nothing is raised: a caller that wants an exception uses `assert_replay`.
+    """
+    runs, failures = _runs(index, statements)
+    for run in runs:
+        outputs = run_packet(run.entries, run.packet.port, run.packet.data)
+        failures.extend(_compare(run, outputs))
+    return failures
+
+
+def _compare(run: _Run, outputs: Sequence[tuple[int, bytes]]) -> list[Failure]:
+    failures: list[Failure] = []
+    for expect, output in zip(run.expects, outputs, strict=False):
+        port, data = output
+        if port != expect.port:
+            failures.append(
+                Failure(expect.line, f"expected output on port {expect.port}, got port {port}")
+            )
+        elif not expect.matches(data):
+            failures.append(
+                Failure(expect.line, f"expected {_hex(expect.data, expect.mask)}, got {data.hex()}")
+            )
+    for expect in run.expects[len(outputs) :]:
+        failures.append(Failure(expect.line, "no output packet"))
+    for port, data in outputs[len(run.expects) :]:
+        line = run.no_packet.line if run.no_packet is not None else run.packet.line
+        failures.append(Failure(line, f"unexpected output on port {port}: {data.hex()}"))
+    return failures
+
+
+def _hex(data: bytes, mask: bytes) -> str:
+    """Render an expectation the way the vector wrote it, `*` and all."""
+    out: list[str] = []
+    for byte, care in zip(data, mask, strict=True):
+        high = f"{byte >> 4:x}" if care & 0xF0 else "*"
+        low = f"{byte & 0xF:x}" if care & 0x0F else "*"
+        out.append(high + low)
+    return "".join(out)
+
+
+def assert_replay(index: Index, statements: Sequence[Statement], run_packet: RunPacket) -> None:
+    """Replay, and raise `ReplayFailed` listing every failure if any held."""
+    failures = replay(index, statements, run_packet)
+    if failures:
+        listed = "\n".join(f"  {failure}" for failure in failures)
+        raise ReplayFailed(f"{len(failures)} expectation(s) failed:\n{listed}")
