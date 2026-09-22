@@ -127,6 +127,16 @@ one that says so.
   `setbyte_1`... and its runner resolves names per table; p4blo's
   corpus copy of the STF names the elaborated actions directly and
   sets `Key.name` to p4c's key names so the vectors read unchanged.
+- **Architecture rules the design left open.** A parse that ends off a
+  byte boundary drops the packet whether or not it accepted, since the
+  payload is undefined either way. A contract field the program does
+  not declare reads as its zero value and swallows writes, so a program
+  without `egress_port` sends to port 0 and one without `flood` runs
+  unchanged under the switch. `parser_error` is written after the
+  parser's own `inout` writes and before the control, as v1model does.
+  The filter forwards the original bytes, so a vector that expects a
+  rewritten packet fails under it by construction; the filter tests
+  rewrite expectations to the input bytes.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
