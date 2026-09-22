@@ -146,6 +146,12 @@ class Expr:
         self._stack("last_index")
         return Expr(self.types, BIT32, pb.Expr(last_index=pb.LastIndex(stack=self.pb)))
 
+    @property
+    def last(self) -> Expr:
+        """`stack.last`, which is `stack[stack.lastIndex]`: an lvalue when
+        the stack is one."""
+        return self[self.last_index]
+
     def is_valid(self) -> Expr:
         if self.type.WhichOneof("kind") != "header":
             raise EdslError(f"is_valid needs a header, got {type_str(self.type)}")

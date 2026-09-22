@@ -753,6 +753,34 @@ def test_else_at_the_start_of_a_branch_is_refused() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Expressions
+# ---------------------------------------------------------------------------
+
+
+def test_stack_last_is_the_element_at_last_index() -> None:
+    p = base()
+    c = p.control("C")
+    last = c.hdr.stack.last
+    spelled = c.hdr.stack[c.hdr.stack.last_index]
+    assert last.type == spelled.type == pb.Type(header="v")
+    assert last.pb == spelled.pb
+    assert last.lval == spelled.lval
+    assert last.tag.pb == text_format.Parse(
+        f"""
+        member {{
+          base {{
+            index {{ base {{ {HDR_STACK} }} index {{ last_index {{ stack {{ {HDR_STACK} }} }} }} }}
+          }}
+          field: "tag"
+        }}
+        """,
+        pb.Expr(),
+    )
+    with pytest.raises(EdslError, match="needs a stack"):
+        _ = c.hdr.h.last
+
+
+# ---------------------------------------------------------------------------
 # Deparsers, enums and errors
 # ---------------------------------------------------------------------------
 
