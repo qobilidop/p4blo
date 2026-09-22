@@ -9,6 +9,7 @@ post-elaboration enough, to hold a real program without an escape hatch.
 |---|---|
 | Source | [p4lang/tutorials](https://github.com/p4lang/tutorials) `exercises/basic/solution/basic.p4` |
 | IR | `forwarder.txtpb` |
+| eDSL | `forwarder.py`, which builds the same program |
 | Vectors | `forward.stf`, `miss.stf`, `non_ipv4.stf`, `lpm_precedence.stf`, `too_short.stf` |
 
 It is written by hand for step 1 and regenerated from the eDSL in step 3;
