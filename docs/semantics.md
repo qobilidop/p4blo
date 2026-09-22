@@ -91,8 +91,9 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
   controls; a program that wants a check writes one.
 - **`hs.next`** is a parser-only lvalue. Extracting into it with
   `nextIndex == S` is a parse error `StackOutOfBounds` and consumes
-  nothing. On success it fills `hs[nextIndex]`, sets it valid, and
-  increments `nextIndex`.
+  nothing; this is checked before the packet is, so a full stack and a
+  short packet together report `StackOutOfBounds`. On success it fills
+  `hs[nextIndex]`, sets it valid, and increments `nextIndex`.
 - **`hs.lastIndex`** is `nextIndex - 1` as a `bit<32>`; when
   `nextIndex == 0` its value is `2^32 - 1`, the wrapped result. P4
   says undefined.
@@ -106,11 +107,15 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
 
 A parser runs over a packet with a cursor in bits, starting at zero.
 Its outcome is the headers, the metadata, the number of bits
-consumed, and an error, which is `NoError` on `accept`. On any error
+consumed, whether it accepted, and an error. Rejection and error are
+separate: an explicit transition to `reject` rejects with `NoError`,
+and a raised error rejects with that error (§12.7). On a raised error
 the parser stops immediately with the headers and metadata as they
-were at that moment; the caller decides what to do with them. This
-matches v1model, where the controls run after a parser rejection with
-`parser_error` set.
+were at that moment, including what a sub-parser had already written
+to its `out` and `inout` arguments, which are copied back before the
+error propagates. The caller decides what to do with a rejected
+outcome. This matches v1model, where the controls run after a parser
+rejection with `parser_error` set.
 
 - **Extraction past the packet end.** If fewer bits remain than the
   header's width, the extract raises `PacketTooShort`, consumes
@@ -118,7 +123,8 @@ matches v1model, where the controls run after a parser rejection with
 - **Extract sets the target valid** and fills every field from the
   packet, most significant bit first.
 - **`lookahead<T>`** reads `width(T)` bits without moving the cursor;
-  past the end it raises `PacketTooShort`.
+  past the end it raises `PacketTooShort`. When `T` is a header the
+  result is valid.
 - **`advance(n)`** moves the cursor by `n` bits; past the end it
   raises `PacketTooShort` and the cursor does not move.
 - **`verify(cond, err)`** raises `err` when `cond` is `false`.
@@ -127,11 +133,11 @@ matches v1model, where the controls run after a parser rejection with
   an exact value, a value with a mask, a closed range, or don't-care.
   With no matching case, the transition is to `reject` with error
   `NoMatch` (§12.6).
-- **`reject`** is a transition like any other; the error is whatever
-  was last raised, or `NoError` if the program transitioned to
-  `reject` explicitly without an error. This is what the P4
-  specification says (§12.7) and what makes `verify` and explicit
-  rejection distinguishable.
+- **`reject`** is a transition like any other. Reached explicitly, it
+  rejects with `NoError`; reached because an extract, lookahead,
+  advance, verify or select raised, it rejects with that error. This
+  is what the P4 specification says (§12.7) and what keeps `verify`
+  and explicit rejection distinguishable.
 - **Parser loop bound.** A state may be entered any number of times
   as long as the cursor advanced since the last time it was entered.
   Entering a state a second time with the cursor at the same position
@@ -190,7 +196,13 @@ A table match is evaluated over the installed entries; the program's
 - **`hit`** is `true` when an entry matched and `false` on a miss,
   including a miss that ran the default action.
 - **Key expressions** are evaluated once, before matching. An entry
-  value wider than the key is rejected at installation.
+  value wider than the key is rejected at installation, as is an LPM
+  value with a set bit outside its prefix and a ternary value with a
+  set bit outside its mask: entries are canonical, as P4Runtime
+  requires (§8.1). A key value's kind must be the key's match kind;
+  an exact value on a ternary key is written as a full mask.
+- **Host default action.** A host may replace a non-const default
+  action; it cannot remove one. Absent means the program's own.
 - **Entries reference actions by id** and carry action data as
   constants of the declared parameter widths; a mismatch is rejected
   at installation.
