@@ -1,0 +1,295 @@
+# forwarder: the p4lang tutorial "basic" solution, by hand, in p4blo.
+#
+# See README.md beside this file for what was elaborated away and what is
+# deferred. In short: typedefs are gone, the checksum blocks are gone, and
+# standard_metadata is replaced by the three fields of `metadata`, which are
+# the metadata contract of the step-1 architecture.
+
+name: "forwarder"
+
+# core.p4's errors, in the fixed order docs/semantics.md gives them. The
+# program declares no errors of its own.
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+
+# header ethernet_t. macAddr_t is a typedef for bit<48>, elaborated away.
+header_types {
+  name: "ethernet_t"
+  fields { name: "dstAddr" type { bits: 48 } }
+  fields { name: "srcAddr" type { bits: 48 } }
+  fields { name: "etherType" type { bits: 16 } }
+}
+
+# header ipv4_t. ip4Addr_t is a typedef for bit<32>, elaborated away.
+header_types {
+  name: "ipv4_t"
+  fields { name: "version" type { bits: 4 } }
+  fields { name: "ihl" type { bits: 4 } }
+  fields { name: "diffserv" type { bits: 8 } }
+  fields { name: "totalLen" type { bits: 16 } }
+  fields { name: "identification" type { bits: 16 } }
+  fields { name: "flags" type { bits: 3 } }
+  fields { name: "fragOffset" type { bits: 13 } }
+  fields { name: "ttl" type { bits: 8 } }
+  fields { name: "protocol" type { bits: 8 } }
+  fields { name: "hdrChecksum" type { bits: 16 } }
+  fields { name: "srcAddr" type { bits: 32 } }
+  fields { name: "dstAddr" type { bits: 32 } }
+}
+
+# struct headers: the program's one H type.
+struct_types {
+  name: "headers"
+  fields { name: "ethernet" type { header: "ethernet_t" } }
+  fields { name: "ipv4" type { header: "ipv4_t" } }
+}
+
+# struct metadata: the program's one M type, and the metadata contract of
+# the step-1 architecture. The architecture provides ingress_port before the
+# blocks run and consumes egress_port and drop afterwards. In the P4 source
+# these three live in standard_metadata; taking them out of the IR is what
+# makes the program architecture-free.
+struct_types {
+  name: "metadata"
+  fields { name: "ingress_port" type { bits: 9 } }
+  fields { name: "egress_port" type { bits: 9 } }
+  fields { name: "drop" type { boolean {} } }
+}
+
+headers: "headers"
+metadata: "metadata"
+
+# ---------------------------------------------------------------------------
+# parser MyParser
+# ---------------------------------------------------------------------------
+#
+# The P4 source takes (packet_in packet, out headers hdr, inout metadata
+# meta, inout standard_metadata_t standard_metadata). The packet is the
+# parser's own, not a parameter, and standard_metadata is gone, so the
+# signature is the (out H, inout M) of the parser role.
+
+blocks {
+  name: "MyParser"
+  kind: BLOCK_KIND_PARSER
+  params { name: "hdr" type { struct: "headers" } direction: DIRECTION_OUT }
+  params { name: "meta" type { struct: "metadata" } direction: DIRECTION_INOUT }
+  start_state: "start"
+
+  # state start { transition parse_ethernet; }
+  states {
+    name: "start"
+    transition { direct { state: "parse_ethernet" } }
+  }
+
+  # state parse_ethernet {
+  #     packet.extract(hdr.ethernet);
+  #     transition select(hdr.ethernet.etherType) {
+  #         TYPE_IPV4: parse_ipv4;   // const bit<16> TYPE_IPV4 = 0x800
+  #         default: accept;
+  #     }
+  # }
+  states {
+    name: "parse_ethernet"
+    body {
+      extract { target { member { base { var: "hdr" } field: "ethernet" } } }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base { member { base { var: "hdr" } field: "ethernet" } }
+            field: "etherType"
+          }
+        }
+        # TYPE_IPV4 is 0x800; literals are written in decimal.
+        cases {
+          sets { exact { bits { width: 16 value: "2048" } } }
+          target { state: "parse_ipv4" }
+        }
+        cases {
+          sets { dont_care {} }
+          target { accept {} }
+        }
+      }
+    }
+  }
+
+  # state parse_ipv4 { packet.extract(hdr.ipv4); transition accept; }
+  states {
+    name: "parse_ipv4"
+    body {
+      extract { target { member { base { var: "hdr" } field: "ipv4" } } }
+    }
+    transition { direct { accept {} } }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# control MyIngress
+# ---------------------------------------------------------------------------
+
+blocks {
+  name: "MyIngress"
+  kind: BLOCK_KIND_CONTROL
+  params { name: "hdr" type { struct: "headers" } direction: DIRECTION_INOUT }
+  params { name: "meta" type { struct: "metadata" } direction: DIRECTION_INOUT }
+
+  # action NoAction() {}
+  # core.p4 declares it; the IR has no implicit declarations, so it is here.
+  actions {
+    name: "NoAction"
+  }
+
+  # action drop() { mark_to_drop(standard_metadata); }
+  # mark_to_drop is a v1model extern over standard_metadata. Under the
+  # metadata contract the decision is a field of M that the architecture
+  # reads afterwards, so the action writes it directly and the block stays
+  # free of effects.
+  actions {
+    name: "drop"
+    body {
+      assign {
+        target { member { base { var: "meta" } field: "drop" } }
+        value { literal { boolean: true } }
+      }
+    }
+  }
+
+  # action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
+  #     standard_metadata.egress_spec = port;
+  #     hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+  #     hdr.ethernet.dstAddr = dstAddr;
+  #     hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+  # }
+  # Both parameters are action data, so both are directionless.
+  actions {
+    name: "ipv4_forward"
+    params { name: "dstAddr" type { bits: 48 } direction: DIRECTION_NONE }
+    params { name: "port" type { bits: 9 } direction: DIRECTION_NONE }
+    body {
+      assign {
+        target { member { base { var: "meta" } field: "egress_port" } }
+        value { var: "port" }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base { member { base { var: "hdr" } field: "ethernet" } }
+            field: "srcAddr"
+          }
+        }
+        value {
+          member {
+            base { member { base { var: "hdr" } field: "ethernet" } }
+            field: "dstAddr"
+          }
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base { member { base { var: "hdr" } field: "ethernet" } }
+            field: "dstAddr"
+          }
+        }
+        value { var: "dstAddr" }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base { member { base { var: "hdr" } field: "ipv4" } }
+            field: "ttl"
+          }
+        }
+        value {
+          binary {
+            op: BINARY_OP_SUB
+            left {
+              member {
+                base { member { base { var: "hdr" } field: "ipv4" } }
+                field: "ttl"
+              }
+            }
+            right { literal { bits { width: 8 value: "1" } } }
+          }
+        }
+      }
+    }
+  }
+
+  # table ipv4_lpm {
+  #     key = { hdr.ipv4.dstAddr: lpm; }
+  #     actions = { ipv4_forward; drop; NoAction; }
+  #     size = 1024;
+  #     default_action = drop();
+  # }
+  # The key carries no `name`, so the host addresses it by the expression
+  # rendered as a dotted path: hdr.ipv4.dstAddr.
+  tables {
+    name: "ipv4_lpm"
+    keys {
+      expr {
+        member {
+          base { member { base { var: "hdr" } field: "ipv4" } }
+          field: "dstAddr"
+        }
+      }
+      match_kind: MATCH_KIND_LPM
+    }
+    actions: "ipv4_forward"
+    actions: "drop"
+    actions: "NoAction"
+    default_action { action: "drop" }
+    size: 1024
+  }
+
+  # apply { if (hdr.ipv4.isValid()) { ipv4_lpm.apply(); } }
+  body {
+    if {
+      condition {
+        is_valid {
+          header { member { base { var: "hdr" } field: "ipv4" } }
+        }
+      }
+      then { apply { table: "ipv4_lpm" } }
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# control MyDeparser
+# ---------------------------------------------------------------------------
+#
+# A deparser in p4blo is its own block kind, taking (in H) over the packet.
+# The P4 source writes it as a control over packet_out.
+
+blocks {
+  name: "MyDeparser"
+  kind: BLOCK_KIND_DEPARSER
+  params { name: "hdr" type { struct: "headers" } direction: DIRECTION_IN }
+
+  # apply { packet.emit(hdr.ethernet); packet.emit(hdr.ipv4); }
+  body {
+    emit { value { member { base { var: "hdr" } field: "ethernet" } } }
+  }
+  body {
+    emit { value { member { base { var: "hdr" } field: "ipv4" } } }
+  }
+}
+
+# The three roles the step-1 architecture asks for. MyVerifyChecksum and
+# MyComputeChecksum have no role here; see README.md.
+exports { role: "parser" block: "MyParser" }
+exports { role: "control" block: "MyIngress" }
+exports { role: "deparser" block: "MyDeparser" }
