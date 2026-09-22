@@ -12,7 +12,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green so far: nine corpus programs fit with named elaborations only; coverage table in flight |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green so far: every corpus vector passes on P4-SpecTec (14 files, 9 programs); BMv2 optional second oracle not run |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | not started |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | Lean interpreter landed (181 checks, forwarder replayed in Lean, 306-request smoke run with zero divergences); DRT loop and theorem in flight |
 
 ## Steps
 
@@ -23,7 +23,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | 2 | Extern registry, stateful program | registry landed; stateful program and the forwarder's checksum wait for the eDSL |
 | 3 | eDSL, four corpus programs, two architectures, metadata contract | done: nine programs authored in the eDSL, both architectures, contract check |
 | 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | printer, oracle build, translation, replay and CI job landed; forwarder passes both sides |
-| 5 | Lean interpreter, extern models, DRT, the theorem | Lean project, IR types, JSON decoder and index landed (Lean 4.34.0); interpreter next |
+| 5 | Lean interpreter, extern models, DRT, the theorem | interpreter, extern models and run mode landed; DRT loop and theorem in flight |
 | 6 | Coverage table, README claim matrix, write-up | not started |
 
 ## Corpus
