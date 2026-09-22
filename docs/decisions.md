@@ -99,6 +99,34 @@ one that says so.
   `flood` consumed; fate as booleans, not an enum, so the forwarder
   runs unchanged under the switch. Byte-aligned parsing required by the
   architectures; the control runs after a parser rejection.
+- **Corpus programs picked from p4c's test suite** after the survey in
+  `docs/notes/corpus-candidates.md`: ACL is `ternary2-bmv2` (the only
+  v1model STF with runtime ternary adds and overlapping priorities),
+  header stacks is `header-stack-ops-bmv2` (fifteen BMv2-produced
+  vectors over push, pop, holes and `next`), stateful is
+  `issue1097-2-bmv2` (a register read and written from two blocks) plus
+  vectors of our own for cross-packet state. Micro-programs with
+  oracle-grade vectors (`parser_error-bmv2`, `issue1824-bmv2`,
+  `table-entries-priority-bmv2`, `issue655-bmv2` for csum16, the lpm
+  const-entries files) join as companions. No v1model MPLS or VLAN
+  program has an STF, and the tutorial forwarder has none either.
+- **Entry priority: larger wins, everywhere in the IR.** p4c's STF
+  `add` priority has larger winning (its runner inverts for BMv2), while
+  `const entries` have smaller `@priority` winning and list order
+  otherwise. The frontend elaborates const entries into IR priorities
+  where larger wins; the printer prints const entries in descending
+  priority without annotations, so p4c sees the same order.
+- **`expect` lines match a prefix unless they end in `$`**, as in p4c's
+  runner, because its vectors name only the header bytes. The runner
+  stays strict about unclaimed outputs.
+- **Slice as an lvalue is elaborated** to a read-modify-write of the
+  whole field rather than added to `LValue`; one elaboration named in
+  the coverage table, no new node for Lean.
+- **Per-table action copies keep the corpus STF adjusted.** p4c
+  elaborates `setbyte(out reg, val)` bound per table into `setbyte`,
+  `setbyte_1`... and its runner resolves names per table; p4blo's
+  corpus copy of the STF names the elaborated actions directly and
+  sets `Key.name` to p4c's key names so the vectors read unchanged.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
