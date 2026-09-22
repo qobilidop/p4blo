@@ -117,9 +117,10 @@ consumed, whether it accepted, and an error. Rejection and error are
 separate: an explicit transition to `reject` rejects with `NoError`,
 and a raised error rejects with that error (§12.7). On a raised error
 the parser stops immediately with the headers and metadata as they
-were at that moment, including what a sub-parser had already written
-to its `out` and `inout` arguments, which are copied back before the
-error propagates; the bits consumed are counted up to that moment. An
+were at that moment. A sub-parser's `out` and `inout` arguments are
+copied back before the error propagates, every one of them, so an
+`out` argument the sub-parser never wrote takes its zero value, as on
+the success path; the bits consumed are counted up to that moment. An
 explicit `reject` inside a sub-parser rejects the whole run the same
 way. The caller decides what to do with a rejected outcome. This matches v1model, where the controls run after a parser
 rejection with `parser_error` set.
@@ -154,8 +155,8 @@ rejection with `parser_error` set.
   and explicit rejection distinguishable.
 - **Parser loop bound.** A state may be entered any number of times
   as long as the cursor advanced since the last time it was entered.
-  Entering a state a second time with the cursor at the same position
-  as at the previous entry raises `ParserTimeout` (§12.11 leaves the
+  Entering a state with the cursor at the same position as at its
+  last entry raises `ParserTimeout` (§12.11 leaves the
   bound to the target). This is the no-consumption revisit rule from
   the design doc. Sub-parser states count as states of the enclosing
   run, so a sub-parser applied twice without consumption in between
@@ -202,9 +203,9 @@ A table match is evaluated over the installed entries; the program's
   longest prefix wins. Two entries with the same prefix length, equal
   under that prefix, and the same other keys are rejected at
   installation, so there is no tie.
-- **Ternary.** A table with any `ternary` key requires a priority on
-  every entry. Among the entries that match, the one with the largest
-  priority wins. Two matching entries with equal priority are
+- **Ternary.** Every entry of a table with a `ternary` key has a
+  priority, and `0` is an ordinary one. Among the entries that match,
+  the one with the largest priority wins. Two matching entries with equal priority are
   rejected at installation when their key sets overlap, which is
   decidable for ternary and exact keys, so there is no tie. Larger
   wins because that is what the P4Runtime specification says (§9.1);
@@ -241,7 +242,9 @@ headers; the caller appends the payload it retained after parsing.
   never apply a table, so `deparse : H -> Packet` needs no entries.
 
 - **`emit` of an invalid header** writes nothing (§15.1).
-- **`emit` of a struct** emits its fields in declaration order.
+- **`emit` of a struct** emits its fields in declaration order; the
+  fields are headers, stacks or such structs, recursively, which the
+  validator enforces.
   **`emit` of a stack** emits its elements from index `0` to `S - 1`,
   each subject to the invalid-header rule.
 - **Bit alignment.** Emitted headers are concatenated at the bit

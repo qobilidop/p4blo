@@ -223,7 +223,7 @@ Three things every architecture here does the same way, because the IR
 does not decide them. After a parser rejection the control still runs
 over the partial headers, with `parser_error` set if the program
 declares it, as v1model does. The payload is the bytes after the ones
-the parser consumed, and a parser that accepts having consumed a
+the parser consumed, and a parse that ends, accepted or not, having consumed a
 number of bits that is not a multiple of eight is treated as a program
 bug: the packet is dropped with a diagnostic, since P4 targets require
 byte-aligned parsing anyway. The output packet is the deparser's bytes

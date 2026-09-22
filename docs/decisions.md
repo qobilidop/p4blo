@@ -169,6 +169,10 @@ one that says so.
   done.
 - **STF key names may index stacks** (`extra[0].h`), as p4c's do; the
   runner resolves the element's header type.
+- **The STF runner rejects non-canonical entries with a line number**
+  rather than masking as p4c's runner does; entries are canonical
+  everywhere else, and a vector that writes one is a mistake worth
+  pointing at.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
