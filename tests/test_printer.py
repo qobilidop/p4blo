@@ -650,7 +650,7 @@ blocks {{
 
 blocks {{
   name: "Summarize"
-  kind: BLOCK_KIND_CONTROL
+  kind: BLOCK_KIND_DEPARSER
   params {{ name: "tags" type {{ stack {{ header: "tag_t" size: 3 }} }} direction: DIRECTION_IN }}
   params {{ name: "first" type {{ bits: 8 }} direction: DIRECTION_OUT }}
   body {{
