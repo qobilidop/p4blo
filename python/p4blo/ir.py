@@ -168,3 +168,23 @@ class Index:
             if f.name == field_name:
                 return i
         raise KeyError(f"{type_name}.{field_name}")
+
+
+def dotted_path(expr: pb.Expr) -> str | None:
+    """A key expression as the dotted path a host names it by, or None.
+
+    Only a chain of field accesses off a variable has one: `hdr.ipv4.dstAddr`.
+    """
+    match expr.WhichOneof("kind"):
+        case "var":
+            return expr.var
+        case "member":
+            base = dotted_path(expr.member.base)
+            return None if base is None else f"{base}.{expr.member.field}"
+        case _:
+            return None
+
+
+def key_name(key: pb.Key) -> str | None:
+    """The name a host uses for a table key: `Key.name`, else its dotted path."""
+    return key.name or dotted_path(key.expr)

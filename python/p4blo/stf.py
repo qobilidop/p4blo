@@ -81,6 +81,7 @@ import re
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 
+from p4blo import ir
 from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -427,22 +428,20 @@ def _parse_setdefault(rest: str, line: int) -> SetDefault:
 
 
 def dotted(expr: pb.Expr) -> str:
-    """Render a key expression as the dotted path a vector writes.
-
-    Only a chain of field accesses off a variable has one; anything else has
-    to be given a `name` on the table's key.
-    """
-    match expr.WhichOneof("kind"):
-        case "var":
-            return expr.var
-        case "member":
-            return f"{dotted(expr.member.base)}.{expr.member.field}"
-        case kind:
-            raise StfError(f"a {kind} key expression has no dotted name; name the key")
+    """The dotted path a vector writes for a key expression (see ir.dotted_path)."""
+    path = ir.dotted_path(expr)
+    if path is None:
+        raise StfError(
+            f"a {expr.WhichOneof('kind')} key expression has no dotted name; name the key"
+        )
+    return path
 
 
 def key_name(key: pb.Key) -> str:
-    return key.name or dotted(key.expr)
+    name = ir.key_name(key)
+    if name is None:
+        raise StfError("a key without a dotted path needs a name")
+    return name
 
 
 def _type_of(index: Index, block: str, expr: pb.Expr) -> pb.Type:
