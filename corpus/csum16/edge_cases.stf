@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2017 Barefoot Networks, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# csum16: p4c's six vectors, from testdata/p4_16_samples/issue655-bmv2.stf,
+# verbatim. Only these comments were added. The expected bytes were produced
+# by BMv2, so they pin p4blo's checksum16 to what a real target computes,
+# including at the 0xFFFF/0x0000 edge of one's-complement arithmetic.
+#
+# Each packet is one H: d then c, 16 bits each. The control increments d and
+# then sets c = checksum16.compute(d), the one's complement of the
+# one's-complement sum of the 16-bit words of {d}. Over a single word the
+# sum is d itself, so c = ~d, and the two fields of every output sum to
+# 0xFFFF. The input c is ignored: verify_checksum is deferred, and
+# update_checksum overwrites it.
+#
+#   d in    d + 1   c = ~(d + 1)
+#   0x0000  0x0001  0xFFFE
+#   0x0001  0x0002  0xFFFD
+#   0xFFFF  0x0000  0xFFFF        d wraps to zero; the checksum of zero is
+#                                 all ones, not zero
+#   0xFFFE  0xFFFF  0x0000        a word of all ones sums to 0xFFFF, whose
+#                                 complement is 0x0000
+#   0xFFFD  0xFFFE  0x0001
+#   0xFFFE  0xFFFF  0x0000        as above, with a different input c
+#
+# The program declares no egress_port, so every packet leaves on port 0.
+
+packet 0 0000 0000
+expect 0 0001 FFFE
+packet 0 0001 FFFE
+expect 0 0002 FFFD
+packet 0 FFFF 0000
+expect 0 0000 FFFF
+packet 0 FFFE 1000
+expect 0 FFFF 0000
+packet 0 FFFD 1000
+expect 0 FFFE 0001
+packet 0 FFFE 0001
+expect 0 FFFF 0000

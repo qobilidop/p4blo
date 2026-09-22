@@ -78,6 +78,9 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         }
+        if (hdr.ipv4.isValid()) {
+            hash(hdr.ipv4.hdrChecksum, HashAlgorithm.csum16, 16w0, { (((((((((hdr.ipv4.version ++ hdr.ipv4.ihl) ++ hdr.ipv4.diffserv) ++ hdr.ipv4.totalLen) ++ hdr.ipv4.identification) ++ hdr.ipv4.flags) ++ hdr.ipv4.fragOffset) ++ hdr.ipv4.ttl) ++ hdr.ipv4.protocol) ++ hdr.ipv4.srcAddr) ++ hdr.ipv4.dstAddr }, 32w65536);
+        }
         standard_metadata.egress_spec = meta.egress_port;
         if (meta.drop) { mark_to_drop(standard_metadata); }
     }

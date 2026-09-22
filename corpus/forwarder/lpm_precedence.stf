@@ -10,23 +10,32 @@
 # must not matter, so the /16 is installed first and still loses.
 #
 # Both packets are the frame of forward.stf with a different IPv4 dstAddr,
-# and both get ttl 0x40 -> 0x3f and srcAddr <- the old dstAddr, as there.
+# and both get ttl 0x40 -> 0x3f, srcAddr <- the old dstAddr, and a fresh
+# hdrChecksum from csum.compute at the end of the control, as there.
 #
 # Packet 1, to 10.0.2.2 (0x0a000202):
 #   the /16 covers it and so does the /24; the /24 is longer and wins, so
 #   ipv4_forward(dstAddr = 00:00:00:00:ff:18, port = 2) runs.
 #   totalLen 0x001a, identification 0x0001, payload de ad be ef ca fe.
+#   The IPv4 header after the rewrite is byte for byte forward.stf's, so
+#   the checksum is the one derived there: 0x64d0.
 #
 # Packet 2, to 10.0.9.9 (0x0a000909):
 #   only the /16 covers it, so ipv4_forward(dstAddr = 00:00:00:00:ff:10,
 #   port = 1) runs. Same widths, identification 0x0002 so the two packets
-#   are distinguishable in a trace.
+#   are distinguishable in a trace. The checksum words, in header order
+#   without the checksum slot, are
+#
+#     4500 001a 0002 0000 3f11 0a00 0101 0a00 0909
+#
+#   which sum to 0xa237 with no carry to fold, so hdrChecksum is
+#   0xffff - 0xa237 = 0x5dc8.
 
 add ipv4_lpm hdr.ipv4.dstAddr:0x0a000000/16 ipv4_forward(dstAddr:0x00000000ff10, port:1)
 add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 ipv4_forward(dstAddr:0x00000000ff18, port:2)
 
 packet 0 000000000101 000000000001 0800 4500001a0001000040110000 0a000101 0a000202 deadbeefcafe
-expect 2 00000000ff18 000000000101 0800 4500001a000100003f110000 0a000101 0a000202 deadbeefcafe
+expect 2 00000000ff18 000000000101 0800 4500001a000100003f1164d0 0a000101 0a000202 deadbeefcafe
 
 packet 0 000000000101 000000000001 0800 4500001a0002000040110000 0a000101 0a000909 deadbeefcafe
-expect 1 00000000ff10 000000000101 0800 4500001a000200003f110000 0a000101 0a000909 deadbeefcafe
+expect 1 00000000ff10 000000000101 0800 4500001a000200003f115dc8 0a000101 0a000909 deadbeefcafe

@@ -1,0 +1,229 @@
+name: "verify_error"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+errors: "IPv4OptionsNotSupported"
+errors: "IPv4ChecksumError"
+errors: "IPv4HeaderTooShort"
+errors: "IPv4BadPacket"
+header_types {
+  name: "test_header"
+  fields {
+    name: "dstAddr"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "srcAddr"
+    type {
+      bits: 48
+    }
+  }
+}
+struct_types {
+  name: "headers"
+  fields {
+    name: "h1"
+    type {
+      header: "test_header"
+    }
+  }
+}
+struct_types {
+  name: "mystruct1_t"
+  fields {
+    name: "a"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "b"
+    type {
+      bits: 4
+    }
+  }
+}
+struct_types {
+  name: "metadata"
+  fields {
+    name: "mystruct1"
+    type {
+      struct: "mystruct1_t"
+    }
+  }
+  fields {
+    name: "parser_error"
+    type {
+      error {
+      }
+    }
+  }
+}
+blocks {
+  name: "MyParser"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h1"
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          literal {
+            boolean: false
+          }
+        }
+        error: "IPv4BadPacket"
+      }
+    }
+    body {
+      verify {
+        condition {
+          literal {
+            boolean: false
+          }
+        }
+        error: "IPv4HeaderTooShort"
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "MyIngress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_NE
+          left {
+            member {
+              base {
+                var: "meta"
+              }
+              field: "parser_error"
+            }
+          }
+          right {
+            literal {
+              error: "NoError"
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "dstAddr"
+            }
+          }
+          value {
+            literal {
+              bits {
+                width: 48
+                value: "2989"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "MyDeparser"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h1"
+        }
+      }
+    }
+  }
+}
+headers: "headers"
+metadata: "metadata"
+exports {
+  role: "parser"
+  block: "MyParser"
+}
+exports {
+  role: "control"
+  block: "MyIngress"
+}
+exports {
+  role: "deparser"
+  block: "MyDeparser"
+}

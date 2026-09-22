@@ -1,0 +1,1230 @@
+name: "subparser_stack"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+errors: "BadHeaderType"
+header_types {
+  name: "h1_t"
+  fields {
+    name: "hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "op1"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "op2"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "op3"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "h2_valid_bits"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "next_hdr_type"
+    type {
+      bits: 8
+    }
+  }
+}
+header_types {
+  name: "h2_t"
+  fields {
+    name: "hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "f1"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "f2"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "next_hdr_type"
+    type {
+      bits: 8
+    }
+  }
+}
+header_types {
+  name: "h3_t"
+  fields {
+    name: "hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "data"
+    type {
+      bits: 8
+    }
+  }
+}
+struct_types {
+  name: "headers"
+  fields {
+    name: "h1"
+    type {
+      header: "h1_t"
+    }
+  }
+  fields {
+    name: "h2"
+    type {
+      stack {
+        header: "h2_t"
+        size: 5
+      }
+    }
+  }
+  fields {
+    name: "h3"
+    type {
+      header: "h3_t"
+    }
+  }
+}
+struct_types {
+  name: "metadata"
+}
+blocks {
+  name: "subParserImpl"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "ret_next_hdr_type"
+    type {
+      bits: 8
+    }
+    direction: DIRECTION_OUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          next {
+            stack {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h2"
+              }
+            }
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  index {
+                    base {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "h2"
+                      }
+                    }
+                    index {
+                      last_index {
+                        stack {
+                          member {
+                            base {
+                              var: "hdr"
+                            }
+                            field: "h2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "2"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "ret_next_hdr_type"
+        }
+        value {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h2"
+                  }
+                }
+                index {
+                  last_index {
+                    stack {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "h2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            field: "next_hdr_type"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "parserI"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  locals {
+    name: "my_next_hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h1"
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h1"
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "1"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h1"
+              }
+            }
+            field: "next_hdr_type"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "2"
+              }
+            }
+          }
+          target {
+            state: "parse_first_h2"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "3"
+              }
+            }
+          }
+          target {
+            state: "parse_h3"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "parse_first_h2"
+    body {
+      call_block {
+        block: "subParserImpl"
+        args {
+          lvalue {
+            var: "hdr"
+          }
+        }
+        args {
+          lvalue {
+            var: "my_next_hdr_type"
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          var: "my_next_hdr_type"
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "2"
+              }
+            }
+          }
+          target {
+            state: "parse_other_h2"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "3"
+              }
+            }
+          }
+          target {
+            state: "parse_h3"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "parse_other_h2"
+    body {
+      extract {
+        target {
+          next {
+            stack {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h2"
+              }
+            }
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  index {
+                    base {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "h2"
+                      }
+                    }
+                    index {
+                      last_index {
+                        stack {
+                          member {
+                            base {
+                              var: "hdr"
+                            }
+                            field: "h2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "2"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h2"
+                  }
+                }
+                index {
+                  last_index {
+                    stack {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "h2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            field: "next_hdr_type"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "2"
+              }
+            }
+          }
+          target {
+            state: "parse_other_h2"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "3"
+              }
+            }
+          }
+          target {
+            state: "parse_h3"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "parse_h3"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h3"
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h3"
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "3"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "cIngress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h1"
+            }
+          }
+          field: "h2_valid_bits"
+        }
+      }
+      value {
+        literal {
+          bits {
+            width: 8
+            value: "0"
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "0"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "1"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "2"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "4"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "3"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "8"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "3"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "4"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "16"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "4"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "DeparserI"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h1"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h2"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h3"
+        }
+      }
+    }
+  }
+}
+headers: "headers"
+metadata: "metadata"
+exports {
+  role: "parser"
+  block: "parserI"
+}
+exports {
+  role: "control"
+  block: "cIngress"
+}
+exports {
+  role: "deparser"
+  block: "DeparserI"
+}

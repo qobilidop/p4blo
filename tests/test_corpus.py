@@ -48,3 +48,30 @@ def test_vector_replays_under_the_switch(vector: Path) -> None:
     loaded = arch.load(golden(vector.parent))
     statements = stf.parse(vector.read_text())
     stf.assert_replay(loaded.index, statements, arch.stf_driver(arch.Switch(ports=4), loaded))
+
+
+@pytest.mark.parametrize("vector", VECTORS, ids=lambda v: f"{v.parent.name}/{v.stem}")
+def test_the_filter_makes_the_same_fate_decisions(vector: Path) -> None:
+    """Claim 3: every program runs under both architectures unchanged.
+
+    The filter has no deparser, so its bytes differ from the switch's, but
+    the fate is the control's decision and must agree: dropped by one is
+    dropped by the other, and a forwarded packet leaves on the same port.
+    Entries accumulate as the vector installs them, as in a replay.
+    """
+    program = golden(vector.parent)
+    statements = stf.parse(vector.read_text())
+    switch = arch.stf_driver(arch.Switch(ports=4), arch.load(program))
+    filter_ = arch.stf_driver(arch.Filter(), arch.load(program))
+    installed: list[stf.Statement] = []
+    packets = 0
+    for statement in statements:
+        if isinstance(statement, stf.Add | stf.SetDefault):
+            installed.append(statement)
+        elif isinstance(statement, stf.Packet):
+            entries = stf.to_entries(ir.Index.build(program), installed)
+            by_switch = switch(entries, statement.port, statement.data)
+            by_filter = filter_(entries, statement.port, statement.data)
+            assert [port for port, _ in by_filter] == [port for port, _ in by_switch]
+            packets += 1
+    assert packets > 0

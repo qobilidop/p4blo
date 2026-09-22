@@ -1,0 +1,56 @@
+# stateful: the register keeps its value from one packet to the next.
+#
+# Our own vectors; p4c's never hit the same cell twice. The file replays on a
+# fresh load, so r is all zero at the first packet, and the state then
+# carries across every packet below: the harness keeps one Loaded per file.
+#
+# Per packet, with idx = reg_idx_to_update and v = value_to_add:
+#
+#   ingress half:  pkts.count(idx); x = r[idx]; if (x == 0) r[idx] = 0x2a;
+#   egress half:   tmp = r[idx] + v;  r[idx] = tmp;  debug byte = tmp
+#
+# so a cell is seeded with 0x2a the first time it is read as zero and
+# accumulates afterwards; the output's third byte is the cell's new value.
+#
+# Packet 1, idx 0, v 0x17:  r[0] = 0x00 -> seeded 0x2a
+#                           tmp = 0x2a + 0x17 = 0x41;  r[0] = 0x41
+# Packet 2, idx 0, v 0x17:  r[0] = 0x41, not seeded: the previous packet's
+#                           write is what this one reads
+#                           tmp = 0x41 + 0x17 = 0x58;  r[0] = 0x58
+# Packet 3, idx 1, v 0x05:  another cell, untouched: r[1] = 0x00 -> 0x2a
+#                           tmp = 0x2a + 0x05 = 0x2f;  r[1] = 0x2f
+# Packet 4, idx 0, v 0xa8:  r[0] = 0x58
+#                           tmp = 0x58 + 0xa8 = 0x100, wraps to 0x00 in
+#                           bit<8>;  r[0] = 0x00
+# Packet 5, idx 0, v 0x01:  r[0] = 0x00 again, so the seed guard fires a
+#                           second time: a cell that wraps to zero is
+#                           indistinguishable from a fresh one
+#                           tmp = 0x2a + 0x01 = 0x2b;  r[0] = 0x2b
+# Packet 6, idx 1, v 0x01:  r[1] = 0x2f, untouched since packet 3; the input
+#                           debug byte is 0xff to show it is overwritten
+#                           tmp = 0x2f + 0x01 = 0x30;  r[1] = 0x30
+#
+# The counter pkts is bumped at idx on every packet (pkts[0] = 4, pkts[1] =
+# 2 at the end) but STF has no way to read it; it is here so the printer
+# and the oracle see a counter.
+#
+# `$` demands the exact length: the output is the three header bytes and
+# nothing else, since the parser consumed the whole packet.
+
+packet 0 00 17 00
+expect 0 00 17 41 $
+
+packet 0 00 17 00
+expect 0 00 17 58 $
+
+packet 0 01 05 00
+expect 0 01 05 2f $
+
+packet 0 00 a8 00
+expect 0 00 a8 00 $
+
+packet 0 00 01 00
+expect 0 00 01 2b $
+
+packet 0 01 01 ff
+expect 0 01 01 30 $

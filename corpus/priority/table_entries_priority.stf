@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2017 Barefoot Networks, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# p4c's testdata/p4_16_samples/table-entries-priority-bmv2.stf, with one
+# edit for p4blo's STF dialect (see README.md): each `expect` is moved after
+# the `packet` it belongs to. p4c's runner queues expectations per port, so
+# it accepts either order; p4blo's replay pairs a packet with the expects
+# that follow it (python/p4blo/stf.py, "Replay"). The bytes are untouched.
+
+# header hdr { bit<8>  e; bit<16> t; bit<8>  l; bit<8> r; bit<1>  v; }
+
+# t_ternary tests: if packets come on port 0, we missed!
+
+packet 0 01 0001 00 00 b0
+expect 1 01 0001 ** ** ** $
+
+# should hit port 3, even though it matches the first entry
+packet 0 02 1001 00 00 b0
+expect 3 02 1001 ** ** ** $
+
+# should hit port 3, even though it matches the second entry
+packet 0 03 1181 00 00 b0
+expect 3 03 **** ** ** ** $
