@@ -1,0 +1,231 @@
+# csum16: p4c's issue655-bmv2, a field incremented and its Internet checksum
+# recomputed, in p4blo. Generated from csum16.py; see README.md beside this
+# file for what was elaborated away and what is deferred.
+
+name: "csum16"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "H"
+  fields {
+    name: "d"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "c"
+    type {
+      bits: 16
+    }
+  }
+}
+struct_types {
+  name: "Parsed_packet"
+  fields {
+    name: "h"
+    type {
+      header: "H"
+    }
+  }
+}
+struct_types {
+  name: "Metadata"
+}
+extern_types {
+  name: "checksum16"
+  methods {
+    name: "compute"
+    params {
+      name: "data"
+      type {
+        bits: 16
+      }
+      direction: DIRECTION_IN
+    }
+    returns {
+      bits: 16
+    }
+  }
+}
+extern_instances {
+  name: "csum"
+  extern_type: "checksum16"
+}
+blocks {
+  name: "parserI"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Parsed_packet"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "cIngress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "Parsed_packet"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h"
+            }
+          }
+          field: "d"
+        }
+      }
+      value {
+        binary {
+          op: BINARY_OP_ADD
+          left {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h"
+                }
+              }
+              field: "d"
+            }
+          }
+          right {
+            literal {
+              bits {
+                width: 16
+                value: "1"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    call_extern {
+      instance: "csum"
+      method: "compute"
+      args {
+        expr {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h"
+              }
+            }
+            field: "d"
+          }
+        }
+      }
+      result {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h"
+            }
+          }
+          field: "c"
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "DeparserI"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Parsed_packet"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h"
+        }
+      }
+    }
+  }
+}
+headers: "Parsed_packet"
+metadata: "Metadata"
+exports {
+  role: "parser"
+  block: "parserI"
+}
+exports {
+  role: "control"
+  block: "cIngress"
+}
+exports {
+  role: "deparser"
+  block: "DeparserI"
+}

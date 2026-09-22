@@ -1,0 +1,469 @@
+# stateful: p4c's issue1097-2-bmv2, a register read and written across the
+# pipeline, in p4blo. Generated from stateful.py; see README.md beside this
+# file for what was elaborated away and what was added.
+
+name: "stateful"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "myhdr_t"
+  fields {
+    name: "reg_idx_to_update"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "value_to_add"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "debug_last_reg_value_written"
+    type {
+      bits: 8
+    }
+  }
+}
+struct_types {
+  name: "Headers"
+  fields {
+    name: "myhdr"
+    type {
+      header: "myhdr_t"
+    }
+  }
+}
+struct_types {
+  name: "Meta"
+}
+extern_types {
+  name: "register"
+  constructor_params {
+    name: "size"
+    type {
+      bits: 32
+    }
+    direction: DIRECTION_IN
+  }
+  methods {
+    name: "read"
+    params {
+      name: "result"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_OUT
+    }
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+  }
+  methods {
+    name: "write"
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+    params {
+      name: "value"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_IN
+    }
+  }
+}
+extern_types {
+  name: "counter"
+  constructor_params {
+    name: "size"
+    type {
+      bits: 32
+    }
+    direction: DIRECTION_IN
+  }
+  methods {
+    name: "count"
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+  }
+}
+extern_instances {
+  name: "r"
+  extern_type: "register"
+  args {
+    bits {
+      width: 32
+      value: "256"
+    }
+  }
+}
+extern_instances {
+  name: "pkts"
+  extern_type: "counter"
+  args {
+    bits {
+      width: 32
+      value: "256"
+    }
+  }
+}
+blocks {
+  name: "p"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Meta"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "myhdr"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "pipeline"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Meta"
+    }
+    direction: DIRECTION_INOUT
+  }
+  locals {
+    name: "x"
+    type {
+      bits: 8
+    }
+  }
+  locals {
+    name: "tmp"
+    type {
+      bits: 8
+    }
+  }
+  body {
+    call_extern {
+      instance: "pkts"
+      method: "count"
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "myhdr"
+                  }
+                }
+                field: "reg_idx_to_update"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    call_extern {
+      instance: "r"
+      method: "read"
+      args {
+        lvalue {
+          var: "x"
+        }
+      }
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "myhdr"
+                  }
+                }
+                field: "reg_idx_to_update"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_EQ
+          left {
+            var: "x"
+          }
+          right {
+            literal {
+              bits {
+                width: 8
+                value: "0"
+              }
+            }
+          }
+        }
+      }
+      then {
+        call_extern {
+          instance: "r"
+          method: "write"
+          args {
+            expr {
+              cast {
+                to {
+                  bits: 32
+                }
+                operand {
+                  member {
+                    base {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "myhdr"
+                      }
+                    }
+                    field: "reg_idx_to_update"
+                  }
+                }
+              }
+            }
+          }
+          args {
+            expr {
+              literal {
+                bits {
+                  width: 8
+                  value: "42"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    call_extern {
+      instance: "r"
+      method: "read"
+      args {
+        lvalue {
+          var: "tmp"
+        }
+      }
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "myhdr"
+                  }
+                }
+                field: "reg_idx_to_update"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        var: "tmp"
+      }
+      value {
+        binary {
+          op: BINARY_OP_ADD
+          left {
+            var: "tmp"
+          }
+          right {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "myhdr"
+                }
+              }
+              field: "value_to_add"
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    call_extern {
+      instance: "r"
+      method: "write"
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "myhdr"
+                  }
+                }
+                field: "reg_idx_to_update"
+              }
+            }
+          }
+        }
+      }
+      args {
+        expr {
+          var: "tmp"
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "myhdr"
+            }
+          }
+          field: "debug_last_reg_value_written"
+        }
+      }
+      value {
+        var: "tmp"
+      }
+    }
+  }
+}
+blocks {
+  name: "deparser"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "myhdr"
+        }
+      }
+    }
+  }
+}
+headers: "Headers"
+metadata: "Meta"
+exports {
+  role: "parser"
+  block: "p"
+}
+exports {
+  role: "control"
+  block: "pipeline"
+}
+exports {
+  role: "deparser"
+  block: "deparser"
+}

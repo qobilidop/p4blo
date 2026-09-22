@@ -7,7 +7,10 @@ format.
 
 from __future__ import annotations
 
-from p4blo.edsl import Program, bit, boolean, lpm
+from functools import reduce
+
+from p4blo.edsl import Program, bit, boolean, concat, lpm
+from p4blo.edsl.externs import checksum16
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -36,6 +39,10 @@ def build() -> pb.Program:
     metadata = p.struct("metadata", ingress_port=bit(9), egress_port=bit(9), drop=boolean)
     p.headers = headers
     p.metadata = metadata
+
+    # MyComputeChecksum's update_checksum over the eleven non-checksum
+    # fields of ipv4_t, 144 bits concatenated in header order.
+    csum = p.extern_instance("csum", checksum16(p, bit(144)))
 
     TYPE_IPV4 = 0x800
 
@@ -70,6 +77,24 @@ def build() -> pb.Program:
         with c.body() as b:
             with b.if_(hdr.ipv4.is_valid()):
                 b.apply(ipv4_lpm)
+            # MyComputeChecksum runs after ingress (and the empty egress),
+            # guarded as the tutorial guards it.
+            with b.if_(hdr.ipv4.is_valid()):
+                ipv4 = hdr.ipv4
+                fields = [
+                    ipv4.version,
+                    ipv4.ihl,
+                    ipv4.diffserv,
+                    ipv4.totalLen,
+                    ipv4.identification,
+                    ipv4.flags,
+                    ipv4.fragOffset,
+                    ipv4.ttl,
+                    ipv4.protocol,
+                    ipv4.srcAddr,
+                    ipv4.dstAddr,
+                ]
+                b.call(csum, "compute", reduce(concat, fields), result=ipv4.hdrChecksum)
 
     with p.deparser("MyDeparser") as d:
         with d.body() as b:
