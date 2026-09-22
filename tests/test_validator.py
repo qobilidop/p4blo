@@ -794,12 +794,35 @@ def test_block_kind_stmt_in_action(text: str) -> None:
     "block, text",
     [
         (ING, assign(T16, "lookahead { type { bits: 16 } }")),
-        (ING, f"set_valid {{ header {{ next {{ stack {{ {HDR_VLAN} }} }} }} }}"),
         (DEP, 'emit { value { lookahead { type { header: "eth" } } } }'),
     ],
 )
 def test_parser_only(block: int, text: str) -> None:
     assert v.PARSER_ONLY in broken(lambda p: add_stmt(p, block, text))
+
+
+VLAN_NEXT = f"next {{ stack {{ {HDR_VLAN} }} }}"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # as a whole lvalue
+        assign(VLAN_NEXT, index(HDR_VLAN, lit(32, "0"))),
+        f"set_valid {{ header {{ {VLAN_NEXT} }} }}",
+        # as the base of a member
+        assign(member(VLAN_NEXT, "vid"), lit(12, "1")),
+        # as an out argument
+        call_extern("read", arg_in(lit(32, "1")), arg_out(VLAN_NEXT)),
+    ],
+)
+def test_next_only_extract_in_a_parser(text: str) -> None:
+    assert v.NEXT_ONLY_EXTRACT in broken(lambda p: add_parser_stmt(p, PARSE_VLAN, text))
+
+
+def test_next_only_extract_in_a_control() -> None:
+    text = f"set_valid {{ header {{ {VLAN_NEXT} }} }}"
+    assert broken(lambda p: add_stmt(p, ING, text)) == [v.NEXT_ONLY_EXTRACT]
 
 
 @pytest.mark.parametrize(

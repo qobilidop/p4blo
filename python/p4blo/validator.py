@@ -32,7 +32,8 @@ Blocks
                       start_state, actions or tables of another kind
   PARSER_START_STATE  a parser's start_state is not one of its states
   BLOCK_KIND_STMT     a statement in a block kind that does not allow it
-  PARSER_ONLY         lookahead or stack.next outside a parser
+  PARSER_ONLY         lookahead outside a parser
+  NEXT_ONLY_EXTRACT   stack.next anywhere but as the target of an extract
   PARAM_DIRECTION     a parameter direction its owner does not allow
 Expressions, lvalues and statements
   EXPR_INVALID        an expression or lvalue with no kind, or an unspecified operator
@@ -95,6 +96,7 @@ BLOCK_KIND_SHAPE = "BLOCK_KIND_SHAPE"
 PARSER_START_STATE = "PARSER_START_STATE"
 BLOCK_KIND_STMT = "BLOCK_KIND_STMT"
 PARSER_ONLY = "PARSER_ONLY"
+NEXT_ONLY_EXTRACT = "NEXT_ONLY_EXTRACT"
 PARAM_DIRECTION = "PARAM_DIRECTION"
 EXPR_INVALID = "EXPR_INVALID"
 STMT_INVALID = "STMT_INVALID"
@@ -875,9 +877,7 @@ class _Validator:
             case "pop":
                 self.check_push_pop(stmt.pop.stack, stmt.pop.count, scope, path)
             case "extract":
-                self.expect_lvalue(
-                    stmt.extract.target, is_header, "a header", scope, f"{path}.target"
-                )
+                self.check_extract(stmt.extract, scope, path)
             case "advance":
                 self.expect_expr(stmt.advance.bits, is_bits, "bits", scope, f"{path}.bits")
             case "verify":
@@ -1035,6 +1035,17 @@ class _Validator:
                 if may_alias(a, b):
                     self.report(CALL_ALIAS, "argument may alias an earlier out argument", apath)
                     break
+
+    def check_extract(self, stmt: pb.Extract, scope: Scope, path: str) -> None:
+        """The target is a header lvalue, or `stack.next`, which is allowed
+        nowhere else (docs/semantics.md, "Header stacks")."""
+        target = stmt.target
+        if target.WhichOneof("kind") == "next":
+            self.expect_lvalue(
+                target.next.stack, is_stack, "a stack", scope, f"{path}.target.next.stack"
+            )
+        else:
+            self.expect_lvalue(target, is_header, "a header", scope, f"{path}.target")
 
     def check_push_pop(self, stack: pb.LValue, count: int, scope: Scope, path: str) -> None:
         self.expect_lvalue(stack, is_stack, "a stack", scope, f"{path}.stack")
@@ -1308,12 +1319,9 @@ class _Validator:
                 self.expect_expr(lvalue.index.index, is_bits, "bits", scope, f"{path}.index.index")
                 return pb.Type(header=stack.stack.header) if stack is not None else None
             case "next":
-                if not scope.in_parser:
-                    self.report(PARSER_ONLY, "stack.next is allowed only in a parser", path)
-                stack = self.expect_lvalue(
-                    lvalue.next.stack, is_stack, "a stack", scope, f"{path}.next.stack"
-                )
-                return pb.Type(header=stack.stack.header) if stack is not None else None
+                # `check_extract` handles the one place it may appear.
+                self.report(NEXT_ONLY_EXTRACT, "stack.next is only the target of an extract", path)
+                return None
             case _:
                 self.report(EXPR_INVALID, "lvalue has no kind", path)
                 return None

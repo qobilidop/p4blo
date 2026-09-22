@@ -89,7 +89,9 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
   does nothing. Both are undefined in P4 (§8.18). This closes the
   behavior without an error because the IR has no runtime error in
   controls; a program that wants a check writes one.
-- **`hs.next`** is a parser-only lvalue. Extracting into it with
+- **`hs.next`** appears only as the target of an extract; the validator
+  rejects it anywhere else, so no assignment, `setValid`, field write
+  or argument ever goes through it. Extracting into it with
   `nextIndex == S` is a parse error `StackOutOfBounds` and consumes
   nothing; this is checked before the packet is, so a full stack and a
   short packet together report `StackOutOfBounds`. On success it fills
