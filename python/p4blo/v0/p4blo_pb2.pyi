@@ -461,9 +461,9 @@ class DontCare(_message.Message):
     def __init__(self) -> None: ...
 
 class Stmt(_message.Message):
-    __slots__ = ("assign", "apply", "call_action", "call_block", "call_extern", "set_valid", "set_invalid", "push", "pop", "extract", "advance", "verify", "emit")
+    __slots__ = ("assign", "conditional", "apply", "call_action", "call_block", "call_extern", "set_valid", "set_invalid", "push", "pop", "extract", "advance", "verify", "emit")
     ASSIGN_FIELD_NUMBER: _ClassVar[int]
-    IF_FIELD_NUMBER: _ClassVar[int]
+    CONDITIONAL_FIELD_NUMBER: _ClassVar[int]
     APPLY_FIELD_NUMBER: _ClassVar[int]
     CALL_ACTION_FIELD_NUMBER: _ClassVar[int]
     CALL_BLOCK_FIELD_NUMBER: _ClassVar[int]
@@ -477,6 +477,7 @@ class Stmt(_message.Message):
     VERIFY_FIELD_NUMBER: _ClassVar[int]
     EMIT_FIELD_NUMBER: _ClassVar[int]
     assign: Assign
+    conditional: If
     apply: Apply
     call_action: CallAction
     call_block: CallBlock
@@ -489,7 +490,7 @@ class Stmt(_message.Message):
     advance: Advance
     verify: Verify
     emit: Emit
-    def __init__(self, assign: _Optional[_Union[Assign, _Mapping]] = ..., apply: _Optional[_Union[Apply, _Mapping]] = ..., call_action: _Optional[_Union[CallAction, _Mapping]] = ..., call_block: _Optional[_Union[CallBlock, _Mapping]] = ..., call_extern: _Optional[_Union[CallExtern, _Mapping]] = ..., set_valid: _Optional[_Union[SetValid, _Mapping]] = ..., set_invalid: _Optional[_Union[SetInvalid, _Mapping]] = ..., push: _Optional[_Union[Push, _Mapping]] = ..., pop: _Optional[_Union[Pop, _Mapping]] = ..., extract: _Optional[_Union[Extract, _Mapping]] = ..., advance: _Optional[_Union[Advance, _Mapping]] = ..., verify: _Optional[_Union[Verify, _Mapping]] = ..., emit: _Optional[_Union[Emit, _Mapping]] = ..., **kwargs) -> None: ...
+    def __init__(self, assign: _Optional[_Union[Assign, _Mapping]] = ..., conditional: _Optional[_Union[If, _Mapping]] = ..., apply: _Optional[_Union[Apply, _Mapping]] = ..., call_action: _Optional[_Union[CallAction, _Mapping]] = ..., call_block: _Optional[_Union[CallBlock, _Mapping]] = ..., call_extern: _Optional[_Union[CallExtern, _Mapping]] = ..., set_valid: _Optional[_Union[SetValid, _Mapping]] = ..., set_invalid: _Optional[_Union[SetInvalid, _Mapping]] = ..., push: _Optional[_Union[Push, _Mapping]] = ..., pop: _Optional[_Union[Pop, _Mapping]] = ..., extract: _Optional[_Union[Extract, _Mapping]] = ..., advance: _Optional[_Union[Advance, _Mapping]] = ..., verify: _Optional[_Union[Verify, _Mapping]] = ..., emit: _Optional[_Union[Emit, _Mapping]] = ...) -> None: ...
 
 class Assign(_message.Message):
     __slots__ = ("target", "value")
@@ -500,13 +501,14 @@ class Assign(_message.Message):
     def __init__(self, target: _Optional[_Union[LValue, _Mapping]] = ..., value: _Optional[_Union[Expr, _Mapping]] = ...) -> None: ...
 
 class If(_message.Message):
-    __slots__ = ("condition", "then")
+    __slots__ = ("condition", "then", "otherwise")
     CONDITION_FIELD_NUMBER: _ClassVar[int]
     THEN_FIELD_NUMBER: _ClassVar[int]
-    ELSE_FIELD_NUMBER: _ClassVar[int]
+    OTHERWISE_FIELD_NUMBER: _ClassVar[int]
     condition: Expr
     then: _containers.RepeatedCompositeFieldContainer[Stmt]
-    def __init__(self, condition: _Optional[_Union[Expr, _Mapping]] = ..., then: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ..., **kwargs) -> None: ...
+    otherwise: _containers.RepeatedCompositeFieldContainer[Stmt]
+    def __init__(self, condition: _Optional[_Union[Expr, _Mapping]] = ..., then: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ..., otherwise: _Optional[_Iterable[_Union[Stmt, _Mapping]]] = ...) -> None: ...
 
 class Apply(_message.Message):
     __slots__ = ("table", "hit")
@@ -545,11 +547,12 @@ class CallExtern(_message.Message):
     def __init__(self, instance: _Optional[str] = ..., method: _Optional[str] = ..., args: _Optional[_Iterable[_Union[Arg, _Mapping]]] = ..., result: _Optional[_Union[LValue, _Mapping]] = ...) -> None: ...
 
 class Arg(_message.Message):
-    __slots__ = ("out",)
-    IN_FIELD_NUMBER: _ClassVar[int]
-    OUT_FIELD_NUMBER: _ClassVar[int]
-    out: LValue
-    def __init__(self, out: _Optional[_Union[LValue, _Mapping]] = ..., **kwargs) -> None: ...
+    __slots__ = ("expr", "lvalue")
+    EXPR_FIELD_NUMBER: _ClassVar[int]
+    LVALUE_FIELD_NUMBER: _ClassVar[int]
+    expr: Expr
+    lvalue: LValue
+    def __init__(self, expr: _Optional[_Union[Expr, _Mapping]] = ..., lvalue: _Optional[_Union[LValue, _Mapping]] = ...) -> None: ...
 
 class SetValid(_message.Message):
     __slots__ = ("header",)
@@ -698,13 +701,14 @@ class IsValid(_message.Message):
     def __init__(self, header: _Optional[_Union[Expr, _Mapping]] = ...) -> None: ...
 
 class Mux(_message.Message):
-    __slots__ = ("condition", "then")
+    __slots__ = ("condition", "then", "otherwise")
     CONDITION_FIELD_NUMBER: _ClassVar[int]
     THEN_FIELD_NUMBER: _ClassVar[int]
-    ELSE_FIELD_NUMBER: _ClassVar[int]
+    OTHERWISE_FIELD_NUMBER: _ClassVar[int]
     condition: Expr
     then: Expr
-    def __init__(self, condition: _Optional[_Union[Expr, _Mapping]] = ..., then: _Optional[_Union[Expr, _Mapping]] = ..., **kwargs) -> None: ...
+    otherwise: Expr
+    def __init__(self, condition: _Optional[_Union[Expr, _Mapping]] = ..., then: _Optional[_Union[Expr, _Mapping]] = ..., otherwise: _Optional[_Union[Expr, _Mapping]] = ...) -> None: ...
 
 class Lookahead(_message.Message):
     __slots__ = ("type",)

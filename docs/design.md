@@ -175,6 +175,23 @@ against the declaration, by field name and width, and nothing else
 about `M` concerns anyone. A program declares exactly one `H` type and
 one `M` type.
 
+The contract vocabulary used by the architectures in this repository,
+by field name, each optional and only checked when present:
+
+| Field | Type | Direction | Meaning |
+|---|---|---|---|
+| `ingress_port` | `bit<9>` | provided | port the packet arrived on |
+| `parser_error` | `error` | provided | the parser's error, `NoError` on accept |
+| `egress_port` | `bit<9>` | consumed | unicast destination |
+| `drop` | `bool` | consumed | discard the packet; wins over the rest |
+| `flood` | `bool` | consumed | send to every port but the ingress one |
+
+Fate is a set of booleans rather than an enum so that a program that
+knows nothing of flooding, such as the forwarder, runs unchanged under
+an architecture that offers it, which is what claim 3 requires. The
+v1model shim maps these names onto `standard_metadata`; flood has no
+shim mapping and is checked between the two architectures instead.
+
 ### Externs
 
 Register, counter, meter, hash and checksum are not core P4; they are
@@ -197,6 +214,16 @@ return egress ports and packets. The filter runs parser then control.
 The switch runs all three blocks over a few ports and implements drop,
 unicast and flood. Neither contains P4. Their size is the experiment
 for claim 3.
+
+Three things every architecture here does the same way, because the IR
+does not decide them. After a parser rejection the control still runs
+over the partial headers, with `parser_error` set if the program
+declares it, as v1model does. The payload is the bytes after the ones
+the parser consumed, and a parser that accepts having consumed a
+number of bits that is not a multiple of eight is treated as a program
+bug: the packet is dropped with a diagnostic, since P4 targets require
+byte-aligned parsing anyway. The output packet is the deparser's bytes
+followed by the payload.
 
 ### Python eDSL
 

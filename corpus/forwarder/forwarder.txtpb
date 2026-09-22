@@ -256,7 +256,7 @@ blocks {
 
   # apply { if (hdr.ipv4.isValid()) { ipv4_lpm.apply(); } }
   body {
-    if {
+    conditional {
       condition {
         is_valid {
           header { member { base { var: "hdr" } field: "ipv4" } }

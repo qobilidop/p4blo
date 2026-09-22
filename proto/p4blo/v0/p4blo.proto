@@ -379,7 +379,7 @@ message DontCare {}
 // ---------------------------------------------------------------------------
 
 // Where each statement may appear:
-//   any block:       assign, if, call_block, call_extern, set_valid,
+//   any block:       assign, conditional, call_block, call_extern, set_valid,
 //                    set_invalid, push, pop
 //   control:         apply, call_action
 //   parser:          extract, advance, verify
@@ -387,7 +387,7 @@ message DontCare {}
 message Stmt {
   oneof kind {
     Assign assign = 1;
-    If if = 2;
+    If conditional = 2;
     Apply apply = 3;
     CallAction call_action = 4;
     CallBlock call_block = 5;
@@ -412,7 +412,7 @@ message Assign {
 message If {
   Expr condition = 1;
   repeated Stmt then = 2;
-  repeated Stmt else = 3;
+  repeated Stmt otherwise = 3;
 }
 
 // Apply a table. `hit`, when present, receives whether an entry matched.
@@ -445,8 +445,8 @@ message CallExtern {
 // lvalue, copied back after the call.
 message Arg {
   oneof kind {
-    Expr in = 1;
-    LValue out = 2;
+    Expr expr = 1;
+    LValue lvalue = 2;
   }
 }
 
@@ -600,11 +600,11 @@ message IsValid {
   Expr header = 1;
 }
 
-// condition ? then : else, same type on both branches.
+// condition ? then : otherwise, same type on both branches.
 message Mux {
   Expr condition = 1;
   Expr then = 2;
-  Expr else = 3;
+  Expr otherwise = 3;
 }
 
 // Read a value of `type` from the packet without consuming it. Parser only.

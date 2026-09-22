@@ -78,6 +78,27 @@ one that says so.
   Docker is available and skipped otherwise. p4c is not in nixpkgs and
   building it is out of proportion; the image is pinned by tag for now
   and by digest once the oracle job exists.
+- **`Stmt.if`, `If.else`, `Mux.else`, `Arg.in` renamed** to
+  `conditional`, `otherwise`, `otherwise`, `expr` (with `Arg.out` to
+  `lvalue`). The originals are Python keywords, and generated code would
+  have forced `getattr` on every consumer. Found by the corpus agent
+  while hand-writing the forwarder.
+- **Expressions and lvalues stay separate messages.** Hand-writing
+  read-modify-write paths twice is the main bulk of the forwarder text.
+  A dotted-path string sugar was considered and rejected: it is a
+  second syntax inside strings and cannot express indices. The eDSL is
+  the authoring tool; the hand-written file is a step-1 artifact.
+- **STF dialect conventions**, recorded in `python/p4blo/stf.py`: a
+  `packet` with no `expect` asserts that nothing came out; a priority
+  on a non-ternary table is an error; an lpm key without `/n` is a
+  full-width prefix; a hex or binary literal's written form fixes its
+  width for wildcards; a table name declared in two blocks must be
+  qualified with the block name.
+- **Metadata contract fields fixed** as the table in the design doc:
+  `ingress_port`, `parser_error` provided; `egress_port`, `drop`,
+  `flood` consumed; fate as booleans, not an enum, so the forwarder
+  runs unchanged under the switch. Byte-aligned parsing required by the
+  architectures; the control runs after a parser rejection.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

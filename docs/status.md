@@ -3,7 +3,7 @@
 Where the work stands, by build-order step from
 [design.md](design.md#build-order). Updated at every checkpoint.
 
-Last updated: 2026-09-22.
+Last updated: 2026-09-22, evening.
 
 ## Claim matrix
 
@@ -19,10 +19,10 @@ Last updated: 2026-09-22.
 | Step | What | Status |
 |---|---|---|
 | 0 | Skeleton: flake, Python project, schema stub, CI, docs | done |
-| 1 | Schema, validator, semantics, forwarder in text format, interpreter, STF runner | not started |
-| 2 | Extern registry, stateful program | not started |
+| 1 | Schema, validator, semantics, forwarder in text format, interpreter, STF runner | in progress: schema v0 drafted, semantics written, forwarder and STF runner landed, validator and interpreter in flight |
+| 2 | Extern registry, stateful program | in progress: registry with register, counter, checksum16 landed; program pending the survey |
 | 3 | eDSL, four corpus programs, two architectures, metadata contract | not started |
-| 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | not started |
+| 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | in progress: printer in flight, p4c typecheck via Docker |
 | 5 | Lean interpreter, extern models, DRT, the theorem | not started |
 | 6 | Coverage table, README claim matrix, write-up | not started |
 
@@ -30,7 +30,7 @@ Last updated: 2026-09-22.
 
 | Program | Source | Rewritten | Vectors | Oracle |
 |---|---|---|---|---|
-| forwarder | p4lang tutorial basic | no | hand-written, pending | pending |
+| forwarder | p4lang tutorial basic | hand-written text format, no checksum yet | 5 hand-derived STF files | pending |
 | acl | to be picked from p4c testdata | no | | |
 | stacks (MPLS or VLAN) | to be picked from p4c testdata | no | | |
 | stateful (register) | to be picked from p4c testdata | no | | |
