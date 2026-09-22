@@ -59,6 +59,15 @@ def test_add_with_a_binary_key() -> None:
     assert statement.keys == (stf.Key("data.f", 0b1001, 0b1011, None, 4),)
 
 
+def test_add_with_an_indexed_key_name() -> None:
+    # p4c's ternary2-bmv2.stf writes `extra$0.h`; its runner rewrites that to
+    # `extra[0].h`, the name a stack-element key carries in p4blo's corpus.
+    statement = only("add ex1 100 extra[0].h:0x25** act1(val:0x25)")
+    assert isinstance(statement, stf.Add)
+    assert statement.keys == (stf.Key("extra[0].h", 0x2500, 0xFF00, None, 16),)
+    assert statement.action == "act1"
+
+
 def test_setdefault_parses() -> None:
     assert only("setdefault ipv4_lpm drop()") == stf.SetDefault(1, "ipv4_lpm", "drop")
 
@@ -150,6 +159,48 @@ TERNARY = """
 """
 
 
+# A table keyed on a field of a stack element, as p4c's ternary2-bmv2.p4
+# keys `ex1` on `hdrs.extra[0].h`. The key carries the name p4c's STF uses.
+STACK_KEY = """
+    name: "stack_key"
+    errors: "NoError"
+    header_types { name: "extra_h" fields { name: "h" type { bits: 16 } } }
+    struct_types {
+      name: "H" fields { name: "extra" type { stack { header: "extra_h" size: 4 } } }
+    }
+    struct_types { name: "M" }
+    headers: "H"
+    metadata: "M"
+    blocks {
+      name: "ingress" kind: BLOCK_KIND_CONTROL
+      params { name: "hdrs" type { struct: "H" } direction: DIRECTION_INOUT }
+      params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+      actions { name: "act1" params { name: "val" type { bits: 8 } direction: DIRECTION_NONE } }
+      tables {
+        name: "ex1"
+        keys {
+          expr {
+            member {
+              base {
+                index {
+                  base { member { base { var: "hdrs" } field: "extra" } }
+                  index { literal { bits { width: 32 value: "0" } } }
+                }
+              }
+              field: "h"
+            }
+          }
+          match_kind: MATCH_KIND_TERNARY
+          name: "extra[0].h"
+        }
+        actions: "act1"
+      }
+      body { apply { table: "ex1" } }
+    }
+    exports { role: "control" block: "ingress" }
+"""
+
+
 @pytest.fixture(scope="module")
 def forwarder() -> ir.Index:
     return ir.Index.build(ir.load_text(FORWARDER / "forwarder.txtpb"))
@@ -216,6 +267,17 @@ def test_a_ternary_key_and_a_qualified_action(ternary: ir.Index) -> None:
 def test_a_plain_number_on_a_ternary_key_is_an_exact_match(ternary: ir.Index) -> None:
     entries = resolve(ternary, "add test1 1 data.f1:0x0202 ingress.setb1(val:7, port:3)")
     assert entries.tables[0].entries[0].keys[0].ternary.mask == str(0xFFFFFFFF)
+
+
+def test_a_key_on_a_stack_element_resolves_by_its_name() -> None:
+    index = ir.Index.build(ir.load_text(STACK_KEY))
+    entries = resolve(index, "add ex1 100 extra[0].h:0x25** act1(val:0x25)")
+    entry = entries.tables[0].entries[0]
+    assert entry.priority == 100
+    assert entry.keys[0].ternary == pb.TernaryValue(value="9472", mask="65280")
+    with pytest.raises(stf.StfError):
+        # 0x25*** is 24 bits wide, wider than the 16-bit key.
+        resolve(index, "add ex1 100 extra[0].h:0x25**** act1(val:0x25)")
 
 
 @pytest.mark.parametrize(
