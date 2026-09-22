@@ -3,10 +3,12 @@
 This is the experiment for claim 3 of docs/design.md. An architecture is a
 function of one shape, from an ingress port and a packet to egress ports
 and packets, that calls the program's blocks and acts on the metadata they
-leave. The filter and the switch come next; neither contains P4.
+leave. Two are here, a filter and a switch, and neither contains P4.
 
     contract.py   the metadata contract and the view of M it gives
     loader.py     validate, bind externs, check the contract; once per program
+    filter.py     parser and control; the packet leaves as it came, or not
+    switch.py     all three blocks; drop, flood or unicast over a few ports
 """
 
 from __future__ import annotations
@@ -15,7 +17,9 @@ from typing import Protocol
 
 from p4blo import stf
 from p4blo.arch.contract import CONTRACT, Contract, ContractError, Field, Metadata
+from p4blo.arch.filter import Filter
 from p4blo.arch.loader import Loaded, load
+from p4blo.arch.switch import Switch
 from p4blo.interp.tables import InstalledEntries
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -48,8 +52,10 @@ __all__ = [
     "Contract",
     "ContractError",
     "Field",
+    "Filter",
     "Loaded",
     "Metadata",
+    "Switch",
     "load",
     "stf_driver",
 ]
