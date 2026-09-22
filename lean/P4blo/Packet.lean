@@ -11,7 +11,7 @@ namespace P4blo
 
 /-- The bytes of `data` as one big-endian natural number. -/
 def bytesToNat (data : ByteArray) : Nat :=
-  data.foldl (fun n b => n * 256 + b.toNat) 0
+  data.data.foldl (fun n b => n * 256 + b.toNat) 0
 
 /-- The low `size` bytes of `n`, big-endian. -/
 def natToBytes (n : Nat) (size : Nat) : ByteArray :=
