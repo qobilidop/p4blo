@@ -1,0 +1,273 @@
+name: "parser_error"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "Ethernet"
+  fields {
+    name: "src"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "dst"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "type"
+    type {
+      bits: 16
+    }
+  }
+}
+struct_types {
+  name: "parsed_packet_t"
+  fields {
+    name: "eth"
+    type {
+      header: "Ethernet"
+    }
+  }
+}
+struct_types {
+  name: "local_metadata_t"
+  fields {
+    name: "parser_error"
+    type {
+      error {
+      }
+    }
+  }
+  fields {
+    name: "egress_port"
+    type {
+      bits: 9
+    }
+  }
+}
+blocks {
+  name: "parse"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "parsed_packet_t"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "local_metadata_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "eth"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "ingress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "parsed_packet_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "local_metadata_t"
+    }
+    direction: DIRECTION_INOUT
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_EQ
+          left {
+            member {
+              base {
+                var: "meta"
+              }
+              field: "parser_error"
+            }
+          }
+          right {
+            literal {
+              error: "PacketTooShort"
+            }
+          }
+        }
+      }
+      then {
+        set_valid {
+          header {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "eth"
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "eth"
+                }
+              }
+              field: "type"
+            }
+          }
+          value {
+            literal {
+              bits {
+                width: 16
+                value: "0"
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "eth"
+                }
+              }
+              field: "src"
+            }
+          }
+          value {
+            literal {
+              bits {
+                width: 48
+                value: "0"
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "eth"
+                }
+              }
+              field: "dst"
+            }
+          }
+          value {
+            literal {
+              bits {
+                width: 48
+                value: "0"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "egress_port"
+        }
+      }
+      value {
+        literal {
+          bits {
+            width: 9
+            value: "0"
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "deparser"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "parsed_packet_t"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        var: "hdr"
+      }
+    }
+  }
+}
+headers: "parsed_packet_t"
+metadata: "local_metadata_t"
+exports {
+  role: "parser"
+  block: "parse"
+}
+exports {
+  role: "control"
+  block: "ingress"
+}
+exports {
+  role: "deparser"
+  block: "deparser"
+}
