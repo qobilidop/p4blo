@@ -101,9 +101,9 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
         }
         largest_priority_wins = true;
     }
-    table by_color {
+    table by_port {
         key = {
-            meta.color: exact;
+            meta.ingress_port: exact @name("port");
         }
         actions = {
             drop;
@@ -120,7 +120,7 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
         } else {
             drop();
         }
-        by_color.apply();
+        by_port.apply();
         set_ttl(8w64);
         Rewrite_inst.apply(hdr.eth, 48w1);
         hdr.tags.push_front(1);

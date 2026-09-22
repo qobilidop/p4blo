@@ -407,8 +407,8 @@ blocks {{
     }}
   }}
   tables {{
-    name: "by_color"
-    keys {{ expr {{ <meta.color> }} match_kind: MATCH_KIND_EXACT }}
+    name: "by_port"
+    keys {{ expr {{ <meta.ingress_port> }} match_kind: MATCH_KIND_EXACT name: "port" }}
     actions: "drop"
   }}
   body {{ apply {{ table: "ipv4_lpm" hit {{ var: "matched" }} }} }}
@@ -419,7 +419,7 @@ blocks {{
       otherwise {{ call_action {{ action: "drop" }} }}
     }}
   }}
-  body {{ apply {{ table: "by_color" }} }}
+  body {{ apply {{ table: "by_port" }} }}
   body {{ call_action {{ action: "set_ttl" args {{ expr {{ <8w64> }} }} }} }}
   body {{
     call_block {{

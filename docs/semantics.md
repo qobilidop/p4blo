@@ -211,9 +211,10 @@ A table match is evaluated over the installed entries; the program's
 - **Entries name their action** and carry action data as constants of
   the declared parameter widths; a mismatch is rejected at
   installation.
-- **Keys are bits.** A table key expression has type `bit<N>`; a
-  boolean or enum key is elaborated by the frontend into a cast.
-  Select keys may be any scalar.
+- **Keys are bits.** A table key expression has type `bit<N>`. The
+  frontend casts a boolean key to `bit<1>` and represents a plain enum
+  key by its member index in `bit<32>`, as p4c's `ConvertEnums` does;
+  select keys may be any scalar.
 
 ## Deparsers
 

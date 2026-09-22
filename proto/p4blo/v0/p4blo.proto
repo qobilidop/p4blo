@@ -253,7 +253,8 @@ enum MatchKind {
   MATCH_KIND_TERNARY = 3;
 }
 
-// Keys are bits-typed; the frontend casts a boolean or enum key.
+// Keys are bits-typed; the frontend casts a boolean key and represents a
+// plain enum key by its member index.
 message Key {
   Expr expr = 1;
   MatchKind match_kind = 2;
