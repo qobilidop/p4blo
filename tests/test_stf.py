@@ -81,7 +81,10 @@ def test_expect_matches_under_its_mask() -> None:
     expect = stf.Expect(1, 0, bytes.fromhex("00110000"), bytes.fromhex("ffff0000"))
     assert expect.matches(bytes.fromhex("0011abcd"))
     assert not expect.matches(bytes.fromhex("0012abcd"))
-    assert not expect.matches(bytes.fromhex("0011abcdef"))
+    assert expect.matches(bytes.fromhex("0011abcdef"))  # a prefix, unless exact
+    assert not stf.Expect(1, 0, expect.data, expect.mask, exact=True).matches(
+        b"\x00\x11\xab\xcd\xef"
+    )
 
 
 def test_no_packet_and_wait_and_case_insensitivity() -> None:
@@ -336,3 +339,13 @@ def test_assert_replay_lists_every_failure(forwarder: ir.Index) -> None:
         stf.assert_replay(forwarder, stf.parse(text), echo(2, bytes.fromhex("0011")))
     assert "line 2" in str(raised.value)
     assert "line 4" in str(raised.value)
+
+
+def test_expect_is_a_prefix_unless_it_ends_in_dollar() -> None:
+    (loose,) = stf.parse("expect 1 0011")
+    (strict,) = stf.parse("expect 1 0011 $")
+    assert isinstance(loose, stf.Expect) and isinstance(strict, stf.Expect)
+    assert loose.matches(bytes.fromhex("001122"))
+    assert not loose.matches(bytes.fromhex("00"))
+    assert strict.matches(bytes.fromhex("0011"))
+    assert not strict.matches(bytes.fromhex("001122"))
