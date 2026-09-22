@@ -98,7 +98,7 @@ class InstalledEntries:
             raise InstallError(f"table {decl.name!r} has {len(decl.keys)} keys")
         for key, kv, width in zip(decl.keys, entry.keys, widths, strict=True):
             check_key_value(key, kv, width)
-        self.check_action(decl, entry.action)
+        self.check_action(table, entry.action)
         ternary = any(k.match_kind == pb.MATCH_KIND_TERNARY for k in decl.keys)
         if not ternary and entry.priority != 0:
             raise InstallError(f"table {decl.name!r} has no ternary key; priority must be 0")
@@ -121,16 +121,17 @@ class InstalledEntries:
         if action is None:
             action = decl.default_action if decl.HasField("default_action") else None
         else:
-            self.check_action(decl, action)
+            self.check_action(table, action)
         self.default_actions[table] = action
 
-    def check_action(self, decl: pb.Table, call: pb.ActionCall) -> None:
+    def check_action(self, table: TableRef, call: pb.ActionCall) -> None:
         """The call names one of the table's actions and carries one literal
-        of the declared type per directionless parameter."""
+        of the declared type per directionless parameter. The action is the
+        table's block's, by name: two blocks may declare identical tables."""
+        decl = self.table(table)
         if call.action not in decl.actions:
             raise InstallError(f"table {decl.name!r} has no action {call.action!r}")
-        block = next(b for b in self.index.program.blocks if decl in b.tables)
-        action = self.index.scopes[block.name].actions[call.action]
+        action = self.index.scopes[table[0]].actions[call.action]
         if any(p.direction != pb.DIRECTION_NONE for p in action.params):
             raise InstallError(f"action {action.name!r} has directional parameters")
         if len(call.args) != len(action.params):

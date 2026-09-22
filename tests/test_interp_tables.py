@@ -225,6 +225,42 @@ def test_install_rejects_overlapping_ternary_entries_of_equal_priority() -> None
     )
 
 
+TWINS = """
+errors: "NoError"
+struct_types { name: "H" }
+struct_types { name: "M" }
+headers: "H"
+metadata: "M"
+blocks {
+  name: "A" kind: BLOCK_KIND_CONTROL
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_INOUT }
+  params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+  actions { name: "set" params { name: "v" type { bits: 8 } direction: DIRECTION_NONE } }
+  tables { name: "t" actions: "set" }
+  body { apply { table: "t" } }
+}
+blocks {
+  name: "B" kind: BLOCK_KIND_CONTROL
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_INOUT }
+  params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+  actions { name: "set" params { name: "v" type { bits: 16 } direction: DIRECTION_NONE } }
+  tables { name: "t" actions: "set" }
+  body { apply { table: "t" } }
+}
+"""
+
+
+def test_action_data_is_checked_against_the_tables_own_block() -> None:
+    # A.t and B.t are byte-identical tables; their `set` actions differ.
+    twins = ir.Index.build(ir.load_text(TWINS))
+    wide = pb.ActionCall(action="set", args=[pb.Literal(bits=pb.BitsLiteral(width=16, value="1"))])
+    t = InstalledEntries.build(twins)
+    t.install(("B", "t"), entry("", wide))
+    assert t.lookup(("B", "t"), []) == Match(wide, True)
+    with pytest.raises(InstallError):
+        t.install(("A", "t"), entry("", wide))
+
+
 def test_host_entry_duplicating_a_const_entry_is_rejected() -> None:
     host = """
     tables {
