@@ -241,8 +241,8 @@ def describe(t: pb.Type | None) -> str:
             return "<no kind>"
 
 
-# Literal-typed: the types a literal, a select key or an exact table key can
-# have.
+# Literal-typed: the types a literal or a select key can have. Table keys are
+# bits only (docs/semantics.md, "Keys are bits").
 _SCALAR_KINDS = frozenset({"bits", "boolean", "enum_type", "error"})
 
 _DECIMAL = re.compile(r"[0-9]+")
@@ -346,7 +346,6 @@ def may_alias(a: Access, b: Access) -> bool:
 
 @dataclass(frozen=True)
 class ExactPattern:
-    # An int for bits keys; the member, error or boolean name otherwise.
     value: int | str
 
 
@@ -1604,7 +1603,8 @@ class _Validator:
 
         match kind:
             case "exact":
-                return self.exact_pattern(value.exact, t, f"{path}.exact")
+                number = in_width(value.exact, "value", f"{path}.exact")
+                return None if number is None else ExactPattern(number)
             case "lpm":
                 number = in_width(value.lpm.value, "value", f"{path}.lpm.value")
                 if value.lpm.prefix_len > t.bits:
@@ -1636,29 +1636,3 @@ class _Validator:
                     )
                     return None
                 return TernaryPattern(number, mask)
-
-    def exact_pattern(self, text: str, t: pb.Type, path: str) -> ExactPattern | None:
-        """An exact value: decimal for bits, and the name of the value for
-        boolean (`true`/`false`), enum (a member) and error keys."""
-        match kind_of(t):
-            case "bits":
-                number = parse_decimal(text)
-                if number is None:
-                    self.report(ENTRY_SHAPE, f"value {text!r} is not decimal", path)
-                elif number >= 1 << t.bits:
-                    self.report(ENTRY_RANGE, f"value {text} does not fit in {describe(t)}", path)
-                else:
-                    return ExactPattern(number)
-            case "boolean":
-                if text in ("true", "false"):
-                    return ExactPattern(text)
-                self.report(ENTRY_SHAPE, f"boolean value must be true or false, got {text!r}", path)
-            case "enum_type":
-                if text in self.idx.enum_types[t.enum_type].members:
-                    return ExactPattern(text)
-                self.report(ENTRY_SHAPE, f"enum {t.enum_type} has no member {text!r}", path)
-            case "error":
-                if text in self.idx.errors:
-                    return ExactPattern(text)
-                self.report(ENTRY_SHAPE, f"no error named {text!r}", path)
-        return None
