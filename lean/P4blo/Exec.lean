@@ -184,7 +184,7 @@ def copyBack (params : List Param) (args : List Arg) (values : Frame) : M Unit :
 
 /-- Run the action `name` with its parameters bound to `params`, layered
 on the current activation, and return that activation afterwards. -/
-partial def withAction (name : String) (params : Std.HashMap String Value) (body : List Stmt)
+def withAction (name : String) (params : Std.HashMap String Value) (body : List Stmt)
     (execute : List Stmt → M Unit) : M Frame := do
   let outer ← getFrame
   setFrame { outer with action := some name, actionVars := some params }
