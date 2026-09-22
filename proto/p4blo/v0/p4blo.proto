@@ -26,7 +26,7 @@
 //   - each block kind contains only its statements (see Stmt);
 //   - exported blocks have the signature of their role (see Export);
 //   - parser state graphs are well formed and select cases are constants of
-//     the key widths;
+//     the key types;
 //   - tables with a ternary key require priorities; entries fit their keys;
 //   - block calls form no cycle; extern instances match their types;
 //   - the error list begins with core.p4's errors in the fixed order given
@@ -221,7 +221,7 @@ enum BlockKind {
 // A block is a function. It performs no effects: it reads and writes its
 // parameters, the packet when it is a parser or deparser, and the externs
 // it calls, and nothing else. A parser has states and a start state and no
-// body; a control or deparser has a body and no states.
+// body, actions or tables; a control or deparser has a body and no states.
 message Block {
   string name = 1;
   BlockKind kind = 2;
@@ -253,6 +253,7 @@ enum MatchKind {
   MATCH_KIND_TERNARY = 3;
 }
 
+// Keys are bits-typed; the frontend casts a boolean or enum key.
 message Key {
   Expr expr = 1;
   MatchKind match_kind = 2;
@@ -286,11 +287,14 @@ message Entry {
   // One per table key, in order.
   repeated KeyValue keys = 1;
   ActionCall action = 2;
-  // Required when the table has a ternary key; larger wins.
+  // Only a table with a ternary key has priorities; larger wins, and 0 is
+  // an ordinary priority. Entries of other tables leave it 0.
   uint32 priority = 3;
 }
 
-// Values are decimal, of the key's width.
+// Table keys are bits, so values are decimal of the key's width, and
+// canonical: an lpm value has no set bit below its prefix and a ternary
+// value none outside its mask.
 message KeyValue {
   oneof kind {
     string exact = 1;
@@ -381,7 +385,7 @@ message DontCare {}
 // Where each statement may appear:
 //   any block:       assign, conditional, call_block, call_extern, set_valid,
 //                    set_invalid, push, pop
-//   control:         apply, call_action
+//   control:         call_action; apply, but not inside an action
 //   parser:          extract, advance, verify
 //   deparser:        emit
 message Stmt {
@@ -437,7 +441,8 @@ message CallExtern {
   string instance = 1;
   string method = 2;
   repeated Arg args = 3;
-  // Receives the return value when the method has one.
+  // Receives the return value; present exactly when the method returns one.
+  // The IR has no discarded results; the frontend introduces a local.
   optional LValue result = 4;
 }
 

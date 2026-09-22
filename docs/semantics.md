@@ -94,6 +94,8 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
   nothing; this is checked before the packet is, so a full stack and a
   short packet together report `StackOutOfBounds`. On success it fills
   `hs[nextIndex]`, sets it valid, and increments `nextIndex`.
+  Extracting into `hs[i]` with `i >= S` consumes the bits and stores
+  nothing, by the out-of-range write rule.
 - **`hs.lastIndex`** is `nextIndex - 1` as a `bit<32>`; when
   `nextIndex == 0` its value is `2^32 - 1`, the wrapped result. P4
   says undefined.
@@ -113,8 +115,9 @@ and a raised error rejects with that error (§12.7). On a raised error
 the parser stops immediately with the headers and metadata as they
 were at that moment, including what a sub-parser had already written
 to its `out` and `inout` arguments, which are copied back before the
-error propagates. The caller decides what to do with a rejected
-outcome. This matches v1model, where the controls run after a parser
+error propagates; the bits consumed are counted up to that moment. An
+explicit `reject` inside a sub-parser rejects the whole run the same
+way. The caller decides what to do with a rejected outcome. This matches v1model, where the controls run after a parser
 rejection with `parser_error` set.
 
 - **Extraction past the packet end.** If fewer bits remain than the
@@ -144,14 +147,15 @@ rejection with `parser_error` set.
   as at the previous entry raises `ParserTimeout` (§12.11 leaves the
   bound to the target). This is the no-consumption revisit rule from
   the design doc. Sub-parser states count as states of the enclosing
-  run. Whether the oracles agree is checked in step 4; a program that
+  run, so a sub-parser applied twice without consumption in between
+  is a timeout too. Whether the oracles agree is checked in step 4; a program that
   loops without consuming is a bug in the program, so the corpus never
   exercises the rule against an oracle.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
   `HeaderTooShort`, `ParserTimeout`, `ParserInvalidArgument`. A program
   may declare more after them. The order is fixed so that every reader
-  agrees on the position of each core error.
+  can find the core errors without a table.
   `HeaderTooShort` and `ParserInvalidArgument` are never raised by the
   IR because varbit and the extract-with-length form are out of scope;
   they are reserved so that indices agree with every reader.
@@ -168,8 +172,8 @@ else, and every extern instance is state supplied by the caller.
   order. Two arguments that alias the same storage are a validator
   error, so copy order never matters (§6.8).
 - **Action calls** from a control body pass arguments in the same
-  way. Actions invoked by a table receive their action data as `in`
-  parameters.
+  way. Actions invoked by a table receive their action data as
+  directionless parameters, which are read-only like `in` parameters.
 - **Recursion** between blocks is a validator error, so no run can
   fail to terminate; every construct in the IR is bounded.
 
@@ -181,8 +185,9 @@ A table match is evaluated over the installed entries; the program's
 - **Exact keys** match when every key equals the entry value.
 - **LPM.** A table has at most one `lpm` key. Among the entries whose
   other keys match exactly and whose prefix covers the key value, the
-  longest prefix wins. Two entries with the same prefix length and the
-  same other keys are rejected at installation, so there is no tie.
+  longest prefix wins. Two entries with the same prefix length, equal
+  under that prefix, and the same other keys are rejected at
+  installation, so there is no tie.
 - **Ternary.** A table with any `ternary` key requires a priority on
   every entry. Among the entries that match, the one with the largest
   priority wins. Two matching entries with equal priority are
@@ -203,9 +208,12 @@ A table match is evaluated over the installed entries; the program's
   an exact value on a ternary key is written as a full mask.
 - **Host default action.** A host may replace a non-const default
   action; it cannot remove one. Absent means the program's own.
-- **Entries reference actions by id** and carry action data as
-  constants of the declared parameter widths; a mismatch is rejected
-  at installation.
+- **Entries name their action** and carry action data as constants of
+  the declared parameter widths; a mismatch is rejected at
+  installation.
+- **Keys are bits.** A table key expression has type `bit<N>`; a
+  boolean or enum key is elaborated by the frontend into a cast.
+  Select keys may be any scalar.
 
 ## Deparsers
 

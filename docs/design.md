@@ -141,10 +141,14 @@ The one hardcoded thing is a block calling convention and the rule
 that a block performs no effects. That rule is called P4NAH.
 
 ```
-parse   : Packet × M → (H × M × bytes consumed) | ParseError
+parse   : Packet × M → H × M × bits consumed × accepted × error
 control : H × M × TableEntries → H × M
 deparse : H → Packet
 ```
+
+A rejection is an outcome, not an exception: the caller gets the
+partial headers, whether the parser accepted, and the error, and
+decides what to do.
 
 A control writes fields of `M`; whoever called it acts on them
 afterwards. Drop, forward, flood, clone and recirculate are decisions
