@@ -188,3 +188,14 @@ def dotted_path(expr: pb.Expr) -> str | None:
 def key_name(key: pb.Key) -> str | None:
     """The name a host uses for a table key: `Key.name`, else its dotted path."""
     return key.name or dotted_path(key.expr)
+
+
+def extern_family(type_name: str) -> str:
+    """The implementation family of an extern type name.
+
+    A P4 extern with type parameters is elaborated into one monomorphic
+    ExternType per instantiation, named `family` or `family.suffix`, such as
+    `register` and `register.16`; the part before the first dot selects the
+    implementation and the printer's P4 form.
+    """
+    return type_name.split(".", 1)[0]

@@ -21,6 +21,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 
+from p4blo import ir
 from p4blo.interp import ExternBinding
 from p4blo.interp.values import Bits, EnumValue, ErrorValue, Value
 from p4blo.ir import Index
@@ -141,7 +142,7 @@ class Registry:
         bound: dict[str, ExternBinding] = {}
         for instance in index.program.extern_instances:
             decl = index.extern_types[instance.extern_type]
-            impl = self.implementations.get(decl.name)
+            impl = self.implementations.get(ir.extern_family(decl.name))
             if impl is None:
                 raise BindError(f"no implementation for extern type {decl.name!r}")
             bindings = match_shape(decl, impl.shape)

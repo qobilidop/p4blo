@@ -187,7 +187,9 @@ message Param {
 
 // An extern type is monomorphic: every method has concrete parameter types.
 // A P4 extern with type parameters is elaborated into one ExternType per
-// distinct instantiation.
+// distinct instantiation, named `family` or `family.suffix` (`register`,
+// `register.16`); the part before the first dot is what an implementation
+// binds to.
 message ExternType {
   string name = 1;
   repeated Param constructor_params = 2;

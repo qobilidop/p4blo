@@ -296,16 +296,17 @@ def _print_extern_instance(index: ir.Index, instance: pb.ExternInstance) -> str 
     """The v1model instantiation of an extern instance, or None when the
     family has no instance in v1model (checksum16 is a function there)."""
     extern_type = index.extern_types[instance.extern_type]
-    if extern_type.name == REGISTER:
+    family = ir.extern_family(extern_type.name)
+    if family == REGISTER:
         # The value width is the width of read's out parameter.
         read = next((m for m in extern_type.methods if m.name == "read"), None)
         if read is None or not read.params:
             raise PrintError(f"extern type {extern_type.name!r} has no read method")
         value_type = print_type(read.params[0].type)
         return f"register<{value_type}>({_instance_size(instance)}) {instance.name};"
-    if extern_type.name == COUNTER:
+    if family == COUNTER:
         return f"counter({_instance_size(instance)}, CounterType.packets) {instance.name};"
-    if extern_type.name == CHECKSUM16:
+    if family == CHECKSUM16:
         return None
     raise PrintError(f"no v1model form for extern type {extern_type.name!r}")
 
@@ -397,7 +398,7 @@ class _StmtPrinter:
         family = None
         if self.index is not None:
             instance = self.index.extern_instances[call.instance]
-            family = self.index.extern_types[instance.extern_type].name
+            family = ir.extern_family(self.index.extern_types[instance.extern_type].name)
         if family == CHECKSUM16:
             return self._checksum(call)
         method = f"{call.instance}.{call.method}({_print_args(call.args)})"

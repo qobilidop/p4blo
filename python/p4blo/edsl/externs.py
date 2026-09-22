@@ -14,7 +14,10 @@ from p4blo.edsl.types import ExternType, TypeLike, bit, method
 
 def register(program: Program, width: TypeLike, name: str = "register") -> ExternType:
     """`register<T>` at width `T`: `read(out T result, in bit<32> index)`
-    and `write(in bit<32> index, in T value)`, constructed with a size."""
+    and `write(in bit<32> index, in T value)`, constructed with a size.
+
+    A program with two widths names the second `register.<suffix>`; the
+    family before the dot is what binds it (see `ir.extern_family`)."""
     return program.extern_type(
         name,
         constructor=[("size", bit(32))],

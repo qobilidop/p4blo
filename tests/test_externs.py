@@ -96,3 +96,13 @@ def test_checksum_validates_ipv4_header() -> None:
     with_checksum = header[:10] + checksum.to_bytes(2, "big") + header[12:]
     assert internet_checksum(with_checksum) == 0
     assert checksum == 0xB861
+
+
+def test_two_widths_of_one_family_bind() -> None:
+    decl = register_decl() + register_decl(name="register.8", value_width=8).replace(
+        'params { name: "result" type { bits: 16 }', 'params { name: "result" type { bits: 8 }'
+    )
+    inst = instance() + instance(extern_type="register.8").replace('name: "r"', 'name: "r8"')
+    bound = externs.default_registry().bind(program(decl, inst))
+    assert bound["r8"].call("read", [Bits(8, 0), Bits(32, 0)]).outs == (Bits(8, 0),)
+    assert bound["r"].call("read", [Bits(16, 0), Bits(32, 0)]).outs == (Bits(16, 0),)
