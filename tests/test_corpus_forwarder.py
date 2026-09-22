@@ -1,4 +1,6 @@
-"""The forwarder corpus program: it loads, and its vectors replay."""
+"""The forwarder corpus program has the shape the tutorial gives it.
+
+Its vectors replay in tests/test_corpus.py with every other program."""
 
 from __future__ import annotations
 
@@ -6,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, stf
+from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parent.parent / "corpus" / "forwarder"
@@ -73,37 +75,3 @@ def test_the_action_data_is_directionless(index: ir.Index) -> None:
 
 def test_text_roundtrip(program: pb.Program) -> None:
     assert ir.load_text(ir.dump_text(program)) == program
-
-
-# ---------------------------------------------------------------------------
-# The vectors, end to end
-# ---------------------------------------------------------------------------
-#
-# The forwarder runs under the switch architecture (python/p4blo/arch), which
-# is what the vectors describe: the deparser's bytes with the payload behind
-# them, dropped on meta.drop, otherwise sent to meta.egress_port. The filter
-# architecture runs it too, in tests/test_arch.py.
-
-
-@pytest.fixture(scope="module")
-def loaded(program: pb.Program) -> arch.Loaded:
-    return arch.load(program)
-
-
-VECTORS = sorted(CORPUS.glob("*.stf"))
-
-
-def test_every_vector_is_collected() -> None:
-    assert [path.stem for path in VECTORS] == [
-        "forward",
-        "lpm_precedence",
-        "miss",
-        "non_ipv4",
-        "too_short",
-    ]
-
-
-@pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
-def test_vector(loaded: arch.Loaded, vector: Path) -> None:
-    statements = stf.parse(vector.read_text())
-    stf.assert_replay(loaded.index, statements, arch.stf_driver(arch.Switch(ports=4), loaded))
