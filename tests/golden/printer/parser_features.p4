@@ -49,6 +49,7 @@ parser TopParser(packet_in packet, out headers hdr, inout metadata meta, inout s
     Ipv4Parser() Ipv4Parser_inst;
     bit<16> peek = 16w0;
     state start {
+        meta.ingress_port = standard_metadata.ingress_port;
         transition begin;
     }
     state begin {

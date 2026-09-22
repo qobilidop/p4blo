@@ -228,30 +228,39 @@ def _print_action_call(call: pb.ActionCall) -> str:
 # ---------------------------------------------------------------------------
 
 
-def standard_metadata_binding(index: ir.Index, meta: str) -> tuple[list[str], list[str]]:
+def standard_metadata_binding(
+    index: ir.Index, meta: str, role: str = "control"
+) -> tuple[list[str], list[str]]:
     """The v1model shim: the metadata contract mapped onto `standard_metadata`.
 
-    This is the whole architecture binding. The IR's control reads and writes
-    fields of its metadata struct M and performs no effect; v1model expresses
-    the same decisions through `standard_metadata`. The mapping is by field
-    name, each field optional (docs/design.md, "Metadata contract"):
+    This is the whole architecture binding. The IR's blocks read and write
+    fields of their metadata struct M and perform no effect; v1model
+    expresses the same decisions through `standard_metadata`. The mapping is
+    by field name, each field optional (docs/design.md, "Metadata contract"):
 
-    | M field        | type     | direction | v1model                                  |
-    |----------------|----------|-----------|------------------------------------------|
-    | `ingress_port` | `bit<9>` | provided  | `M.ingress_port = sm.ingress_port;`      |
-    | `parser_error` | `error`  | provided  | `M.parser_error = sm.parser_error;`      |
-    | `egress_port`  | `bit<9>` | consumed  | `sm.egress_spec = M.egress_port;`        |
-    | `drop`         | `bool`   | consumed  | `if (M.drop) { mark_to_drop(sm); }`      |
+    | M field        | type     | direction              | v1model                             |
+    |----------------|----------|------------------------|-------------------------------------|
+    | `ingress_port` | `bit<9>` | provided, parser start | `M.ingress_port = sm.ingress_port;` |
+    | `parser_error` | `error`  | provided, control      | `M.parser_error = sm.parser_error;` |
+    | `egress_port`  | `bit<9>` | consumed               | `sm.egress_spec = M.egress_port;`   |
+    | `drop`         | `bool`   | consumed               | `if (M.drop) { mark_to_drop(sm); }` |
 
-    Provided fields are copied in at the start of the ingress control's
-    `apply`; consumed fields are acted on at its end, drop last so that it
-    wins over the egress port. `flood` has no v1model mapping and is left to
-    the architectures. Any other field of M is plain user metadata.
+    The architectures write `ingress_port` before the parser runs, so the
+    shim copies it in at the top of the parser's start state, and again at
+    the start of the ingress control's `apply`, where it still holds the
+    same value; `parser_error` is set after the parser, so only the control
+    copies it. Consumed fields are acted on at the end of the control's
+    `apply`, drop last so that it wins over the egress port. `flood` has no
+    v1model mapping and is left to the architectures. Any other field of M
+    is plain user metadata.
 
-    Returns the prologue and epilogue statements, `meta` being the control's
-    name for its M parameter. A contract field with the wrong type is a
-    `PrintError`, since the architectures would refuse it too.
+    Returns the prologue and epilogue statements of the block exported as
+    `role`, "parser" or "control", `meta` being that block's name for its M
+    parameter; a parser's epilogue is empty. A contract field with the wrong
+    type is a `PrintError`, since the architectures would refuse it too.
     """
+    if role not in ("parser", "control"):
+        raise PrintError(f"no standard_metadata binding for role {role!r}")
     fields = {f.name: f.type for f in index.fields(index.program.metadata)}
 
     def has(name: str, expected: pb.Type) -> bool:
@@ -268,13 +277,14 @@ def standard_metadata_binding(index: ir.Index, meta: str) -> tuple[list[str], li
     prologue: list[str] = []
     epilogue: list[str] = []
     sm = STANDARD_METADATA
+    control = role == "control"
     if has("ingress_port", pb.Type(bits=9)):
         prologue.append(f"{meta}.ingress_port = {sm}.ingress_port;")
-    if has("parser_error", pb.Type(error=pb.ErrorType())):
+    if has("parser_error", pb.Type(error=pb.ErrorType())) and control:
         prologue.append(f"{meta}.parser_error = {sm}.parser_error;")
-    if has("egress_port", pb.Type(bits=9)):
+    if has("egress_port", pb.Type(bits=9)) and control:
         epilogue.append(f"{sm}.egress_spec = {meta}.egress_port;")
-    if has("drop", pb.Type(boolean=pb.BoolType())):
+    if has("drop", pb.Type(boolean=pb.BoolType())) and control:
         epilogue.append(f"if ({meta}.drop) {{ mark_to_drop({sm}); }}")
     return prologue, epilogue
 
@@ -665,6 +675,13 @@ class _ProgramPrinter:
     # -- parsers
 
     def states(self, block: pb.Block) -> None:
+        """The states, the shim's prologue first in the exported parser's
+        start state (the synthesized one when the IR's start state is not
+        named `start`). A loop back into the start state re-runs the copy,
+        which is harmless: nothing in between changes `standard_metadata`."""
+        prologue: list[str] = []
+        if self._role(block) == "parser":
+            prologue, _ = standard_metadata_binding(self.index, block.params[1].name, "parser")
         names = {s.name for s in block.states}
         if block.start_state != "start":
             if "start" in names:
@@ -673,13 +690,18 @@ class _ProgramPrinter:
                     "but also has a state named 'start'"
                 )
             self.line(1, "state start {")
+            for s in prologue:
+                self.line(2, s)
             self.line(2, f"transition {block.start_state};")
             self.line(1, "}")
+            prologue = []
         for state in block.states:
-            self.state(state)
+            self.state(state, prologue if state.name == block.start_state else [])
 
-    def state(self, state: pb.State) -> None:
+    def state(self, state: pb.State, prologue: Iterable[str] = ()) -> None:
         self.line(1, f"state {state.name} {{")
+        for s in prologue:
+            self.line(2, s)
         self.lines(self.stmts.block(state.body, 2))
         self.transition(state.transition)
         self.line(1, "}")

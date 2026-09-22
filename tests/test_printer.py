@@ -830,6 +830,8 @@ GOLDENS: dict[str, str] = {
 def golden_program(name: str) -> pb.Program:
     if name == "forwarder":
         return ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
+    if name == "port_parser":
+        return program(PORT_PARSER % ("start", "start"))
     return program(GOLDENS[name])
 
 
@@ -903,12 +905,12 @@ def p4test(path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", [*GOLDENS, "forwarder"])
+@pytest.mark.parametrize("name", [*GOLDENS, "forwarder", "port_parser"])
 def test_golden_program_is_valid(name: str) -> None:
     assert validator.validate(golden_program(name)) == []
 
 
-@pytest.mark.parametrize("name", [*GOLDENS, "forwarder"])
+@pytest.mark.parametrize("name", [*GOLDENS, "forwarder", "port_parser"])
 def test_golden(name: str) -> None:
     text = printer.print_program(golden_program(name))
     path = check_golden(name, text)
@@ -1073,8 +1075,92 @@ def test_standard_metadata_binding_is_by_name() -> None:
         "standard_metadata.egress_spec = m.egress_port;",
         "if (m.drop) { mark_to_drop(standard_metadata); }",
     ]
+    # The parser gets the field the architectures write before it runs, and
+    # only that one: parser_error is set after the parser, and nothing is
+    # consumed there.
+    assert printer.standard_metadata_binding(index, "m", "parser") == (
+        ["m.ingress_port = standard_metadata.ingress_port;"],
+        [],
+    )
     index = ir.Index.build(golden_program("bare"))
     assert printer.standard_metadata_binding(index, "m") == ([], [])
+    assert printer.standard_metadata_binding(index, "m", "parser") == ([], [])
+    with pytest.raises(PrintError, match="deparser"):
+        printer.standard_metadata_binding(index, "m", "deparser")
+
+
+# A parser that decides on `meta.ingress_port`: packets from port 1 are
+# marked for drop by the parser itself. The architectures provide the port
+# before the parser runs, so the printed parser must see it too.
+PORT_PARSER = """
+name: "port_parser"
+errors: "NoError" errors: "PacketTooShort" errors: "NoMatch" errors: "StackOutOfBounds"
+errors: "HeaderTooShort" errors: "ParserTimeout" errors: "ParserInvalidArgument"
+header_types { name: "h_t" fields { name: "f" type { bits: 8 } } }
+struct_types { name: "H" fields { name: "h" type { header: "h_t" } } }
+struct_types {
+  name: "M"
+  fields { name: "ingress_port" type { bits: 9 } }
+  fields { name: "egress_port" type { bits: 9 } }
+  fields { name: "drop" type { boolean {} } }
+}
+headers: "H"
+metadata: "M"
+blocks {
+  name: "P" kind: BLOCK_KIND_PARSER
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_OUT }
+  params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+  start_state: "%s"
+  states {
+    name: "%s"
+    body { extract { target { <hdr.h> } } }
+    transition { select {
+      keys { <meta.ingress_port> }
+      cases { sets { exact { [9w1] } } target { state: "from_one" } }
+      cases { sets { dont_care {} } target { accept {} } }
+    } }
+  }
+  states {
+    name: "from_one"
+    body { assign { target { <meta.drop> } value { literal { boolean: true } } } }
+    transition { direct { accept {} } }
+  }
+}
+blocks {
+  name: "C" kind: BLOCK_KIND_CONTROL
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_INOUT }
+  params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+  body { assign { target { <meta.egress_port> } value { <9w2> } } }
+}
+blocks {
+  name: "D" kind: BLOCK_KIND_DEPARSER
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_IN }
+  body { emit { value { <hdr.h> } } }
+}
+exports { role: "parser" block: "P" }
+exports { role: "control" block: "C" }
+exports { role: "deparser" block: "D" }
+"""
+
+
+@pytest.mark.parametrize("start", ["start", "first"])
+def test_the_parser_is_provided_ingress_port_before_it_runs(start: str) -> None:
+    """The `start` variant is also the golden `port_parser`, which p4test
+    typechecks; the `first` one checks the synthesized start state."""
+    p = program(PORT_PARSER % (start, start))
+    assert validator.validate(p) == []
+    text = printer.print_program(p)
+    parser_text = text[text.index("parser P(") : text.index("control C(")]
+    control_text = text[text.index("control C(") :]
+    copy = "meta.ingress_port = standard_metadata.ingress_port;"
+    # In the parser the copy is the first statement of `start`, so a
+    # select on the port in the start state already sees it; the control
+    # keeps its own copy, which reads the same value.
+    assert f"state start {{\n        {copy}\n" in parser_text
+    assert parser_text.count(copy) == 1
+    assert "transition select(meta.ingress_port)" in parser_text
+    assert control_text.count(copy) == 1
+    assert "parser_error" not in parser_text
 
 
 def test_contract_field_with_the_wrong_type_is_refused() -> None:

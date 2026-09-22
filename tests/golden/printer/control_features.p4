@@ -38,6 +38,7 @@ struct metadata {
 
 parser EthParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     state start {
+        meta.ingress_port = standard_metadata.ingress_port;
         packet.extract(hdr.eth);
         packet.extract(hdr.ipv4);
         transition accept;
