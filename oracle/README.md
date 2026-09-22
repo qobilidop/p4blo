@@ -151,6 +151,23 @@ output per packet, so the two agree; a vector relying on the order of
 several outputs from one packet would be checked less strictly by the
 oracle than by p4blo.
 
+Dropping `no_packet` opens a gap of the same kind, in theory. Because
+the simulator matches by port from one queue of unclaimed outputs as
+expectations arrive, a vector of the shape `packet A; no_packet; packet
+B; expect 1 X` passes on the oracle when A wrongly emits X on port 1 and
+B emits nothing: the stray output of A is claimed by the expectation
+written for B, and nothing is left over at the end of the file. p4blo
+fails the same vector at the `no_packet`. No corpus vector has that
+shape: the one `no_packet` in the corpus, in `forwarder/miss.stf`, is
+in a single-packet file, where the end-of-file check is exact. A
+future vector could have it, and a stray output that happens to equal
+a later expectation is unlikely rather than impossible. It is
+accepted for now because the alternative, a translation that also
+asserts ordering with an `expect` after each `packet` for whatever
+p4blo produced, would make the oracle judge p4blo's outputs rather
+than the vector's; the differential sweep against Lean checks whole
+outputs per packet and has no such gap.
+
 ## Results
 
 2026-09-22, at the pinned commit, on the five forwarder vectors: all
