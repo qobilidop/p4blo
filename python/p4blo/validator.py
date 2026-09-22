@@ -45,7 +45,7 @@ Expressions, lvalues and statements
   ARG_COUNT           a call with the wrong number of arguments
   ARG_DIRECTION       an argument's form (in expr / out lvalue) against its param
   ARG_TYPE            an argument's type against its param
-  CALL_KIND           a parser calling a non-parser, or a control a non-control
+  CALL_KIND           a block calling a block of another kind
   CALL_ALIAS          two arguments of one call that may alias (see check_args)
   CALL_CYCLE          a cycle in the block call graph, or among one block's actions
   EXTERN_RESULT       a result lvalue missing, unexpected or of the wrong type
@@ -927,11 +927,13 @@ class _Validator:
         if callee is None:
             return
         self.calls.setdefault(scope.block.name, []).append((callee.name, path))
-        wanted = pb.BLOCK_KIND_PARSER if scope.in_parser else pb.BLOCK_KIND_CONTROL
-        if callee.kind != wanted:
+        # A block calls only blocks of its own kind, so a deparser, which has
+        # no entries, never reaches a table (proto, CallBlock).
+        if callee.kind != scope.block.kind:
+            kind = _KIND_NAMES[scope.block.kind]
             self.report(
                 CALL_KIND,
-                f"a {_KIND_NAMES[scope.block.kind]} may only call a {_KIND_NAMES[wanted]}; "
+                f"a {kind} may only call a {kind}; "
                 f"{callee.name!r} is a {_KIND_NAMES.get(callee.kind, 'block without kind')}",
                 f"{path}.block",
             )

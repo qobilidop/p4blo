@@ -222,6 +222,9 @@ A table match is evaluated over the installed entries; the program's
 A deparser runs over the headers and produces the bytes of the emitted
 headers; the caller appends the payload it retained after parsing.
 
+- **Sub-blocks.** A deparser may call only deparsers, which emit and
+  never apply a table, so `deparse : H -> Packet` needs no entries.
+
 - **`emit` of an invalid header** writes nothing (§15.1).
 - **`emit` of a struct** emits its fields in declaration order.
   **`emit` of a stack** emits its elements from index `0` to `S - 1`,

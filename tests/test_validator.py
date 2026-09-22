@@ -1040,16 +1040,30 @@ def test_arg_type(text: str) -> None:
         lambda p: add_stmt(p, DEP, call_block("prs", arg_out(HDR), arg_out(HDR))),
         # a parser calling a control
         lambda p: add_parser_stmt(p, PARSE_IPV4, call_block("sub", arg_out(HDR), arg_out(META))),
+        # a deparser calling a control, even one that could not apply a table
+        lambda p: add_stmt(
+            with_helper(p, pb.BLOCK_KIND_CONTROL), DEP, call_block("fix", arg_in(HDR))
+        ),
+        # a control calling a deparser
+        lambda p: add_stmt(
+            with_helper(p, pb.BLOCK_KIND_DEPARSER), ING, call_block("fix", arg_in(HDR))
+        ),
     ],
 )
 def test_call_kind(mutate) -> None:
     assert v.CALL_KIND in broken(mutate)
 
 
-def test_deparser_may_call_a_control() -> None:
-    program = valid()
-    helper = program.blocks.add(name="fix", kind=pb.BLOCK_KIND_CONTROL)
+def with_helper(program: pb.Program, kind: int) -> pb.Program:
+    """Add an unexported block `fix` of `kind` taking `(in H)`."""
+    helper = program.blocks.add(name="fix", kind=kind)
     helper.params.add(name="h", type=pb.Type(struct="H"), direction=pb.DIRECTION_IN)
+    return program
+
+
+def test_deparser_may_call_a_deparser() -> None:
+    program = with_helper(valid(), pb.BLOCK_KIND_DEPARSER)
+    add_stmt(program, len(program.blocks) - 1, f"emit {{ value {{ {member(var('h'), 'eth')} }} }}")
     add_stmt(program, DEP, call_block("fix", arg_in(HDR)))
     assert codes(program) == []
 
