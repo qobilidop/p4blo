@@ -207,9 +207,10 @@ type Statement = Add | SetDefault | Packet | Expect | NoPacket | Wait
 # Numbers
 # ---------------------------------------------------------------------------
 
-# A declaration name as STF writes it: qualified, indexed, and `$` is a name
-# character because p4c's own vectors use it for generated names.
-NAME = r"[A-Za-z_][A-Za-z0-9_.$]*(?:\[[0-9]+\])?"
+# A declaration name as STF writes it: qualified, indexed anywhere along the
+# path (`extra[0].h`), and `$` is a name character because p4c's own vectors
+# use it for generated names.
+NAME = r"[A-Za-z_][A-Za-z0-9_.$]*(?:\[[0-9]+\][A-Za-z0-9_.$]*)*"
 
 _HEX_DIGITS = "0123456789abcdefABCDEF"
 
@@ -453,9 +454,14 @@ def _type_of(index: Index, block: str, expr: pb.Expr) -> pb.Type:
             base = _type_of(index, block, expr.member.base)
             owner = base.header or base.struct
             if not owner:
-                raise StfError(f"{dotted(expr.member.base)} has no fields")
+                raise StfError(f"{dotted(expr.member.base) or 'the base'} has no fields")
             fields = index.fields(owner)
             return fields[index.field_index(owner, expr.member.field)].type
+        case "index":
+            base = _type_of(index, block, expr.index.base)
+            if base.WhichOneof("kind") != "stack":
+                raise StfError(f"{dotted(expr.index.base) or 'the base'} is not a stack")
+            return pb.Type(header=base.stack.header)
         case "slice":
             return pb.Type(bits=expr.slice.hi - expr.slice.lo + 1)
         case "cast":

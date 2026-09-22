@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2017 VMware, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# stateful: p4c's two vectors, from testdata/p4_16_samples/issue1097-2-bmv2.stf,
+# verbatim. Only these comments were added.
+#
+# Each packet is one myhdr_t: reg_idx_to_update, value_to_add, and the
+# debug byte the program overwrites. Both packets land on a cell nobody has
+# touched since the load, so they take the donor's path exactly: the read
+# in the ingress half returns 0, the cell is seeded with 0x2a, and the
+# egress half adds value_to_add to it and reports the sum.
+#
+# Packet 1, index 0x00, add 0x17:
+#   r[0] = 0 -> seeded to 0x2a; tmp = 0x2a + 0x17 = 0x41; r[0] = 0x41.
+# Packet 2, index 0x01, add 0xff:
+#   r[1] = 0 -> seeded to 0x2a; tmp = 0x2a + 0xff = 0x129, which wraps in
+#   bit<8> to 0x29; r[1] = 0x29.
+#
+# Neither vector observes the other's write, which is why persist.stf
+# exists. The program declares no egress_port, so both leave on port 0.
+
+packet 0 00 17 00
+expect 0 00 17 41
+
+packet 0 01 FF 00
+expect 0 01 FF 29

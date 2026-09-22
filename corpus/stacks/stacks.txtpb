@@ -1,0 +1,2987 @@
+name: "stacks"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+errors: "BadHeaderType"
+header_types {
+  name: "h1_t"
+  fields {
+    name: "hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "op1"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "op2"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "op3"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "h2_valid_bits"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "next_hdr_type"
+    type {
+      bits: 8
+    }
+  }
+}
+header_types {
+  name: "h2_t"
+  fields {
+    name: "hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "f1"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "f2"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "next_hdr_type"
+    type {
+      bits: 8
+    }
+  }
+}
+header_types {
+  name: "h3_t"
+  fields {
+    name: "hdr_type"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "data"
+    type {
+      bits: 8
+    }
+  }
+}
+struct_types {
+  name: "headers"
+  fields {
+    name: "h1"
+    type {
+      header: "h1_t"
+    }
+  }
+  fields {
+    name: "h2"
+    type {
+      stack {
+        header: "h2_t"
+        size: 5
+      }
+    }
+  }
+  fields {
+    name: "h3"
+    type {
+      header: "h3_t"
+    }
+  }
+}
+struct_types {
+  name: "metadata"
+}
+blocks {
+  name: "parserI"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h1"
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h1"
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "1"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h1"
+              }
+            }
+            field: "next_hdr_type"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "2"
+              }
+            }
+          }
+          target {
+            state: "parse_h2"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "3"
+              }
+            }
+          }
+          target {
+            state: "parse_h3"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "parse_h2"
+    body {
+      extract {
+        target {
+          next {
+            stack {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h2"
+              }
+            }
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  index {
+                    base {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "h2"
+                      }
+                    }
+                    index {
+                      last_index {
+                        stack {
+                          member {
+                            base {
+                              var: "hdr"
+                            }
+                            field: "h2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "2"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              index {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h2"
+                  }
+                }
+                index {
+                  last_index {
+                    stack {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "h2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            field: "next_hdr_type"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "2"
+              }
+            }
+          }
+          target {
+            state: "parse_h2"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "3"
+              }
+            }
+          }
+          target {
+            state: "parse_h3"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "parse_h3"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h3"
+          }
+        }
+      }
+    }
+    body {
+      verify {
+        condition {
+          binary {
+            op: BINARY_OP_EQ
+            left {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h3"
+                  }
+                }
+                field: "hdr_type"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "3"
+                }
+              }
+            }
+          }
+        }
+        error: "BadHeaderType"
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "cDoOneOp"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "op"
+    type {
+      bits: 8
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_EQ
+          left {
+            var: "op"
+          }
+          right {
+            literal {
+              bits {
+                width: 8
+                value: "0"
+              }
+            }
+          }
+        }
+      }
+      otherwise {
+        conditional {
+          condition {
+            binary {
+              op: BINARY_OP_EQ
+              left {
+                slice {
+                  operand {
+                    var: "op"
+                  }
+                  hi: 7
+                  lo: 4
+                }
+              }
+              right {
+                literal {
+                  bits {
+                    width: 4
+                    value: "1"
+                  }
+                }
+              }
+            }
+          }
+          then {
+            conditional {
+              condition {
+                binary {
+                  op: BINARY_OP_EQ
+                  left {
+                    slice {
+                      operand {
+                        var: "op"
+                      }
+                      hi: 3
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 4
+                        value: "1"
+                      }
+                    }
+                  }
+                }
+              }
+              then {
+                push {
+                  stack {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "h2"
+                    }
+                  }
+                  count: 1
+                }
+              }
+              otherwise {
+                conditional {
+                  condition {
+                    binary {
+                      op: BINARY_OP_EQ
+                      left {
+                        slice {
+                          operand {
+                            var: "op"
+                          }
+                          hi: 3
+                        }
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 4
+                            value: "2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  then {
+                    push {
+                      stack {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h2"
+                        }
+                      }
+                      count: 2
+                    }
+                  }
+                  otherwise {
+                    conditional {
+                      condition {
+                        binary {
+                          op: BINARY_OP_EQ
+                          left {
+                            slice {
+                              operand {
+                                var: "op"
+                              }
+                              hi: 3
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 4
+                                value: "3"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        push {
+                          stack {
+                            member {
+                              base {
+                                var: "hdr"
+                              }
+                              field: "h2"
+                            }
+                          }
+                          count: 3
+                        }
+                      }
+                      otherwise {
+                        conditional {
+                          condition {
+                            binary {
+                              op: BINARY_OP_EQ
+                              left {
+                                slice {
+                                  operand {
+                                    var: "op"
+                                  }
+                                  hi: 3
+                                }
+                              }
+                              right {
+                                literal {
+                                  bits {
+                                    width: 4
+                                    value: "4"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            push {
+                              stack {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "h2"
+                                }
+                              }
+                              count: 4
+                            }
+                          }
+                          otherwise {
+                            conditional {
+                              condition {
+                                binary {
+                                  op: BINARY_OP_EQ
+                                  left {
+                                    slice {
+                                      operand {
+                                        var: "op"
+                                      }
+                                      hi: 3
+                                    }
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 4
+                                        value: "5"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                push {
+                                  stack {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  count: 5
+                                }
+                              }
+                              otherwise {
+                                conditional {
+                                  condition {
+                                    binary {
+                                      op: BINARY_OP_EQ
+                                      left {
+                                        slice {
+                                          operand {
+                                            var: "op"
+                                          }
+                                          hi: 3
+                                        }
+                                      }
+                                      right {
+                                        literal {
+                                          bits {
+                                            width: 4
+                                            value: "6"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    push {
+                                      stack {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      count: 6
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          otherwise {
+            conditional {
+              condition {
+                binary {
+                  op: BINARY_OP_EQ
+                  left {
+                    slice {
+                      operand {
+                        var: "op"
+                      }
+                      hi: 7
+                      lo: 4
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 4
+                        value: "2"
+                      }
+                    }
+                  }
+                }
+              }
+              then {
+                conditional {
+                  condition {
+                    binary {
+                      op: BINARY_OP_EQ
+                      left {
+                        slice {
+                          operand {
+                            var: "op"
+                          }
+                          hi: 3
+                        }
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 4
+                            value: "1"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  then {
+                    pop {
+                      stack {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h2"
+                        }
+                      }
+                      count: 1
+                    }
+                  }
+                  otherwise {
+                    conditional {
+                      condition {
+                        binary {
+                          op: BINARY_OP_EQ
+                          left {
+                            slice {
+                              operand {
+                                var: "op"
+                              }
+                              hi: 3
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 4
+                                value: "2"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        pop {
+                          stack {
+                            member {
+                              base {
+                                var: "hdr"
+                              }
+                              field: "h2"
+                            }
+                          }
+                          count: 2
+                        }
+                      }
+                      otherwise {
+                        conditional {
+                          condition {
+                            binary {
+                              op: BINARY_OP_EQ
+                              left {
+                                slice {
+                                  operand {
+                                    var: "op"
+                                  }
+                                  hi: 3
+                                }
+                              }
+                              right {
+                                literal {
+                                  bits {
+                                    width: 4
+                                    value: "3"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            pop {
+                              stack {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "h2"
+                                }
+                              }
+                              count: 3
+                            }
+                          }
+                          otherwise {
+                            conditional {
+                              condition {
+                                binary {
+                                  op: BINARY_OP_EQ
+                                  left {
+                                    slice {
+                                      operand {
+                                        var: "op"
+                                      }
+                                      hi: 3
+                                    }
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 4
+                                        value: "4"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                pop {
+                                  stack {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  count: 4
+                                }
+                              }
+                              otherwise {
+                                conditional {
+                                  condition {
+                                    binary {
+                                      op: BINARY_OP_EQ
+                                      left {
+                                        slice {
+                                          operand {
+                                            var: "op"
+                                          }
+                                          hi: 3
+                                        }
+                                      }
+                                      right {
+                                        literal {
+                                          bits {
+                                            width: 4
+                                            value: "5"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    pop {
+                                      stack {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      count: 5
+                                    }
+                                  }
+                                  otherwise {
+                                    conditional {
+                                      condition {
+                                        binary {
+                                          op: BINARY_OP_EQ
+                                          left {
+                                            slice {
+                                              operand {
+                                                var: "op"
+                                              }
+                                              hi: 3
+                                            }
+                                          }
+                                          right {
+                                            literal {
+                                              bits {
+                                                width: 4
+                                                value: "6"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        pop {
+                                          stack {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          count: 6
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              otherwise {
+                conditional {
+                  condition {
+                    binary {
+                      op: BINARY_OP_EQ
+                      left {
+                        slice {
+                          operand {
+                            var: "op"
+                          }
+                          hi: 7
+                          lo: 4
+                        }
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 4
+                            value: "3"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  then {
+                    conditional {
+                      condition {
+                        binary {
+                          op: BINARY_OP_EQ
+                          left {
+                            slice {
+                              operand {
+                                var: "op"
+                              }
+                              hi: 3
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 4
+                                value: "0"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        set_valid {
+                          header {
+                            index {
+                              base {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "h2"
+                                }
+                              }
+                              index {
+                                literal {
+                                  bits {
+                                    width: 32
+                                    value: "0"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        assign {
+                          target {
+                            member {
+                              base {
+                                index {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  index {
+                                    literal {
+                                      bits {
+                                        width: 32
+                                        value: "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              field: "hdr_type"
+                            }
+                          }
+                          value {
+                            literal {
+                              bits {
+                                width: 8
+                                value: "2"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        assign {
+                          target {
+                            member {
+                              base {
+                                index {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  index {
+                                    literal {
+                                      bits {
+                                        width: 32
+                                        value: "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              field: "f1"
+                            }
+                          }
+                          value {
+                            literal {
+                              bits {
+                                width: 8
+                                value: "160"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        assign {
+                          target {
+                            member {
+                              base {
+                                index {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  index {
+                                    literal {
+                                      bits {
+                                        width: 32
+                                        value: "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              field: "f2"
+                            }
+                          }
+                          value {
+                            literal {
+                              bits {
+                                width: 8
+                                value: "10"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        assign {
+                          target {
+                            member {
+                              base {
+                                index {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  index {
+                                    literal {
+                                      bits {
+                                        width: 32
+                                        value: "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              field: "next_hdr_type"
+                            }
+                          }
+                          value {
+                            literal {
+                              bits {
+                                width: 8
+                                value: "9"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      otherwise {
+                        conditional {
+                          condition {
+                            binary {
+                              op: BINARY_OP_EQ
+                              left {
+                                slice {
+                                  operand {
+                                    var: "op"
+                                  }
+                                  hi: 3
+                                }
+                              }
+                              right {
+                                literal {
+                                  bits {
+                                    width: 4
+                                    value: "1"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            set_valid {
+                              header {
+                                index {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  index {
+                                    literal {
+                                      bits {
+                                        width: 32
+                                        value: "1"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            assign {
+                              target {
+                                member {
+                                  base {
+                                    index {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      index {
+                                        literal {
+                                          bits {
+                                            width: 32
+                                            value: "1"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  field: "hdr_type"
+                                }
+                              }
+                              value {
+                                literal {
+                                  bits {
+                                    width: 8
+                                    value: "2"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            assign {
+                              target {
+                                member {
+                                  base {
+                                    index {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      index {
+                                        literal {
+                                          bits {
+                                            width: 32
+                                            value: "1"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  field: "f1"
+                                }
+                              }
+                              value {
+                                literal {
+                                  bits {
+                                    width: 8
+                                    value: "161"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            assign {
+                              target {
+                                member {
+                                  base {
+                                    index {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      index {
+                                        literal {
+                                          bits {
+                                            width: 32
+                                            value: "1"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  field: "f2"
+                                }
+                              }
+                              value {
+                                literal {
+                                  bits {
+                                    width: 8
+                                    value: "26"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            assign {
+                              target {
+                                member {
+                                  base {
+                                    index {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      index {
+                                        literal {
+                                          bits {
+                                            width: 32
+                                            value: "1"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  field: "next_hdr_type"
+                                }
+                              }
+                              value {
+                                literal {
+                                  bits {
+                                    width: 8
+                                    value: "9"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          otherwise {
+                            conditional {
+                              condition {
+                                binary {
+                                  op: BINARY_OP_EQ
+                                  left {
+                                    slice {
+                                      operand {
+                                        var: "op"
+                                      }
+                                      hi: 3
+                                    }
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 4
+                                        value: "2"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                set_valid {
+                                  header {
+                                    index {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      index {
+                                        literal {
+                                          bits {
+                                            width: 32
+                                            value: "2"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                assign {
+                                  target {
+                                    member {
+                                      base {
+                                        index {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          index {
+                                            literal {
+                                              bits {
+                                                width: 32
+                                                value: "2"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      field: "hdr_type"
+                                    }
+                                  }
+                                  value {
+                                    literal {
+                                      bits {
+                                        width: 8
+                                        value: "2"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                assign {
+                                  target {
+                                    member {
+                                      base {
+                                        index {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          index {
+                                            literal {
+                                              bits {
+                                                width: 32
+                                                value: "2"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      field: "f1"
+                                    }
+                                  }
+                                  value {
+                                    literal {
+                                      bits {
+                                        width: 8
+                                        value: "162"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                assign {
+                                  target {
+                                    member {
+                                      base {
+                                        index {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          index {
+                                            literal {
+                                              bits {
+                                                width: 32
+                                                value: "2"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      field: "f2"
+                                    }
+                                  }
+                                  value {
+                                    literal {
+                                      bits {
+                                        width: 8
+                                        value: "42"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                assign {
+                                  target {
+                                    member {
+                                      base {
+                                        index {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          index {
+                                            literal {
+                                              bits {
+                                                width: 32
+                                                value: "2"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      field: "next_hdr_type"
+                                    }
+                                  }
+                                  value {
+                                    literal {
+                                      bits {
+                                        width: 8
+                                        value: "9"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              otherwise {
+                                conditional {
+                                  condition {
+                                    binary {
+                                      op: BINARY_OP_EQ
+                                      left {
+                                        slice {
+                                          operand {
+                                            var: "op"
+                                          }
+                                          hi: 3
+                                        }
+                                      }
+                                      right {
+                                        literal {
+                                          bits {
+                                            width: 4
+                                            value: "3"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    set_valid {
+                                      header {
+                                        index {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          index {
+                                            literal {
+                                              bits {
+                                                width: 32
+                                                value: "3"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    assign {
+                                      target {
+                                        member {
+                                          base {
+                                            index {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "h2"
+                                                }
+                                              }
+                                              index {
+                                                literal {
+                                                  bits {
+                                                    width: 32
+                                                    value: "3"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                          field: "hdr_type"
+                                        }
+                                      }
+                                      value {
+                                        literal {
+                                          bits {
+                                            width: 8
+                                            value: "2"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    assign {
+                                      target {
+                                        member {
+                                          base {
+                                            index {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "h2"
+                                                }
+                                              }
+                                              index {
+                                                literal {
+                                                  bits {
+                                                    width: 32
+                                                    value: "3"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                          field: "f1"
+                                        }
+                                      }
+                                      value {
+                                        literal {
+                                          bits {
+                                            width: 8
+                                            value: "163"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    assign {
+                                      target {
+                                        member {
+                                          base {
+                                            index {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "h2"
+                                                }
+                                              }
+                                              index {
+                                                literal {
+                                                  bits {
+                                                    width: 32
+                                                    value: "3"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                          field: "f2"
+                                        }
+                                      }
+                                      value {
+                                        literal {
+                                          bits {
+                                            width: 8
+                                            value: "58"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    assign {
+                                      target {
+                                        member {
+                                          base {
+                                            index {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "h2"
+                                                }
+                                              }
+                                              index {
+                                                literal {
+                                                  bits {
+                                                    width: 32
+                                                    value: "3"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                          field: "next_hdr_type"
+                                        }
+                                      }
+                                      value {
+                                        literal {
+                                          bits {
+                                            width: 8
+                                            value: "9"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  otherwise {
+                                    conditional {
+                                      condition {
+                                        binary {
+                                          op: BINARY_OP_EQ
+                                          left {
+                                            slice {
+                                              operand {
+                                                var: "op"
+                                              }
+                                              hi: 3
+                                            }
+                                          }
+                                          right {
+                                            literal {
+                                              bits {
+                                                width: 4
+                                                value: "4"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        set_valid {
+                                          header {
+                                            index {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "h2"
+                                                }
+                                              }
+                                              index {
+                                                literal {
+                                                  bits {
+                                                    width: 32
+                                                    value: "4"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        assign {
+                                          target {
+                                            member {
+                                              base {
+                                                index {
+                                                  base {
+                                                    member {
+                                                      base {
+                                                        var: "hdr"
+                                                      }
+                                                      field: "h2"
+                                                    }
+                                                  }
+                                                  index {
+                                                    literal {
+                                                      bits {
+                                                        width: 32
+                                                        value: "4"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                              field: "hdr_type"
+                                            }
+                                          }
+                                          value {
+                                            literal {
+                                              bits {
+                                                width: 8
+                                                value: "2"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        assign {
+                                          target {
+                                            member {
+                                              base {
+                                                index {
+                                                  base {
+                                                    member {
+                                                      base {
+                                                        var: "hdr"
+                                                      }
+                                                      field: "h2"
+                                                    }
+                                                  }
+                                                  index {
+                                                    literal {
+                                                      bits {
+                                                        width: 32
+                                                        value: "4"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                              field: "f1"
+                                            }
+                                          }
+                                          value {
+                                            literal {
+                                              bits {
+                                                width: 8
+                                                value: "164"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        assign {
+                                          target {
+                                            member {
+                                              base {
+                                                index {
+                                                  base {
+                                                    member {
+                                                      base {
+                                                        var: "hdr"
+                                                      }
+                                                      field: "h2"
+                                                    }
+                                                  }
+                                                  index {
+                                                    literal {
+                                                      bits {
+                                                        width: 32
+                                                        value: "4"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                              field: "f2"
+                                            }
+                                          }
+                                          value {
+                                            literal {
+                                              bits {
+                                                width: 8
+                                                value: "74"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        assign {
+                                          target {
+                                            member {
+                                              base {
+                                                index {
+                                                  base {
+                                                    member {
+                                                      base {
+                                                        var: "hdr"
+                                                      }
+                                                      field: "h2"
+                                                    }
+                                                  }
+                                                  index {
+                                                    literal {
+                                                      bits {
+                                                        width: 32
+                                                        value: "4"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                              field: "next_hdr_type"
+                                            }
+                                          }
+                                          value {
+                                            literal {
+                                              bits {
+                                                width: 8
+                                                value: "9"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  otherwise {
+                    conditional {
+                      condition {
+                        binary {
+                          op: BINARY_OP_EQ
+                          left {
+                            slice {
+                              operand {
+                                var: "op"
+                              }
+                              hi: 7
+                              lo: 4
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 4
+                                value: "4"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        conditional {
+                          condition {
+                            binary {
+                              op: BINARY_OP_EQ
+                              left {
+                                slice {
+                                  operand {
+                                    var: "op"
+                                  }
+                                  hi: 3
+                                }
+                              }
+                              right {
+                                literal {
+                                  bits {
+                                    width: 4
+                                    value: "0"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            set_invalid {
+                              header {
+                                index {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "h2"
+                                    }
+                                  }
+                                  index {
+                                    literal {
+                                      bits {
+                                        width: 32
+                                        value: "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          otherwise {
+                            conditional {
+                              condition {
+                                binary {
+                                  op: BINARY_OP_EQ
+                                  left {
+                                    slice {
+                                      operand {
+                                        var: "op"
+                                      }
+                                      hi: 3
+                                    }
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 4
+                                        value: "1"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              then {
+                                set_invalid {
+                                  header {
+                                    index {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "h2"
+                                        }
+                                      }
+                                      index {
+                                        literal {
+                                          bits {
+                                            width: 32
+                                            value: "1"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              otherwise {
+                                conditional {
+                                  condition {
+                                    binary {
+                                      op: BINARY_OP_EQ
+                                      left {
+                                        slice {
+                                          operand {
+                                            var: "op"
+                                          }
+                                          hi: 3
+                                        }
+                                      }
+                                      right {
+                                        literal {
+                                          bits {
+                                            width: 4
+                                            value: "2"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  then {
+                                    set_invalid {
+                                      header {
+                                        index {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "h2"
+                                            }
+                                          }
+                                          index {
+                                            literal {
+                                              bits {
+                                                width: 32
+                                                value: "2"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  otherwise {
+                                    conditional {
+                                      condition {
+                                        binary {
+                                          op: BINARY_OP_EQ
+                                          left {
+                                            slice {
+                                              operand {
+                                                var: "op"
+                                              }
+                                              hi: 3
+                                            }
+                                          }
+                                          right {
+                                            literal {
+                                              bits {
+                                                width: 4
+                                                value: "3"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      then {
+                                        set_invalid {
+                                          header {
+                                            index {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "h2"
+                                                }
+                                              }
+                                              index {
+                                                literal {
+                                                  bits {
+                                                    width: 32
+                                                    value: "3"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                      otherwise {
+                                        conditional {
+                                          condition {
+                                            binary {
+                                              op: BINARY_OP_EQ
+                                              left {
+                                                slice {
+                                                  operand {
+                                                    var: "op"
+                                                  }
+                                                  hi: 3
+                                                }
+                                              }
+                                              right {
+                                                literal {
+                                                  bits {
+                                                    width: 4
+                                                    value: "4"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                          then {
+                                            set_invalid {
+                                              header {
+                                                index {
+                                                  base {
+                                                    member {
+                                                      base {
+                                                        var: "hdr"
+                                                      }
+                                                      field: "h2"
+                                                    }
+                                                  }
+                                                  index {
+                                                    literal {
+                                                      bits {
+                                                        width: 32
+                                                        value: "4"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "cIngress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  locals {
+    name: "op1"
+    type {
+      bits: 8
+    }
+  }
+  locals {
+    name: "op2"
+    type {
+      bits: 8
+    }
+  }
+  locals {
+    name: "op3"
+    type {
+      bits: 8
+    }
+  }
+  body {
+    assign {
+      target {
+        var: "op1"
+      }
+      value {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h1"
+            }
+          }
+          field: "op1"
+        }
+      }
+    }
+  }
+  body {
+    call_block {
+      block: "cDoOneOp"
+      args {
+        lvalue {
+          var: "hdr"
+        }
+      }
+      args {
+        expr {
+          var: "op1"
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        var: "op2"
+      }
+      value {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h1"
+            }
+          }
+          field: "op2"
+        }
+      }
+    }
+  }
+  body {
+    call_block {
+      block: "cDoOneOp"
+      args {
+        lvalue {
+          var: "hdr"
+        }
+      }
+      args {
+        expr {
+          var: "op2"
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        var: "op3"
+      }
+      value {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h1"
+            }
+          }
+          field: "op3"
+        }
+      }
+    }
+  }
+  body {
+    call_block {
+      block: "cDoOneOp"
+      args {
+        lvalue {
+          var: "hdr"
+        }
+      }
+      args {
+        expr {
+          var: "op3"
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "h1"
+            }
+          }
+          field: "h2_valid_bits"
+        }
+      }
+      value {
+        literal {
+          bits {
+            width: 8
+            value: "0"
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "0"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "1"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "2"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "4"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "3"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "8"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "3"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            index {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h2"
+                }
+              }
+              index {
+                literal {
+                  bits {
+                    width: 32
+                    value: "4"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        assign {
+          target {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "h1"
+                }
+              }
+              field: "h2_valid_bits"
+            }
+          }
+          value {
+            binary {
+              op: BINARY_OP_BIT_OR
+              left {
+                binary {
+                  op: BINARY_OP_BIT_AND
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "h1"
+                        }
+                      }
+                      field: "h2_valid_bits"
+                    }
+                  }
+                  right {
+                    unary {
+                      op: UNARY_OP_COMPLEMENT
+                      operand {
+                        literal {
+                          bits {
+                            width: 8
+                            value: "16"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_SHL
+                  left {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "1"
+                      }
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 8
+                        value: "4"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "DeparserI"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h1"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h2"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h3"
+        }
+      }
+    }
+  }
+}
+headers: "headers"
+metadata: "metadata"
+exports {
+  role: "parser"
+  block: "parserI"
+}
+exports {
+  role: "control"
+  block: "cIngress"
+}
+exports {
+  role: "deparser"
+  block: "DeparserI"
+}

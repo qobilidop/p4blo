@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2018 VMware, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# p4c's testdata/p4_16_samples/parser_error-bmv2.stf, unchanged.
+
+packet 0 012345678910 111213141516 0A0B
+expect 0 012345678910 111213141516 0A0B
+
+packet 0 012345678910
+expect 0 000000000000 000000000000 0000 012345678910$

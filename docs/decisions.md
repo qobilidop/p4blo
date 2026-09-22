@@ -127,6 +127,48 @@ one that says so.
   `setbyte_1`... and its runner resolves names per table; p4blo's
   corpus copy of the STF names the elaborated actions directly and
   sets `Key.name` to p4c's key names so the vectors read unchanged.
+- **Architecture rules the design left open.** A parse that ends off a
+  byte boundary drops the packet whether or not it accepted, since the
+  payload is undefined either way. A contract field the program does
+  not declare reads as its zero value and swallows writes, so a program
+  without `egress_port` sends to port 0 and one without `flood` runs
+  unchanged under the switch. `parser_error` is written after the
+  parser's own `inout` writes and before the control, as v1model does.
+  The filter forwards the original bytes, so a vector that expects a
+  rewritten packet fails under it by construction; the filter tests
+  rewrite expectations to the input bytes.
+- **Printed ternary entries are not const.** p4c 1.2.5 refuses
+  priorities on `const entries` and rejects `@priority`, so the printer
+  emits a ternary table's const entries as ordinary `entries` with
+  `largest_priority_wins = true`, sorted by descending priority. The
+  oracle therefore sees host-mutable entries where the IR has const
+  ones; nothing in the vectors depends on the difference.
+- **Independent review after each step.** Step 1's review is kept at
+  `docs/notes/reviews/step1.md`; its confirmed findings are fixed on
+  main and its rulings are in `docs/semantics.md`.
+- **P4-SpecTec oracle pinned and translated.** Commit `2730cfd9`
+  (2026-09-22) built by `oracle/build.sh` with opam outside the flake.
+  Its simulator has no longest-prefix rule: lpm entries match as
+  ternary and ties need priorities, so `oracle/run.py` translates each
+  lpm `add` into a wildcard at the key's full width with
+  `priority = prefix length`. The oracle therefore confirms outputs but
+  does not independently check longest-prefix; BMv2 would. `no_packet`
+  is unsupported there and becomes a comment; the end-of-file leftover
+  check carries the assertion. Known gap: printed const lpm entries
+  carry no priorities, so a program whose const lpm entries overlap
+  will fail on this oracle until the printer adds them.
+- **Const entry priorities follow p4c's counter, not list order.** p4c
+  numbers const entries with a running counter that continues past
+  annotated ones, smaller winning on BMv2; the priority corpus maps
+  that to IR priorities as `IR = N + 1 - p4c`. This corrects the
+  earlier "list order otherwise" wording.
+- **p4c vectors that write `expect` before `packet`** are reordered in
+  the corpus copy, bytes untouched, since p4blo's replay pairs a packet
+  with the expects that follow it. A dialect extension letting an
+  `expect` just before a `packet` belong to it is possible but not
+  done.
+- **STF key names may index stacks** (`extra[0].h`), as p4c's do; the
+  runner resolves the element's header type.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
