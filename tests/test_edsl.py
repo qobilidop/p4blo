@@ -1225,3 +1225,20 @@ def test_error_messages_name_the_problem() -> None:
     with pytest.raises(EdslError, match="no start state"):
         p.parser("P").state("s").accept()
         p.build()
+
+
+def test_advance_takes_a_bit32_amount() -> None:
+    """core.p4's `advance(in bit<32>)`: the validator requires the width and
+    the printed program would not compile otherwise, so the eDSL refuses a
+    narrower Expr rather than build a program the validator rejects."""
+    p = base()
+    with p.parser("P") as ps:
+        with ps.state("start") as s:
+            s.advance(8)
+            s.advance(ps.meta.x.cast(bit(32)) * 8)
+            with pytest.raises(EdslError, match=r"advance needs a bit<32> amount: .*bit<8>"):
+                s.advance(ps.meta.x)
+            s.accept()
+    amounts = [st.advance.bits for st in p.build().blocks[0].states[0].body]
+    assert amounts[0] == p.literal(8, bit(32)).pb
+    assert amounts[1].binary.left.cast.to == bit(32)

@@ -186,6 +186,10 @@ def is_bits(t: pb.Type) -> bool:
     return kind_of(t) == "bits"
 
 
+def is_bits32(t: pb.Type) -> bool:
+    return is_bits(t) and t.bits == 32
+
+
 def is_boolean(t: pb.Type) -> bool:
     return kind_of(t) == "boolean"
 
@@ -886,7 +890,9 @@ class _Validator:
             case "extract":
                 self.check_extract(stmt.extract, scope, path)
             case "advance":
-                self.expect_expr(stmt.advance.bits, is_bits, "bits", scope, f"{path}.bits")
+                # core.p4's `advance(in bit<32> sizeInBits)`: the IR is
+                # post-elaboration, so the frontend owes the cast.
+                self.expect_expr(stmt.advance.bits, is_bits32, "bit<32>", scope, f"{path}.bits")
             case "verify":
                 self.check_verify(stmt.verify, scope, path)
             case "emit":

@@ -546,10 +546,13 @@ class StateBody(Stmts):
         self._emit(pb.Stmt(extract=pb.Extract(target=self._header(target, "extract"))))
 
     def advance(self, bits: Operand) -> None:
-        """Skip `bits` bits of the packet; an int is a bit<32>."""
-        amount = bits if isinstance(bits, Expr) else literal(self.types, bits, BIT32)
-        if not is_bits(amount.type):
-            raise EdslError(f"advance needs a bit<N> amount, got {type_str(amount.type)}")
+        """Skip `bits` bits of the packet. The amount is a bit<32>, as
+        core.p4 declares `advance`; an int becomes one, an Expr of another
+        width is refused (cast it, as P4 would make you)."""
+        try:
+            amount = literal(self.types, bits, BIT32)
+        except EdslError as e:
+            raise EdslError(f"advance needs a bit<32> amount: {e}") from None
         self._emit(pb.Stmt(advance=pb.Advance(bits=amount.pb)))
 
     def verify(self, condition: Operand, error: str | Expr) -> None:

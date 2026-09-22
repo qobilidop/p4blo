@@ -138,7 +138,9 @@ rejection with `parser_error` set.
   (one bit, `1` is `true`) or a header; when `T` is a header the
   result is valid.
 - **`advance(n)`** moves the cursor by `n` bits; past the end it
-  raises `PacketTooShort` and the cursor does not move.
+  raises `PacketTooShort` and the cursor does not move. `n` is a
+  `bit<32>`, as core.p4 declares it; the frontend casts a narrower
+  amount, so that the printed program is P4.
 - **`verify(cond, err)`** raises `err` when `cond` is `false`. `err`
   may be `NoError`, and then the outcome is the same as an explicit
   `reject`: not accepted, error `NoError`.

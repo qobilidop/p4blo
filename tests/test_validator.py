@@ -932,6 +932,7 @@ def test_type_mismatch_in_control(text: str) -> None:
         f"extract {{ target {{ {HDR} }} }}",
         f"extract {{ target {{ next {{ stack {{ {HDR_IPV4} }} }} }} }}",
         f"advance {{ bits {{ {TRUE} }} }}",
+        f"advance {{ bits {{ {B8} }} }}",  # core.p4's advance takes a bit<32>
         f'verify {{ condition {{ {B8} }} error: "NoMatch" }}',
         assign(TMP, 'lookahead { type { struct: "M" } }'),
         assign(TMP, 'lookahead { type { stack { header: "vlan" size: 2 } } }'),
