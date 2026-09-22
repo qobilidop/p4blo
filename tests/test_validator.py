@@ -1364,6 +1364,27 @@ def test_table_actions(mutate) -> None:
     assert v.TABLE_ACTIONS in broken(mutate)
 
 
+def no_action(p: pb.Program) -> pb.Action:
+    return p.blocks[ING].actions.add(name="NoAction")
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda p: no_action(p).body.add().CopyFrom(p.blocks[ING].actions[0].body[0]),
+        lambda p: no_action(p).params.add(name="port", type=pb.Type(bits=9)),
+    ],
+)
+def test_noaction_reserved(mutate) -> None:
+    """A declared NoAction is an ordinary action of the block, so the name
+    is reserved for the one core.p4 means: empty and parameterless."""
+    assert v.NOACTION_RESERVED in broken(mutate)
+
+
+def test_an_empty_noaction_may_be_declared() -> None:
+    assert broken(no_action) == []
+
+
 @pytest.mark.parametrize(
     "mutate",
     [

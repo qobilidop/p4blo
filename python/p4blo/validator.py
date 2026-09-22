@@ -60,6 +60,7 @@ Tables and entries
   TABLE_LPM_COUNT     more than one lpm key
   TABLE_KEY_MIX       lpm and ternary keys in one table
   TABLE_ACTIONS       an empty or repeated action list, or a call to an action not in it
+  NOACTION_RESERVED   an action named NoAction with a body or parameters
   ACTION_ARGS         action data against the action's params
   ENTRY_SHAPE         key values that do not line up with the keys
   ENTRY_RANGE         a value, prefix length or mask that does not fit its key
@@ -120,6 +121,7 @@ KEY_TYPE = "KEY_TYPE"
 TABLE_LPM_COUNT = "TABLE_LPM_COUNT"
 TABLE_KEY_MIX = "TABLE_KEY_MIX"
 TABLE_ACTIONS = "TABLE_ACTIONS"
+NOACTION_RESERVED = "NOACTION_RESERVED"
 ACTION_ARGS = "ACTION_ARGS"
 ENTRY_SHAPE = "ENTRY_SHAPE"
 ENTRY_RANGE = "ENTRY_RANGE"
@@ -765,6 +767,12 @@ class _Validator:
             self.check_stmt(stmt, scope, f"{path}.body[{i}]")
 
     def check_action(self, action: pb.Action, scope: Scope, path: str) -> None:
+        if action.name == "NoAction" and (action.body or action.params):
+            # The IR has no implicit declarations, so a program's NoAction is
+            # an ordinary action; the name is reserved for the one core.p4
+            # means, which every P4 reader and the printer's shim assume
+            # (docs/semantics.md, "Tables").
+            self.report(NOACTION_RESERVED, "NoAction must have no body and no parameters", path)
         self.check_params(action.params, _ACTION_PARAM_DIRECTIONS, f"{path}.params", "action")
         inner = Scope(scope.block, scope.path, scope.names, action)
         for i, stmt in enumerate(action.body):

@@ -726,7 +726,12 @@ class _ProgramPrinter:
 
     def action(self, action: pb.Action) -> None:
         if action.name == "NoAction":
-            # core.p4 declares it; redeclaring it would clash.
+            # core.p4 declares it; redeclaring it would clash. The IR has no
+            # implicit declarations, so a program's NoAction is an ordinary
+            # action that runs whatever body it has; only the one core.p4
+            # means can be elided (the validator's NOACTION_RESERVED).
+            if action.body or action.params:
+                raise PrintError("NoAction with a body or parameters cannot be printed for core.p4")
             return
         params = ", ".join(_print_param(p) for p in action.params)
         self.line(1, f"action {action.name}({params}) {{")

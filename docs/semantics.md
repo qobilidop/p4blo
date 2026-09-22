@@ -212,7 +212,11 @@ A table match is evaluated over the installed entries; the program's
   the STF runner converts if the oracle's convention differs.
 - **Table miss.** The default action runs. A table always has a
   default action; when the program declares none, it is `NoAction`,
-  which does nothing (§14.2.1.4).
+  which does nothing (§14.2.1.4). A program that declares an action
+  named `NoAction` itself gives it no body and no parameters, so that
+  the name means to every reader, and to the printer's shim, what
+  core.p4 says it means; the validator rejects any other `NoAction`
+  (`NOACTION_RESERVED`).
 - **`hit`** is `true` when an entry matched and `false` on a miss,
   including a miss that ran the default action. It is written after
   the chosen action has run, so an action that writes the same lvalue

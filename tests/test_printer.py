@@ -1179,6 +1179,22 @@ def test_unknown_extern_family_is_refused() -> None:
         printer.print_program(p)
 
 
+def test_a_noaction_with_a_body_is_refused() -> None:
+    """A declared NoAction runs its body on a miss in the IR; core.p4's is
+    empty, so the shim can only elide the empty, parameterless one."""
+    p = golden_program("control_features")
+    control = p.blocks[1]
+    no_action = next(a for a in control.actions if a.name == "NoAction")
+    assert "action NoAction" not in printer.print_program(p)
+    no_action.body.add().CopyFrom(control.actions[1].body[0])  # meta.drop = true
+    with pytest.raises(PrintError, match="NoAction with a body"):
+        printer.print_program(p)
+    del no_action.body[:]
+    no_action.params.add(name="port", type=pb.Type(bits=9))
+    with pytest.raises(PrintError, match="NoAction with a body"):
+        printer.print_program(p)
+
+
 def test_start_state_clash_is_refused() -> None:
     p = golden_program("parser_features")
     p.blocks[0].states[1].name = "start"
