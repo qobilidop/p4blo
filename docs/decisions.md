@@ -157,6 +157,18 @@ one that says so.
   check carries the assertion. Known gap: printed const lpm entries
   carry no priorities, so a program whose const lpm entries overlap
   will fail on this oracle until the printer adds them.
+- **Const entry priorities follow p4c's counter, not list order.** p4c
+  numbers const entries with a running counter that continues past
+  annotated ones, smaller winning on BMv2; the priority corpus maps
+  that to IR priorities as `IR = N + 1 - p4c`. This corrects the
+  earlier "list order otherwise" wording.
+- **p4c vectors that write `expect` before `packet`** are reordered in
+  the corpus copy, bytes untouched, since p4blo's replay pairs a packet
+  with the expects that follow it. A dialect extension letting an
+  `expect` just before a `packet` belong to it is possible but not
+  done.
+- **STF key names may index stacks** (`extra[0].h`), as p4c's do; the
+  runner resolves the element's header type.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
