@@ -831,6 +831,29 @@ def test_stack_last_is_the_element_at_last_index() -> None:
         _ = c.hdr.h.last
 
 
+def test_field_reaches_a_field_an_attribute_shadows() -> None:
+    p = Program("t")
+    eth = p.header("eth", type=bit(16), next=bit(8), src=bit(48))
+    p.headers = p.struct("H", eth=eth)
+    p.metadata = p.struct("M")
+    c = p.control("C")
+    # The wart: the builder's own attribute wins over the field.
+    assert c.hdr.eth.type == pb.Type(header="eth")
+    with pytest.raises(EdslError, match="needs a stack"):
+        _ = c.hdr.eth.next
+    # field() always means the IR field, and is what the attribute means otherwise.
+    for name in ("type", "next", "src"):
+        f = c.hdr.eth.field(name)
+        assert f.type == eth.fields[name]
+        assert f.pb == text_format.Parse(member(member(var("hdr"), "eth"), name), pb.Expr())
+        assert f.lval == text_format.Parse(member(member(var("hdr"), "eth"), name), pb.LValue())
+    assert c.hdr.eth.field("src").pb == c.hdr.eth.src.pb
+    with pytest.raises(EdslError, match="no field 'nope'"):
+        c.hdr.eth.field("nope")
+    with pytest.raises(EdslError, match="has no fields"):
+        c.hdr.eth.src.field("type")
+
+
 def test_concat_chains_from_the_left() -> None:
     p = base()
     c = p.control("C")

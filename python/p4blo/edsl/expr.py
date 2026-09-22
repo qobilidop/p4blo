@@ -42,6 +42,13 @@ class Expr:
 
     `node` is None for `stack.next`, which the schema allows only as an
     lvalue; `lvalue` is None for anything that is not a path.
+
+    A field is reached as an attribute, `hdr.ipv4.ttl`, except when its
+    name is one of this class's own: `type`, `types`, `node`, `lvalue`,
+    `pb`, `lval`, `width`, `next`, `last`, `last_index`, `is_literal`,
+    `is_valid`, `cast`, `add_sat`, `sub_sat` and `field` itself. Those
+    attributes win, so `hdr.eth.type` is the expression's `pb.Type`, not
+    the member; `hdr.eth.field("type")` always means the field.
     """
 
     __slots__ = ("types", "type", "node", "lvalue")
@@ -92,6 +99,10 @@ class Expr:
     def __getattr__(self, name: str) -> Expr:
         if name.startswith("_"):
             raise AttributeError(name)
+        return self.field(name)
+
+    def field(self, name: str) -> Expr:
+        """The field `name` of a header or struct value, whatever its name."""
         fields = self.types.fields(self.type)
         if fields is None:
             raise EdslError(f"{type_str(self.type)} has no fields, so no field {name!r}")
