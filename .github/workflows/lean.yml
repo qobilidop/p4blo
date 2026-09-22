@@ -34,3 +34,7 @@ jobs:
         run: nix develop -c sh -c 'cd lean && lake build'
       - name: Test
         run: nix develop -c sh -c 'cd lean && lake test'
+      - name: Differential test against the Python reference
+        run: |
+          nix develop -c uv sync --locked
+          nix develop -c uv run pytest tests/test_drt.py -k lean_agrees -v
