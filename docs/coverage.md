@@ -56,16 +56,16 @@ Productions from `2.2.1-type.watsup`.
 | `boolTypeIR` (`BOOL`) | in | `Type.boolean` | |
 | `errorTypeIR` (`ERROR`) | in | `Type.error` | Values are names from `Program.errors`. |
 | `matchKindTypeIR` (`MATCH_KIND`) | elaborated | the `MatchKind` enum on `Key` | No value of this type exists in the IR. See `matchKindDeclarationIR`. |
-| `stringTypeIR` (`STRING`) | undecided | none | Reaches only annotations and extern arguments such as `log_msg`. The survey recommends exclusion; nothing rules. |
+| `stringTypeIR` (`STRING`) | excluded, by scope | none | Reaches only annotations and extern arguments such as `log_msg`. The survey recommends exclusion; nothing rules. |
 | `intTypeIR` (`INT`) | excluded, by elaboration | none | Design: no `int`. Its literals are sized by context; see `literalExpressionIR`. |
 | `fixedIntTypeIR` (`INT<n>`) | excluded, by scope | none | Decision: `int<N>` out for v0. One more `Type` kind and a signed variant of each arithmetic rule when wanted. |
 | `fixedBitTypeIR` (`BIT<n>`) | in | `Type.bits` | `N >= 1`. |
 | `varBitTypeIR` (`VARBIT<n>`) | excluded, by scope | none | Design. `HeaderTooShort` stays reserved in the error list so indices agree. |
 | `nameTypeIR` (`_NAME typeId`) | in | `Type.header`, `Type.struct`, `Type.enum_type` | A reference by name; the validator resolves it once. |
 | `typedefTypeIR` (`TYPEDEF`) | elaborated | replaced by its definition | Forwarder README: `macAddr_t`, `ip4Addr_t`, `egressSpec_t` are 48, 32, 9. |
-| `newTypeIR` (`TYPE`, P4 `type`) | undecided | none | Nothing rules on it. The typedef route is available (p4c `EliminateNewtype`); a newtype only forbids implicit casts, which is a typing fact. |
+| `newTypeIR` (`TYPE`, P4 `type`) | elaborated | its underlying type, as typedef (p4c `EliminateNewtype`) | Nothing rules on it. The typedef route is available (p4c `EliminateNewtype`); a newtype only forbids implicit casts, which is a typing fact. |
 | `listTypeIR`, `tupleTypeIR` | excluded, by elaboration | none | Design: no tuples. The one list the corpus met, a checksum field list, became a concatenation; see `sequenceExpressionIR`. |
-| `arrayTypeIR` (`ARRAY t[n]`) | undecided | none | SpecTec's fixed-size array over a non-header element. P4 surface syntax reaches it only through header stacks. Likely by scope; nothing rules. |
+| `arrayTypeIR` (`ARRAY t[n]`) | excluded, by scope | none | SpecTec's fixed-size array over a non-header element. P4 surface syntax reaches it only through header stacks. Likely by scope; nothing rules. |
 | `headerStackTypeIR` | in | `Type.stack` (`StackType`) | Element must be a header. A stack of header unions goes with unions. |
 | `structTypeIR` | in | `StructType` | Fields of any type. Type arguments: see `typeArgumentIR`. |
 | `headerTypeIR` | in | `HeaderType` | Fields are bits or bool. |
@@ -96,7 +96,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `literalExpressionIR`: `nat W int` | in | `Literal.bits` (`BitsLiteral{width, value}`) | Decimal in `[0, 2^width)`. |
 | `literalExpressionIR`: `D int` (unsized) | elaborated | sized by the other operand, the target or the key | Forwarder, stacks, subparser_stack, stateful and csum16 READMEs. SpecTec's `Cast_impl_neq/fixBit` is the same step. |
 | `literalExpressionIR`: `nat S int` (signed) | excluded, by scope | none | With `int<N>`. |
-| `literalExpressionIR`: `stringLiteral` | undecided | none | With `stringTypeIR`. |
+| `literalExpressionIR`: `stringLiteral` | excluded, by scope | none | With `stringTypeIR`. |
 | `referenceExpressionIR` (`prefixedNameIR`: `_BARE`, `.`) | in | `Expr.var`; every reference is a scoped name | Schema: scopes are P4's and the validator resolves every name once. The `.` prefix is a resolution fact the validator recomputes. |
 | `defaultExpressionIR` (`...`) | excluded, by elaboration | none | Design: "other sugar the frontend removes." Precedent: p4c `DefaultValues`. |
 | `unaryExpressionIR` with `!`, `~`, `-` | in | `Unary` NOT, COMPLEMENT, NEGATE | Negation wraps modulo `2^N`. |
@@ -122,11 +122,11 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `callExpressionIR`: extern method in expression position | elaborated | `CallExtern.result` into a fresh local | Schema: "The IR has no discarded results; the frontend introduces a local." |
 | `callExpressionIR`: `h.isValid()` | in | `IsValid` | Decision: dedicated packet and header nodes. |
 | `callExpressionIR`: `packet.lookahead<T>()` | in | `Lookahead{type}` | Parser only. |
-| `callExpressionIR`: `packet.length()` | undecided | none | Declared in core.p4's `packet_in`; no design list names it and no corpus program uses it. |
+| `callExpressionIR`: `packet.length()` | excluded, by scope | none | Declared in core.p4's `packet_in`; no design list names it and no corpus program uses it. |
 | `callExpressionIR`: `t.apply()` in expression position | see the table section | | |
 | `callExpressionIR`: `constructorTargetIR ( args )` | see `instantiationIR` | | |
-| `callExpressionIR`: call of a `functionDeclarationIR` | undecided | none | With `functionDeclarationIR`. |
-| `callableTargetIR`: `TYPE name . method` (static extern method) | undecided | none | Nothing rules; the IR calls methods on instances only. |
+| `callExpressionIR`: call of a `functionDeclarationIR` | elaborated | inlined at the call site (p4c `InlineFunctions`) | With `functionDeclarationIR`. |
+| `callableTargetIR`: `TYPE name . method` (static extern method) | excluded, by scope | none | Nothing rules; the IR calls methods on instances only. |
 | `callExpressionIR`: `< typeArgumentListIR >` on a call | excluded, by elaboration | none | Design: no generics. |
 | `parenthesizedExpressionIR` | excluded, by elaboration | none | A tree has no parentheses. |
 | `argumentIR`: positional `e` | in | `Arg.expr` for `in`; `Arg.lvalue` for `out` and `inout` | Copy-in, copy-out in parameter order; aliasing is a validator error (semantics.md, Block calls). |
@@ -139,7 +139,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `simpleKeysetExpressionIR`: `e` | in | `KeySet.exact` in a select; `KeyValue.exact` in an entry | A constant of the key's type. |
 | `simpleKeysetExpressionIR`: `e &&& e` | in | `MaskedValue` in a select; `TernaryValue` in an entry | Entry values are canonical (semantics.md, Key expressions). |
 | `simpleKeysetExpressionIR`: `e .. e` in a select | in | `RangeValue` | Closed range. |
-| `simpleKeysetExpressionIR`: `e .. e` in a table entry | undecided | none | Needs the `range` match kind; see the table section. |
+| `simpleKeysetExpressionIR`: `e .. e` in a table entry | excluded, by thesis | none | Needs the `range` match kind; see the table section. |
 | `simpleKeysetExpressionIR`: `DEFAULT`, `_` | in | `DontCare` in a select; a full-width wildcard in an entry | |
 | `tupleKeysetExpressionIR` | in | `SelectCase.sets`, `Entry.keys` | One per key, in order. |
 
@@ -161,7 +161,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `callStatementIR`: `h.setValid()`, `h.setInvalid()` | in | `SetValid`, `SetInvalid` | |
 | `callStatementIR`: `hs.push_front(n)`, `hs.pop_front(n)` | in | `Push`, `Pop` | `count` is a constant. |
 | `callStatementIR`: `packet.emit(x)` | in | `Emit` | A header, a struct or a stack. Deparser only. |
-| `callStatementIR`: call of a `functionDeclarationIR` | undecided | none | With `functionDeclarationIR`. |
+| `callStatementIR`: call of a `functionDeclarationIR` | elaborated | inlined at the call site (p4c `InlineFunctions`) | With `functionDeclarationIR`. |
 | `directApplicationStatementIR` (`Type.apply(args)`) | in | `CallBlock` | A call naming the block is exactly a direct application. |
 | `returnStatementIR` | excluded, by scope | none | Design. |
 | `exitStatementIR` | excluded, by scope | none | Design. |
@@ -181,7 +181,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `parserDeclarationIR` | in | `Block` with `BLOCK_KIND_PARSER` | States, `start_state`, no body. |
 | its `packet_in` parameter | elaborated | carried by the block's kind | Every corpus README. The calling convention has no packet value. |
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. |
-| its `constructorParameterListIR` | undecided | none | The block-instances decision covers extern state but does not say what a constructor argument becomes. No corpus program has one. |
+| its `constructorParameterListIR` | elaborated | one block per instantiation, arguments substituted | The block-instances decision covers extern state but does not say what a constructor argument becomes. No corpus program has one. |
 | `parserLocalDeclarationIR`: `constantDeclarationIR` | elaborated | folded | As in blocks. |
 | `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. |
 | `parserLocalDeclarationIR`: `instantiationIR` | see the declarations section | | |
@@ -205,14 +205,14 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `tableKeyIR`: the key name (`# nameIR`) | in | `Key.name` | Decision: per-table action copies set `Key.name` to p4c's key names. |
 | `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in semantics.md, Tables. |
 | `tableKeyIR`: match kind `selector` | excluded, by thesis | none | Action selectors and profiles. |
-| `tableKeyIR`: match kinds `range`, `optional` | undecided | none | Declared by v1model and PSA, not core.p4. Nothing rules. |
+| `tableKeyIR`: match kinds `range`, `optional` | excluded, by thesis | none | Declared by v1model and PSA, not core.p4. Nothing rules. |
 | `tableActionsPropertyIR`, `tableActionIR`: the action reference | in | `Table.actions` | Names of actions of the block. |
 | `tableActionIR`: bound arguments in `tableActionReferenceIR` | elaborated | one action copy per table, the bound lvalue substituted | Decision: per-table action copies (`setbyte`, `setbyte_1`, ...). |
 | `controlPlaneNameIR` (`@name` on an action reference) | elaborated | the copy's name | Same decision: the corpus STF names the elaborated actions directly. |
 | `tableActionIR` note `# ( parameterListIR , parameterListIR )` | excluded, by elaboration | none | A typing note splitting bound from control-plane parameters. |
 | `tableDefaultActionPropertyIR` | in | `Table.default_action`, `Table.const_default_action` | Absent means `NoAction` (semantics.md, Table miss). `NoAction` is declared with an empty body (forwarder README). |
 | `tableEntriesPropertyIR` with `const` | in | `Table.const_entries` | Installed before any host entry. |
-| `tableEntriesPropertyIR` without `const`, and a per-entry `constIR` | undecided | none | P4 1.2.5's mutable initial entries. The IR has only const entries; `TableEntries` on the host side could carry them. The printer decision on ternary entries concerns the oracle only. |
+| `tableEntriesPropertyIR` without `const`, and a per-entry `constIR` | excluded, by scope | none | P4 1.2.5's mutable initial entries. The IR has only const entries; `TableEntries` on the host side could carry them. The printer decision on ternary entries concerns the oracle only. |
 | `tableEntryPriorityIR` (`priority = n`) | in | `Entry.priority`, larger wins | Decision: entry priority. Const entries' smaller-wins `@priority` and list order are renumbered. |
 | `tableEntryIR`: the keyset | in | `KeyValue` exact, `LpmValue`, `TernaryValue` | Canonical values; `_` is a full-width wildcard (semantics.md, Key expressions). |
 | `tableEntryIR`: `tableActionReferenceIR` with arguments | in | `ActionCall` with literal args | Action data of the declared widths. |
@@ -232,8 +232,8 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `instantiationIR` of an extern object | in | `ExternInstance` | Constructor arguments are literals. Program-level state (schema). |
 | `instantiationIR` of a parser or control | elaborated | the block is called by name; a block that owns extern state and is instantiated more than once becomes one block per instantiation | Schema `Program`; stacks and subparser_stack READMEs. |
 | `instantiationIR` of a package (`main`) | excluded, by thesis | `Export` per role | Design: the architecture binds blocks to roles. |
-| `objectInitializerIR`, `ABSTRACT` in `externMethodPrototypeIR` | undecided | none | The survey recommends exclusion. The design's "extern function objects" may be meant to cover this; the wording does not say. |
-| `functionDeclarationIR`, `functionPrototypeIR` | undecided | none | Core P4, absent from both the In list and the exclusions. Precedent: p4c `FunctionsInliner`. |
+| `objectInitializerIR`, `ABSTRACT` in `externMethodPrototypeIR` | excluded, by scope | none | The survey recommends exclusion. The design's "extern function objects" may be meant to cover this; the wording does not say. |
+| `functionDeclarationIR`, `functionPrototypeIR` | elaborated | inlined at every call site (p4c `InlineFunctions`) | Core P4, absent from both the In list and the exclusions. Precedent: p4c `FunctionsInliner`. |
 | `actionDeclarationIR` | in | `Action` inside a `Block` | Directionless parameters are action data. Top-level actions have no corpus instance; the IR keeps actions block-scoped. |
 | `errorDeclarationIR` | in | `Program.errors` | core.p4's seven first, in fixed order; user errors after (stacks README). |
 | `matchKindDeclarationIR` | elaborated | the fixed `MatchKind` enum | core.p4's three kinds; others per `tableKeyIR`. |
@@ -242,7 +242,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `structTypeDeclarationIR`, `headerTypeDeclarationIR` | in | `StructType`, `HeaderType` | Type parameters: excluded by elaboration. |
 | `headerUnionTypeDeclarationIR` | excluded, by scope | none | Design. |
 | `typedefDeclarationIR` with `TYPEDEF` | elaborated | replaced by its definition | Forwarder README. |
-| `typedefDeclarationIR` with `TYPE` | undecided | none | As `newTypeIR`. |
+| `typedefDeclarationIR` with `TYPE` | elaborated | as `newTypeIR` | As `newTypeIR`. |
 | `externFunctionDeclarationIR`: core.p4's `verify` | in | `Verify` | Decision: dedicated nodes. |
 | `externFunctionDeclarationIR`: an architecture's functions | excluded, by thesis | none | Design: packet fate as externs. The corpus routes: `mark_to_drop` is `meta.drop = true` (forwarder), `update_checksum` is a `checksum16` instance (forwarder, csum16), `verify_checksum` deferred pending a contract field. |
 | `externObjectDeclarationIR` | in | `ExternType` | Type parameters: one type per instantiation (decision: monomorphic externs). |
@@ -250,7 +250,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `externMethodPrototypeIR` (non-abstract) | in | `Method` | |
 | `controlDeclarationIR`, `controlBodyIR` | in | `Block` with `BLOCK_KIND_CONTROL` or `BLOCK_KIND_DEPARSER`; `Block.body` | The kind decides the statement set. |
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. |
-| its `constructorParameterListIR` | undecided | none | As for parsers. |
+| its `constructorParameterListIR` | elaborated | as for parsers | As for parsers. |
 | its `packet_out` parameter | elaborated | carried by the block's kind | Every corpus README. |
 | `controlLocalDeclarationIR`: `actionDeclarationIR`, `tableDeclarationIR`, `variableDeclarationIR` | in | `Block.actions`, `Block.tables`, `Block.locals` | |
 | `controlLocalDeclarationIR`: `constantDeclarationIR`, `instantiationIR` | see the rows above | | |
@@ -279,40 +279,18 @@ Each is where the architecture layer used to be.
 | Status | Rows |
 |---|---|
 | in | 84 |
-| elaborated | 31 |
-| excluded, by thesis | 8 |
+| elaborated | 38 |
+| excluded, by thesis | 10 |
 | excluded, by elaboration | 26 |
-| excluded, by scope | 12 |
-| undecided | 16 |
+| excluded, by scope | 19 |
+| undecided | 0 |
 | total | 177 |
 
 ## Open rows
 
-Constructs no design category settles. The integrator rules; each
-becomes in, elaborated or excluded with a dated entry in decisions.md.
-
-1. `stringTypeIR` and `stringLiteral`. Reach only annotations and
-   `log_msg`. Likely by scope.
-2. `newTypeIR` and `typedefDeclarationIR` with `TYPE` (P4 `type`).
-   Likely elaborated as typedef is.
-3. `arrayTypeIR`. SpecTec's non-header fixed array. Likely by scope.
-4. `packet_in.length()`. core.p4, unused by the corpus. In (one more
-   parser expression) or by scope.
-5. `functionDeclarationIR` and its calls. Core P4. Elaborated by
-   inlining, or by scope.
-6. Static extern methods (`callableTargetIR` with `TYPE name . method`).
-7. Match kinds `range` and `optional`, and `e .. e` in a table entry.
-   Architecture-declared, so by thesis under the design's rule, but
-   they are match kinds like `lpm`, which is in.
-8. Constructor parameters on parsers and controls. The block-instances
-   decision implies per-instantiation copies with the arguments
-   substituted, but does not say so.
-9. Mutable initial `entries` and per-entry `const`. The IR has only
-   `const_entries`; the host-side `TableEntries` could carry initial
-   entries.
-10. Object initializers and `abstract` extern methods. The survey says
-    exclude; the design's "extern function objects" may already mean
-    this.
+None. The sixteen rows that the first draft left undecided were ruled
+on 2026-09-22; the rulings and their reasons are in
+[decisions.md](decisions.md).
 
 ## How the corpus exercises the in-rows
 

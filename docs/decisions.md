@@ -173,6 +173,20 @@ one that says so.
   rather than masking as p4c's runner does; entries are canonical
   everywhere else, and a vector that writes one is a mistake worth
   pointing at.
+- **Coverage rulings on the sixteen undecided rows.** `string` and
+  string literals, SpecTec's non-header arrays, `packet_in.length()`,
+  static extern methods, mutable initial entries and per-entry `const`,
+  object initializers and abstract methods: out by scope, each an
+  additive change if wanted. P4 `type` (newtype): elaborated to its
+  underlying type like typedef. Functions and their calls: elaborated
+  by inlining at the call site, as p4c does. Constructor parameters on
+  parsers and controls: elaborated into one block per instantiation
+  with the arguments substituted, the same rule as block instances.
+  `range` and `optional` match kinds and `..` in entries: out by
+  thesis, since core.p4 declares only exact, ternary and lpm.
+- **`switch` on `action_run` is elaborated** into a block local that
+  each action assigns a distinct value to, followed by an if-chain; the
+  ACL corpus does it and names it.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
