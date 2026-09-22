@@ -268,7 +268,8 @@ points and the same calling convention. `Externs.lean` carries the Lean
 models of `register`, `counter` and `checksum16`, pinned to the Python
 ones. `Switch.lean` is the Lean twin of the Python switch, so that the
 pipe compares whole packets in and out. `lake test` runs 181 checks on
-the decoder, the index and the forwarder's vectors (`docs/status.md`).
+the decoder, the index, every interpreter rule, the extern models and
+the forwarder's vectors (`docs/status.md`).
 
 Differential random testing is `python/p4blo/drt/`. A generator walks
 the parser symbolically so that random packets reach deep states,
@@ -419,11 +420,12 @@ One day. The repository's 134 commits all carry the date 2026-09-22,
 from 00:21 to 08:44 local time, under one author, with a set of agents
 doing the building in isolated worktrees, 20 of which were merged back,
 and Claude Fable 5.1 named as co-author on the agent commits. Each build
-step ended with something that could fail and was followed by an
-independent, read-only review; step 1's is kept at
-`docs/notes/reviews/step1.md`, with 14 reproducers, 8 confirmed defects
-that were fixed on main, and the rulings it forced written into
-`docs/semantics.md`. Every choice the design did not already settle is a
+step ended with something that could fail, and the work was reviewed
+twice by an independent, read-only agent: after step 1, kept at
+`docs/notes/reviews/step1.md` with 14 reproducers, 8 confirmed defects
+fixed on main and the rulings it forced written into
+`docs/semantics.md`; and after step 5, over everything that landed
+since, kept beside it. Every choice the design did not already settle is a
 dated entry with its reason in `docs/decisions.md`, and a survey preceded
 each pick: `docs/notes/prior-art-ir.md` for the schema,
 `docs/notes/corpus-candidates.md` for the corpus.

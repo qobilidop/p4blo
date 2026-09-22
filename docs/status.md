@@ -24,7 +24,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | 3 | eDSL, four corpus programs, two architectures, metadata contract | done: nine programs authored in the eDSL, both architectures, contract check |
 | 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | printer, oracle build, translation, replay and CI job landed; forwarder passes both sides |
 | 5 | Lean interpreter, extern models, DRT, the theorem | done |
-| 6 | Coverage table, README claim matrix, write-up | coverage table done (177 rows, none undecided); README rewritten; write-up pending |
+| 6 | Coverage table, README claim matrix, write-up | done: coverage table (177 rows, none undecided), README, `docs/writeup.md`; second review in flight |
 
 ## Corpus
 
