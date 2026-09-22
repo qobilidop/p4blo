@@ -7,8 +7,12 @@ line from stdin and writes one per line to stdout:
 
     request:  {"entries": <pb.Entries as protobuf JSON, proto field names>,
                "ingress_port": n, "packet": "<hex>"}
-    reply:    {"outputs": [[port, "<hex>"], ...]}   or   {"error": "..."}
+    reply:    {"outputs": [[port, "<hex>"], ...], "diagnostic": "..."}
+              or   {"error": "..."}
 
+`diagnostic` is present when the architecture dropped the packet for a
+reason the program did not decide (a misaligned parse, an egress port the
+switch does not have); on the Python side it is `Switch.diagnostics`.
 Extern state persists across the requests of one process, as it does in
 one `Loaded` on the Python side, so both sides see the same case sequence
 from the same fresh state. Anything else on stdout, or a reply that does
@@ -17,14 +21,19 @@ not parse, is a `ProtocolError`: the harness never guesses.
 ## Agreement
 
 Two sides agree on a case when their outputs are equal as sequences of
-(port, bytes), or when both report an error. Everything else is a
-`Divergence`, which carries the case and both outcomes.
+(port, bytes) and either both or neither carry a diagnostic (the texts are
+not compared), or when both report an error for the same stated reason:
+Lean copies the Python sentences, so the messages are compared after the
+Python exception class prefix (`InstallError: `) is stripped. Two sides
+that stop for different reasons have not agreed on anything. Everything
+else is a `Divergence`, which carries the case and both outcomes.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tempfile
 from collections.abc import Callable, Sequence
@@ -47,6 +56,7 @@ __all__ = [
     "Report",
     "compare",
     "compare_cases",
+    "normalize_error",
     "run_python",
 ]
 
@@ -57,23 +67,40 @@ class ProtocolError(Exception):
     error."""
 
 
+_CLASS_PREFIX = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*: ")
+
+
+def normalize_error(message: str) -> str:
+    """An error message without the Python exception class prefix, so that
+    `InstallError: table 't' has 2 keys` compares equal to Lean's sentence."""
+    return _CLASS_PREFIX.sub("", message, count=1)
+
+
 @dataclass(frozen=True)
 class Outcome:
-    """What one side produced: output packets, or an error message."""
+    """What one side produced: output packets, with the architecture's
+    diagnostic when it dropped the packet, or an error message."""
 
     outputs: tuple[tuple[int, bytes], ...] | None = None
     error: str | None = None
+    diagnostic: str | None = None
 
     def agrees_with(self, other: Outcome) -> bool:
         if self.error is not None or other.error is not None:
-            return self.error is not None and other.error is not None
-        return self.outputs == other.outputs
+            return (
+                self.error is not None
+                and other.error is not None
+                and normalize_error(self.error) == normalize_error(other.error)
+            )
+        return self.outputs == other.outputs and (self.diagnostic is None) == (
+            other.diagnostic is None
+        )
 
     def __str__(self) -> str:
         if self.error is not None:
             return f"error: {self.error}"
         if not self.outputs:
-            return "no packet"
+            return "no packet" + (f" ({self.diagnostic})" if self.diagnostic else "")
         return "; ".join(f"port {port}: {data.hex()}" for port, data in self.outputs)
 
 
@@ -92,7 +119,9 @@ class Report:
     seed: int
     ports: int
     cases: int = 0
-    # Cases where both sides raised an error; they count as agreement.
+    # Cases where both sides raised an error. They agree only when the
+    # reasons are the same; either way the generator promises installable
+    # entries and in-range ports, so on a sweep the count should be zero.
     both_errored: int = 0
     divergences: list[Divergence] = field(default_factory=list)
 
@@ -114,10 +143,13 @@ def run_python(loaded: arch.Loaded, case: Case, ports: int) -> list[tuple[int, b
 
 
 def python_outcome(loaded: arch.Loaded, case: Case, ports: int) -> Outcome:
+    switch = arch.Switch(ports)
     try:
-        return Outcome(outputs=tuple(run_python(loaded, case, ports)))
+        outputs = switch.run(loaded, loaded.entries(case.entries), case.ingress_port, case.packet)
     except Exception as e:  # noqa: BLE001 - any failure is this side's outcome
         return Outcome(error=f"{type(e).__name__}: {e}")
+    diagnostic = "; ".join(switch.diagnostics) if switch.diagnostics else None
+    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic)
 
 
 def request_json(case: Case) -> str:
@@ -150,7 +182,10 @@ def parse_reply(line: str) -> Outcome:
             outputs.append((int(port), bytes.fromhex(data)))
         except (TypeError, ValueError) as e:
             raise ProtocolError(f"bad output {item!r} in {line!r}") from e
-    return Outcome(outputs=tuple(outputs))
+    diagnostic = reply.get("diagnostic")
+    if diagnostic is not None and not isinstance(diagnostic, str):
+        raise ProtocolError(f"bad diagnostic {diagnostic!r} in {line!r}")
+    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic)
 
 
 class LeanRunner:

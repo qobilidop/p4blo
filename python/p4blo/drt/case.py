@@ -37,8 +37,9 @@ def case_to_stf(
     """Render a case as STF: `add` and `setdefault` lines, then `packet`.
 
     `comments` maps a label ("python", "lean") to the outputs that side
-    produced, or to an error message; each becomes a commented `expect`
-    block after the packet, ready to be uncommented once attributed.
+    produced, or to a line of text such as `error: ...` or `str(outcome)`;
+    each becomes a commented `expect` block after the packet, ready to be
+    uncommented once attributed.
     Raises `ValueError` on what STF cannot write: an empty packet, or action
     data that is not `bit<N>`.
     """
@@ -61,7 +62,7 @@ def case_to_stf(
     for label, outputs in (comments or {}).items():
         lines.append(f"# {label}:")
         if isinstance(outputs, str):
-            lines.append(f"#   error: {outputs}")
+            lines.append(f"#   {outputs}")
         elif not outputs:
             lines.append("# no_packet")
         else:

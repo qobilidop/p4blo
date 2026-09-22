@@ -40,6 +40,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         request = json.loads(line)
         entries = json_format.ParseDict(request["entries"], pb.Entries())
         packet = bytes.fromhex(request["packet"])
+        switch.diagnostics.clear()
         try:
             outputs = switch.run(loaded, loaded.entries(entries), request["ingress_port"], packet)
         except Exception as e:  # noqa: BLE001 - reported to the other side
@@ -49,6 +50,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 port, data = outputs[0]
                 outputs[0] = (port, bytes([data[0] ^ 0xFF]) + data[1:])
             reply = {"outputs": [[port, data.hex()] for port, data in outputs]}
+            if switch.diagnostics:
+                reply["diagnostic"] = "; ".join(switch.diagnostics)
         sys.stdout.write(json.dumps(reply) + "\n")
         sys.stdout.flush()
     return 0

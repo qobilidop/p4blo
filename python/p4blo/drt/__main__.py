@@ -16,8 +16,8 @@ import sys
 from pathlib import Path
 
 from p4blo import ir
-from p4blo.drt.case import case_to_stf
-from p4blo.drt.run import ProtocolError, Report, compare, default_lean_binary
+from p4blo.drt.case import Outputs, case_to_stf
+from p4blo.drt.run import Outcome, ProtocolError, Report, compare, default_lean_binary
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -48,15 +48,20 @@ def main(argv: list[str] | None = None) -> int:
     return 1 if report.divergences else 0
 
 
+def comment(outcome: Outcome) -> Outputs | str:
+    """An outcome as `case_to_stf` comments it: an error or a drop with a
+    diagnostic as text, otherwise the outputs as `expect` lines."""
+    if outcome.error is not None or outcome.diagnostic is not None:
+        return str(outcome)
+    return outcome.outputs or ()
+
+
 def show(report: Report, program_dir: Path, limit: int, save: Path | None) -> None:
     if not report.divergences:
         return
     index = ir.Index.build(ir.load_text(program_dir / f"{program_dir.name}.txtpb"))
     for d in report.divergences[:limit]:
-        comments = {
-            "python": d.python.error if d.python.error is not None else (d.python.outputs or ()),
-            "lean": d.lean.error if d.lean.error is not None else (d.lean.outputs or ()),
-        }
+        comments = {"python": comment(d.python), "lean": comment(d.lean)}
         header = (
             f"# {report.program}: divergence on case {d.number} of seed {report.seed}, "
             f"found by python -m p4blo.drt\n"

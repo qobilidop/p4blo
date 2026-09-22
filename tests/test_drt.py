@@ -30,7 +30,8 @@ from p4blo.drt import (
     run_python,
 )
 from p4blo.drt.coverage import parser_visits
-from p4blo.drt.run import default_lean_binary, parse_reply
+from p4blo.drt.run import default_lean_binary, parse_reply, python_outcome
+from p4blo.edsl import Program, bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parent.parent / "corpus"
@@ -264,9 +265,37 @@ def test_table_lookups_hit_and_miss() -> None:
 def test_parse_reply_rejects_what_is_not_the_protocol() -> None:
     assert parse_reply('{"outputs": [[1, "ab"]]}') == Outcome(outputs=((1, b"\xab"),))
     assert parse_reply('{"error": "boom"}') == Outcome(error="boom")
-    for bad in ["nope", "[]", "{}", '{"outputs": [[1]]}', '{"outputs": [[1, "zz"]]}']:
+    assert parse_reply('{"outputs": [], "diagnostic": "why"}') == Outcome(
+        outputs=(), diagnostic="why"
+    )
+    for bad in [
+        "nope",
+        "[]",
+        "{}",
+        '{"outputs": [[1]]}',
+        '{"outputs": [[1, "zz"]]}',
+        '{"outputs": [], "diagnostic": 3}',
+    ]:
         with pytest.raises(ProtocolError):
             parse_reply(bad)
+
+
+def test_agreement_compares_error_reasons_and_diagnostic_presence() -> None:
+    """Two errors agree only for the same stated reason, the Python
+    exception class stripped; two drops agree only when both or neither
+    carry a diagnostic, whatever it says."""
+    lean = Outcome(error="table 't' has 2 keys")
+    assert Outcome(error="InstallError: table 't' has 2 keys").agrees_with(lean)
+    assert lean.agrees_with(Outcome(error="InstallError: table 't' has 2 keys"))
+    assert not Outcome(error="ValueError: 600 does not fit in 9 bits").agrees_with(lean)
+    assert not Outcome(error="InstallError: table 't' has 3 keys").agrees_with(lean)
+    assert not Outcome(outputs=()).agrees_with(lean)
+    dropped = Outcome(outputs=(), diagnostic="parser consumed 4 bits")
+    assert dropped.agrees_with(Outcome(outputs=(), diagnostic="something else"))
+    assert not dropped.agrees_with(Outcome(outputs=()))
+    assert not Outcome(outputs=()).agrees_with(dropped)
+    assert Outcome(outputs=((1, b"\x00"),)).agrees_with(Outcome(outputs=((1, b"\x00"),)))
+    assert str(dropped) == "no packet (parser consumed 4 bits)"
 
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)
@@ -315,9 +344,31 @@ def test_an_error_on_one_side_diverges_and_on_both_sides_agrees() -> None:
     cases.append(Case(bad, 0, b"\x00"))
     report = compare_cases("forwarder", loaded, cases, PORTS, lambda _: Outcome(error="x"))
     assert report.cases == 4
+    # Both sides errored on the last case, but not for the same reason.
     assert report.both_errored == 1
-    assert [d.number for d in report.divergences] == [0, 1, 2]
-    assert all(d.lean.error == "x" and d.python.outputs is not None for d in report.divergences)
+    assert [d.number for d in report.divergences] == [0, 1, 2, 3]
+    assert all(d.lean.error == "x" for d in report.divergences)
+    assert report.divergences[3].python.error is not None
+    assert report.divergences[3].python.error.startswith("InstallError: ")
+    # A Lean that states the same reason, without Python's class prefix,
+    # agrees.
+    same = Outcome(error="table 'ipv4_lpm' has 1 keys")
+    report = compare_cases("forwarder", loaded, cases[3:], PORTS, lambda _: same)
+    assert report.both_errored == 1
+    assert report.divergences == []
+
+
+def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
+    loaded = arch.load(golden(CORPUS / "forwarder"))
+    case = Case(pb.Entries(), 0, b"\x00")
+    python = python_outcome(loaded, case, PORTS)
+    assert python.diagnostic is None
+    same = Outcome(outputs=python.outputs)
+    report = compare_cases("forwarder", loaded, [case], PORTS, lambda _: same)
+    assert report.divergences == []
+    dropped = Outcome(outputs=python.outputs, diagnostic="egress_port 9 is not a port")
+    report = compare_cases("forwarder", loaded, [case], PORTS, lambda _: dropped)
+    assert [d.number for d in report.divergences] == [0]
 
 
 # ---------------------------------------------------------------------------
@@ -343,7 +394,7 @@ def test_case_to_stf_parses_and_replays_to_the_same_outputs(program: str) -> Non
 def test_case_to_stf_writes_the_outputs_as_comments() -> None:
     index = ir.Index.build(golden(CORPUS / "forwarder"))
     case = Case(pb.Entries(), 1, b"\x01\x02")
-    text = case_to_stf(index, case, comments={"python": [(2, b"\xab")], "lean": "boom"})
+    text = case_to_stf(index, case, comments={"python": [(2, b"\xab")], "lean": "error: boom"})
     assert text == ("packet 1 0102\n# python:\n# expect 2 ab $\n# lean:\n#   error: boom\n")
     statements = stf.parse(text)
     assert len(statements) == 1
@@ -383,3 +434,104 @@ def test_lean_agrees_with_python(program_dir: Path, lean_binary: Path) -> None:
         for d in report.divergences[:3]
     )
     assert report.divergences == [], f"{report.summary()}\n{shown}"
+    # The generator promises installable entries and in-range ports, so an
+    # error on both sides, even for the same reason, is a bug somewhere.
+    assert report.both_errored == 0, report.summary()
+
+
+def lean_report(
+    program: pb.Program, cases: list[Case], lean_binary: Path, tmp_path: Path, ports: int = 4
+) -> tuple[Outcome, ...]:
+    """Every case on Python and on Lean; the report and the Lean outcomes."""
+    loaded = arch.load(program)
+    program_json = tmp_path / f"{program.name}.json"
+    program_json.write_text(ir.dump_json(program))
+    seen: list[Outcome] = []
+    with LeanRunner([lean_binary], program_json, ports) as runner:
+
+        def run_lean(case: Case) -> Outcome:
+            seen.append(runner.run(case))
+            return seen[-1]
+
+        report = compare_cases(program.name, loaded, cases, ports, run_lean)
+    assert report.divergences == [], report.summary()
+    return tuple(seen)
+
+
+def test_lean_states_the_same_reason_as_python(lean_binary: Path, tmp_path: Path) -> None:
+    """Both sides refuse an lpm prefix wider than the key and an ingress
+    port that is not the switch's, in the same words."""
+    program = golden(CORPUS / "forwarder")
+    bad_width = pb.Entries()
+    te = bad_width.tables.add(block="MyIngress", table="ipv4_lpm")
+    entry = te.entries.add()
+    entry.keys.add(lpm=pb.LpmValue(value="1", prefix_len=40))
+    entry.action.action = "drop"
+    cases = [Case(bad_width, 0, bytes(34)), Case(pb.Entries(), 600, bytes(34))]
+    lean = lean_report(program, cases, lean_binary, tmp_path)
+    assert [o.error for o in lean] == [
+        "prefix length 40 exceeds width 32",
+        "ingress_port 600 is not a port of this switch",
+    ]
+
+
+def fate_program() -> pb.Program:
+    """flood, drop and egress_port taken from the packet; the ingress port
+    written back into it."""
+    p = Program("fate")
+    h = p.header("h_t", flood=bit(8), drop=bit(8), port=bit(16))
+    p.headers = p.struct("headers", h=h)
+    p.metadata = p.struct(
+        "metadata", ingress_port=bit(9), egress_port=bit(9), drop=boolean, flood=boolean
+    )
+    with p.parser("P") as ps:
+        with ps.state("start") as s:
+            s.extract(ps.hdr.h)
+            s.accept()
+    with p.control("C") as c:
+        with c.body() as b:
+            b.assign(c.meta.flood, c.hdr.h.flood != 0)
+            b.assign(c.meta.drop, c.hdr.h.drop != 0)
+            b.assign(c.meta.egress_port, c.hdr.h.port.cast(bit(9)))
+            b.assign(c.hdr.h.port, c.meta.ingress_port.cast(bit(16)))
+    with p.deparser("D") as d:
+        with d.body() as b:
+            b.emit(d.hdr.h)
+    p.export("parser", "P")
+    p.export("control", "C")
+    p.export("deparser", "D")
+    return p.build()
+
+
+def test_lean_agrees_on_flood_drop_and_the_port_rules(lean_binary: Path, tmp_path: Path) -> None:
+    program = fate_program()
+    assert validator.validate(program) == []
+    cases = [
+        Case(pb.Entries(), ingress, bytes([flood, drop, port >> 8, port & 0xFF]))
+        for ingress, flood, drop, port in [
+            (6, 1, 0, 0),  # flood from a middle port
+            (0, 1, 0, 0),
+            (7, 1, 1, 3),  # drop wins
+            (0, 0, 0, 511),  # BMv2's drop port: out of range here
+            (0, 0, 0, 9),  # beyond the count
+            (0, 0, 0, 7),  # the last port
+            (2, 0, 0, 4),
+        ]
+    ]
+    cases.append(Case(pb.Entries(), 300, bytes(4)))  # ingress beyond the count: both error
+    cases.append(Case(pb.Entries(), 512, bytes(4)))  # ingress beyond bit<9>: both error
+    lean = lean_report(program, cases, lean_binary, tmp_path, ports=8)
+    assert [o.diagnostic for o in lean[:7]] == [
+        None,
+        None,
+        None,
+        "egress_port 511 is not a port of this switch",
+        "egress_port 9 is not a port of this switch",
+        None,
+        None,
+    ]
+    assert lean[5].outputs == ((7, bytes([0, 0, 0, 0])),)
+    assert [o.error for o in lean[7:]] == [
+        "ingress_port 300 is not a port of this switch",
+        "ingress_port 512 is not a port of this switch",
+    ]
