@@ -13,7 +13,7 @@ keyword is case-insensitive.
     add <table> [<priority>] <key>:<value> ... <action>(<param>:<value>, ...)
     setdefault <table> <action>(<param>:<value>, ...)
     packet <port> <hex bytes>
-    expect <port> <hex bytes, `*` nibbles are don't-care>
+    expect <port> <hex bytes, `*` nibbles are don't-care> [$]
     no_packet
     wait
 
@@ -51,7 +51,10 @@ Which form a key value may take follows the key's match kind:
 `packet` and `expect` take whitespace-separated hex, which is joined before
 it is read, so `00 11 22` and `001122` are the same bytes. An `expect` may
 write `*` for a nibble, which matches any value there. A `packet` may not:
-an input packet is fully determined.
+an input packet is fully determined. As in p4c's runner, the bytes of an
+`expect` are a prefix of the output: a longer output still matches, unless
+the line ends in `$`, which demands the exact length. p4c's own vectors
+depend on this, since many name only the header bytes.
 
 ## Replay
 
@@ -175,11 +178,13 @@ class Expect:
     port: int
     data: bytes
     mask: bytes
+    # True when the line ended in `$`: the output must not be longer.
+    exact: bool = False
 
     def matches(self, packet: bytes) -> bool:
-        if len(packet) != len(self.data):
+        if len(packet) < len(self.data) or (self.exact and len(packet) != len(self.data)):
             return False
-        return all((b & m) == (d & m) for b, d, m in zip(packet, self.data, self.mask, strict=True))
+        return all((b & m) == (d & m) for b, d, m in zip(packet, self.data, self.mask, strict=False))
 
 
 @dataclass(frozen=True, slots=True)
@@ -306,8 +311,11 @@ def _parse_statement(keyword: str, rest: str, line: int) -> Statement:
             port, data = _parse_port_and_hex(rest, line, wildcards=False)
             return Packet(line, port, data[0])
         case "expect":
+            exact = rest.rstrip().endswith("$")
+            if exact:
+                rest = rest.rstrip()[:-1]
             port, data = _parse_port_and_hex(rest, line, wildcards=True)
-            return Expect(line, port, data[0], data[1])
+            return Expect(line, port, data[0], data[1], exact)
         case "no_packet":
             _expect_empty(keyword, rest, line)
             return NoPacket(line)
