@@ -407,6 +407,22 @@ def test_extern_call_with_an_out_argument_and_a_return_value() -> None:
     assert reg.calls == [("read", [Bits(8, 4), Bits(8, 0)]), ("bump", [Bits(8, 5)])]
 
 
+def test_extern_out_argument_arrives_as_zero_whatever_its_lvalue_holds() -> None:
+    reg = FakeReg()
+    body = (
+        assign('var: "t"', bits(8, 5))
+        + assign(META_N, bits(8, 4))
+        + stmt(
+            f'call_extern {{ instance: "reg" method: "read" '
+            f'args {{ expr {{ {META_N} }} }} args {{ lvalue {{ var: "t" }} }} }}'
+        )
+        + assign(META_N, 'var: "t"')
+    )
+    out = run(body, externs={"reg": reg})
+    assert reg.calls == [("read", [Bits(8, 4), Bits(8, 0)])]  # not 5: out is uninitialized
+    assert out.n == Bits(8, 5)  # the binding's result replaced it
+
+
 def test_run_control_does_not_mutate_its_arguments() -> None:
     headers = stack_of(1, 2, 2)
     metadata = Struct("M", [Bits(8, 1), False])

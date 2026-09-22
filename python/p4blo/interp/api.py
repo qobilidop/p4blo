@@ -26,9 +26,11 @@ class ExternBinding(Protocol):
     """A Python implementation bound to one extern instance.
 
     `method` is the method's name in the extern type; `args` holds one value
-    per parameter in order, with the current value for out and inout
-    parameters. The binding is called after the registry has checked arity
-    and widths, so it may trust its inputs.
+    per parameter in order: the argument's value for `in` and `inout`, and
+    the zero value of the parameter's type for `out`, which is uninitialized
+    in P4 (docs/semantics.md, "Externs"). The binding is called after the
+    registry has checked arity and widths, so it may trust its inputs; the
+    values it returns are copied back, so it never aliases program storage.
     """
 
     def call(self, method: str, args: list[Value]) -> ExternResult: ...

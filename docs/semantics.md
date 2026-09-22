@@ -245,5 +245,9 @@ arguments and its call sites.
 - **Method call order** is program order; an extern may keep state
   between calls and between packets, and that state is part of the
   caller's world, not the program's.
+- **Extern calls.** `in` and `inout` arguments are copied in, `out`
+  arguments arrive as zero, results are written back in parameter
+  order, then the return value. The binding sees and returns copies,
+  so it can never alias program storage.
 - **Extern implementations** for the corpus are specified by their
   own vectors under `corpus/`, not here.
