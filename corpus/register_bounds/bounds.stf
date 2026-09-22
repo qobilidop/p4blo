@@ -1,0 +1,64 @@
+# register_bounds: reads and writes beyond the end of a register.
+#
+# Our own vectors, for the closed behavior of docs/semantics.md and
+# python/p4blo/externs/register.py: a read at or beyond `size` yields zero
+# and a write there is ignored. The register has 4 cells, bit<8> each, and
+# the file replays on a fresh load, so r is all zero at the first packet
+# and the state carries across every packet below.
+#
+# Each packet is one h_t: idx, val, got. Per packet, with i = idx:
+#
+#   x = r[i];  r[i] = x + val;  got = r[i]
+#
+# so in range the output's third byte is the cell's new value, and beyond
+# the end it is what a read there returns, zero, whatever was written.
+# The input's third byte is overwritten; it is 0xff in some packets to
+# show that.
+#
+# Packet 1, idx 0, val 0x05:   r[0] = 0x00 -> 0x05;  got = 0x05
+# Packet 2, idx 3, val 0x10:   the last cell: r[3] = 0x00 -> 0x10;  got = 0x10
+# Packet 3, idx 4, val 0x07:   one past the end: read 0, the write is
+#                              ignored, read 0 again;  got = 0x00
+# Packet 4, idx 4, val 0x07:   again: nothing was stored anywhere, so the
+#                              same;  got = 0x00
+# Packet 5, idx 255, val 0x01: the largest index a packet can name, far
+#                              past the end;  got = 0x00
+# Packet 6, idx 0, val 0x03:   r[0] = 0x05, untouched by the packets in
+#                              between: 0x05 + 0x03 = 0x08;  got = 0x08
+# Packet 7, idx 3, val 0xef:   r[3] = 0x10 + 0xef = 0xff;  got = 0xff
+# Packet 8, idx 3, val 0x01:   0xff + 0x01 wraps in bit<8> to 0x00;
+#                              got = 0x00, a zero from arithmetic, not
+#                              from the bound
+# Packet 9, idx 3, val 0x02:   r[3] = 0x00 -> 0x02, so the wrap stored a
+#                              zero where packets 3 to 5 stored nothing;
+#                              got = 0x02
+#
+# The program declares no egress_port, so every packet leaves on port 0;
+# `$` demands the exact length, the three header bytes and nothing else.
+
+packet 0 00 05 ff
+expect 0 00 05 05 $
+
+packet 0 03 10 00
+expect 0 03 10 10 $
+
+packet 0 04 07 ff
+expect 0 04 07 00 $
+
+packet 0 04 07 00
+expect 0 04 07 00 $
+
+packet 0 ff 01 ff
+expect 0 ff 01 00 $
+
+packet 0 00 03 00
+expect 0 00 03 08 $
+
+packet 0 03 ef 00
+expect 0 03 ef ff $
+
+packet 0 03 01 00
+expect 0 03 01 00 $
+
+packet 0 03 02 00
+expect 0 03 02 02 $

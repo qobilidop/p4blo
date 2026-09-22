@@ -1,0 +1,323 @@
+name: "register_bounds"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "h_t"
+  fields {
+    name: "idx"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "val"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "got"
+    type {
+      bits: 8
+    }
+  }
+}
+struct_types {
+  name: "headers"
+  fields {
+    name: "h"
+    type {
+      header: "h_t"
+    }
+  }
+}
+struct_types {
+  name: "metadata"
+}
+extern_types {
+  name: "register"
+  constructor_params {
+    name: "size"
+    type {
+      bits: 32
+    }
+    direction: DIRECTION_IN
+  }
+  methods {
+    name: "read"
+    params {
+      name: "result"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_OUT
+    }
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+  }
+  methods {
+    name: "write"
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+    params {
+      name: "value"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_IN
+    }
+  }
+}
+extern_instances {
+  name: "r"
+  extern_type: "register"
+  args {
+    bits {
+      width: 32
+      value: "4"
+    }
+  }
+}
+blocks {
+  name: "P"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "h"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "C"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  locals {
+    name: "x"
+    type {
+      bits: 8
+    }
+  }
+  body {
+    call_extern {
+      instance: "r"
+      method: "read"
+      args {
+        lvalue {
+          var: "x"
+        }
+      }
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h"
+                  }
+                }
+                field: "idx"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    call_extern {
+      instance: "r"
+      method: "write"
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h"
+                  }
+                }
+                field: "idx"
+              }
+            }
+          }
+        }
+      }
+      args {
+        expr {
+          binary {
+            op: BINARY_OP_ADD
+            left {
+              var: "x"
+            }
+            right {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h"
+                  }
+                }
+                field: "val"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    call_extern {
+      instance: "r"
+      method: "read"
+      args {
+        lvalue {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "h"
+              }
+            }
+            field: "got"
+          }
+        }
+      }
+      args {
+        expr {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "h"
+                  }
+                }
+                field: "idx"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "D"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "h"
+        }
+      }
+    }
+  }
+}
+headers: "headers"
+metadata: "metadata"
+exports {
+  role: "parser"
+  block: "P"
+}
+exports {
+  role: "control"
+  block: "C"
+}
+exports {
+  role: "deparser"
+  block: "D"
+}
