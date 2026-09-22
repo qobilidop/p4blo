@@ -73,6 +73,11 @@ one that says so.
   printer needs it for a faithful roundtrip.
 - **Field numbers 100 and above reserved for annotations**, as 4ward
   reserves 100 for source info, so semantics and metadata never mix.
+- **p4c through Docker as an optional local check.** The printer's
+  goldens are typechecked with `p4test` from the `p4lang/p4c` image when
+  Docker is available and skipped otherwise. p4c is not in nixpkgs and
+  building it is out of proportion; the image is pinned by tag for now
+  and by digest once the oracle job exists.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

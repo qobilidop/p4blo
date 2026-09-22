@@ -32,6 +32,10 @@ buf generate              # regenerate python/p4blo/v0 from proto/
 CI runs exactly these commands inside the flake on Linux and macOS.
 Keep `main` green.
 
+Optional: with Docker running, `docker run --rm -v "$PWD":/w p4lang/p4c
+p4test /w/<file>.p4` typechecks a printed program; the printer tests
+use it when available and skip otherwise.
+
 ## Conventions
 
 - **Pure Python.** No dependency of the `p4blo` package may ship
