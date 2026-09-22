@@ -11,7 +11,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 |---|---|---|
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green so far: nine corpus programs fit with named elaborations only; coverage table in flight |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green so far: every corpus vector passes on P4-SpecTec (14 files, 9 programs); BMv2 optional second oracle not run |
-| 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | filter 45 lines, switch 50, no P4; the forwarder runs under both; the rest run under the switch (filter replay of all programs pending) |
+| 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
 | 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | not started |
 
 ## Steps
