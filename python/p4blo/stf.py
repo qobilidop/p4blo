@@ -184,7 +184,9 @@ class Expect:
     def matches(self, packet: bytes) -> bool:
         if len(packet) < len(self.data) or (self.exact and len(packet) != len(self.data)):
             return False
-        return all((b & m) == (d & m) for b, d, m in zip(packet, self.data, self.mask, strict=False))
+        return all(
+            (b & m) == (d & m) for b, d, m in zip(packet, self.data, self.mask, strict=False)
+        )
 
 
 @dataclass(frozen=True, slots=True)

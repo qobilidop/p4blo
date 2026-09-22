@@ -81,7 +81,10 @@ def test_expect_matches_under_its_mask() -> None:
     expect = stf.Expect(1, 0, bytes.fromhex("00110000"), bytes.fromhex("ffff0000"))
     assert expect.matches(bytes.fromhex("0011abcd"))
     assert not expect.matches(bytes.fromhex("0012abcd"))
-    assert not expect.matches(bytes.fromhex("0011abcdef"))
+    assert expect.matches(bytes.fromhex("0011abcdef"))  # a prefix, unless exact
+    assert not stf.Expect(1, 0, expect.data, expect.mask, exact=True).matches(
+        b"\x00\x11\xab\xcd\xef"
+    )
 
 
 def test_no_packet_and_wait_and_case_insensitivity() -> None:
