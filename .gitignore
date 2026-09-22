@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+
+# Nix / direnv
+.direnv/
+result
+
+# Lean
+lean/.lake/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
