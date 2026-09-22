@@ -54,9 +54,16 @@ use it when available and skip otherwise.
 - **Tests live under `tests/`.** One file per concern. Corpus
   programs live under `corpus/<program>/` with their goldens and STF
   vectors beside them.
-- **Commits** are small, human-readable chunks with a subject line
-  under 72 characters and a body that says why. Agent commits end
-  with a `Co-Authored-By: <agent> <email>` trailer.
+- **Commits** follow the usual git conventions (Chris Beams' seven
+  rules; the kernel's "describe your changes"). One logical change per
+  commit: if the subject wants an "and" or a semicolon, split it. The
+  subject is imperative, capitalized, at most 50 characters, no final
+  period, and completes "If applied, this commit will ...". A blank
+  line, then a body wrapped at 72 columns that says what the diff
+  cannot: the problem, why this change and not another, and what a
+  reader must know afterwards. Do not restate the diff; omit the body
+  when the subject says it all. Agent commits end with a
+  `Co-Authored-By: <agent> <email>` trailer after a blank line.
 - **Sub-agents** work in their own worktree, own a disjoint set of
   files, build against interfaces already committed on `main`, and
   finish with a green test run. Integration happens on `main`.
