@@ -181,10 +181,30 @@ def test_install_rejects_an_entry_that_does_not_fit(
         installed().install(table, entry(keys, action, priority))
 
 
-def test_install_rejects_action_data_of_the_wrong_width() -> None:
-    wide = pb.ActionCall(action="set", args=[pb.Literal(bits=pb.BitsLiteral(width=16, value="1"))])
+@pytest.mark.parametrize(
+    "literal",
+    [
+        pb.Literal(bits=pb.BitsLiteral(width=16, value="1")),  # wrong width
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="256")),  # does not fit
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="0x1")),  # not decimal
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="+1")),  # int() would take these
+        pb.Literal(bits=pb.BitsLiteral(width=8, value=" 1")),
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="1_0")),
+        pb.Literal(boolean=True),  # wrong kind
+    ],
+)
+def test_install_rejects_action_data_that_is_not_a_constant_of_the_param(
+    literal: pb.Literal,
+) -> None:
+    bad = pb.ActionCall(action="set", args=[literal])
     with pytest.raises(InstallError):
-        installed().install(EXACT, entry('keys { exact: "1" }', wide))
+        installed().install(EXACT, entry('keys { exact: "1" }', bad))
+
+
+@pytest.mark.parametrize("value", ["+1", " 1", "1_0", "0x1"])
+def test_install_rejects_a_key_value_that_is_not_plain_digits(value: str) -> None:
+    with pytest.raises(InstallError):
+        installed().install(EXACT, entry(f'keys {{ exact: "{value}" }}', call("set", 1)))
 
 
 def test_install_rejects_duplicate_exact_and_lpm_entries() -> None:
