@@ -17,7 +17,7 @@ from collections.abc import Iterable
 
 from p4blo.interp.api import InterpError
 from p4blo.interp.env import Env
-from p4blo.interp.errors import NO_MATCH, PARSER_TIMEOUT, ParseError
+from p4blo.interp.errors import NO_MATCH, PARSER_TIMEOUT, STACK_OUT_OF_BOUNDS, ParseError
 from p4blo.interp.expr import (
     evaluate,
     expect_bits,
@@ -263,9 +263,19 @@ def extract(ex: pb.Extract, env: Env) -> None:
 
     The target is resolved first, so a full stack raises `StackOutOfBounds`
     before the packet is looked at; a short packet raises `PacketTooShort`
-    and consumes nothing (docs/semantics.md, "Parsers").
+    and consumes nothing (docs/semantics.md, "Parsers"). `hs.next`, the
+    one place the validator allows it, fills `hs[nextIndex]` and then
+    increments `nextIndex` ("Header stacks").
     """
     packet = env.require_packet()
+    if ex.target.WhichOneof("kind") == "next":
+        stack = expect_stack(read_lvalue(ex.target.next.stack, env))
+        if stack.next_index >= len(stack.elements):
+            raise ParseError(STACK_OUT_OF_BOUNDS)
+        raw = packet.read(width_of(pb.Type(header=stack.header_type), env.index))
+        stack.elements[stack.next_index] = header_from_bits(stack.header_type, raw, env.index)
+        stack.next_index += 1
+        return
     type_name = expect_header(read_lvalue(ex.target, env)).type_name
     raw = packet.read(width_of(pb.Type(header=type_name), env.index))
     write_lvalue(ex.target, header_from_bits(type_name, raw, env.index), env)

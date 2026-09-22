@@ -433,8 +433,10 @@ message CallAction {
   repeated Arg args = 2;
 }
 
-// Call a sub-parser or sub-control. A parser may only call parsers and a
-// control only controls.
+// Call a sub-block of the caller's own kind: a parser may only call parsers,
+// a control only controls and a deparser only deparsers, so a deparser, which
+// runs without table entries, never reaches an `apply`. Not allowed inside
+// an action.
 message CallBlock {
   string block = 1;
   repeated Arg args = 2;

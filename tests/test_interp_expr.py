@@ -261,6 +261,22 @@ def test_write_lvalue_copies_and_read_lvalue_references() -> None:
     assert stored is hdr.fields[0]
 
 
+def test_next_is_not_an_lvalue_outside_extract() -> None:
+    # The validator allows `hs.next` only as an extract target, which
+    # `stmt.extract` handles itself; the lvalue paths never see it.
+    e = env()
+    nxt = lv('next { stack { member { base { var: "hdr" } field: "hs" } } }')
+    with pytest.raises(InterpError):
+        write_lvalue(nxt, Header("h8", True, [Bits(8, 1), True]), e)
+    with pytest.raises(InterpError):
+        read_lvalue(nxt, e)
+    hdr = e.read("hdr")
+    assert isinstance(hdr, Struct)
+    stack = hdr.fields[1]
+    assert isinstance(stack, Stack)
+    assert stack.next_index == 0 and not stack.elements[0].valid
+
+
 # ---------------------------------------------------------------------------
 # Properties
 # ---------------------------------------------------------------------------

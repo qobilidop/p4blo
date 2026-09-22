@@ -32,7 +32,8 @@ Blocks
                       start_state, actions or tables of another kind
   PARSER_START_STATE  a parser's start_state is not one of its states
   BLOCK_KIND_STMT     a statement in a block kind that does not allow it
-  PARSER_ONLY         lookahead or stack.next outside a parser
+  PARSER_ONLY         lookahead outside a parser
+  NEXT_ONLY_EXTRACT   stack.next anywhere but as the target of an extract
   PARAM_DIRECTION     a parameter direction its owner does not allow
 Expressions, lvalues and statements
   EXPR_INVALID        an expression or lvalue with no kind, or an unspecified operator
@@ -45,9 +46,9 @@ Expressions, lvalues and statements
   ARG_COUNT           a call with the wrong number of arguments
   ARG_DIRECTION       an argument's form (in expr / out lvalue) against its param
   ARG_TYPE            an argument's type against its param
-  CALL_KIND           a parser calling a non-parser, or a control a non-control
+  CALL_KIND           a block calling a block of another kind
   CALL_ALIAS          two arguments of one call that may alias (see check_args)
-  CALL_CYCLE          a cycle in the block call graph
+  CALL_CYCLE          a cycle in the block call graph, or among one block's actions
   EXTERN_RESULT       a result lvalue missing, unexpected or of the wrong type
 Parsers
   PARSER_TRANSITION   a state without a transition, or a target without a kind
@@ -72,7 +73,7 @@ Externs
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import cast
 
@@ -95,6 +96,7 @@ BLOCK_KIND_SHAPE = "BLOCK_KIND_SHAPE"
 PARSER_START_STATE = "PARSER_START_STATE"
 BLOCK_KIND_STMT = "BLOCK_KIND_STMT"
 PARSER_ONLY = "PARSER_ONLY"
+NEXT_ONLY_EXTRACT = "NEXT_ONLY_EXTRACT"
 PARAM_DIRECTION = "PARAM_DIRECTION"
 EXPR_INVALID = "EXPR_INVALID"
 STMT_INVALID = "STMT_INVALID"
@@ -239,8 +241,8 @@ def describe(t: pb.Type | None) -> str:
             return "<no kind>"
 
 
-# Literal-typed: the types a literal, a select key or an exact table key can
-# have.
+# Literal-typed: the types a literal or a select key can have. Table keys are
+# bits only (docs/semantics.md, "Keys are bits").
 _SCALAR_KINDS = frozenset({"bits", "boolean", "enum_type", "error"})
 
 _DECIMAL = re.compile(r"[0-9]+")
@@ -344,7 +346,6 @@ def may_alias(a: Access, b: Access) -> bool:
 
 @dataclass(frozen=True)
 class ExactPattern:
-    # An int for bits keys; the member, error or boolean name otherwise.
     value: int | str
 
 
@@ -410,6 +411,8 @@ class _Validator:
     block_paths: dict[str, str] = field(default_factory=dict)
     # Block call graph: caller name -> [(callee name, path of the call)].
     calls: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+    # The same for the actions of the block being checked, reset per block.
+    action_calls: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
 
     def report(self, code: str, message: str, path: str) -> None:
         self.diagnostics.append(Diagnostic(code, message, path))
@@ -750,8 +753,10 @@ class _Validator:
                 self.report(BLOCK_KIND_SHAPE, f"a {kind} has a body, not states", f"{path}.states")
             if block.start_state:
                 self.report(BLOCK_KIND_SHAPE, f"a {kind} has no start state", f"{path}.start_state")
+        self.action_calls = {}
         for i, action in enumerate(block.actions):
             self.check_action(action, scope, f"{path}.actions[{i}]")
+        self.report_cycles(scope.names.actions, self.action_calls, "action")
         for i, table in enumerate(block.tables):
             self.check_table(table, scope, f"{path}.tables[{i}]")
         for i, state in enumerate(block.states):
@@ -796,19 +801,28 @@ class _Validator:
                 )
 
     def check_call_graph(self) -> None:
-        """No cycle among CallBlock edges, so every run terminates."""
+        """No cycle among CallBlock edges, so every run terminates. Actions
+        are checked the same way per block, so the call graph of blocks and
+        actions together is acyclic (docs/semantics.md, "Controls")."""
+        self.report_cycles(self.idx.blocks, self.calls, "block")
+
+    def report_cycles(
+        self, nodes: Iterable[str], edges: dict[str, list[tuple[str, str]]], what: str
+    ) -> None:
+        """Every cycle in `edges` over `nodes`, reported at the call that
+        closes it."""
         white, grey, black = 0, 1, 2
-        color: dict[str, int] = dict.fromkeys(self.idx.blocks, white)
+        color: dict[str, int] = dict.fromkeys(nodes, white)
 
         def visit(name: str, trail: list[str]) -> None:
             color[name] = grey
-            for callee, path in self.calls.get(name, ()):
+            for callee, path in edges.get(name, ()):
                 if callee not in color:
                     continue
                 if color[callee] == grey:
                     chain = [*trail, name]
                     cycle = " -> ".join([*chain[chain.index(callee) :], callee])
-                    self.report(CALL_CYCLE, f"block calls form a cycle: {cycle}", path)
+                    self.report(CALL_CYCLE, f"{what} calls form a cycle: {cycle}", path)
                 elif color[callee] == white:
                     visit(callee, [*trail, name])
             color[name] = black
@@ -862,9 +876,7 @@ class _Validator:
             case "pop":
                 self.check_push_pop(stmt.pop.stack, stmt.pop.count, scope, path)
             case "extract":
-                self.expect_lvalue(
-                    stmt.extract.target, is_header, "a header", scope, f"{path}.target"
-                )
+                self.check_extract(stmt.extract, scope, path)
             case "advance":
                 self.expect_expr(stmt.advance.bits, is_bits, "bits", scope, f"{path}.bits")
             case "verify":
@@ -899,19 +911,28 @@ class _Validator:
         action = self.resolve_local(
             stmt.action, scope.names.actions, "action", scope, f"{path}.action"
         )
-        if action is not None:
-            self.check_args(stmt.args, action.params, scope, path)
+        if action is None:
+            return
+        if scope.action is not None:
+            self.action_calls.setdefault(scope.action.name, []).append((action.name, path))
+        self.check_args(stmt.args, action.params, scope, path)
 
     def check_call_block(self, stmt: pb.CallBlock, scope: Scope, path: str) -> None:
+        if scope.action is not None:
+            # P4 forbids applying a control or parser from an action (§14.1).
+            self.report(BLOCK_KIND_STMT, "call_block is not allowed inside an action", path)
+            return
         callee = self.resolve(stmt.block, self.idx.blocks, "block", f"{path}.block")
         if callee is None:
             return
         self.calls.setdefault(scope.block.name, []).append((callee.name, path))
-        wanted = pb.BLOCK_KIND_PARSER if scope.in_parser else pb.BLOCK_KIND_CONTROL
-        if callee.kind != wanted:
+        # A block calls only blocks of its own kind, so a deparser, which has
+        # no entries, never reaches a table (proto, CallBlock).
+        if callee.kind != scope.block.kind:
+            kind = _KIND_NAMES[scope.block.kind]
             self.report(
                 CALL_KIND,
-                f"a {_KIND_NAMES[scope.block.kind]} may only call a {_KIND_NAMES[wanted]}; "
+                f"a {kind} may only call a {kind}; "
                 f"{callee.name!r} is a {_KIND_NAMES.get(callee.kind, 'block without kind')}",
                 f"{path}.block",
             )
@@ -961,15 +982,16 @@ class _Validator:
         Aliasing is judged statically and conservatively: two arguments may
         alias when their access paths (variable, then fields and indices)
         agree wherever both are known; a computed index is unknown and
-        matches any index. An `in` argument takes part only when it is
-        itself an lvalue-shaped expression; a computed value cannot alias.
-        Any `out` argument that may alias another argument is an error, so
-        copy-in/copy-out order never matters.
+        matches any index. Only `out` and `inout` arguments take part: an
+        `in` argument is copied in before anything is written back, so its
+        overlapping an out argument changes nothing (§6.8). Two out or inout
+        arguments that may alias are an error, so copy-back order never
+        matters (docs/semantics.md, "Block calls").
         """
         if len(args) != len(params):
             self.report(ARG_COUNT, f"expected {len(params)} arguments, got {len(args)}", path)
             return
-        accesses: list[tuple[str, Access | None, bool]] = []
+        accesses: list[tuple[str, Access | None]] = []
         for i, (arg, param) in enumerate(zip(args, params, strict=True)):
             apath = f"{path}.args[{i}]"
             kind = arg.WhichOneof("kind")
@@ -995,24 +1017,31 @@ class _Validator:
                 continue
             if kind == "expr":
                 t = self.type_of(arg.expr, scope, f"{apath}.expr")
-                access = self.expr_access(arg.expr)
             else:
                 t = self.type_of_lvalue(arg.lvalue, scope, f"{apath}.lvalue")
-                access = self.lvalue_access(arg.lvalue)
+                accesses.append((apath, self.lvalue_access(arg.lvalue)))
             if t is not None and self.type_ok(param.type) and not same_type(t, param.type):
                 self.report(
                     ARG_TYPE,
                     f"argument is {describe(t)}, param {param.name!r} is {describe(param.type)}",
                     apath,
                 )
-            accesses.append((apath, access, wants_out))
-        for j, (apath, b, b_out) in enumerate(accesses):
-            for _, a, a_out in accesses[:j]:
-                if a is None or b is None or not (a_out or b_out):
-                    continue
-                if may_alias(a, b):
-                    self.report(CALL_ALIAS, "argument may alias an earlier out argument", apath)
-                    break
+        for j, (apath, b) in enumerate(accesses):
+            if b is None:
+                continue
+            if any(a is not None and may_alias(a, b) for _, a in accesses[:j]):
+                self.report(CALL_ALIAS, "argument may alias an earlier out argument", apath)
+
+    def check_extract(self, stmt: pb.Extract, scope: Scope, path: str) -> None:
+        """The target is a header lvalue, or `stack.next`, which is allowed
+        nowhere else (docs/semantics.md, "Header stacks")."""
+        target = stmt.target
+        if target.WhichOneof("kind") == "next":
+            self.expect_lvalue(
+                target.next.stack, is_stack, "a stack", scope, f"{path}.target.next.stack"
+            )
+        else:
+            self.expect_lvalue(target, is_header, "a header", scope, f"{path}.target")
 
     def check_push_pop(self, stack: pb.LValue, count: int, scope: Scope, path: str) -> None:
         self.expect_lvalue(stack, is_stack, "a stack", scope, f"{path}.stack")
@@ -1246,10 +1275,11 @@ class _Validator:
             self.report(PARSER_ONLY, "lookahead is allowed only in a parser", path)
         if not self.check_type(expr.type, f"{path}.type"):
             return None
-        if not (is_bits(expr.type) or is_header(expr.type)):
+        # What has a packet width: bool is one bit (docs/semantics.md, "lookahead").
+        if not (is_bits(expr.type) or is_boolean(expr.type) or is_header(expr.type)):
             self.report(
                 TYPE_MISMATCH,
-                f"lookahead reads bits or a header, not {describe(expr.type)}",
+                f"lookahead reads bits, a boolean or a header, not {describe(expr.type)}",
                 f"{path}.type",
             )
             return None
@@ -1286,12 +1316,9 @@ class _Validator:
                 self.expect_expr(lvalue.index.index, is_bits, "bits", scope, f"{path}.index.index")
                 return pb.Type(header=stack.stack.header) if stack is not None else None
             case "next":
-                if not scope.in_parser:
-                    self.report(PARSER_ONLY, "stack.next is allowed only in a parser", path)
-                stack = self.expect_lvalue(
-                    lvalue.next.stack, is_stack, "a stack", scope, f"{path}.next.stack"
-                )
-                return pb.Type(header=stack.stack.header) if stack is not None else None
+                # `check_extract` handles the one place it may appear.
+                self.report(NEXT_ONLY_EXTRACT, "stack.next is only the target of an extract", path)
+                return None
             case _:
                 self.report(EXPR_INVALID, "lvalue has no kind", path)
                 return None
@@ -1309,20 +1336,6 @@ class _Validator:
             case "next":
                 base = self.lvalue_access(lvalue.next.stack)
                 return None if base is None else (*base, None)
-            case _:
-                return None
-
-    def expr_access(self, expr: pb.Expr) -> Access | None:
-        """The storage an lvalue-shaped expression reads, else None."""
-        match expr.WhichOneof("kind"):
-            case "var":
-                return (expr.var,)
-            case "member":
-                base = self.expr_access(expr.member.base)
-                return None if base is None else (*base, expr.member.field)
-            case "index":
-                base = self.expr_access(expr.index.base)
-                return None if base is None else (*base, self.static_index(expr.index.index))
             case _:
                 return None
 
@@ -1574,7 +1587,8 @@ class _Validator:
 
         match kind:
             case "exact":
-                return self.exact_pattern(value.exact, t, f"{path}.exact")
+                number = in_width(value.exact, "value", f"{path}.exact")
+                return None if number is None else ExactPattern(number)
             case "lpm":
                 number = in_width(value.lpm.value, "value", f"{path}.lpm.value")
                 if value.lpm.prefix_len > t.bits:
@@ -1606,29 +1620,3 @@ class _Validator:
                     )
                     return None
                 return TernaryPattern(number, mask)
-
-    def exact_pattern(self, text: str, t: pb.Type, path: str) -> ExactPattern | None:
-        """An exact value: decimal for bits, and the name of the value for
-        boolean (`true`/`false`), enum (a member) and error keys."""
-        match kind_of(t):
-            case "bits":
-                number = parse_decimal(text)
-                if number is None:
-                    self.report(ENTRY_SHAPE, f"value {text!r} is not decimal", path)
-                elif number >= 1 << t.bits:
-                    self.report(ENTRY_RANGE, f"value {text} does not fit in {describe(t)}", path)
-                else:
-                    return ExactPattern(number)
-            case "boolean":
-                if text in ("true", "false"):
-                    return ExactPattern(text)
-                self.report(ENTRY_SHAPE, f"boolean value must be true or false, got {text!r}", path)
-            case "enum_type":
-                if text in self.idx.enum_types[t.enum_type].members:
-                    return ExactPattern(text)
-                self.report(ENTRY_SHAPE, f"enum {t.enum_type} has no member {text!r}", path)
-            case "error":
-                if text in self.idx.errors:
-                    return ExactPattern(text)
-                self.report(ENTRY_SHAPE, f"no error named {text!r}", path)
-        return None

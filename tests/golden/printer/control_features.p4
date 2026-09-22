@@ -148,7 +148,7 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
     }
 }
 
-control Summarize(in tag_t[3] tags, out bit<8> first) {
+control Summarize(packet_out packet, in tag_t[3] tags, out bit<8> first) {
     apply {
         first = tags[32w0].v;
     }
@@ -159,7 +159,7 @@ control MainDeparser(packet_out packet, in headers hdr) {
     bit<8> first = 8w0;
     apply {
         packet.emit(hdr.eth);
-        Summarize_inst.apply(hdr.tags, first);
+        Summarize_inst.apply(packet, hdr.tags, first);
         packet.emit(hdr.tags);
         if (first != 8w0) {
             packet.emit(hdr.ipv4);

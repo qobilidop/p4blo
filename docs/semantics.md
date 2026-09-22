@@ -35,8 +35,8 @@ values are described below.
 - **Comparison.** `<`, `<=`, `>`, `>=` compare as unsigned integers.
   `==` and `!=` are defined on every type: on `bit<N>` and `bool` by
   value, on enums and errors by member, on headers by validity and
-  then fieldwise, on structs fieldwise, on stacks elementwise
-  (§8.16, §8.17).
+  then fieldwise, on structs fieldwise, on stacks elementwise over all
+  `S` elements and not on `nextIndex` (§8.16, §8.17).
 - **Casts.** `bit<N>` to `bit<M>` truncates to the low `M` bits when
   `M < N` and zero-extends when `M > N`. `bool` to `bit<1>` maps
   `false` to `0` and `true` to `1`; `bit<1>` to `bool` is the inverse.
@@ -89,7 +89,9 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
   does nothing. Both are undefined in P4 (§8.18). This closes the
   behavior without an error because the IR has no runtime error in
   controls; a program that wants a check writes one.
-- **`hs.next`** is a parser-only lvalue. Extracting into it with
+- **`hs.next`** appears only as the target of an extract; the validator
+  rejects it anywhere else, so no assignment, `setValid`, field write
+  or argument ever goes through it. Extracting into it with
   `nextIndex == S` is a parse error `StackOutOfBounds` and consumes
   nothing; this is checked before the packet is, so a full stack and a
   short packet together report `StackOutOfBounds`. On success it fills
@@ -104,6 +106,8 @@ A stack of size `S` holds `S` header values and a `nextIndex` in
   and sets `nextIndex` to `min(nextIndex + n, S)`. **`pop_front(n)`**
   shifts toward lower indices, makes the last `n` invalid with zero
   fields, and sets `nextIndex` to `max(nextIndex - n, 0)` (§8.18).
+  With `n > S` both behave as `n = S`: every element becomes invalid
+  and `nextIndex` goes to `S` or `0`.
 
 ## Parsers
 
@@ -124,18 +128,25 @@ rejection with `parser_error` set.
   header's width, the extract raises `PacketTooShort`, consumes
   nothing, and leaves the target as it was (§12.8.2).
 - **Extract sets the target valid** and fills every field from the
-  packet, most significant bit first.
+  packet, most significant bit first. A header type with no fields has
+  width zero: extracting it sets validity, consumes nothing even at
+  the end of the packet, and counts as no consumption for the loop
+  bound below.
 - **`lookahead<T>`** reads `width(T)` bits without moving the cursor;
-  past the end it raises `PacketTooShort`. When `T` is a header the
+  past the end it raises `PacketTooShort`. `T` is `bit<N>`, `bool`
+  (one bit, `1` is `true`) or a header; when `T` is a header the
   result is valid.
 - **`advance(n)`** moves the cursor by `n` bits; past the end it
   raises `PacketTooShort` and the cursor does not move.
-- **`verify(cond, err)`** raises `err` when `cond` is `false`.
+- **`verify(cond, err)`** raises `err` when `cond` is `false`. `err`
+  may be `NoError`, and then the outcome is the same as an explicit
+  `reject`: not accepted, error `NoError`.
 - **`select`** evaluates the key expressions once, then tries the
   cases in order and takes the first that matches. A key set entry is
-  an exact value, a value with a mask, a closed range, or don't-care.
-  With no matching case, the transition is to `reject` with error
-  `NoMatch` (§12.6).
+  an exact value, a value with a mask, a closed range, or don't-care;
+  a mask or a range applies only to a `bit<N>` key, so a `bool`, enum
+  or error key takes an exact value or don't-care. With no matching
+  case, the transition is to `reject` with error `NoMatch` (§12.6).
 - **`reject`** is a transition like any other. Reached explicitly, it
   rejects with `NoError`; reached because an extract, lookahead,
   advance, verify or select raised, it rejects with that error. This
@@ -169,13 +180,16 @@ else, and every extern instance is state supplied by the caller.
 
 - **Block calls.** A sub-block call copies `in` arguments in, runs the
   block, and copies `out` and `inout` arguments back in parameter
-  order. Two arguments that alias the same storage are a validator
-  error, so copy order never matters (§6.8).
+  order. Two `out` or `inout` arguments that alias the same storage
+  are a validator error, so copy order never matters; an `in` argument
+  may overlap them, since it is copied in before anything is written
+  (§6.8).
 - **Action calls** from a control body pass arguments in the same
   way. Actions invoked by a table receive their action data as
   directionless parameters, which are read-only like `in` parameters.
-- **Recursion** between blocks is a validator error, so no run can
-  fail to terminate; every construct in the IR is bounded.
+- **Recursion** between blocks is a validator error. Actions may call
+  actions; the call graph of actions and blocks together is acyclic,
+  so every run terminates; every construct in the IR is bounded.
 
 ## Tables
 
@@ -199,7 +213,9 @@ A table match is evaluated over the installed entries; the program's
   default action; when the program declares none, it is `NoAction`,
   which does nothing (§14.2.1.4).
 - **`hit`** is `true` when an entry matched and `false` on a miss,
-  including a miss that ran the default action.
+  including a miss that ran the default action. It is written after
+  the chosen action has run, so an action that writes the same lvalue
+  is overwritten, as `t.apply().hit` reads the result of the apply.
 - **Key expressions** are evaluated once, before matching. An entry
   value wider than the key is rejected at installation, as is an LPM
   value with a set bit outside its prefix and a ternary value with a
@@ -221,6 +237,9 @@ A table match is evaluated over the installed entries; the program's
 A deparser runs over the headers and produces the bytes of the emitted
 headers; the caller appends the payload it retained after parsing.
 
+- **Sub-blocks.** A deparser may call only deparsers, which emit and
+  never apply a table, so `deparse : H -> Packet` needs no entries.
+
 - **`emit` of an invalid header** writes nothing (§15.1).
 - **`emit` of a struct** emits its fields in declaration order.
   **`emit` of a stack** emits its elements from index `0` to `S - 1`,
@@ -239,5 +258,9 @@ arguments and its call sites.
 - **Method call order** is program order; an extern may keep state
   between calls and between packets, and that state is part of the
   caller's world, not the program's.
+- **Extern calls.** `in` and `inout` arguments are copied in, `out`
+  arguments arrive as zero, results are written back in parameter
+  order, then the return value. The binding sees and returns copies,
+  so it can never alias program storage.
 - **Extern implementations** for the corpus are specified by their
   own vectors under `corpus/`, not here.

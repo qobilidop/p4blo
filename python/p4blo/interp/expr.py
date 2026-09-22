@@ -3,8 +3,9 @@
 `evaluate` has one function per `Expr` kind and implements docs/semantics.md,
 "Values". `read_lvalue` and `write_lvalue` implement "Headers" and "Header
 stacks": a read of an invalid header returns its stored fields, a read past a
-stack's end returns a zero invalid header, a write past its end does nothing,
-and a write to `hs.next` fills the next slot or raises `StackOutOfBounds`.
+stack's end returns a zero invalid header, and a write past its end does
+nothing. `hs.next` is not an lvalue here: the validator allows it only as
+the target of an extract, which `stmt.extract` handles itself.
 
 Every `Bits` result goes through `Bits` or `Bits.wrap`, which enforce the
 width invariant. `evaluate` returns references to stored compound values;
@@ -15,7 +16,6 @@ from __future__ import annotations
 
 from p4blo.interp.api import InterpError
 from p4blo.interp.env import Env
-from p4blo.interp.errors import STACK_OUT_OF_BOUNDS, ParseError
 from p4blo.interp.values import (
     Bits,
     EnumValue,
@@ -328,10 +328,7 @@ def read_lvalue(lv: pb.LValue, env: Env) -> Value:
             i = expect_bits(evaluate(lv.index.index, env)).value
             return element_of(stack, i, env.index)
         case "next":
-            stack = expect_stack(read_lvalue(lv.next.stack, env))
-            if stack.next_index >= len(stack.elements):
-                raise ParseError(STACK_OUT_OF_BOUNDS)
-            return stack.elements[stack.next_index]
+            raise InterpError("stack.next is only the target of an extract")
         case _:
             raise InterpError("lvalue has no kind")
 
@@ -340,9 +337,7 @@ def write_lvalue(lv: pb.LValue, value: Value, env: Env) -> None:
     """Store a copy of `value` at `lv`.
 
     A whole-header write copies validity and fields; a write through a
-    stack index past the end does nothing; a write to `hs.next` fills
-    `hs[nextIndex]`, makes it valid and increments `nextIndex`, or raises
-    `StackOutOfBounds` when the stack is full.
+    stack index past the end does nothing.
     """
     match lv.WhichOneof("kind"):
         case "var":
@@ -362,12 +357,6 @@ def write_lvalue(lv: pb.LValue, value: Value, env: Env) -> None:
             if i < len(stack.elements):
                 stack.elements[i] = expect_header(copy(value))
         case "next":
-            stack = expect_stack(read_lvalue(lv.next.stack, env))
-            if stack.next_index >= len(stack.elements):
-                raise ParseError(STACK_OUT_OF_BOUNDS)
-            header = expect_header(copy(value))
-            header.valid = True
-            stack.elements[stack.next_index] = header
-            stack.next_index += 1
+            raise InterpError("stack.next is only the target of an extract")
         case _:
             raise InterpError("lvalue has no kind")

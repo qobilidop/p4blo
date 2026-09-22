@@ -7,6 +7,7 @@ Tables are block-scoped, so they are addressed by `(block, table)` names.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from p4blo.interp.api import InterpError
@@ -98,7 +99,7 @@ class InstalledEntries:
             raise InstallError(f"table {decl.name!r} has {len(decl.keys)} keys")
         for key, kv, width in zip(decl.keys, entry.keys, widths, strict=True):
             check_key_value(key, kv, width)
-        self.check_action(decl, entry.action)
+        self.check_action(table, entry.action)
         ternary = any(k.match_kind == pb.MATCH_KIND_TERNARY for k in decl.keys)
         if not ternary and entry.priority != 0:
             raise InstallError(f"table {decl.name!r} has no ternary key; priority must be 0")
@@ -121,23 +122,23 @@ class InstalledEntries:
         if action is None:
             action = decl.default_action if decl.HasField("default_action") else None
         else:
-            self.check_action(decl, action)
+            self.check_action(table, action)
         self.default_actions[table] = action
 
-    def check_action(self, decl: pb.Table, call: pb.ActionCall) -> None:
+    def check_action(self, table: TableRef, call: pb.ActionCall) -> None:
         """The call names one of the table's actions and carries one literal
-        of the declared type per directionless parameter."""
+        of the declared type per directionless parameter. The action is the
+        table's block's, by name: two blocks may declare identical tables."""
+        decl = self.table(table)
         if call.action not in decl.actions:
             raise InstallError(f"table {decl.name!r} has no action {call.action!r}")
-        block = next(b for b in self.index.program.blocks if decl in b.tables)
-        action = self.index.scopes[block.name].actions[call.action]
+        action = self.index.scopes[table[0]].actions[call.action]
         if any(p.direction != pb.DIRECTION_NONE for p in action.params):
             raise InstallError(f"action {action.name!r} has directional parameters")
         if len(call.args) != len(action.params):
             raise InstallError(f"action {action.name!r} takes {len(action.params)} arguments")
         for param, arg in zip(action.params, call.args, strict=True):
-            if not literal_fits(arg, param.type):
-                raise InstallError(f"argument for {action.name}.{param.name} has the wrong type")
+            check_literal(arg, param.type, f"argument for {action.name}.{param.name}")
 
     def lookup(self, table: TableRef, keys: list[Bits]) -> Match:
         """The entry that matches best, or the default action on a miss."""
@@ -160,13 +161,17 @@ class InstalledEntries:
 # ---------------------------------------------------------------------------
 
 
+_DECIMAL = re.compile(r"[0-9]+")
+
+
 def decimal(text: str, width: int, what: str) -> int:
-    """A decimal entry value that fits in `width` bits."""
-    try:
-        value = int(text, 10)
-    except ValueError:
-        raise InstallError(f"{what} {text!r} is not decimal") from None
-    if not 0 <= value < (1 << width):
+    """A decimal entry value that fits in `width` bits: digits only, as the
+    validator's `parse_decimal` reads const entries, so a host entry and a
+    const entry agree on what is decimal."""
+    if not _DECIMAL.fullmatch(text):
+        raise InstallError(f"{what} {text!r} is not decimal")
+    value = int(text)
+    if value >= 1 << width:
         raise InstallError(f"{what} {text!r} does not fit in {width} bits")
     return value
 
@@ -201,20 +206,22 @@ def check_key_value(key: pb.Key, kv: pb.KeyValue, width: int) -> None:
                 raise InstallError(f"ternary value {kv.ternary.value!r} has bits outside its mask")
 
 
-def literal_fits(literal: pb.Literal, type: pb.Type) -> bool:
+def check_literal(literal: pb.Literal, type: pb.Type, what: str) -> None:
+    """`literal` is a constant of `type`: the same kind, and for bits the
+    declared width and a decimal value that fits (docs/semantics.md,
+    "Entries name their action")."""
     match literal.WhichOneof("value"), type.WhichOneof("kind"):
         case "bits", "bits":
-            return literal.bits.width == type.bits and 0 <= int(literal.bits.value) < (
-                1 << type.bits
-            )
-        case "boolean", "boolean":
-            return True
+            if literal.bits.width != type.bits:
+                raise InstallError(f"{what} is bit<{literal.bits.width}>, not bit<{type.bits}>")
+            decimal(literal.bits.value, type.bits, what)
+        case ("boolean", "boolean") | ("error", "error"):
+            pass
         case "enum_member", "enum_type":
-            return literal.enum_member.enum_type == type.enum_type
-        case "error", "error":
-            return True
+            if literal.enum_member.enum_type != type.enum_type:
+                raise InstallError(f"{what} is not an enum {type.enum_type}")
         case _:
-            return False
+            raise InstallError(f"{what} has the wrong type")
 
 
 def key_value_matches(kv: pb.KeyValue, key: Bits) -> bool:

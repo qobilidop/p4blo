@@ -286,6 +286,34 @@ def test_apply_runs_the_matching_action_and_records_hit() -> None:
     assert out.n == Bits(8, 3) and out.flag is True
 
 
+def test_hit_is_written_after_the_action_runs() -> None:
+    decls = f"""
+    actions {{
+      name: "clear"
+      body {{ assign {{ target {{ {META_FLAG} }} value {{ literal {{ boolean: false }} }} }} }}
+    }}
+    tables {{
+      name: "tbl"
+      keys {{ expr {{ {E_F} }} match_kind: MATCH_KIND_EXACT name: "hdr.e.f" }}
+      actions: "clear"
+    }}
+    """
+    entries = """
+    tables { block: "C" table: "tbl" entries { keys { exact: "5" } action { action: "clear" } } }
+    """
+    body = assign(E_F, bits(8, 5)) + stmt(f'apply {{ table: "tbl" hit {{ {META_FLAG} }} }}')
+    assert run(body, decls, entries=entries).flag is True
+
+
+def test_push_and_pop_of_more_than_the_size_clip_to_the_size() -> None:
+    push = stmt(f"push {{ stack {{ {HDR_HS} }} count: 5 }}")
+    out = run(push, headers=stack_of(1, 2, 1))
+    assert all(not e.valid for e in out.hs.elements) and out.hs.next_index == 2
+    pop = stmt(f"pop {{ stack {{ {HDR_HS} }} count: 5 }}")
+    out = run(pop, headers=stack_of(1, 2, 1))
+    assert all(not e.valid for e in out.hs.elements) and out.hs.next_index == 0
+
+
 def test_apply_on_a_miss_runs_the_default_and_hit_is_false() -> None:
     body = (
         assign(E_F, bits(8, 6))
@@ -319,6 +347,23 @@ def test_direct_action_call_passes_directional_arguments() -> None:
     """
     out = run(assign(META_N, bits(8, 40)) + call, decls)
     assert out.n == Bits(8, 42) and out.flag is True
+
+
+def test_an_in_argument_overlapping_an_inout_one_is_copied_in_first() -> None:
+    decls = """
+    actions {
+      name: "add_to"
+      params { name: "a" type { bits: 8 } direction: DIRECTION_IN }
+      params { name: "b" type { bits: 8 } direction: DIRECTION_INOUT }
+      body { assign { target { var: "b" } value { binary {
+        op: BINARY_OP_ADD left { var: "a" } right { var: "b" } } } } }
+    }
+    """
+    call = stmt(
+        f'call_action {{ action: "add_to" '
+        f"args {{ expr {{ {META_N} }} }} args {{ lvalue {{ {META_N} }} }} }}"
+    )
+    assert run(assign(META_N, bits(8, 21)) + call, decls).n == Bits(8, 42)
 
 
 def test_an_out_parameter_starts_at_zero() -> None:
@@ -405,6 +450,22 @@ def test_extern_call_with_an_out_argument_and_a_return_value() -> None:
     out = run(body, externs={"reg": reg})
     assert out.n == Bits(8, 10)
     assert reg.calls == [("read", [Bits(8, 4), Bits(8, 0)]), ("bump", [Bits(8, 5)])]
+
+
+def test_extern_out_argument_arrives_as_zero_whatever_its_lvalue_holds() -> None:
+    reg = FakeReg()
+    body = (
+        assign('var: "t"', bits(8, 5))
+        + assign(META_N, bits(8, 4))
+        + stmt(
+            f'call_extern {{ instance: "reg" method: "read" '
+            f'args {{ expr {{ {META_N} }} }} args {{ lvalue {{ var: "t" }} }} }}'
+        )
+        + assign(META_N, 'var: "t"')
+    )
+    out = run(body, externs={"reg": reg})
+    assert reg.calls == [("read", [Bits(8, 4), Bits(8, 0)])]  # not 5: out is uninitialized
+    assert out.n == Bits(8, 5)  # the binding's result replaced it
 
 
 def test_run_control_does_not_mutate_its_arguments() -> None:

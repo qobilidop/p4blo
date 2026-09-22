@@ -775,9 +775,17 @@ def test_block_kind_stmt_in_parser(text: str) -> None:
     assert v.BLOCK_KIND_STMT in broken(lambda p: add_parser_stmt(p, PARSE_IPV4, text))
 
 
-def test_block_kind_stmt_in_action() -> None:
+@pytest.mark.parametrize(
+    "text",
+    [
+        f"emit {{ value {{ {HDR_IPV4} }} }}",
+        'apply { table: "route" }',
+        call_block("sub", arg_out(HDR), arg_out(META)),
+    ],
+)
+def test_block_kind_stmt_in_action(text: str) -> None:
     def mutate(p: pb.Program) -> None:
-        p.blocks[ING].actions[0].body.add().CopyFrom(stmt(f"emit {{ value {{ {HDR_IPV4} }} }}"))
+        p.blocks[ING].actions[0].body.add().CopyFrom(stmt(text))
 
     assert v.BLOCK_KIND_STMT in broken(mutate)
 
@@ -786,12 +794,35 @@ def test_block_kind_stmt_in_action() -> None:
     "block, text",
     [
         (ING, assign(T16, "lookahead { type { bits: 16 } }")),
-        (ING, f"set_valid {{ header {{ next {{ stack {{ {HDR_VLAN} }} }} }} }}"),
         (DEP, 'emit { value { lookahead { type { header: "eth" } } } }'),
     ],
 )
 def test_parser_only(block: int, text: str) -> None:
     assert v.PARSER_ONLY in broken(lambda p: add_stmt(p, block, text))
+
+
+VLAN_NEXT = f"next {{ stack {{ {HDR_VLAN} }} }}"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # as a whole lvalue
+        assign(VLAN_NEXT, index(HDR_VLAN, lit(32, "0"))),
+        f"set_valid {{ header {{ {VLAN_NEXT} }} }}",
+        # as the base of a member
+        assign(member(VLAN_NEXT, "vid"), lit(12, "1")),
+        # as an out argument
+        call_extern("read", arg_in(lit(32, "1")), arg_out(VLAN_NEXT)),
+    ],
+)
+def test_next_only_extract_in_a_parser(text: str) -> None:
+    assert v.NEXT_ONLY_EXTRACT in broken(lambda p: add_parser_stmt(p, PARSE_VLAN, text))
+
+
+def test_next_only_extract_in_a_control() -> None:
+    text = f"set_valid {{ header {{ {VLAN_NEXT} }} }}"
+    assert broken(lambda p: add_stmt(p, ING, text)) == [v.NEXT_ONLY_EXTRACT]
 
 
 @pytest.mark.parametrize(
@@ -903,11 +934,19 @@ def test_type_mismatch_in_control(text: str) -> None:
         f"advance {{ bits {{ {TRUE} }} }}",
         f'verify {{ condition {{ {B8} }} error: "NoMatch" }}',
         assign(TMP, 'lookahead { type { struct: "M" } }'),
-        assign(TMP, f"lookahead {{ type {{ {BOOL} }} }}"),
+        assign(TMP, 'lookahead { type { stack { header: "vlan" size: 2 } } }'),
+        assign(TMP, f"lookahead {{ type {{ {BOOL} }} }}"),  # bool to bit<16>
     ],
 )
 def test_type_mismatch_in_parser(text: str) -> None:
     assert v.TYPE_MISMATCH in broken(lambda p: add_parser_stmt(p, PARSE_IPV4, text))
+
+
+def test_lookahead_of_bits_boolean_and_header_is_fine() -> None:
+    program = valid()
+    add_parser_stmt(program, PARSE_IPV4, assign(META_DROP, f"lookahead {{ type {{ {BOOL} }} }}"))
+    add_parser_stmt(program, PARSE_IPV4, assign(HDR_ETH, 'lookahead { type { header: "eth" } }'))
+    assert codes(program) == []
 
 
 @pytest.mark.parametrize(
@@ -1032,16 +1071,30 @@ def test_arg_type(text: str) -> None:
         lambda p: add_stmt(p, DEP, call_block("prs", arg_out(HDR), arg_out(HDR))),
         # a parser calling a control
         lambda p: add_parser_stmt(p, PARSE_IPV4, call_block("sub", arg_out(HDR), arg_out(META))),
+        # a deparser calling a control, even one that could not apply a table
+        lambda p: add_stmt(
+            with_helper(p, pb.BLOCK_KIND_CONTROL), DEP, call_block("fix", arg_in(HDR))
+        ),
+        # a control calling a deparser
+        lambda p: add_stmt(
+            with_helper(p, pb.BLOCK_KIND_DEPARSER), ING, call_block("fix", arg_in(HDR))
+        ),
     ],
 )
 def test_call_kind(mutate) -> None:
     assert v.CALL_KIND in broken(mutate)
 
 
-def test_deparser_may_call_a_control() -> None:
-    program = valid()
-    helper = program.blocks.add(name="fix", kind=pb.BLOCK_KIND_CONTROL)
+def with_helper(program: pb.Program, kind: int) -> pb.Program:
+    """Add an unexported block `fix` of `kind` taking `(in H)`."""
+    helper = program.blocks.add(name="fix", kind=kind)
     helper.params.add(name="h", type=pb.Type(struct="H"), direction=pb.DIRECTION_IN)
+    return program
+
+
+def test_deparser_may_call_a_deparser() -> None:
+    program = with_helper(valid(), pb.BLOCK_KIND_DEPARSER)
+    add_stmt(program, len(program.blocks) - 1, f"emit {{ value {{ {member(var('h'), 'eth')} }} }}")
     add_stmt(program, DEP, call_block("fix", arg_in(HDR)))
     assert codes(program) == []
 
@@ -1058,21 +1111,30 @@ VLAN_TYPE_AT_0 = member(index(HDR_VLAN, lit(32, "0")), "type")
 VLAN_TYPE_AT_1 = member(index(HDR_VLAN, lit(32, "1")), "type")
 
 
+def with_two(program: pb.Program) -> pb.Program:
+    """Add an action `two(inout bit<16> a, inout bit<16> b)` to `ing`, and
+    make Counter.read take bit<16>, so header fields fit both."""
+    action = program.blocks[ING].actions.add(name="two")
+    action.params.add(name="a", type=pb.Type(bits=16), direction=pb.DIRECTION_INOUT)
+    action.params.add(name="b", type=pb.Type(bits=16), direction=pb.DIRECTION_INOUT)
+    read_bits16(program)
+    return program
+
+
 @pytest.mark.parametrize(
     "text",
     [
         call_block("sub", arg_out(HDR), arg_out(HDR)),
-        call_extern("read", arg_in(T16), arg_out(T16)),
-        # the whole header and one of its fields
-        call_extern("read", arg_in(member(HDR_ETH, "type")), arg_out(member(HDR_ETH, "type"))),
+        call_action("two", arg_out(T16), arg_out(T16)),
+        # a header field and the whole header
+        call_action("two", arg_out(member(HDR_ETH, "type")), arg_out(member(HDR_ETH, "type"))),
         # the same stack element, once by computed index and once by literal
-        call_extern("read", arg_in(VLAN_TYPE_AT_IDX), arg_out(VLAN_TYPE_AT_1)),
-        call_extern("read", arg_in(VLAN_TYPE_AT_1), arg_out(VLAN_TYPE_AT_IDX)),
+        call_action("two", arg_out(VLAN_TYPE_AT_IDX), arg_out(VLAN_TYPE_AT_1)),
+        call_action("two", arg_out(VLAN_TYPE_AT_1), arg_out(VLAN_TYPE_AT_IDX)),
     ],
 )
 def test_call_alias(text: str) -> None:
-    program = valid()
-    read_bits16(program)
+    program = with_two(valid())
     add_stmt(program, ING, text)
     assert v.CALL_ALIAS in codes(program)
 
@@ -1080,17 +1142,19 @@ def test_call_alias(text: str) -> None:
 @pytest.mark.parametrize(
     "text",
     [
+        # an in argument may overlap an out one: it is copied in first
+        call_extern("read", arg_in(T16), arg_out(T16)),
+        call_extern("read", arg_in(member(HDR_ETH, "type")), arg_out(member(HDR_ETH, "type"))),
+        call_extern("read", arg_in(VLAN_TYPE_AT_IDX), arg_out(VLAN_TYPE_AT_1)),
+        call_extern("read", arg_in(VLAN_TYPE_AT_1), arg_out(VLAN_TYPE_AT_IDX)),
         # sibling fields of one header
-        call_extern("read", arg_in(member(HDR_ETH, "type")), arg_out(VLAN_TYPE_AT_0)),
+        call_action("two", arg_out(member(HDR_ETH, "type")), arg_out(VLAN_TYPE_AT_0)),
         # different stack elements by literal index
-        call_extern("read", arg_in(VLAN_TYPE_AT_0), arg_out(VLAN_TYPE_AT_1)),
-        # a computed value cannot alias
-        call_extern("read", arg_in(binary("ADD", VLAN_TYPE_AT_1, B16)), arg_out(VLAN_TYPE_AT_1)),
+        call_action("two", arg_out(VLAN_TYPE_AT_0), arg_out(VLAN_TYPE_AT_1)),
     ],
 )
 def test_no_alias(text: str) -> None:
-    program = valid()
-    read_bits16(program)
+    program = with_two(valid())
     add_stmt(program, ING, text)
     assert codes(program) == []
 
@@ -1112,6 +1176,31 @@ def test_call_cycle_message_and_path() -> None:
     assert diag.code == v.CALL_CYCLE
     assert "ing -> sub -> ing" in diag.message
     assert diag.path == "blocks[2].body[1].call_block"
+
+
+def test_action_call_cycle() -> None:
+    def recurse(p: pb.Program) -> None:
+        p.blocks[ING].actions[0].body.add().CopyFrom(stmt(call_action("drop")))
+
+    assert v.CALL_CYCLE in broken(recurse)
+
+
+def test_mutual_action_call_cycle_message_and_path() -> None:
+    program = valid()
+    fwd = call_action("fwd", arg_in(lit(9, "1")), arg_in(B8))
+    program.blocks[ING].actions[0].body.add().CopyFrom(stmt(fwd))  # drop -> fwd
+    program.blocks[ING].actions[1].body.add().CopyFrom(stmt(call_action("drop")))  # fwd -> drop
+    (diag,) = v.validate(program)
+    assert diag.code == v.CALL_CYCLE
+    assert "drop -> fwd -> drop" in diag.message
+    assert diag.path == "blocks[1].actions[1].body[2].call_action"
+
+
+def test_actions_may_call_actions_without_a_cycle() -> None:
+    program = valid()
+    fwd = call_action("fwd", arg_in(lit(9, "1")), arg_in(B8))
+    program.blocks[ING].actions[0].body.add().CopyFrom(stmt(fwd))
+    assert codes(program) == []
 
 
 @pytest.mark.parametrize(

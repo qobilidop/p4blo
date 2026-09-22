@@ -181,10 +181,30 @@ def test_install_rejects_an_entry_that_does_not_fit(
         installed().install(table, entry(keys, action, priority))
 
 
-def test_install_rejects_action_data_of_the_wrong_width() -> None:
-    wide = pb.ActionCall(action="set", args=[pb.Literal(bits=pb.BitsLiteral(width=16, value="1"))])
+@pytest.mark.parametrize(
+    "literal",
+    [
+        pb.Literal(bits=pb.BitsLiteral(width=16, value="1")),  # wrong width
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="256")),  # does not fit
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="0x1")),  # not decimal
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="+1")),  # int() would take these
+        pb.Literal(bits=pb.BitsLiteral(width=8, value=" 1")),
+        pb.Literal(bits=pb.BitsLiteral(width=8, value="1_0")),
+        pb.Literal(boolean=True),  # wrong kind
+    ],
+)
+def test_install_rejects_action_data_that_is_not_a_constant_of_the_param(
+    literal: pb.Literal,
+) -> None:
+    bad = pb.ActionCall(action="set", args=[literal])
     with pytest.raises(InstallError):
-        installed().install(EXACT, entry('keys { exact: "1" }', wide))
+        installed().install(EXACT, entry('keys { exact: "1" }', bad))
+
+
+@pytest.mark.parametrize("value", ["+1", " 1", "1_0", "0x1"])
+def test_install_rejects_a_key_value_that_is_not_plain_digits(value: str) -> None:
+    with pytest.raises(InstallError):
+        installed().install(EXACT, entry(f'keys {{ exact: "{value}" }}', call("set", 1)))
 
 
 def test_install_rejects_duplicate_exact_and_lpm_entries() -> None:
@@ -223,6 +243,42 @@ def test_install_rejects_overlapping_ternary_entries_of_equal_priority() -> None
         TERN,
         entry('keys { ternary { value: "0" mask: "0" } } keys { exact: "1" }', call("set", 2), 4),
     )
+
+
+TWINS = """
+errors: "NoError"
+struct_types { name: "H" }
+struct_types { name: "M" }
+headers: "H"
+metadata: "M"
+blocks {
+  name: "A" kind: BLOCK_KIND_CONTROL
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_INOUT }
+  params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+  actions { name: "set" params { name: "v" type { bits: 8 } direction: DIRECTION_NONE } }
+  tables { name: "t" actions: "set" }
+  body { apply { table: "t" } }
+}
+blocks {
+  name: "B" kind: BLOCK_KIND_CONTROL
+  params { name: "hdr" type { struct: "H" } direction: DIRECTION_INOUT }
+  params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
+  actions { name: "set" params { name: "v" type { bits: 16 } direction: DIRECTION_NONE } }
+  tables { name: "t" actions: "set" }
+  body { apply { table: "t" } }
+}
+"""
+
+
+def test_action_data_is_checked_against_the_tables_own_block() -> None:
+    # A.t and B.t are byte-identical tables; their `set` actions differ.
+    twins = ir.Index.build(ir.load_text(TWINS))
+    wide = pb.ActionCall(action="set", args=[pb.Literal(bits=pb.BitsLiteral(width=16, value="1"))])
+    t = InstalledEntries.build(twins)
+    t.install(("B", "t"), entry("", wide))
+    assert t.lookup(("B", "t"), []) == Match(wide, True)
+    with pytest.raises(InstallError):
+        t.install(("A", "t"), entry("", wide))
 
 
 def test_host_entry_duplicating_a_const_entry_is_rejected() -> None:

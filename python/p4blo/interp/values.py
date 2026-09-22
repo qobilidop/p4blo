@@ -124,8 +124,3 @@ def equal(a: Value, b: Value) -> bool:
             return all(equal(x, y) for x, y in zip(ea, eb, strict=True))
         case _:
             return a == b
-
-
-def assign(target: Value, source: Value) -> Value:
-    """The value stored by `target = source`: a copy of `source`."""
-    return copy(source)

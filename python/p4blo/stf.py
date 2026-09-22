@@ -543,12 +543,19 @@ def _key_value(key: pb.Key, width: int, written: Key, line: int) -> pb.KeyValue:
             prefix = width if written.prefix_len is None else written.prefix_len
             if prefix > width:
                 raise StfError(f"line {line}: prefix /{prefix} exceeds the {width}-bit key")
+            # Entries are canonical (docs/semantics.md, "Tables"): a set bit
+            # below the prefix would be rejected at installation, where the
+            # line is gone, so it is rejected here.
+            if written.value & ((1 << (width - prefix)) - 1):
+                raise StfError(f"line {line}: {written.name} has bits below its /{prefix} prefix")
             return pb.KeyValue(lpm=pb.LpmValue(value=value, prefix_len=prefix))
         case pb.MATCH_KIND_TERNARY:
             if written.prefix_len is not None:
                 raise StfError(f"line {line}: a ternary key takes a mask, not a prefix")
             # A plain number on a ternary key is an exact match.
             mask = (1 << width) - 1 if written.mask is None else written.mask
+            if written.value & ~mask:
+                raise StfError(f"line {line}: {written.name} has bits outside its mask")
             return pb.KeyValue(
                 ternary=pb.TernaryValue(value=value, mask=_fits(mask, width, "the mask", line))
             )
