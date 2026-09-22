@@ -20,3 +20,6 @@ lean/.lake/
 .vscode/
 .idea/
 .DS_Store
+
+# Agent worktrees
+.claude/worktrees/
