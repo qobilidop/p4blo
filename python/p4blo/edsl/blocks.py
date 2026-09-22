@@ -242,8 +242,11 @@ class Stmts:
 
     def __init__(self, block: Block, stmts: list[pb.Stmt]) -> None:
         self.block = block
+        # One statement list per open block, innermost last, and beside each
+        # the `if` its last statement is, so that `else_` knows what it
+        # continues at its own nesting level and nothing deeper.
         self._targets: list[list[pb.Stmt]] = [stmts]
-        self._open_if: pb.Stmt | None = None
+        self._open_ifs: list[pb.Stmt | None] = [None]
 
     @property
     def types(self) -> TypeTable:
@@ -270,7 +273,18 @@ class Stmts:
 
     def _emit(self, stmt: pb.Stmt) -> None:
         self._targets[-1].append(stmt)
-        self._open_if = None
+        self._open_ifs[-1] = None
+
+    @contextmanager
+    def _nested(self, stmts: list[pb.Stmt]) -> Iterator[None]:
+        """Statements emitted inside the `with` go to `stmts`."""
+        self._targets.append(stmts)
+        self._open_ifs.append(None)
+        try:
+            yield
+        finally:
+            self._targets.pop()
+            self._open_ifs.pop()
 
     def assign(self, target: Expr, value: Operand) -> None:
         """`target = value`; an int value takes the target's type."""
@@ -285,28 +299,22 @@ class Stmts:
         cond = literal(self.types, condition, boolean)
         stmt = pb.Stmt(conditional=pb.If(condition=cond.pb))
         then: list[pb.Stmt] = []
-        self._targets.append(then)
-        try:
+        with self._nested(then):
             yield self
-        finally:
-            self._targets.pop()
         stmt.conditional.then.extend(then)
         self._emit(stmt)
-        self._open_if = stmt
+        self._open_ifs[-1] = stmt
 
     @contextmanager
     def else_(self) -> Iterator[Self]:
-        """The `else` of the `if_` block just closed."""
-        stmt = self._open_if
+        """The `else` of the `if_` block just closed at this nesting level."""
+        stmt = self._open_ifs[-1]
         if stmt is None:
             raise EdslError("else_ must follow an if_ block directly")
-        self._open_if = None
+        self._open_ifs[-1] = None
         otherwise: list[pb.Stmt] = []
-        self._targets.append(otherwise)
-        try:
+        with self._nested(otherwise):
             yield self
-        finally:
-            self._targets.pop()
         stmt.conditional.otherwise.extend(otherwise)
 
     def _args(self, params: Sequence[pb.Param], args: Sequence[Operand], what: str) -> list[pb.Arg]:

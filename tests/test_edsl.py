@@ -649,6 +649,110 @@ def test_lpm_entries_and_reflected_operators() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Control flow
+# ---------------------------------------------------------------------------
+
+
+def stmt(text: str) -> pb.Stmt:
+    return text_format.Parse(text, pb.Stmt())
+
+
+def cond(value: int) -> str:
+    return f"binary {{ op: BINARY_OP_EQ left {{ {META_X} }} right {{ {bits(8, value)} }} }}"
+
+
+def set_x(value: int) -> str:
+    return f"assign {{ target {{ {META_X} }} value {{ {bits(8, value)} }} }}"
+
+
+def test_else_follows_its_own_if_in_both_branches() -> None:
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                with b.if_(x == 2):
+                    b.assign(x, 20)
+                with b.else_():
+                    b.assign(x, 21)
+            with b.else_():
+                with b.if_(x == 3):
+                    b.assign(x, 30)
+                with b.else_():
+                    b.assign(x, 31)
+            with b.if_(x == 4):
+                b.assign(x, 40)
+    body = p.build().blocks[0].body
+    assert len(body) == 2
+    assert body[0] == stmt(
+        f"""
+        conditional {{
+          condition {{ {cond(1)} }}
+          then {{
+            conditional {{
+              condition {{ {cond(2)} }}
+              then {{ {set_x(20)} }}
+              otherwise {{ {set_x(21)} }}
+            }}
+          }}
+          otherwise {{
+            conditional {{
+              condition {{ {cond(3)} }}
+              then {{ {set_x(30)} }}
+              otherwise {{ {set_x(31)} }}
+            }}
+          }}
+        }}
+        """
+    )
+    assert body[1] == stmt(f"conditional {{ condition {{ {cond(4)} }} then {{ {set_x(40)} }} }}")
+
+
+def test_else_after_a_closed_else_is_refused() -> None:
+    # The inner if_ is the last statement of the else; closing the else
+    # must not leave it open for a stray else_ at the outer level.
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                b.assign(x, 10)
+            with b.else_():
+                with b.if_(x == 2):
+                    b.assign(x, 20)
+            with pytest.raises(EdslError, match="else_ must follow an if_"):
+                with b.else_():
+                    b.assign(x, 30)
+    assert p.build().blocks[0].body[0] == stmt(
+        f"""
+        conditional {{
+          condition {{ {cond(1)} }}
+          then {{ {set_x(10)} }}
+          otherwise {{ conditional {{ condition {{ {cond(2)} }} then {{ {set_x(20)} }} }} }}
+        }}
+        """
+    )
+
+
+def test_else_at_the_start_of_a_branch_is_refused() -> None:
+    # A sibling if_ outside the branch is not the one just closed inside it.
+    p = base()
+    with p.control("C") as c:
+        x = c.meta.x
+        with c.body() as b:
+            with b.if_(x == 1):
+                b.assign(x, 10)
+            with b.if_(x == 2):
+                with pytest.raises(EdslError, match="else_ must follow an if_"):
+                    with b.else_():
+                        b.assign(x, 20)
+                b.assign(x, 21)
+    assert p.build().blocks[0].body[1] == stmt(
+        f"conditional {{ condition {{ {cond(2)} }} then {{ {set_x(21)} }} }}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Deparsers, enums and errors
 # ---------------------------------------------------------------------------
 
