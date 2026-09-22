@@ -29,8 +29,10 @@ buf lint                  # schema lint
 buf generate              # regenerate python/p4blo/v0 from proto/
 ```
 
-CI runs exactly these commands inside the flake on Linux and macOS.
-Keep `main` green.
+`scripts/check.sh` runs all of them in order and stops at the first
+failure; CI runs exactly these commands inside the flake on Linux and
+macOS. Keep `main` green, and check the script's exit code, not its
+output.
 
 Optional: with Docker running, `docker run --rm -v "$PWD":/w p4lang/p4c
 p4test /w/<file>.p4` typechecks a printed program; the printer tests
