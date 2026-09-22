@@ -1,0 +1,15 @@
+# forwarder: a miss on the lpm table drops the packet.
+#
+# The same frame as forward.stf, byte for byte, but no entry is installed.
+#
+# hdr.ipv4 is valid, so the control still applies ipv4_lpm. There is no
+# entry, so it is a miss, and a miss runs the table's default action, which
+# the program declares to be `drop`. `drop` sets meta.drop = true, which is
+# how a p4blo control writes the decision to discard: the block performs no
+# effect, it writes a field of M, and the architecture acts on it.
+#
+# The driver therefore produces no output packet at all, on any port. It is
+# not an empty packet and not a packet on port 0.
+
+packet 0 000000000101 000000000001 0800 4500001a0001000040110000 0a000101 0a000202 deadbeefcafe
+no_packet

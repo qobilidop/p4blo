@@ -1,0 +1,32 @@
+# forwarder: the longest prefix wins.
+#
+# Two overlapping entries on the one lpm key, hdr.ipv4.dstAddr:
+#
+#   10.0.0.0/16 -> port 1, dstAddr 00:00:00:00:ff:10
+#   10.0.2.0/24 -> port 2, dstAddr 00:00:00:00:ff:18
+#
+# docs/semantics.md, "Tables": among the entries whose prefix covers the key
+# value, the longest prefix wins. The order the entries are installed in
+# must not matter, so the /16 is installed first and still loses.
+#
+# Both packets are the frame of forward.stf with a different IPv4 dstAddr,
+# and both get ttl 0x40 -> 0x3f and srcAddr <- the old dstAddr, as there.
+#
+# Packet 1, to 10.0.2.2 (0x0a000202):
+#   the /16 covers it and so does the /24; the /24 is longer and wins, so
+#   ipv4_forward(dstAddr = 00:00:00:00:ff:18, port = 2) runs.
+#   totalLen 0x001a, identification 0x0001, payload de ad be ef ca fe.
+#
+# Packet 2, to 10.0.9.9 (0x0a000909):
+#   only the /16 covers it, so ipv4_forward(dstAddr = 00:00:00:00:ff:10,
+#   port = 1) runs. Same widths, identification 0x0002 so the two packets
+#   are distinguishable in a trace.
+
+add ipv4_lpm hdr.ipv4.dstAddr:0x0a000000/16 ipv4_forward(dstAddr:0x00000000ff10, port:1)
+add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 ipv4_forward(dstAddr:0x00000000ff18, port:2)
+
+packet 0 000000000101 000000000001 0800 4500001a0001000040110000 0a000101 0a000202 deadbeefcafe
+expect 2 00000000ff18 000000000101 0800 4500001a000100003f110000 0a000101 0a000202 deadbeefcafe
+
+packet 0 000000000101 000000000001 0800 4500001a0002000040110000 0a000101 0a000909 deadbeefcafe
+expect 1 00000000ff10 000000000101 0800 4500001a000200003f110000 0a000101 0a000909 deadbeefcafe
