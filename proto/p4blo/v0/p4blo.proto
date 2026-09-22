@@ -1,0 +1,14 @@
+// p4blo v0: P4's semantic core as an IR, architecture-free.
+//
+// This file is the normative syntax of the IR. Its shape is designed for the
+// whole of P4's core and is expected to change while v0 lasts.
+
+syntax = "proto3";
+
+package p4blo.v0;
+
+// A complete p4blo program. Filled in during step 1 of docs/design.md.
+message Program {
+  // Human-readable program name; carries no meaning.
+  string name = 1;
+}

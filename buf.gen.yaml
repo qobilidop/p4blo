@@ -1,0 +1,8 @@
+version: v2
+# Generated files land inside the Python package as p4blo/v0/*_pb2.py, so the
+# proto package path and the Python import path coincide.
+plugins:
+  - protoc_builtin: python
+    out: python
+  - protoc_builtin: pyi
+    out: python
