@@ -12,7 +12,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green so far: nine corpus programs fit with named elaborations only; coverage table in flight |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green so far: every corpus vector passes on P4-SpecTec (14 files, 9 programs); BMv2 optional second oracle not run |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | Lean interpreter landed (181 checks); differential loop landed: 18,000 random cases over nine programs, zero divergences, and 200 per program in CI; theorem in flight |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | green: Lean interpreter (181 checks); 18,000 random cases over nine programs with zero divergences, 200 per program in CI; theorem `P4blo.extract_emit` proved with core Lean only |
 
 ## Steps
 
@@ -23,7 +23,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | 2 | Extern registry, stateful program | registry landed; stateful program and the forwarder's checksum wait for the eDSL |
 | 3 | eDSL, four corpus programs, two architectures, metadata contract | done: nine programs authored in the eDSL, both architectures, contract check |
 | 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | printer, oracle build, translation, replay and CI job landed; forwarder passes both sides |
-| 5 | Lean interpreter, extern models, DRT, the theorem | interpreter, extern models, run mode and DRT landed; theorem in flight |
+| 5 | Lean interpreter, extern models, DRT, the theorem | done |
 | 6 | Coverage table, README claim matrix, write-up | coverage table done (177 rows, none undecided); README rewritten; write-up pending |
 
 ## Corpus

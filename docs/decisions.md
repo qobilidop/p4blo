@@ -187,6 +187,12 @@ one that says so.
 - **`switch` on `action_run` is elaborated** into a block local that
   each action assigns a distinct value to, followed by an if-chain; the
   ACL corpus does it and names it.
+- **The one theorem is the extract-then-emit roundtrip**, stated over
+  the pure packing functions the Lean interpreter's emit and extract
+  call and lifted to the emitter's bytes, not over the monadic
+  interpreter loop. That is what is provable without Mathlib in a day
+  and what the design meant; the module doc says exactly what the
+  monad plumbing leaves uncovered.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

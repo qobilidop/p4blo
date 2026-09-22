@@ -529,8 +529,10 @@ testing table logic in pytest, until a p4c bridge exists.
 
 ## Open questions
 
-- The one theorem. Extract-then-emit roundtrip is the current pick;
-  parser determinism is the alternative.
+- ~~The one theorem.~~ Settled: extract-then-emit roundtrip, proved as
+  `P4blo.extract_emit` in `lean/P4blo/Theorems.lean` over the packing
+  functions the interpreter calls. Parser determinism was not
+  attempted.
 - Whether the v1model shim can express flood without BMv2 multicast
   groups.
 - Whether P4-SpecTec's simulator covers every construct the corpus
