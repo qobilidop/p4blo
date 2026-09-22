@@ -934,11 +934,19 @@ def test_type_mismatch_in_control(text: str) -> None:
         f"advance {{ bits {{ {TRUE} }} }}",
         f'verify {{ condition {{ {B8} }} error: "NoMatch" }}',
         assign(TMP, 'lookahead { type { struct: "M" } }'),
-        assign(TMP, f"lookahead {{ type {{ {BOOL} }} }}"),
+        assign(TMP, 'lookahead { type { stack { header: "vlan" size: 2 } } }'),
+        assign(TMP, f"lookahead {{ type {{ {BOOL} }} }}"),  # bool to bit<16>
     ],
 )
 def test_type_mismatch_in_parser(text: str) -> None:
     assert v.TYPE_MISMATCH in broken(lambda p: add_parser_stmt(p, PARSE_IPV4, text))
+
+
+def test_lookahead_of_bits_boolean_and_header_is_fine() -> None:
+    program = valid()
+    add_parser_stmt(program, PARSE_IPV4, assign(META_DROP, f"lookahead {{ type {{ {BOOL} }} }}"))
+    add_parser_stmt(program, PARSE_IPV4, assign(HDR_ETH, 'lookahead { type { header: "eth" } }'))
+    assert codes(program) == []
 
 
 @pytest.mark.parametrize(

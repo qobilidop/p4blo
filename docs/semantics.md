@@ -128,7 +128,8 @@ rejection with `parser_error` set.
 - **Extract sets the target valid** and fills every field from the
   packet, most significant bit first.
 - **`lookahead<T>`** reads `width(T)` bits without moving the cursor;
-  past the end it raises `PacketTooShort`. When `T` is a header the
+  past the end it raises `PacketTooShort`. `T` is `bit<N>`, `bool`
+  (one bit, `1` is `true`) or a header; when `T` is a header the
   result is valid.
 - **`advance(n)`** moves the cursor by `n` bits; past the end it
   raises `PacketTooShort` and the cursor does not move.

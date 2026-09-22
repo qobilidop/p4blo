@@ -1278,10 +1278,11 @@ class _Validator:
             self.report(PARSER_ONLY, "lookahead is allowed only in a parser", path)
         if not self.check_type(expr.type, f"{path}.type"):
             return None
-        if not (is_bits(expr.type) or is_header(expr.type)):
+        # What has a packet width: bool is one bit (docs/semantics.md, "lookahead").
+        if not (is_bits(expr.type) or is_boolean(expr.type) or is_header(expr.type)):
             self.report(
                 TYPE_MISMATCH,
-                f"lookahead reads bits or a header, not {describe(expr.type)}",
+                f"lookahead reads bits, a boolean or a header, not {describe(expr.type)}",
                 f"{path}.type",
             )
             return None
