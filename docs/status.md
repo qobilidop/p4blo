@@ -3,13 +3,13 @@
 Where the work stands, by build-order step from
 [design.md](design.md#build-order). Updated at every checkpoint.
 
-Last updated: 2026-09-22, evening.
+Last updated: 2026-09-22, after the step 1 checkpoint.
 
 ## Claim matrix
 
 | Claim | Experiment | Status |
 |---|---|---|
-| 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | not started |
+| 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | schema 660 lines with comments; forwarder fits; three more programs pending |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | not started |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | not started |
 | 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | not started |
@@ -19,18 +19,18 @@ Last updated: 2026-09-22, evening.
 | Step | What | Status |
 |---|---|---|
 | 0 | Skeleton: flake, Python project, schema stub, CI, docs | done |
-| 1 | Schema, validator, semantics, forwarder in text format, interpreter, STF runner | in progress: schema v0 drafted, semantics written, forwarder and STF runner landed, validator and interpreter in flight |
-| 2 | Extern registry, stateful program | in progress: registry with register, counter, checksum16 landed; program pending the survey |
-| 3 | eDSL, four corpus programs, two architectures, metadata contract | not started |
-| 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | in progress: printer in flight, p4c typecheck via Docker |
-| 5 | Lean interpreter, extern models, DRT, the theorem | not started |
+| 1 | Schema, validator, semantics, forwarder in text format, interpreter, STF runner | done: the forwarder's five vectors pass end to end |
+| 2 | Extern registry, stateful program | registry landed; stateful program and the forwarder's checksum wait for the eDSL |
+| 3 | eDSL, four corpus programs, two architectures, metadata contract | eDSL in flight; architectures next |
+| 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | printer landed, goldens typecheck with p4c; oracle job next |
+| 5 | Lean interpreter, extern models, DRT, the theorem | Lean project, IR types, JSON decoder and index landed (Lean 4.34.0); interpreter next |
 | 6 | Coverage table, README claim matrix, write-up | not started |
 
 ## Corpus
 
 | Program | Source | Rewritten | Vectors | Oracle |
 |---|---|---|---|---|
-| forwarder | p4lang tutorial basic | hand-written text format, no checksum yet | 5 hand-derived STF files | pending |
+| forwarder | p4lang tutorial basic | hand-written text format, no checksum yet | 5 hand-derived STF files, passing | pending |
 | acl | p4c `ternary2-bmv2` | no | p4c STF, 6 adds, 4 packets | pending |
 | stacks | p4c `header-stack-ops-bmv2` | no | p4c STF, 15 packets | pending |
 | stateful | p4c `issue1097-2-bmv2` + own vectors | no | p4c STF, 2 packets | pending |
