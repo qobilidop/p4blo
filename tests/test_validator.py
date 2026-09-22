@@ -1348,7 +1348,7 @@ def test_entry_priority_on_non_ternary_table() -> None:
         # one covers the other
         entry("6", "255", "6", 1) + entry("0", "0", "6", 1),
         # partial masks that agree where both care
-        entry("6", "15", "6", 1) + entry("22", "240", "6", 1),
+        entry("6", "15", "6", 1) + entry("16", "240", "6", 1),
     ],
 )
 def test_entry_priority_overlap(entries: str) -> None:
@@ -1370,22 +1370,27 @@ def test_entry_priority_no_overlap(entries: str) -> None:
     assert codes(with_acl(entries)) == []
 
 
-@pytest.mark.parametrize(
-    "value, prefix_len",
-    [
-        ("167772160", 8),
-        # the same /8 written with bits below the prefix
-        ("167772161", 8),
-    ],
-)
-def test_entry_duplicate(value: str, prefix_len: int) -> None:
+def test_entry_duplicate() -> None:
     def mutate(p: pb.Program) -> None:
         second = route(p).const_entries.add()
         second.CopyFrom(route(p).const_entries[0])
-        second.keys[0].lpm.value = value
-        second.keys[0].lpm.prefix_len = prefix_len
+        second.keys[0].lpm.value = "167772160"
+        second.keys[0].lpm.prefix_len = 8
 
     assert v.ENTRY_DUPLICATE in broken(mutate)
+
+
+def test_lpm_entry_must_be_canonical() -> None:
+    def mutate(p: pb.Program) -> None:
+        # 10.0.0.1/8: a set bit below the prefix
+        route(p).const_entries[0].keys[0].lpm.value = "167772161"
+        route(p).const_entries[0].keys[0].lpm.prefix_len = 8
+
+    assert v.ENTRY_RANGE in broken(mutate)
+
+
+def test_ternary_entry_must_be_canonical() -> None:
+    assert v.ENTRY_RANGE in codes(with_acl(entry("22", "240", "6", 1)))
 
 
 def test_lpm_entries_with_different_prefixes_are_fine() -> None:
@@ -1397,29 +1402,31 @@ def test_lpm_entries_with_different_prefixes_are_fine() -> None:
     assert broken(mutate) == []
 
 
-def test_exact_entries_on_enum_and_boolean_keys() -> None:
-    program = valid()
-    table = text_format.Parse(
-        f"""
-        name: "colors"
-        keys {{ expr {{ {META_COLOR} }} match_kind: MATCH_KIND_EXACT }}
-        keys {{ expr {{ {META_DROP} }} match_kind: MATCH_KIND_EXACT }}
-        actions: "drop"
-        const_entries {{
-          keys {{ exact: "RED" }} keys {{ exact: "true" }} action {{ action: "drop" }}
-        }}
-        const_entries {{
-          keys {{ exact: "GREEN" }} keys {{ exact: "true" }} action {{ action: "drop" }}
-        }}
-        """,
-        pb.Table(),
-    )
-    program.blocks[ING].tables.add().CopyFrom(table)
-    assert codes(program) == []
-    program.blocks[ING].tables[1].const_entries[1].keys[0].exact = "RED"
-    assert codes(program) == [v.ENTRY_DUPLICATE]
-    program.blocks[ING].tables[1].const_entries[1].keys[0].exact = "BLUE"
-    assert codes(program) == [v.ENTRY_SHAPE]
+@pytest.mark.parametrize("key", [META_COLOR, META_DROP])
+def test_table_keys_are_bits_only(key: str) -> None:
+    """A boolean or enum key is elaborated by the frontend into a cast."""
+
+    def mutate(p: pb.Program) -> None:
+        route(p).keys[0].expr.CopyFrom(expr(key))
+
+    assert v.KEY_TYPE in broken(mutate)
+
+
+def test_apply_inside_an_action_is_rejected() -> None:
+    def mutate(p: pb.Program) -> None:
+        p.blocks[ING].actions[0].body.add().CopyFrom(stmt('apply { table: "route" }'))
+
+    assert v.BLOCK_KIND_STMT in broken(mutate)
+
+
+def test_derived_key_names_collide() -> None:
+    def mutate(p: pb.Program) -> None:
+        route(p).keys[0].name = ""  # both keys now derive hdr.ipv4.dst
+        key = route(p).keys.add(match_kind=pb.MATCH_KIND_EXACT)
+        key.expr.CopyFrom(route(p).keys[0].expr)
+        route(p).const_entries[0].keys.add(exact="1")
+
+    assert v.KEY_NAME in broken(mutate)
 
 
 # -- externs -----------------------------------------------------------------------

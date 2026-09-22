@@ -888,6 +888,9 @@ class _Validator:
         self.check_stmts(stmt.otherwise, scope, f"{path}.otherwise")
 
     def check_apply(self, stmt: pb.Apply, scope: Scope, path: str) -> None:
+        if scope.action is not None:
+            self.report(BLOCK_KIND_STMT, "apply is not allowed inside an action", path)
+            return
         self.resolve_local(stmt.table, scope.names.tables, "table", scope, f"{path}.table")
         if stmt.HasField("hit"):
             self.expect_lvalue(stmt.hit, is_boolean, "boolean", scope, f"{path}.hit")
@@ -1467,19 +1470,16 @@ class _Validator:
         key_types: list[pb.Type | None] = []
         for i, key in enumerate(table.keys):
             kpath = f"{path}.keys[{i}]"
-            if key.name:
-                if key.name in names:
-                    self.report(KEY_NAME, f"key name {key.name!r} used twice", f"{kpath}.name")
-                names.add(key.name)
+            name = ir.key_name(key)
+            if name is not None:
+                if name in names:
+                    self.report(KEY_NAME, f"key name {name!r} used twice", f"{kpath}.name")
+                names.add(name)
             t = self.type_of(key.expr, scope, f"{kpath}.expr")
             match key.match_kind:
-                case pb.MATCH_KIND_EXACT:
-                    if t is not None and kind_of(t) not in _SCALAR_KINDS:
-                        self.report(
-                            KEY_TYPE, f"exact key must be a scalar, got {describe(t)}", kpath
-                        )
-                        t = None
-                case pb.MATCH_KIND_LPM | pb.MATCH_KIND_TERNARY:
+                case pb.MATCH_KIND_EXACT | pb.MATCH_KIND_LPM | pb.MATCH_KIND_TERNARY:
+                    # Table keys are bits only; the frontend casts a boolean or
+                    # enum key. Select keys may be any scalar.
                     if t is not None and not is_bits(t):
                         self.report(
                             KEY_TYPE,
@@ -1584,11 +1584,26 @@ class _Validator:
                         f"{path}.lpm.prefix_len",
                     )
                     return None
-                return None if number is None else LpmPattern(number, value.lpm.prefix_len, t.bits)
+                if number is None:
+                    return None
+                pattern = LpmPattern(number, value.lpm.prefix_len, t.bits)
+                if number & ~pattern.mask:
+                    self.report(
+                        ENTRY_RANGE, "lpm value has bits below its prefix", f"{path}.lpm.value"
+                    )
+                    return None
+                return pattern
             case _:
                 number = in_width(value.ternary.value, "value", f"{path}.ternary.value")
                 mask = in_width(value.ternary.mask, "mask", f"{path}.ternary.mask")
                 if number is None or mask is None:
+                    return None
+                if number & ~mask:
+                    self.report(
+                        ENTRY_RANGE,
+                        "ternary value has bits outside its mask",
+                        f"{path}.ternary.value",
+                    )
                     return None
                 return TernaryPattern(number, mask)
 
