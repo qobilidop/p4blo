@@ -16,7 +16,7 @@ from types import ModuleType
 import pytest
 from google.protobuf import text_format
 
-from p4blo import ir
+from p4blo import arch, ir, validator
 from p4blo.edsl import (
     EdslError,
     Program,
@@ -1234,6 +1234,39 @@ def test_error_messages_name_the_problem() -> None:
     with pytest.raises(EdslError, match="no start state"):
         p.parser("P").state("s").accept()
         p.build()
+
+
+def test_an_int_shift_amount_wider_than_the_left_operand_builds() -> None:
+    """`bit<2> x << 4` is P4 (the amount's width is free) and is 0; the
+    eDSL gives `4` the smallest width that holds it, bit<3>, instead of
+    refusing it as "does not fit in bit<2>". An amount that fits keeps the
+    left operand's width, as before."""
+    p = Program("shift")
+    h = p.header("h_t", v=bit(2), pad=bit(6))
+    p.headers = p.struct("headers", h=h)
+    p.metadata = p.struct("metadata")
+    with p.parser("P") as ps:
+        with ps.state("start") as s:
+            s.extract(ps.hdr.h)
+            s.accept()
+    with p.control("C") as c:
+        with c.body() as b:
+            b.assign(c.hdr.h.v, c.hdr.h.v << 4)
+            b.assign(c.hdr.h.pad, c.hdr.h.pad >> 1)
+    with p.deparser("D") as d:
+        with d.body() as b:
+            b.emit(d.hdr.h)
+    p.export("parser", "P")
+    p.export("control", "C")
+    p.export("deparser", "D")
+    program = p.build()
+    assert validator.validate(program) == []
+    shifts = [st.assign.value.binary.right.literal.bits for st in program.blocks[1].body]
+    assert (shifts[0].width, shifts[0].value) == (3, "4")
+    assert (shifts[1].width, shifts[1].value) == (6, "1")
+    loaded = arch.load(program)
+    # v = 0b11 << 4 is 0 in bit<2>; pad = 0b111111 >> 1 is 0b011111.
+    assert arch.Switch(2).run(loaded, loaded.entries(), 0, b"\xff") == [(0, b"\x1f")]
 
 
 def test_advance_takes_a_bit32_amount() -> None:

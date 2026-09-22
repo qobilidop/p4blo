@@ -11,8 +11,11 @@ one from context. The eDSL does the same: an `int` operand takes the type
 of the Expr it meets (`hdr.ipv4.ttl - 1` makes `1` a `bit<8>`), an
 assignment takes its target's type, an argument takes its parameter's.
 A literal that does not fit, or an int where no context supplies a width,
-is an `EdslError`. Nothing else is inferred, and no cast is ever inserted:
-`x.cast(bit(16))` is the only way one appears in the IR.
+is an `EdslError`; the one exception is a shift amount, whose width P4
+leaves free, so an int amount too large for the left operand's width takes
+the smallest width that holds it (`_shift`). Nothing else is inferred, and
+no cast is ever inserted: `x.cast(bit(16))` is the only way one appears in
+the IR.
 """
 
 from __future__ import annotations
@@ -211,9 +214,23 @@ class Expr:
         raise EdslError(f"{sym} needs bit<N> or bool operands, got {type_str(self.type)}")
 
     def _shift(self, op: pb.BinaryOp, other: Operand, sym: str) -> Expr:
+        """`self << other` or `self >> other`, typed as the left operand.
+
+        The shift amount is any `bit<M>` and its width does not affect the
+        result (docs/semantics.md, "Shifts"), so an int amount takes the
+        left operand's width when it fits, as any other int operand would,
+        and otherwise the smallest width that holds it: `bit<2> x << 4` is
+        the P4 expression it looks like, with `4` a `bit<3>`, and is 0.
+        """
         if not is_bits(self.type):
             raise EdslError(f"{sym} needs a bit<N> left operand, got {type_str(self.type)}")
-        amount = other if isinstance(other, Expr) else literal(self.types, other, self.type)
+        if isinstance(other, Expr):
+            amount = other
+        else:
+            width = self.type.bits
+            if isinstance(other, int) and not isinstance(other, bool) and other >= (1 << width):
+                width = other.bit_length()
+            amount = literal(self.types, other, pb.Type(bits=width))
         if not is_bits(amount.type):
             raise EdslError(f"{sym} needs a bit<N> shift amount, got {type_str(amount.type)}")
         return self._binary(op, amount, self.type)
