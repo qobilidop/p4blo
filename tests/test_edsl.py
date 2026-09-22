@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 from collections.abc import Callable
+from functools import reduce
 from pathlib import Path
 
 import pytest
@@ -778,6 +779,18 @@ def test_stack_last_is_the_element_at_last_index() -> None:
     )
     with pytest.raises(EdslError, match="needs a stack"):
         _ = c.hdr.h.last
+
+
+def test_concat_chains_from_the_left() -> None:
+    p = base()
+    c = p.control("C")
+    f, g, tag = c.hdr.h.f, c.hdr.h.g, c.hdr.stack[0].tag
+    three = concat(f, g, tag)
+    assert three.type == bit(28)
+    assert three.pb == concat(concat(f, g), tag).pb
+    assert three.pb == reduce(concat, [f, g, tag]).pb
+    with pytest.raises(EdslError, match="needs Exprs"):
+        concat(f, 1, g)  # pyright: ignore[reportArgumentType]
 
 
 # ---------------------------------------------------------------------------
