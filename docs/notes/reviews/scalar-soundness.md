@@ -25,3 +25,15 @@ Boundary: closed scalar type safety and purity, not arithmetic agreement
 with a separate specification, Python equivalence, checker completeness,
 whole-program validity or statement soundness. The program loader does
 not yet enforce this incremental checker.
+
+## Value and evaluation-order laws
+
+Follow-up `91ed677` was independently reviewed with no confirmed defects.
+All eleven laws concern the actual evaluator/operators. Saturation and
+oversized shifts specify concrete values, not only their types. Branch
+laws preserve selected computations, including faults and state, with
+unrestricted unselected expressions. Hypotheses are sufficient and
+non-vacuous; concrete instantiations with differing operand widths and
+unselected failing expressions compiled. Axiom sets contain only the
+standard foundations, with `max_value` requiring fewer. Both clean build
+and 259 Lean checks passed. Root adds all public laws to `ProofAudit`.

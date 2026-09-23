@@ -33,3 +33,47 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4blo.Execution.run_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.Execution.run_eq
+
+/-- info: 'P4blo.ScalarLaws.addSat_overflow' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.addSat_overflow
+
+/-- info: 'P4blo.ScalarLaws.subSat_underflow' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.subSat_underflow
+
+/-- info: 'P4blo.ScalarLaws.shl_large' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.shl_large
+
+/-- info: 'P4blo.ScalarLaws.shr_large' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.shr_large
+
+/-- info: 'P4blo.ScalarLaws.max_value' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.max_value
+
+/-- info: 'P4blo.ScalarLaws.evaluate_addSat_overflow' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.evaluate_addSat_overflow
+
+/-- info: 'P4blo.ScalarLaws.evaluate_subSat_underflow' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.evaluate_subSat_underflow
+
+/-- info: 'P4blo.ScalarLaws.and_false' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.and_false
+
+/-- info: 'P4blo.ScalarLaws.or_true' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.or_true
+
+/-- info: 'P4blo.ScalarLaws.mux_true' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.mux_true
+
+/-- info: 'P4blo.ScalarLaws.mux_false' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ScalarLaws.mux_false
