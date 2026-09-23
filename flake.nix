@@ -36,6 +36,10 @@
             pkgs.opam
             pkgs.gmp
             pkgs.pkgconf
+            # OCaml's own build compresses marshalled data with zstd when it
+            # finds it. A host that has the library but not its header fails
+            # the compiler build, so pin both here rather than inherit them.
+            pkgs.zstd
           ];
         };
       });
