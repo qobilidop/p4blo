@@ -2,11 +2,15 @@
 # (later) the normative interpreter. Lean core only; no Mathlib.
 name = "p4blo"
 version = "0.1.0"
-defaultTargets = ["P4blo", "p4blo-lean"]
+defaultTargets = ["P4blo", "p4blo-lean", "ProofAudit"]
+moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "tests"
 
 [[lean_lib]]
 name = "P4blo"
+
+[[lean_lib]]
+name = "ProofAudit"
 
 # The pipe endpoint for differential testing: reads a JSON program, decodes
 # it, builds the index and prints a summary.

@@ -334,3 +334,9 @@ one that says so.
   Shrinking preserves types; invalid generated programs fail rather than
   being filtered away. Retain concrete failed programs under
   `.artifacts/drt/`, independent of Hypothesis's local example cache.
+- **Proof trust is a build gate.** Warnings are errors in the Lean package;
+  a default `ProofAudit` target checks advertised theorems' transitive axiom
+  sets against the reviewed standard foundations. This is stronger than
+  grepping for `sorry`: an imported custom axiom or native proof shortcut
+  also changes the audit. It checks proof dependencies, not whether a
+  theorem states the intended semantic property.

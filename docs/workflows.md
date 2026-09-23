@@ -38,6 +38,10 @@ to a peer that stops reading. Local tests may skip an absent binary unless
 The active assurance roadmap is [verification.md](verification.md). Keep
 proved properties, tested agreement and open obligations separate in every
 checkpoint. Passing differential tests is not a proof of equivalence.
+Lean treats warnings as errors. Its default `ProofAudit` target checks the
+transitive axiom sets of advertised theorems; `sorry`, custom axioms and
+native-evaluation escapes cannot silently replace those proofs. Update an
+audit expectation only after reviewing the changed trust boundary.
 
 `tests/test_drt_programs.py` changes expressions inside validated programs,
 not just packets for a fixed corpus. It includes systematic operator/width
