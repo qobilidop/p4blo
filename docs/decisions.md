@@ -211,6 +211,13 @@ one that says so.
   parameters, `Bits[Any]` where the type system has no width
   arithmetic, no source reading, goldens unchanged. Awaiting Bili's
   review of the open questions before code.
+- **eDSL v2 design accepted (Bili, 2026-09-22)** as recommended in
+  `docs/notes/edsl-v2-design.md`, all fifteen points. Build order: the
+  typed surface with the forwarder golden as its acceptance test, then
+  the corpus rewrite and the pyright diagnostics suite in parallel,
+  then a review. The v1 builder becomes `p4blo.edsl.core`, the
+  implementation layer and the documented dynamic API for generated
+  programs; goldens do not change.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

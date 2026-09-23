@@ -47,10 +47,11 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 
 Things a resuming agent should know are in motion or deliberately left.
 
-- **eDSL v2 (designed, awaiting review, 2026-09-22).** The proposal is
-  `notes/edsl-v2-design.md`, with its two surveys and two pyright
-  probes beside it. Its open questions are for Bili; no code has been
-  written. Corpus goldens must not change when the eDSL does.
+- **eDSL v2 (accepted, in implementation, 2026-09-22).** The design is
+  `notes/edsl-v2-design.md`. Order: typed surface (values, views,
+  blocks, tables, externs, program) gated by the forwarder golden;
+  then corpus rewrite of all ten programs and a pyright diagnostics
+  suite; then review. Goldens must not change.
 - **BMv2 as a second oracle** was never run; the design lists it as
   optional. It would independently check longest-prefix and `flood`,
   which P4-SpecTec cannot (see the oracle entries in `decisions.md`).
