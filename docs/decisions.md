@@ -603,3 +603,16 @@ one that says so.
   value boundaries. The actual consume-on-fault mutation is killed at runtime
   and saved/replayed. Generated flows remain a deliberate next step requiring
   independent expected state, not just a larger number of agreeing samples.
+- **Prove scalar command prefixes before extending aggregate paths.**
+  Structured assignment/if/tails use independent positional source updates,
+  lower without synthetic sequencing nodes and follow actual `Execution.step`.
+  Preserve exact values, all unrelated Run fields and names outside the
+  possible target set. Declaration permissions and no-action storage are
+  separate premises; constructive scope/frame witnesses establish nonvacuity.
+  Confidence: high for this finite fragment, not complete program validity.
+  Six adversarial edits distinguish proof rejection, compiled wrong source
+  intent and a retained actual Python-write mismatch. Next prove field
+  primitives, then factor the existing expression/command read/write seam
+  for typed aggregate paths rather than copying a second AST. Confidence:
+  medium in that API factoring; revisit if a forwarding body needs pervasive
+  transport annotations. See `notes/typed-fields-plan.md` for obligations.

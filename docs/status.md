@@ -6,7 +6,7 @@ checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
 Last updated: 2026-09-23, implementing the accepted Python/Lean architecture,
-verified scalar references and independently tested firewall state. The original prototype's
+verified scalar commands and independently tested firewall state. The original prototype's
 steps are complete. The stronger assurance work is in progress; its
 acceptance criteria and trust boundaries are in [verification.md](verification.md).
 
@@ -29,8 +29,18 @@ Firewall-boundary integration at `8b2ebdd`: **233 required DRT** and full
 **1423 passed / 5 precise expected discrepancies / no skips**, including
 formatting/lint/type/schema/workflow gates. Lean source/binaries are unchanged
 from the checked 357-test spec build. The BMv2 job now selects the new file.
-All four remote workflows passed for typed-frame checkpoint `0ad1b5b`;
+All four remote workflows passed for boundary checkpoint `602d349`;
 newer CI must be checked separately.
+Scalar-command integration at `83c31f2`: both Lean package gates/audits
+pass, including **369 spec checks**, 21 expression known answers/nine
+negative checks, nine command answers/four negative checks, real parameter
+writes and the continuation witness. Required DRT: **242 passed**. After
+generated-flow integration at `4206cb5`, required DRT is **246 passed** and
+the full gate is **1447 passed / 5 precise expected discrepancies / no skips**,
+including formatting/lint/type/schema/workflow checks, exit 0.
+Review: `notes/reviews/typed-statements.md`. The actual Python-write mutant's
+saved bundle is preserved in main's ignored `.artifacts/drt` and has tracked
+reconstruction instructions in `lean/ASSURANCE.md`.
 Earlier checkpoint evidence
 remains in the named review/assurance reports and git history, not as competing
 current instructions below.
@@ -42,7 +52,7 @@ current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 357 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, contextual scalar soundness/completeness, exact scalar eDSL lowering under frame agreement, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 369 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, contextual scalar soundness/completeness, exact scalar expression/command lowering under frame agreement, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -92,15 +102,19 @@ Things a resuming agent should know are in motion or deliberately left.
   active default toolchain: `notes/reviews/package-boundary.md`,
   `shared-verification-layout.md` and `lean-public-names.md`.
 
-- **Verified Lean authoring: typed scalar references integrated.**
+- **Verified Lean authoring: typed scalar commands integrated.**
   Closed bits/bools/addition/equality/mux and context-indexed variable reads
   share one AST and independent Fin/Bool source semantics. Exact lowering
   preserves the source value and the entire Run under actual action-first
   frame agreement. A constructive frame witness rules out vacuous premises.
   The scoped IR checker validates unique nonempty names/positive widths and
   has soundness and completeness for its scalar relation.
-  Declaration agreement is separate: no validated block initialization,
-  writable statement, complete program or verified codec claim follows.
+  Assignment/sequence/if use independent source-state updates and lower to
+  finite prefixes of actual execution. Exact source values, unrelated Run
+  fields and names outside the target set are preserved. Constructive
+  permission/declaration/frame witnesses rule out vacuous premises.
+  No validated global initialization, complete program or verified codec
+  claim follows; action layers remain excluded from writable bodies.
 
   Twenty-one independently expected authored expressions include eight
   variable cases; malformed contexts/references, missing/wrong-width frames
@@ -109,11 +123,15 @@ Things a resuming agent should know are in motion or deliberately left.
   and a replayed actual Python-read mismatch. Exact obligations, axioms,
   decisions, commands and exclusions: `lean/ASSURANCE.md`; independent
   review: `notes/reviews/typed-frames.md`.
-  Next: writable scalar assignment/sequence/if into existing
-  `Execution.step`/`Finishes.sound`, per `notes/typed-frames-plan.md`.
-  Then typed packet fields promptly, not every remaining arithmetic operator.
-  Implementation is active in isolated `work/typed-statements`, based on
-  committed `46893ff`; no unmerged statement proof is required to use main.
+  Commands add nine independent whole-state answers and four negative typing
+  cases, real out/inout writes and a faulting-continuation witness. Six
+  adversarial changes separate proof rejection, compiled wrong source intent
+  and an actual Python-write mismatch saved/replayed live and restored.
+  Review: `notes/reviews/typed-statements.md`; exact scope in `lean/ASSURANCE.md`.
+  Next: typed packet/metadata fields, not every remaining scalar operator.
+  `notes/typed-fields-plan.md` requires actual Index agreement and full
+  sibling/validity preservation. Primitive field proof work is active in
+  isolated `work/typed-fields`, based on committed `83c31f2`.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
@@ -163,7 +181,7 @@ Things a resuming agent should know are in motion or deliberately left.
   forged axioms and unexpected transitive axioms; theorem statements still
   require review. Matching tests never prove universal Python equivalence.
   Still open: whole-program validity/soundness and termination, aggregates,
-  assignment preservation, tables/nested calls/parser-fault generation,
+  general assignment preservation, tables/nested calls/parser-fault generation,
   further extern contracts and application properties.
 
 - **Interchange is tested, not verified.**
@@ -174,6 +192,11 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/reviews/zero-encoding.md`, `decimal-wire-defaults.md`.
   Versioned representability, codec proofs, resource limits, duplicate input
   keys and unknown-field policy remain open.
+  A read-only audit reproduced duplicate reply keys erasing a packet and
+  replay envelope versions accepting booleans/floats. Narrow harness
+  hardening is queued in isolated `work/wire-harness`, based on `602d349`;
+  preserve intentionally invalid IR replays rather than applying semantic
+  validation at the artifact boundary. This is distinct from a codec proof.
 
 - **XDP and later examples: source/environment preflight only.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter
@@ -187,8 +210,11 @@ Things a resuming agent should know are in motion or deliberately left.
   based on `0ad1b5b`. The pinned object and open-only native metadata inspector
   build and run without added capabilities; the full offline gate/review is
   not yet complete and no kernel execution is claimed. Docker VM disk capacity
-  blocked an additional build dependency; unrelated images/volumes are not
-  authorized cleanup targets. The main worktree does not depend on this pending
+  blocked an additional build dependency. Only exact own rebuildable cache
+  entries and the own temporary image were removed; the image has a verified
+  host recovery export. The isolated `docs/notes/xdp-build-progress.md`
+  records recovery/hash, tested versus untested files and next steps.
+  Unrelated images/volumes are not authorized cleanup targets. The main worktree does not depend on this pending
   infrastructure; Python/Lean proof work continues independently.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The

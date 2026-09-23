@@ -32,6 +32,8 @@ These are distinct obligations, not interchangeable confidence scores.
 | `ScalarTyping.checkIn_sound`, `checkIn_complete` | Contextual scalar checking is sound under actual typed-frame agreement and complete for its relation under a well-formed context | Aggregates, statements, whole-program validation, Python |
 | `P4blo.Scalar.lower_typed_in`, `evaluate_lower_in` | Typed source expressions lower to contextually typed IR under well-formedness, and evaluate to the exact independent source value with the whole Run unchanged under exact frame agreement | Intended surface elaboration, arbitrary program initialization, writable statements, serialization |
 | `Scalar.Env.frame_matches` | Every well-formed source context/environment has a constructively related runtime frame | Declaration agreement or validity of an arbitrary block/program |
+| `Scalar.Cmd.steps`, `execute_correct` | Finite scalar command bodies follow the actual machine, produce exact independent source values, preserve unrelated state and leave arbitrary continuations unexecuted under explicit block-frame premises | Aggregate paths, calls, global initialization/validity, Python equivalence |
+| `Scalar.Modes.scope_agrees`, `frame_matches` | Constructive declarations and related frames exist for well-formed source contexts and permissions | Validity of an arbitrary program or a general `Frame.forBlock` theorem |
 | `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
@@ -104,17 +106,17 @@ consolidated without removing that independence.
 ## Next concrete extensions
 
 The current checkpoint has contextual scalar checking, exact typed Lean
-expression lowering with a constructive frame witness, a proof-visible
-statement machine, fixed stateful claim checker, typed scalar/stateful
+expression and scalar-command lowering with constructive frame/declaration
+witnesses, a proof-visible statement machine, fixed stateful claim checker, typed scalar/stateful
 campaigns and bounded original-firewall full-state observations.
 Resume with these bounded tasks rather than claiming the roadmap complete:
 
-1. Add writable scalar assignment/sequence/if under explicit declaration,
-   permission and exact environment/frame relations. Prove finite traces
-   into the existing step machine, exact source-state correspondence and
-   noninterference. Then add typed packet field paths toward useful examples;
-   do not delay them for every scalar operator. The scoped plan is
-   [notes/typed-frames-plan.md](notes/typed-frames-plan.md).
+1. Add typed packet/metadata field paths toward useful examples, preserving
+   sibling values and header validity under actual Index agreement. Reuse
+   the proved scalar command sequencing and expression implementation;
+   do not delay fields for every scalar operator. The scoped next plan is
+   [notes/typed-fields-plan.md](notes/typed-fields-plan.md); the prior scalar
+   plan is implemented and reviewed in `notes/reviews/typed-statements.md`.
 2. Generate small validated action/sub-block calls and changing host table
    snapshots across packet sequences. Challenge copy-in/copyback ordering,
    aliasing and fault paths with independent mutations and retained replays.
