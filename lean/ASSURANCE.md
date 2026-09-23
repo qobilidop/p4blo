@@ -4,6 +4,12 @@ The historical closed-scalar increment below is followed by contextual and
 command increments. Their expanded claims supersede older "next" boundaries
 without rewriting the earlier experiment records.
 
+The independent forwarding-body policy increment is recorded in
+[`docs/notes/forward-policy.md`](../docs/notes/forward-policy.md): complete
+state observation/inverse laws, an arbitrary-store intended-policy theorem,
+actual execution, independent named-state anchors and three isolated faults.
+It does not extend the body into a complete router or certify a checksum.
+
 Implementation increment: 2026-09-23. This file records the exact boundary
 and experiments for the first user-facing Lean eDSL, independently of the
 larger whole-program roadmap.
