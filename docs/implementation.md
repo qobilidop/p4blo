@@ -92,9 +92,13 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   an exact operational proof: restore the captured caller, copy three writable
   roots and preserve the current callee-after non-frame state. Independent
   complete-state, ordered-write and branch-complete isolation tests accompany
-  it. Composing those boundaries into a separately named observer-free whole
-  control call is active under `notes/guarded-call-plan.md`; the existing
-  observer statements and complete applications remain separate obligations.
+  it. Those boundaries now compose into a separately named observer-free whole
+  control call with actual semantic completion, full source/shared state and
+  original caller preservation, under `notes/guarded-call-plan.md`. The
+  existing observer statements and complete applications remain separate
+  obligations. The next real application is an exact-golden Lean forwarder
+  port with a bounded invalid-IPv4 control property, following
+  `notes/lean-forwarder-next.md`; raw assembly seams are explicitly unverified.
 
 ## Application milestones
 

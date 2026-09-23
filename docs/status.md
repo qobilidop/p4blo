@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `8f62b31`, including total Expr/LValue codec proofs,
+Combined local integration at `9e53f4b`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -54,9 +54,13 @@ reviewed candidate. The independently reviewed statement-codec baseline adds
 four spec checks and 107 Python checks, without changing the production
 decoder. All 79 captured old statements replay with exact byte transcripts
 and independent source-matched answers. The separate plan/probe does not
-claim that the new statement decoder/proofs have landed yet.
-Required real-Lean DRT: **757 passed**, no skips. Full gate:
-**2290 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+claim that the new statement decoder/proofs have landed yet. The separately
+named observer-free whole control call adds nine audited roots, 192 native
+profiles and 91 Python checks, including actual normal completion, full state,
+all incoming/outgoing mutable copies and independent ordered-write controls.
+Its exporter is byte-identical to the reviewed candidate.
+Required real-Lean DRT: **822 passed**, no skips. Full gate:
+**2381 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -68,9 +72,10 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `header-validity-expressions.md`, `initial-source-frames.md` and
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
-`plain-call-return.md`, `guarded-call-prefix.md` and `stmt-codec-baseline.md`.
+`plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
+`guarded-control-call.md`.
 
-All five remote workflows pass for `7ff0b7a`; newer CI must be checked
+All five remote workflows pass for `54cb697`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -355,12 +360,26 @@ Things a resuming agent should know are in motion or deliberately left.
   All integrated gates and retained replays pass; exact scope and evidence:
   `notes/plain-call-return.md` and its matching review. With the guarded prefix
   landed, follow committed `notes/guarded-call-plan.md` for a separately named
-  observer-free whole control call. That work is now active in
-  `work/guarded-control-call`, based on committed `b115c32`; its core compiles
-  and initial structural review is clear, but tests and adversarial acceptance
-  remain pending. It keeps the observer parameter as
+  observer-free whole control call. That result (`1a0bf48`/`e8a584c`) is now
+  independently reviewed and integrated at `9e53f4b`: actual empty-list pop
+  and normal return complete `callBlock`, with exact independent source-policy
+  results and original caller/shared-state preservation. Nine audits, 192
+  native cases and 91 Python checks pass. Complete values alone cannot detect
+  commuting writes or skipped same-value observer copyback; explicit weak/
+  strong ordered-write controls demonstrate that gap. A separate observed
+  packet wrapper exposes a genuine live/restored copyback mismatch on the
+  same retained guarded input. Evidence/review: `notes/guarded-control-call.md`
+  and its matching review. It keeps the observer parameter as
   pass-through but does not execute the seventeen observation assignments or
   claim parsing, lookup, checksum, architecture fate or full packet execution.
+  Next actual application work is active in `work/lean-forwarder`, based on
+  committed `7dbb4f0`, following `notes/lean-forwarder-next.md`. Preserve the
+  existing forwarder golden, including TTL wrap and old-destination MAC
+  semantics; it is not the guarded policy. Build an independently compared
+  complete Lean program with explicitly unverified assembly seams, direct
+  public API execution, existing vectors and a bounded invalid-IPv4 ingress
+  unchanged theorem. Actual action-frame/positive-path proofs remain later
+  obligations, not instances of the no-action BlockFrame command law.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
   at `45fe743`: the same command induction now retains the exact pending
   suffix/continuation and full source/noninterference facts. Old whole-body
