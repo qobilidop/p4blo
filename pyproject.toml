@@ -30,7 +30,12 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["python/p4blo/v0", ".claude", "docs/notes"]  # generated code; worktrees; notes with code samples
+extend-exclude = [
+    "python/p4blo/v0",  # generated code
+    ".claude",  # worktrees
+    "docs/notes",  # notes with code samples
+    "tests/pyright",  # pyright fixtures, some of which must fail
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -40,6 +45,6 @@ known-first-party = ["p4blo"]
 
 [tool.pyright]
 include = ["python", "tests"]
-exclude = ["python/p4blo/v0"]
+exclude = ["python/p4blo/v0", "tests/pyright"]  # tests/test_pyright.py runs the fixtures itself
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
