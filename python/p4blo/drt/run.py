@@ -354,10 +354,18 @@ class LeanRunner:
             self.close()
             raise ProtocolError(f"Lean request timed out after {self.timeout:g}s") from None
         if isinstance(line, Exception):
-            raise ProtocolError(f"the Lean process went away: {self._death()}") from line
+            reason = self._death()
+            self.close()
+            raise ProtocolError(f"the Lean process went away: {reason}") from line
         if not line:
-            raise ProtocolError(f"no reply: {self._death()}")
-        return parse_reply(line.rstrip("\n"))
+            reason = self._death()
+            self.close()
+            raise ProtocolError(f"no reply: {reason}")
+        try:
+            return parse_reply(line.rstrip("\n"))
+        except ProtocolError:
+            self.close()
+            raise
 
     def _death(self) -> str:
         """Why the process stopped, from its exit status and stderr."""
