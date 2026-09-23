@@ -1,6 +1,30 @@
 import P4bloIR
 import P4bloIR.ScalarStatements
 
+/-- info: 'P4bloIR.FieldLaws.Declared.fields_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.FieldLaws.Declared.fields_eq
+
+/-- info: 'P4bloIR.FieldLaws.Declared.position' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.FieldLaws.Declared.position
+
+/-- info: 'P4bloIR.FieldLaws.fieldOf_pack' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.FieldLaws.fieldOf_pack
+
+/-- info: 'P4bloIR.FieldLaws.setField_pack' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.FieldLaws.setField_pack
+
+/-- info: 'P4bloIR.FieldLaws.read_declared' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.FieldLaws.read_declared
+
+/-- info: 'P4bloIR.FieldLaws.update_declared' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.FieldLaws.update_declared
+
 /-- info: 'P4bloIR.ScalarStatements.writeVar_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.ScalarStatements.writeVar_block
