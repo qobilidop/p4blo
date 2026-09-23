@@ -80,6 +80,8 @@ from typing import (
 from p4blo.edsl.core.blocks import (
     ACCEPT,
     REJECT,
+    ActionBody,
+    CallsActions,
     ControlBody,
     DeparserBody,
     DontCare,
@@ -994,9 +996,16 @@ class Control[H: Struct, M: Struct](Block):
             return CoreControl(build.core, cls.__ir_name__, cls._core_params(build))
 
     def _run(self) -> None:
+        """Actions, then tables, then `apply`, whatever the class-body order:
+        that is the order the IR wants, and a table's `default=` and entries
+        need the actions declared. Every action is declared before any action
+        body runs, so one action may call another whichever comes first in
+        the class. A table must still be *written* below the actions it
+        lists, since the class body names them as plain Python values."""
         cls = type(self)
         core = self._core
         assert isinstance(core, CoreControl)
+        bodies: list[tuple[Action[...], ActionBody, list[Value]]] = []
         for name, act in cls.__actions__.items():
             params = act._params()  # pyright: ignore[reportPrivateUsage]
             kinds = {p: kind_of(t) for p, t in params}
@@ -1004,7 +1013,8 @@ class Control[H: Struct, M: Struct](Block):
                 self._build.pb_type(t)
             with provenance():
                 body = core.action(name, **{p: k.pb_type for p, k in kinds.items()})
-            values = [kinds[p].at(body.var(p), None) for p, _ in params]
+            bodies.append((act, body, [kinds[p].at(body.var(p), None) for p, _ in params]))
+        for act, body, values in bodies:
             self._stmts = body
             with provenance():
                 act.func(self, *values)
@@ -1067,8 +1077,11 @@ class Control[H: Struct, M: Struct](Block):
 
     def _record_action_call(self, call: ActionCall) -> None:
         stmts = self._record()
-        if not isinstance(stmts, ControlBody):
-            raise EdslError(f"an action is called from apply(), not from {call.action.name}")
+        if not isinstance(stmts, CallsActions):
+            raise EdslError(
+                f"an action is called from apply() or from another action, "
+                f"not from {call.action.name}"
+            )
         name, *args = self._action_spec(call, f"call of {call.action.name}")
         with provenance():
             stmts.call_action(name, *args)

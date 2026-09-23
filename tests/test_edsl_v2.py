@@ -12,6 +12,7 @@ from enum import IntEnum
 import pytest
 from google.protobuf import text_format
 
+from p4blo import validator
 from p4blo.edsl import (
     Bits,
     Bool,
@@ -405,6 +406,34 @@ def test_actions_in_bodies_and_as_literals() -> None:
         ' args { bits { width: 9 value: "2" } }',
         pb.ActionCall(),
     )
+
+
+def test_an_action_may_call_another_action() -> None:
+    """`call_action` in an action body is IR the validator accepts, and the
+    eDSL used to be the only thing that could not author it. The callee may
+    come later in the class body: every action is declared before any body
+    runs."""
+
+    class C(Control[headers, metadata]):
+        @action
+        def outer(self) -> None:
+            self.inner(bit8(7))
+
+        @action
+        def inner(self, value: bit8) -> None:
+            self.assign(self.hdr.h.f, value)
+
+        def apply(self) -> None:
+            self.outer()
+
+    program = build(control=C)
+    control = program.blocks[1]
+    assert control.actions[0].body[0] == text_format.Parse(
+        'call_action { action: "inner"'
+        ' args { expr { literal { bits { width: 8 value: "7" } } } } }',
+        pb.Stmt(),
+    )
+    assert validator.validate(program) == []
 
 
 def test_tables_with_typed_entries_over_two_keys() -> None:

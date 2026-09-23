@@ -471,8 +471,29 @@ class Stmts:
         self._emit(pb.Stmt(pop=pb.Pop(stack=lval, count=count)))
 
 
-class ActionBody(Stmts):
-    """An action's body; its params are attributes (`a.port`)."""
+class CallsActions(Stmts):
+    """A statement list that may call an action of the enclosing control:
+    a control's body and an action's own body alike, which is what the IR
+    and the validator allow (the validator reports a cycle among a
+    control's actions as CALL_CYCLE)."""
+
+    def call_action(self, action: str | ActionBody, *args: Operand) -> None:
+        """Call an action of this control directly, with its action data."""
+        control = self.block
+        if not isinstance(control, Control):
+            raise EdslError("call_action belongs in a control")
+        a = control.action_named(action.name if isinstance(action, ActionBody) else action)
+        stmt = pb.Stmt(
+            call_action=pb.CallAction(
+                action=a.name, args=self._args(a.params, args, f"action {a.name}")
+            )
+        )
+        self._emit(stmt)
+
+
+class ActionBody(CallsActions):
+    """An action's body; its params are attributes (`a.port`). It may call
+    another of the control's actions."""
 
     def __init__(self, block: Control, name: str, params: Sequence[pb.Param]) -> None:
         self.name = name
@@ -494,8 +515,8 @@ class ActionBody(Stmts):
         return pb.Action(name=self.name, params=self.params, body=self.stmts)
 
 
-class ControlBody(Stmts):
-    """A control's body: adds table application and direct action calls."""
+class ControlBody(CallsActions):
+    """A control's body: adds table application to the action calls."""
 
     def apply(self, table: Table | str, hit: Expr | None = None) -> None:
         """Apply a table; `hit`, a bool lvalue, receives whether an entry matched."""
@@ -508,19 +529,6 @@ class ControlBody(Stmts):
             if hit.type != boolean:
                 raise EdslError(f"hit must be a bool lvalue, got {type_str(hit.type)}")
             stmt.apply.hit.CopyFrom(hit.lval)
-        self._emit(stmt)
-
-    def call_action(self, action: str | ActionBody, *args: Operand) -> None:
-        """Call an action of this control directly, with its action data."""
-        control = self.block
-        if not isinstance(control, Control):
-            raise EdslError("call_action belongs in a control")
-        a = control.action_named(action.name if isinstance(action, ActionBody) else action)
-        stmt = pb.Stmt(
-            call_action=pb.CallAction(
-                action=a.name, args=self._args(a.params, args, f"action {a.name}")
-            )
-        )
         self._emit(stmt)
 
 
@@ -922,6 +930,7 @@ __all__ = [
     "REJECT",
     "ActionBody",
     "Block",
+    "CallsActions",
     "Control",
     "ControlBody",
     "Deparser",
