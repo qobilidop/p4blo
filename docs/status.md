@@ -12,7 +12,7 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | Claim | Experiment | Status |
 |---|---|---|
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
-| 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec (15 files, 10 programs); BMv2 optional second oracle not run |
+| 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
 | 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | green: Lean interpreter (181 checks); 18,000 random cases over nine programs with zero divergences, 200 per program in CI; theorem `P4blo.extract_emit` proved with core Lean only |
 
@@ -52,9 +52,10 @@ Things a resuming agent should know are in motion or deliberately left.
   programs are authored in v2 with byte-identical goldens and pyright
   clean sources; `tests/test_pyright.py` guards the static rules. An
   independent review is in flight; its findings land like the others.
-- **BMv2 as a second oracle (in progress).** Bili's p4lang-builds images
-  make it cheap; an agent is building `oracle/bmv2/`. It independently
-  checks longest-prefix and `flood`, which P4-SpecTec cannot.
+- **BMv2 as a second oracle: done** (`oracle/bmv2/`, its own CI job). It
+  decides longest prefix, const-entry and ternary priorities without the
+  translation P4-SpecTec needs. It cannot see `flood`, which no corpus
+  program declares; a program that does would be the way to test it.
 - **Playground** (Pyodide/marimo) was removed from the plan on
   2026-09-22; the pure-Python and Python 3.13 constraints keep it
   possible.
