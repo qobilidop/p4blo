@@ -12,32 +12,37 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `0dc7b08`, including named field paths, independent
-forwarding-policy proofs, concrete field commands, actual
-KeyValue codec laws and call-copy conformance: both Lean package gates and
-default audits pass, with **444 spec checks**, all existing scalar/context/
+Combined integration at `e2f2849` (plans through `6ff0449`), including total
+Expr codec proofs, readable command lists, named field paths, independent
+forwarding-policy proofs and concrete field commands: both Lean package gates
+and default audits pass, with **451 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
 Named paths add 17 exact diagnostics and 11 rejected constructions; the
 arbitrary-store policy adds seven independent policy/source/runtime answers.
-Required real-Lean DRT: **405 passed**, no skips. Full gate:
-**1737 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Command lists retain exact previous ASTs/exports and independent order checks;
+codec tests retain independent constructor observations and malformed errors.
+Required real-Lean DRT: **469 passed**, no skips. Full gate:
+**1847 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
-required native XDP CI passes at `5b93ad1`, including lifecycle regressions.
+required native XDP CI passes at `73d0ee5`, including lifecycle regressions.
 Latest reviews under `notes/reviews/`: `field-permissions.md`,
 `command-seam.md`, `field-commands.md`, `keyvalue-codec.md` and `call-copy.md`.
-The latest authoring reviews are `named-paths.md` and `forward-policy.md`.
+Latest reviews also include `named-paths.md`, `forward-policy.md`,
+`command-blocks.md` and `expr-codec.md`.
 
-All five remote workflows pass for `5b93ad1`; newer CI must be checked
-separately. Fourteen retained execution-fault bundles and nine raw leaf-codec
+All five remote workflows pass for `73d0ee5`; newer CI must be checked
+separately. Fourteen retained execution-fault bundles and fourteen raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-The previous twelve execution bundles replay successfully on `ba274f3`
-(nineteen requests); both new authored field-write bundles replay on this
-integration (two more requests). All nine raw codec inputs replay after
-fault restoration at the previous checked checkpoint.
+All fourteen execution bundles replay successfully on this integration
+(twenty-one requests), as do all fourteen raw codec inputs. All five new Expr
+inputs uniquely match tracked fixtures, and all 59 source-matched pre-refactor
+transcripts retain byte-identical stdout/stderr and exit status. Artifact
+command metadata is never executed. Reconstruction recipes survive losing
+local ignored artifacts and temporary logs.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -48,7 +53,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 444 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, aggregate path correspondence, representable leaf codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 451 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, aggregate path correspondence, representable leaf/Expr codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -187,10 +192,25 @@ Things a resuming agent should know are in motion or deliberately left.
   relabeling still passes those proofs but fails independent mapping anchors.
   This does not establish parsing, checksum maintenance or architecture fate.
   Scope/review: `notes/forward-policy.md`, `notes/reviews/forward-policy.md`.
-  Next: readable list sequencing in isolated `work/command-blocks`, preserving
-  exact previous ASTs and exported bytes. The reviewed design is
-  `notes/authoring-ergonomics-plan.md`; this active increment is not yet a
-  checked main claim.
+  Readable list sequencing `cf78144` is integrated at `5d0b74f`, preserving
+  exact previous ASTs and exported bytes. Independent review is clear;
+  both integrated Lean gates (including actual policy normalization/audit)
+  and 23 focused authored-command checks pass. The combined full/required
+  gates also pass at the latest checkpoint above.
+  Scope: `notes/command-blocks.md`, `notes/reviews/command-blocks.md`.
+  The reviewed header-validity plan/probe is committed at `cdb7a3c`:
+  `notes/header-validity-plan.md`, `notes/reviews/header-validity-plan.md`.
+  Primitive checkpoint 1 is active in isolated `work/validity-reads`, based
+  on that committed interface: constrained header-only paths, concrete exact
+  evaluation and authoritative scoped typing. Preserve scalar write laws;
+  the later unified read adapter and separately named guarded policy are not
+  implemented. Do not silently change the existing invalid-header contract.
+  An independent initialization review recommends the next premise-discharge
+  bridge in `notes/initialization-bridge-plan.md` (committed `6ff0449`).
+  Independent structural source zero and actual fuel-bounded Value.zero
+  correspondence are active in isolated `work/source-zero`. Actual Frame
+  initialization, complete declaration coverage and call entry/copyback are
+  later separate obligations, not established by the current body theorem.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
@@ -269,7 +289,7 @@ Things a resuming agent should know are in motion or deliberately left.
   cases; no call proof follows. Scope and review: `notes/call-copy.md`,
   `notes/reviews/call-copy.md`.
 
-- **Interchange has scoped leaf proofs, not a verified program codec.**
+- **Interchange has scoped leaf/Expr proofs, not a verified program codec.**
   Real encoder/decoder defects were fixed without adapter normalization:
   zero literals now emit decimal `"0"`; missing/null decimal string fields
   no longer become numeric zero. Forty-two wire cases include persistent
@@ -302,15 +322,22 @@ Things a resuming agent should know are in motion or deliberately left.
   all replay restored. The focused codec suite now has 170 checks and native
   codec driver 52. Review: `notes/reviews/keyvalue-codec.md`; exact source
   recipes and proof boundary: `notes/keyvalue-codec.md`.
-  The independently reviewed Expr-only recursion plan is committed at
-  `939e762`: `notes/codec-recursion-plan.md` and its two isolated probes.
-  Actual finite-tree/default descent bounds kernel-check; the fixed-point
-  negative probe fails as documented. Production decoding is unchanged in
-  this checkpoint. Implementation is active in `work/codec-recursion`,
-  based on `ba274f3`: preserve defaults and exact error order, prove helper
-  erasure, then replace the actual Expr decoder with well-founded recursion.
-  No parallel proof-only decoder or fuel cutoff. LValue/Stmt, text parsing,
-  semantic-version policy and general resource limits remain separate.
+  Expr implementation `cb68f91`/`2226ebe`/`858f82a` is integrated at `e2f2849`.
+  The actual decoder uses well-founded recursion over finite JSON, with
+  arbitrary-input helper erasure/unfolding laws and a universal representable
+  Expr roundtrip. No parallel proof-only decoder or fuel cutoff is involved;
+  wire representability deliberately includes semantically invalid syntax.
+  Fifty-nine pre-refactor transcripts preserve exact output/errors/status.
+  Paired index remapping and an actual shared NOT/NEGATE name-table fault
+  pass roundtrip proofs, but independent decoded-constructor answers reject
+  them. The shared operator fault initially survived all tests, prompting
+  an observer fix and native anchor. Five full raw mismatches replay restored;
+  subprocess failures retain inputs before failing. Review is clear:
+  `notes/reviews/expr-codec.md`; recipes/scope: `notes/expr-codec.md`.
+  Next: actual LValue totality and LValue/Arg roundtrips in isolated
+  `work/lvalue-codec`, based on committed `cdb7a3c`. Statement arrays/mutual
+  recursion, text parsing, semantic-version policy and general runtime
+  resource limits remain separate obligations.
 
 - **XDP and later examples: compile-only profile integrated.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter

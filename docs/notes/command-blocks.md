@@ -67,8 +67,11 @@ list for the old source spelling. The equivalent new spelling requires adding
 `Cmd.block` and `Scalar.CmdWith.block` to that `dsimp` list, without changing
 its statement, policy or subsequent argument. Typechecking a copy of the
 actual theorem against the candidate example with exactly those additions
-passes. The integrator must apply this proof-normalization update and rerun
-the actual default audit; a standalone compatibility probe is not that gate.
+passes. Integration `5d0b74f` applies exactly this proof-normalization update;
+both actual Lean package gates, the real policy/default audits and all user
+tests pass. The integrated focused authored-command suite passes 23 tests.
+The scratch probe was removed and its absence checked. Current combined
+Python/schema/DRT checkpoint counts remain in `docs/status.md`.
 
 Confidence is high in order/meaning and byte compatibility, medium in whether
 ordinary list syntax is sufficiently ergonomic for larger programs. Revisit

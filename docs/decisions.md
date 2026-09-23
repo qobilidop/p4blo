@@ -750,3 +750,27 @@ one that says so.
   and native known answers; those reject the coordinated relabeling.
   Confidence: high for this demonstrated shared-model fault, not universal
   observer adequacy. Revisit every new application view for the same trap.
+- **Make command lists a transparent composition helper, not another AST.**
+  A right fold over existing sequence nodes preserves source order, while
+  the independent denotation law uses a left fold over source states. Keep
+  exact old AST/export checks and order-sensitive branch/shared-tail answers.
+  Confidence: high in equivalence, medium in larger-program ergonomics.
+  Revisit notation only when a real application still needs it; do not imply
+  runtime bindings with surface syntax the source language cannot express.
+- **Observe operator constructors independently of their wire names.**
+  A paired NOT/NEGATE name-table swap passed actual codec round-trip proofs
+  and the first conformance observer, which reused that production table.
+  Exhaustive independent constructor cases and a native known answer kill
+  it without changing the theorem's scoped claim. Confidence: high for this
+  demonstrated fault, not a guarantee against all shared-model mistakes.
+  Apply the same independence review to each added codec constructor; retain
+  exact process-failure inputs and pre-refactor transcripts as separate evidence.
+- **Keep header-validity reads separate from scalar writable places.**
+  A constrained HeaderPath/HeaderRef can observe stored validity but cannot
+  supply an lvalue or writable Boolean scalar Ref. This preserves the current
+  scalar-write validity laws. Prove concrete primitive evaluation/typing first,
+  then use the existing generic read-family seam and add a separately named
+  validity-guarded policy. Confidence: high in the proof boundary, medium in
+  the small duplicated navigation and coercion ergonomics. Revisit a generic
+  endpoint path when a second aggregate operation justifies its broader
+  refactor. Reviewed scope/probe: `notes/header-validity-plan.md`.

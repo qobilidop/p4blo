@@ -37,13 +37,20 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
 - [ ] Provide an ergonomic Lean surface and interpreter API using the reference
   execution functions. Test diagnostics and notation, including rejection cases.
   Typed named scalar paths now resolve with spelling/permission soundness and
-  independent diagnostics; list sequencing is the next small surface increment.
+  independent diagnostics. List sequencing now preserves the previous ASTs
+  and exports, with independent order/branch answers and default-audited laws.
+  Read-only header-validity primitives are the next small semantic increment;
+  a unified read adapter and separately specified guarded policy follow.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.
-  Actual decimal/uint32 and representable Literal/Ty/KeyValue JSON-value round trips
-  are proved and default-audited; independent protobuf/native vectors catch
-  paired wrong-wire mappings. Recursive codecs and version policy remain open.
+  Actual decimal/uint32 and representable Literal/Ty/KeyValue/Expr JSON-value
+  round trips are proved and default-audited. The actual Expr decoder uses
+  terminating recursion; helper erasure and exact malformed-input answers
+  preserve its previous behavior. Independent constructor observations catch
+  paired wrong-wire mappings, including a shared operator-name fault that
+  originally survived the tests. LValue/Arg proofs are next; statement/program
+  codecs, text parsing, resource limits and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
   Contextual scalar checking now has both proofs and rejects malformed
