@@ -672,3 +672,26 @@ one that says so.
   stronger guarantee becomes necessary. Never use global pruning as cleanup.
   Independent reproduction, review and post-fix evidence are retained in
   `notes/reviews/xdp-cleanup.md`; this changes no BPF or semantic claim.
+- **Share scalar operators through typed read references.** `ExprWith` owns
+  source operators, their independent denotation and lowering once. Scalar
+  bindings and aggregate paths supply only reads; advertised field theorems
+  discharge leaf laws through concrete Index/frame correspondence. Confidence:
+  high in proof scope, medium in ergonomic factoring. Retain old scalar APIs
+  and revisit against writable forwarding bodies before adding notation.
+  Observe state after evaluation: pre-expression snapshots can miss a read
+  side effect even when all snapshots and the result are individually right.
+- **Prove actual representable leaf codecs before recursive transport.**
+  Bound only protobuf uint32 fields, preserving semantically invalid leaf
+  syntax for testing. Universal JSON-value round trips use production code
+  and default axiom audits; independent protobuf answers additionally reject
+  paired wrong encoder/decoder mappings. Confidence: high in this boundary.
+  Use type-sensitive JSON comparisons because Python equates false with zero.
+  KeyValue leaves follow; text parsing, recursive decoder termination and
+  semantic-version/unknown-field policy require separate decisions.
+- **Challenge mutable aggregate copies with post-write full observations.**
+  Bounded header/record assignments expose source, target and unrelated stored
+  fields and validity after writes, even for invalid headers. Keep independently
+  computed expected bytes alongside real Lean agreement and replayable live
+  copy-alias mutants. Confidence: high for selected aliasing faults, medium
+  for generated shape diversity. Extend to stack and call/copyback order when
+  those become verified authoring features; do not infer them from this profile.

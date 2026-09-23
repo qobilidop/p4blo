@@ -12,27 +12,23 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `4ce3798`, including aggregate paths, strict harness
-envelopes and compile-only XDP: both Lean package gates/audits pass, with **392
-spec checks**, 21 expression answers/nine negative checks, nine command
-answers/four negative checks, real parameter writes and the continuation
-witness, aggregate source/path answers, nested runtime writes and six
-negative shape checks. Required real-Lean DRT: **246 passed**. Full gate:
-**1500 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Combined integration at `8c09a48`, including typed field expressions, actual
+leaf codec laws and aggregate-copy conformance: both Lean package gates and
+default audits pass, with **428 spec checks**, all existing scalar/context/
+command/path answers and negative checks, seven field-expression answers and
+six additional kernel rejection examples. Required real-Lean DRT:
+**321 passed**, no skips. Full gate:
+**1629 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
-required native CI `35900039992` passes all ten XDP checks without skips.
-Reviews under `notes/reviews/`: `aggregate-paths.md`, `wire-harness.md`,
-`xdp-build.md`, plus the earlier typed/field/firewall checkpoints.
+required native XDP CI passes at `7a58ef2`, including lifecycle regressions.
+Latest reviews under `notes/reviews/`: `field-expressions.md`,
+`codec-leaves.md`, `aggregate-copy.md` and `xdp-cleanup.md`.
 
-At checkpoint `8de329b`, remote Python/schema, Lean, P4-SpecTec and XDP
-compile workflows pass; BMv2 remains in progress at this checkpoint.
-The reviewed XDP lifecycle increment adds seven pure regression cases;
-its integrated focused gate passes 16 checks with one explicit missing-image
-skip. Live restricted normal/timeout probes verify exact container removal;
-see `notes/reviews/xdp-cleanup.md`. The full count above precedes this increment.
-The five retained semantic-fault bundles have tracked
-reconstruction recipes and ignored concrete copies under `.artifacts/drt`.
+All five remote workflows pass for `7a58ef2`; newer CI must be checked
+separately. Ten retained execution-fault bundles and three raw leaf-codec
+artifacts have tracked reconstruction recipes and byte-checked ignored
+copies under `.artifacts/drt` and `.artifacts/codec` respectively.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -43,7 +39,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 392 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, contextual scalar soundness/completeness, exact scalar expression/command lowering, field primitive reconstruction, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 428 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and scalar command lowering, aggregate path correspondence, representable leaf codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -132,8 +128,19 @@ Things a resuming agent should know are in motion or deliberately left.
   positive witnesses and impossible conflicting-layout examples expose that
   boundary. No root permission or integrated expression/command proof is
   claimed yet. Review: `notes/reviews/aggregate-paths.md`.
-  One shared expression read seam and scoped authoritative field typing are
-  next in isolated `work/typed-fields`; command write factoring follows.
+  `a271370`/`a3f3537` are integrated at `d8e2341`: one shared `ExprWith`
+  operator AST now serves scalar references and aggregate paths. Concrete
+  field typing uses actual declarations/Index, and evaluation returns the
+  exact independent source value with the entire Run unchanged. Seven
+  authored field expressions and six kernel rejection examples complement
+  old scalar fixtures. Review `notes/reviews/field-expressions.md` found and
+  fixed pre-expression snapshots: a real read-side effect survived the old
+  observer but fails after evaluation is observed first. Three actual Python
+  read/setter faults have retained live/restored replay evidence; proof and
+  compiled surface faults are separately recorded in `lean/ASSURANCE.md`.
+  Next: command write factoring and actual root permissions, active in
+  isolated `work/field-commands`, based on committed `d8e2341`, following
+  `notes/field-commands-plan.md` (committed `480eef4`).
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
@@ -194,7 +201,20 @@ Things a resuming agent should know are in motion or deliberately left.
   general assignment preservation, tables/nested calls/parser-fault generation,
   further extern contracts and application properties.
 
-- **Interchange is tested, not verified.**
+  Local aggregate-copy profile `30a23b0` is integrated: sixteen header/struct,
+  validity and width boundaries plus forty shrinking examples observe all
+  source/target/unrelated stored fields after writes. Actual Python copy
+  alias faults fail and replay live, then pass restored; independently
+  expected bytes remain a separate gate. It does not establish stack or call
+  copyback correctness. Scope, recipes and review: `notes/aggregate-copy.md`,
+  `notes/reviews/aggregate-copy.md`.
+  A bounded action/sub-control copy-in/out profile is now being checked in
+  isolated `work/call-copy` from `480eef4`: permitted overlapping input versus
+  inout snapshots, out-zero initialization and complete post-call observations.
+  Overlapping writable arguments and action/local name collisions are already
+  validator errors, not valid generation cases; no call proof is claimed.
+
+- **Interchange has scoped leaf proofs, not a verified program codec.**
   Real encoder/decoder defects were fixed without adapter normalization:
   zero literals now emit decimal `"0"`; missing/null decimal string fields
   no longer become numeric zero. Forty-two wire cases include persistent
@@ -210,9 +230,17 @@ Things a resuming agent should know are in motion or deliberately left.
   prior concrete mutation bundles still replay through the stricter loader.
   Evidence/review: `notes/wire-harness.md`, `notes/reviews/wire-harness.md`.
   This is not general codec equivalence, semantic alias/unknown-field policy
-  or a resource budget. The next scoped real leaf-codec proof is active in
-  isolated `work/codec-proof`, based on `4ce3798`, following
-  `notes/codec-proof-plan.md`.
+  or a resource budget. `3fca173` plus default registration `1f69a58` prove
+  actual decimal/uint32 and all Literal/Ty round trips over JSON values under
+  v0 representability; semantic validity is deliberately not a premise.
+  Thirty-six native checks and 94 focused checks include 48 required native
+  interoperability probes. A paired wrong wire key still passes universal
+  round trips but fails three independent protobuf answers. Review also fixed
+  a false/zero observer ambiguity with type-sensitive JSON comparisons.
+  Three raw leaf artifacts and tracked recipes preserve this boundary:
+  `notes/codec-proof.md`, `notes/reviews/codec-leaves.md`.
+  KeyValue leaves are next in isolated `work/keyvalue-codec` at `d8e2341`;
+  recursive decoders, text parsing and semantic-version policy remain open.
 
 - **XDP and later examples: compile-only profile integrated.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter

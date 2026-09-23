@@ -35,14 +35,16 @@ These are distinct obligations, not interchangeable confidence scores.
 | `Scalar.Env.frame_matches` | Every well-formed source context/environment has a constructively related runtime frame | Declaration agreement or validity of an arbitrary block/program |
 | `Scalar.Cmd.steps`, `execute_correct` | Finite scalar command bodies follow the actual machine, produce exact independent source values, preserve unrelated state and leave arbitrary continuations unexecuted under explicit block-frame premises | Aggregate paths, calls, global initialization/validity, Python equivalence |
 | `Scalar.Modes.scope_agrees`, `frame_matches` | Constructive declarations and related frames exist for well-formed source contexts and permissions | Validity of an arbitrary program or a general `Frame.forBlock` theorem |
-| `Fields.Ref.evaluate`, `write_matches`, `validities_set` | Exact independent aggregate-store correspondence for actual nested scalar reads/writes, validity and unrelated state under nominal/index/frame premises | Root write permissions, integrated expression/command compilation, whole-program validity |
+| `Fields.Ref.evaluate`, `write_matches`, `validities_set` | Exact independent aggregate-store correspondence for actual nested scalar reads/writes, validity and unrelated state under nominal/index/frame premises | Root write permissions, integrated command compilation, whole-program validity |
+| `Fields.lower_typed`, `evaluate_lower` | Shared scalar/field expressions lower to the scoped IR relation and evaluate to the independent source value with the entire Run unchanged under concrete declaration/index/frame premises | General aggregate checker, writable commands, initialization, intended surface selection |
+| `CodecLaws.literal_roundtrip`, `type_roundtrip` | Production Literal/Ty encoder/decoder left inverses over JSON values under explicit v0 uint32 representability | Text parsing, Python/protobuf correctness, recursive codecs, accepted-input equivalence or version negotiation |
 | `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
 | Differential tests and semantic mutants | Concrete independent Python/Lean executions and sensitivity to recorded faults | All inputs or all possible implementation defects |
 | External oracles | Corpus behavior through the pinned P4 adapters | Correctness outside tested behavior or documented adapter limits |
 
-`ir/ProofAudit.lean` and `lean/UserProofAudit.lean` check the proof dependencies
+`ir/ProofAudit.lean`, `ir/CodecProofAudit.lean` and `lean/UserProofAudit.lean` check the proof dependencies
 of advertised roots in their respective packages. Independent review checks
 the statements and integration, which the
 axiom audit cannot do. [certificates.md](certificates.md) specifies the
@@ -113,9 +115,9 @@ witnesses, a proof-visible statement machine, fixed stateful claim checker, type
 campaigns and bounded original-firewall full-state observations.
 Resume with these bounded tasks rather than claiming the roadmap complete:
 
-1. Add typed packet/metadata field paths toward useful examples, preserving
-   sibling values and header validity under actual Index agreement. Reuse
-   the proved scalar command sequencing and expression implementation;
+1. Extend the proved packet/metadata paths and expressions with writable
+   commands, preserving siblings and validity under actual Index agreement
+   and root permissions. Reuse the scalar command sequencing implementation;
    do not delay fields for every scalar operator. The scoped next plan is
    [notes/typed-fields-plan.md](notes/typed-fields-plan.md); the prior scalar
    plan is implemented and reviewed in `notes/reviews/typed-statements.md`.
@@ -126,6 +128,10 @@ Resume with these bounded tasks rather than claiming the roadmap complete:
    termination: acyclic calls, well-formed stores/externs, finite packet input
    and the parser's no-consumption revisit rule. The current finite-trace
    theorem supplies no proof that every valid program has such a trace.
+4. Extend actual codec laws to remaining finite leaves before replacing
+   production recursive `partial` decoders with proof-visible recursion.
+   Preserve malformed-but-representable syntax and separate known wire answers
+   from round trips: paired encoder/decoder faults can satisfy the latter.
 
 Generalizing the claim checker beyond the fixed fragment should follow
 explicit validity and observation contracts. A broader JSON interface alone

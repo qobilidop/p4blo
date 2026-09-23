@@ -28,12 +28,17 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   have these guarantees under explicit context/frame premises. Writable
   scalar assignment/sequence/if now have exact source-state preservation and
   finite execution proofs, with declaration and permission witnesses.
-  Typed aggregate paths and complete applications remain to be implemented.
+  Typed aggregate paths and shared scalar/field read expressions now have
+  exact nominal/frame correspondence. Writable field commands and complete
+  applications remain to be implemented.
 - [ ] Provide an ergonomic Lean surface and interpreter API using the reference
   execution functions. Test diagnostics and notation, including rejection cases.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.
+  Actual decimal/uint32 and representable Literal/Ty JSON-value round trips
+  are proved and default-audited; independent protobuf/native vectors catch
+  paired wrong-wire mappings. Recursive codecs and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
   Contextual scalar checking now has both proofs and rejects malformed

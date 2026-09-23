@@ -1,8 +1,8 @@
 # Actual leaf codec proof review
 
 Read-only review on 2026-09-23 of `p4blo-codec-proof`.
-**Disposition: clear subject to the ordinary full gate and mandatory
-root-owned integration registration.**
+**Disposition: clear subject to mandatory root-owned integration
+registration and the resulting merged gates.**
 The test-oracle type-equality false acceptance confirmed below is now fixed
 and independently tested. Restored native checks, mutation evidence and the
 final persisted evidence note pass review. No candidate builds by this reviewer.
@@ -114,3 +114,32 @@ These are exact raw-leaf artifacts, not execution DRT bundles. Mutations
 were not repeated by this reviewer. Full integration gates remain attributed
 to the implementer/integrator and must not be confused with these independently
 executed focused checks.
+
+Final implementer full gate completed: inspected `/tmp/p4blo-codec-full.log`
+ending in **1594 passed, 1 optional XDP-image skip, 5 existing strict xfails**
+and `all checks passed`; implementer reports exit 0. The required Lean gate
+has 294 passes. This closes the candidate full-gate qualification without
+claiming the pending root registration/merged gate was already exercised.
+
+## Integrated ordinary-gate registration
+
+Independently inspected integration commit `1f69a58` and the resulting
+`d8e2341` tree. Registration obligations are now satisfied: `CodecLaws`
+is exported from `P4bloIR`; `CodecProofAudit` is a library and a default
+build target; `codec-leaves` is a default executable rooted at the separate
+`Tests.CodecLeaves` module; and `CodecLawTests.tests` runs inside the ordinary
+spec test driver's failure-accounting computation. The five explicit axiom
+guards remain present. The two-package script builds default targets and
+runs both test drivers with the pinned toolchain and appropriate package
+working directories.
+
+The package-layout regression checks the audit's library/default-target
+registration and the leaf executable's root/default-target registration.
+Independently executed that file against the integrated tree: **4 passed**,
+exit 0, without rebuilding either package. Root reports the merged Lean
+gate passed with **428 spec checks** and all user checks, and the required
+DRT gate passed **321 tests**; those merged gate results are attributed,
+not repeated here. Root's combined full gate was still running at review.
+
+**Registration review: clear.** No remaining codec registration blocker;
+ordinary merged full-gate completion remains the integrator's checkpoint.
