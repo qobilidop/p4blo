@@ -83,6 +83,13 @@ audit or tests. After building, run
 cross-language known answers. `scalarExamples` is a test fixture exporter,
 not a new general-purpose interpreter or wire protocol.
 
+`Fields.Shape.zero` and `Layout.zero` independently construct initial source
+values. Their correspondence laws use the actual IR initializer with explicit
+nominal agreement and sufficient fuel, including invalid stored headers.
+This is not yet a frame/call initialization theorem; exact scope, checked
+application witnesses and adversarial evidence are in
+[`source-zero.md`](../docs/notes/source-zero.md).
+
 ## Verified scalar command bodies
 
 Writable places add finite declaration modes alongside the existing context;
