@@ -205,3 +205,10 @@ forwarding fixture assumes its inputs are already parsed and route-selected;
 it is not a verified router. Kernel negatives and actual `Index.build`/
 `Frame.forBlock` tests check selected initialization and permission cases,
 not a general initializer or complete-program validity theorem.
+
+After building, `pytest tests/test_lean_edsl_field_commands.py` checks ten
+independently expected full-state snapshots and two retained live/restored
+write-fault regressions. The wrapper uses actual `inout` header/metadata and
+input-only route parameters, and observes fields only after the body finishes.
+It preserves a nonempty payload; it is still unverified scaffolding for the
+proved body, not a proof of calls, initialization or architecture behavior.

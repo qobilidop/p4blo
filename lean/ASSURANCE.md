@@ -971,3 +971,121 @@ without casts or proof terms. Revisit when parsing or application predicates
 force repeated path transports, or when a named-field surface can improve
 readability without obscuring the single underlying typed AST. Do not add
 an independent forwarding evaluator to make the example easier to prove.
+
+### Full-state field-command conformance and adversarial campaign
+
+The default `fieldCommands` fixture exporter emits ten named body ASTs and
+declared inputs only. `tests/test_lean_edsl_field_commands.py` independently
+checks the complete ID/input set, declares the schema and writes expected
+final values. It invokes each authored body once in a real subcontrol with
+`hdr`/`meta` inout parameters, an input-only `route`, and local `scratch`.
+This matches the body theorem's actual root-direction premise; extra
+observer declarations do not weaken those exact root checks. The caller
+initializes aggregate inputs; the callee initializes scratch/unrelated
+sentinels before the body. Calls/copyback and those initializers are tested
+scaffolding, not covered by the body theorem or a proved general initializer.
+
+Only after the whole body finishes does a separate valid observer header
+snapshot all source roots: both Ethernet MACs/type/validity, every stored
+IPv4 field/validity, every metadata and read-only route field, scratch and
+the unrelated sentinel. Invalid headers' stored fields are observed too.
+Every request also has the nonempty `deadbeef` payload, consumed by no parser
+operation and preserved at the end of the emitted 42-byte snapshot.
+Source drop/port are observed data, not this wrapper's packet-fate policy:
+the wrapper emits on port 0 even when the source drop flag is true.
+Comparison/save precedes independent expected-answer assertions. Matching
+interpreters therefore cannot hide wrong source intent, and actual runtime
+divergences retain their complete program/request before failing.
+
+Six faults were introduced separately in
+`/Users/qobilidop/my/work/p4blo-field-command-mutants`, based on the committed
+generic seam plus this candidate. All intentional edits were restored:
+
+1. **Skip a lowered write.** In `CmdWith.lowerWith`, replace the `.write`
+   branch with `| .write _ _ next => next.lowerWith read place`.
+   `lake build P4blo.Commands` exits 1 at `steps_with`: the claimed actual
+   machine transition no longer follows. This is kernel proof rejection,
+   not a compiled differential detection.
+2. **Read stale source state after a write.** In `CmdWith.denoteWith`, change
+   the recursive write tail from `next.denoteWith read write ...` to
+   `next.denoteWith (fun _ => read store) write ...`, keeping the source
+   write itself. Later RHS/conditions now read the old store. The build
+   exits 1 at `denoteWith_seq` and at the exact final `Matches` goal of
+   `steps_with`. These are semantic equality/correspondence proof failures,
+   not literal/type/permission elaboration failures or runtime kills.
+3. **Swap lowered branches.** Exchange `yes.lowerWith read place` and
+   `no.lowerWith read place` in the conditional lowerer. The build exits 1
+   at the actual conditional machine-step goal of `steps_with`. A subsequent
+   unused-simp diagnostic is secondary; the transition equality is false.
+4. **Wrong well-typed Place.** Change `FieldCommandExamples.dst`'s final
+   Ethernet slot from `.here` to `.there .here`, selecting the source MAC
+   instead of destination; both are 48 bits. The default user build and all
+   axiom audits exit 0, then the `forward-hit` known-answer case exits 1.
+   Lean and Python agree on the wrong program, but its destination remains
+   `111213141516` instead of `aabbccddeeff`. This is a compiled surface-intent
+   kill, not a failed proof or a Lean/Python mismatch.
+5. **Actual Python write changes validity.** Immediately after the member
+   assignment in production `python/p4blo/interp/expr.py:write_lvalue`, add:
+
+   ```python
+   if (env.block.name == "RewriteBody" and isinstance(container, Header)
+       and container.type_name == "IPv4" and lv.member.field == "ttl"):
+       container.valid = True
+   ```
+
+   The guard runs during the authored TTL assignment, not the caller's
+   initializers or the observer. `dependent-wrap-invalid` automatically
+   saves a full bundle and exits 1; the assigned TTL and every other field
+   still match. Only snapshot byte 19 changes from 0 to 1. Replaying the
+   saved bundle while the production fault is live exits 1 with one
+   divergence/no errors; restoring that edit and replaying the identical
+   bundle exits 0 with one agreement.
+6. **Actual Python write clobbers a sibling.** Use exactly the same guard,
+   but set `container.fields[2] = Bits(16, 0)` instead of changing validity.
+   `dependent-next` saves/fails with assigned TTL 4 and protocol 10 still
+   correct, but untouched checksum bytes 17–18 become `0000` rather than
+   `abcd`. The same saved bundle replays live with one divergence/exit 1
+   and restored with one agreement/exit 0. Payload and unrelated sentinels
+   remain unchanged, so a selected-leaf-only observer would miss this fault.
+
+Reconstruct each actual Python fault with its exact guard above in a separate
+checkout, build the unchanged Lean packages, then run from that checkout:
+
+```sh
+nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl_field_commands.py -q -k 'authored_field_commands and dependent-wrap-invalid'
+```
+
+For fault 6 substitute `dependent-next`. The tracked helper constructs and
+validates the exact program and automatically retains the failing experiment
+under `.artifacts/drt/lean-field-commands-<case>.json`. Every bundle contains
+one `deadbeef` packet, ingress 0, empty entries, four ports and seed 0.
+The actual live and restored replay command for fault 5 was:
+
+```sh
+nix develop -c uv run python -m p4blo.drt.replay /Users/qobilidop/my/work/p4blo-field-command-mutants/.artifacts/drt/lean-field-commands-dependent-wrap-invalid.json --lean /Users/qobilidop/my/work/p4blo-field-command-mutants/ir/.lake/build/bin/p4blo-lean
+```
+
+Use `dependent-next.json` for fault 6. Restore only the Python edit between
+the two replays; do not rebuild Lean or regenerate the bundle. SHA-256 values:
+
+```text
+3e81440659ea423da41171af641a3f893b01d4f30516da322ca2c0e014a62685  lean-field-commands-dependent-wrap-invalid.json
+689d227dbe6e84f1398a6fd5bbb8a0db3185123733fbe04231f94919677ed130  lean-field-commands-dependent-next.json
+```
+
+Two permanent required regressions monkeypatch the actual statement writer
+at the same authored-only boundary, verify saved program/inputs/ports/seed,
+assert the exact live mismatching byte sequences and replay restored.
+The previous weak pre-expression observer control remains in the field-read
+suite. Forged writable-source/input-actual declarations are rejected by the
+separate kernel negative even while exact mutable value agreement holds.
+
+Both complete Lean package gates pass, including default audits, 392 spec
+runtime checks and the ten new source/runtime whole-state answers. The new
+focused suite passes **13 tests**; required all-suite DRT passes **314 tests**,
+1315 deselected, no skips. Formatting/lint/pyright and diff checks pass.
+The isolated restored default build/user tests and focused gate are rerun
+after all six faults. The integrator owns the merged full Python/schema/
+oracle gate; this worktree performs no Docker build. Independent review:
+`docs/notes/reviews/field-commands.md`. A passed campaign is evidence against
+these selected faults, not universal mutation adequacy or Python equivalence.
