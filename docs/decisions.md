@@ -841,3 +841,13 @@ one that says so.
   fault caught both logically and by Lean/Python replay. Revisit a general
   list-composition relation only if another non-command prefix needs one.
   No typing, execution or termination claim applies to the pending suffix.
+- **Attempt certificate process-group cleanup once and fail closed.**
+  The macOS CI trace shows a redundant final kill masking an already-raised
+  timeout error; it does not establish why that kill was denied. Record the
+  attempt before signalling, retain normal-exit cleanup, bound follow-up
+  reaping and reject otherwise accepted output if cleanup fails. Confidence:
+  high for this reproduced control-flow failure, limited for OS-level group
+  identity and escaped descendants. Revisit with captured process evidence
+  if the first signal is denied or a descendant survives the live test;
+  retries alone do not close a failing CI checkpoint. Evidence and review:
+  `notes/certificate-cleanup.md`, `notes/reviews/certificate-cleanup.md`.

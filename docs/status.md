@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `45fe743`, including total Expr/LValue codec proofs,
+Combined local integration at `5871da8`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -36,7 +36,7 @@ without changing runtime semantics or the former whole-body theorem APIs.
 Guarded forwarding adds 64 independent Lean state answers and 32 exported
 Python/Lean cases, including invalid headers and boundary TTLs.
 Required real-Lean DRT: **597 passed**, no skips. Full gate:
-**2016 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+**2022 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -46,16 +46,21 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `command-blocks.md`, `expr-codec.md`, `header-validity-primitives.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
 `header-validity-expressions.md`, `initial-source-frames.md` and
-`guarded-forwarding.md` and `command-prefix.md`.
+`guarded-forwarding.md`, `command-prefix.md` and `certificate-cleanup.md`.
 
 All five remote workflows pass for `6ee07c3`; newer CI must be checked
 separately. At `2bd65b8`, macOS CI run `35922311964` fails the certificate
 descendant-timeout test: a redundant final process-group kill raises
 PermissionError after timeout cleanup, masking the timeout diagnostic. Lean,
-XDP and SpecTec pass; other workflow results must be checked separately.
-This is not a green remote checkpoint. A scoped fix is active in isolated
-`work/certificate-cleanup` at committed `45fe743`, with deterministic cleanup
-regressions required; do not bypass or hide the failure by retrying alone.
+XDP, SpecTec and BMv2 pass. This is not a green remote checkpoint. The reviewed
+fix `8438cbd` is integrated at `5871da8`: cleanup is attempted once, bounded
+reaping is retained, and cleanup denial fails closed. Six deterministic
+regressions and both live descendant tests pass. The complete integrated
+certificate module passes all 61 cases against the real Lean checker, with
+no skips; the required and full gates pass as recorded above. Lean sources
+are unchanged from the previously checked two-package build. New remote CI
+must still confirm the fix; do not hide the original failure by retrying alone.
+Evidence: `notes/certificate-cleanup.md` and its independent review.
 Sixteen retained execution-fault bundles and twenty-four raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
