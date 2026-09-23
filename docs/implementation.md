@@ -21,6 +21,8 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   source semantics, lowering-validity and semantic-preservation theorems.
   Start with a small proved fragment and extend it toward actual applications;
   do not present raw IR constructors as a verified complete frontend.
+  Closed scalar literals/addition/equality/mux now have these guarantees;
+  references, statements and complete applications remain to be implemented.
 - [ ] Provide an ergonomic Lean surface and interpreter API using the reference
   execution functions. Test diagnostics and notation, including rejection cases.
 - [ ] Define a versioned restricted interchange profile and representability

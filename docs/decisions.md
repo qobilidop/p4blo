@@ -485,3 +485,14 @@ one that says so.
   for oracle feasibility; packet-only observations remain insufficient for
   full state/CRC assurance. Revisit the adapter when register observation
   and collision witnesses are added for the actual port.
+- **Start verified Lean authoring with an independently meaningful scalar
+  language.** Index constructors by scalar type, require positive widths
+  and fitting literals, and give them Fin/Bool source denotations that do
+  not call lowering or the interpreter. Prove exact computation and whole-
+  Run preservation, not just result typing. Confidence: high for the closed
+  fragment; typed references/frames are the next boundary. Scoped notation
+  and ordinary constructors avoid a premature custom statement parser.
+  Confidence: medium on syntax; revisit with packet/stateful programs.
+  Independent expected packets guard the surface that the kernel proofs
+  do not verify. `lean/ASSURANCE.md` records the remaining decisions, exact
+  exclusions and the three reproducible mutation experiments.

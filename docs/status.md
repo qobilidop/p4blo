@@ -107,6 +107,19 @@ Things a resuming agent should know are in motion or deliberately left.
   CRC work exposed a SpecTec odd-byte CRC32 disagreement hidden by this simple
   stateful sequence; CRC known answers/state observations must not be replaced
   by packet-only connection tests. No p4blo firewall port is claimed yet.
+  The first typed Lean eDSL increment is integrated from `52fbebb`: closed
+  bits/bools, addition, equality and mux; independent Fin/Bool denotation;
+  lowering typing, exact-value and arbitrary-Run preservation proofs, each
+  audited. Six negative elaboration cases and 13 independently expected
+  cross-language packet results cover the surface boundary. Two wrong
+  lowerings fail the semantic proof; a wrong `+` surface instance builds
+  with all proofs but is killed by runtime known answers. Review:
+  `notes/reviews/lean-edsl-scalars.md`; exact evidence/decisions/exclusions:
+  `lean/ASSURANCE.md`. Integration gates passed: both Lean packages/audits,
+  108 required DRT tests, and 1025 full tests plus the existing strict BMv2
+  expected discrepancy (no skips). This is not whole-program authoring/validity.
+  Next: user's revised
+  public naming (`P4blo` for users, `P4bloIR` for spec) and typed references.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern
