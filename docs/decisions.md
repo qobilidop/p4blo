@@ -469,3 +469,10 @@ one that says so.
   Assert nonempty/minimum corpus discovery and preserve relative vector IDs
   so migration cannot hide tests or the strict BMv2 divergence. The move
   also puts oracle Python code under pyright; retain that stronger gate.
+- **Make scalar equality proof-visible.** The typed Lean eDSL's semantic
+  preservation proof needs to unfold bit/bool equality, but `Value`'s
+  nested-recursive derived BEq is opaque. Give `Value.equal` explicit bits
+  and bool cases using the identical width/value comparisons, with audited
+  definitional equations and tests against the prior derived comparison.
+  Confidence: high; this exposes existing meaning rather than introducing
+  a separate evaluator or adding an axiom. Compound equality is unchanged.

@@ -148,6 +148,11 @@ booleans, by member on enums and errors, on headers by validity and then
 fieldwise (two invalid headers are equal whatever their fields), on structs
 fieldwise, on stacks elementwise. -/
 def equal : Value → Value → Bool
+  -- Keep scalar meaning proof-visible instead of entering the opaque
+  -- derived comparison for nested recursive Value. These are the same
+  -- width/value and Bool comparisons used by that runtime instance.
+  | .bits a, .bits b => a == b
+  | .bool a, .bool b => a == b
   | .header _ va fa, .header _ vb fb =>
     if va != vb then false else if !va then true else equalList fa fb
   | .struct _ fa, .struct _ fb => equalList fa fb
@@ -161,6 +166,12 @@ def equalList : List Value → List Value → Bool
   | x :: xs, y :: ys => equal x y && equalList xs ys
   | _, _ => false
 end
+
+@[simp] theorem equal_bits (a b : Bits) :
+    equal (.bits a) (.bits b) = (a.width == b.width && a.value == b.value) := rfl
+
+@[simp] theorem equal_bool (a b : Bool) :
+    equal (.bool a) (.bool b) = (a == b) := rfl
 
 end Value
 

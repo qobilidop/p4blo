@@ -91,6 +91,12 @@ Things a resuming agent should know are in motion or deliberately left.
   check separately passes. Next: verified typed scalar authoring, then typed references and
   statements for stage-0 examples. Package migration remote Lean/SpecTec/BMv2
   workflows passed at `931e47f`; Python/schema CI was still running when checked.
+  Scalar equality is now proof-visible for exact eDSL lowering proofs, with
+  audited equations depending only on `propext`. Its 529 ordered comparison
+  regressions preserve prior derived equality, including width and cross-kind
+  cases. Review: `notes/reviews/scalar-equality.md`. Both package gates (288
+  spec checks), 95 required DRT, and full **1005 passed/1 expected divergence**
+  pass. No universal equality/production equivalence proof is claimed.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

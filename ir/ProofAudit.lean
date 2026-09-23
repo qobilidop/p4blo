@@ -1,5 +1,13 @@
 import P4blo
 
+/-- info: 'P4blo.Value.equal_bits' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Value.equal_bits
+
+/-- info: 'P4blo.Value.equal_bool' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Value.equal_bool
+
 /-!
 # The checked trust boundary
 

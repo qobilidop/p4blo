@@ -102,6 +102,10 @@ def sliceAndConcatTests : T Unit := do
 def h8 (valid : Bool) (f : Nat) : Value := .header "h8" valid [bits 8 f]
 
 def equalityTests : T Unit := do
+  let samples := ([0, 1, 2, 8, 32, 64, 129].flatMap fun w =>
+    [bits w 0, bits w 1, bits w (2 ^ w - 1)]) ++ [.bool false, .bool true]
+  check "proof-visible scalar equality agrees with prior derived equality"
+    (samples.all fun a => samples.all fun b => Value.equal a b == (a == b))
   check "two invalid headers are equal whatever their fields" (Value.equal (h8 false 1) (h8 false 2))
   check "valid and invalid headers differ" (!Value.equal (h8 true 1) (h8 false 1))
   check "valid headers compare fieldwise"
