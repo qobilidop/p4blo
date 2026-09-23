@@ -38,10 +38,14 @@ nix develop .#oracle -c tests/oracle/build.sh            # the P4-SpecTec oracle
 uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
 docker build -t p4blo-bmv2 tests/oracle/bmv2             # the BMv2 oracle image, once
 uv run pytest tests/test_oracle_bmv2.py            # corpus vectors on BMv2
+docker build -t p4blo-xdp-build tests/oracle/xdp    # compile-only XDP profile
+P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/test_xdp_build.py # offline XDP gate
 ```
 
-Keep `main` green on all of them; check exit codes, not output. Four
-workflows run them in CI: Python and schema, Lean, and one per oracle.
+Keep `main` green on all of them; check exit codes, not output. Five
+workflows run them in CI: Python and schema, Lean, two P4 oracles and the
+compile-only XDP profile. The latter is not a kernel execution oracle.
+Its missing local image is an explicit skip; its dedicated CI requires it.
 Docker with the pinned p4c image also typechecks the printer's goldens
 when available and is skipped otherwise. `docs/workflows.md` has the
 full gates table, every pin, and the procedure for each kind of change.

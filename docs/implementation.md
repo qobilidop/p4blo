@@ -61,6 +61,9 @@ mutation evidence, and an IR-minimality review. See the design for details.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.
+  The Ethernet-allow original now has a pinned compile-only build, offline
+  map/BTF checks and required CI with negative fixtures. Kernel execution,
+  the p4blo port and behavioral equivalence remain separate open obligations.
 - [ ] Conditional flowlet bridge: establish controlled time/randomness replay
   before claiming oracle coverage; test timeout/wrap/collision behavior. If the
   oracle remains unavailable, record the limitation and advance other work.
