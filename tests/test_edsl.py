@@ -17,7 +17,7 @@ import pytest
 from google.protobuf import text_format
 
 from p4blo import arch, ir, validator
-from p4blo.edsl import (
+from p4blo.edsl.core import (
     EdslError,
     Program,
     bit,
@@ -35,7 +35,7 @@ from p4blo.edsl import (
     range_,
     ternary,
 )
-from p4blo.edsl import externs as edsl_externs
+from p4blo.edsl.core import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parent.parent / "corpus"

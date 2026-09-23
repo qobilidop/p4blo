@@ -8,8 +8,8 @@ the signature that the implementation checks against.
 
 from __future__ import annotations
 
-from p4blo.edsl.program import Program
-from p4blo.edsl.types import ExternType, TypeLike, bit, method
+from p4blo.edsl.core.program import Program
+from p4blo.edsl.core.types import ExternType, TypeLike, bit, method
 
 
 def register(program: Program, width: TypeLike, name: str = "register") -> ExternType:

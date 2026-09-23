@@ -83,7 +83,7 @@ sources are in p4c under `testdata/p4_16_samples/`.
 a `Shape`, register it in `default_registry`, add the Lean model in
 `lean/P4blo/Externs.lean`, the printer's v1model form in
 `python/p4blo/printer.py`, and an eDSL helper in
-`python/p4blo/edsl/externs.py`. Pin the two models with a corpus
+`python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
 
 **An architecture.** A Python module under `python/p4blo/arch/` with a

@@ -9,7 +9,7 @@ suite checks the two are equal. Run as a script to print the text format.
 
 from __future__ import annotations
 
-from p4blo.edsl import Expr, Program, Stmts, bit
+from p4blo.edsl.core import Expr, Program, Stmts, bit
 from p4blo.v0 import p4blo_pb2 as pb
 
 MAX_H2_HEADERS = 5

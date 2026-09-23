@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from p4blo.edsl.blocks import Block, Control, Deparser, Parser
-from p4blo.edsl.expr import EnumType, Errors, Expr, Operand, constant, literal
-from p4blo.edsl.types import (
+from p4blo.edsl.core.blocks import Block, Control, Deparser, Parser
+from p4blo.edsl.core.expr import EnumType, Errors, Expr, Operand, constant, literal
+from p4blo.edsl.core.types import (
     EdslError,
     ExternInstance,
     ExternType,

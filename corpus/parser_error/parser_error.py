@@ -7,7 +7,7 @@ format.
 
 from __future__ import annotations
 
-from p4blo.edsl import Expr, Program, bit, error_t
+from p4blo.edsl.core import Expr, Program, bit, error_t
 from p4blo.v0 import p4blo_pb2 as pb
 
 

@@ -31,7 +31,7 @@ from p4blo.drt import (
 )
 from p4blo.drt.coverage import parser_visits
 from p4blo.drt.run import default_lean_binary, parse_reply, python_outcome
-from p4blo.edsl import Program, bit, boolean
+from p4blo.edsl.core import Program, bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parent.parent / "corpus"

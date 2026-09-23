@@ -8,7 +8,7 @@ format.
 
 from __future__ import annotations
 
-from p4blo.edsl import Program, bit, entry, masked, ternary
+from p4blo.edsl.core import Program, bit, entry, masked, ternary
 from p4blo.v0 import p4blo_pb2 as pb
 
 

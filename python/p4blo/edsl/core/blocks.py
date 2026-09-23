@@ -15,8 +15,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self
 
-from p4blo.edsl.expr import BIT32, Expr, Operand, constant, literal
-from p4blo.edsl.types import (
+from p4blo.edsl.core.expr import BIT32, Expr, Operand, constant, literal
+from p4blo.edsl.core.types import (
     EdslError,
     ExternInstance,
     ParamSpec,
@@ -31,7 +31,7 @@ from p4blo.edsl.types import (
 from p4blo.v0 import p4blo_pb2 as pb
 
 if TYPE_CHECKING:
-    from p4blo.edsl.program import Program
+    from p4blo.edsl.core.program import Program
 
 
 # ---------------------------------------------------------------------------

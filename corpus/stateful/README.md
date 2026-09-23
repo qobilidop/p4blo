@@ -22,7 +22,7 @@ STF program whose register is both read and written.
   no clone or recirculate.
 - **`register<bit<8>>(256) r`.** The generic `register<T>` is the
   monomorphic extern type `register` with `T = bit<8>`, declared by
-  `p4blo.edsl.externs.register`, and `r` is an instance with the one
+  `p4blo.edsl.core.externs.register`, and `r` is an instance with the one
   constructor argument `256`. Both halves call the same instance.
 - **`(bit<32>) h.myhdr.reg_idx_to_update`.** An explicit cast in the
   source is a `cast` node in the IR, written once per call as the source

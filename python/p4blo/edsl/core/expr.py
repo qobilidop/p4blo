@@ -20,7 +20,7 @@ the IR.
 
 from __future__ import annotations
 
-from p4blo.edsl.types import (
+from p4blo.edsl.core.types import (
     EdslError,
     TypeLike,
     TypeTable,

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from functools import reduce
 
-from p4blo.edsl import Program, bit, boolean, concat, lpm
-from p4blo.edsl.externs import checksum16
+from p4blo.edsl.core import Program, bit, boolean, concat, lpm
+from p4blo.edsl.core.externs import checksum16
 from p4blo.v0 import p4blo_pb2 as pb
 
 
