@@ -1,4 +1,5 @@
-# expect: reportArgumentType line 28
+# expect: reportArgumentType line 29
+# expect: reportCallIssue line 29
 """Assigning to an expression: `ttl - 1` is a `Bits`, and `assign` wants a `Var`."""
 
 from __future__ import annotations

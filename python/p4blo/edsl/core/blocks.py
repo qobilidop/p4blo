@@ -786,7 +786,7 @@ class Control(Block):
         self.actions: list[ActionBody] = []
         self.tables: list[Table] = []
 
-    def action(self, name: str, **params: TypeLike) -> ActionBody:
+    def action(self, name: str, /, **params: TypeLike) -> ActionBody:
         """Declare an action; keyword params are its action data, in order.
         Fill the body in a `with`, or leave it empty."""
         self.declare(name, "action")
