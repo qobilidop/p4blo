@@ -8,8 +8,9 @@ equivalent to Lean.
 
 ## Assurance boundaries
 
-The schema and validity rules determine admissible programs. Lean gives
-their meaning, including parser errors and explicit extern state. Proofs
+Lean owns abstract syntax, validity and meaning; protobuf owns wire syntax.
+Whole-program validity and codec proofs remain in progress. The executable
+Lean semantics includes parser errors and explicit extern state. Proofs
 establish named properties of those definitions, under stated assumptions.
 Differential tests check the Python implementation against the executable
 definitions used in proofs. External oracles separately check our account
@@ -28,14 +29,18 @@ These are distinct obligations, not interchangeable confidence scores.
 |---|---|---|
 | `extract_emit` | Packing/extraction round trip under its stated premises | Whole parser/deparser correctness |
 | `ScalarTyping.check_sound` | Every accepted closed scalar expression evaluates at its inferred type and preserves the initial Run | Variables, aggregates, whole-program validation, Python |
+| `ScalarTyping.checkIn_sound`, `checkIn_complete` | Contextual scalar checking is sound under actual typed-frame agreement and complete for its relation under a well-formed context | Aggregates, statements, whole-program validation, Python |
+| `P4blo.Scalar.lower_typed_in`, `evaluate_lower_in` | Typed source expressions lower to contextually typed IR under well-formedness, and evaluate to the exact independent source value with the whole Run unchanged under exact frame agreement | Intended surface elaboration, arbitrary program initialization, writable statements, serialization |
+| `Scalar.Env.frame_matches` | Every well-formed source context/environment has a constructively related runtime frame | Declaration agreement or validity of an arbitrary block/program |
 | `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
 | Differential tests and semantic mutants | Concrete independent Python/Lean executions and sensitivity to recorded faults | All inputs or all possible implementation defects |
 | External oracles | Corpus behavior through the pinned P4 adapters | Correctness outside tested behavior or documented adapter limits |
 
-`ir/ProofAudit.lean` checks the proof dependencies of the advertised
-roots. Independent review checks the statements and integration, which the
+`ir/ProofAudit.lean` and `lean/UserProofAudit.lean` check the proof dependencies
+of advertised roots in their respective packages. Independent review checks
+the statements and integration, which the
 axiom audit cannot do. [certificates.md](certificates.md) specifies the
 compiled claim-checking experiment and its additional trust assumptions.
 
@@ -98,14 +103,18 @@ consolidated without removing that independence.
 
 ## Next concrete extensions
 
-The current checkpoint has the closed-scalar proof, proof-visible statement
-machine, fixed stateful claim checker and typed scalar/stateful campaigns.
+The current checkpoint has contextual scalar checking, exact typed Lean
+expression lowering with a constructive frame witness, a proof-visible
+statement machine, fixed stateful claim checker, typed scalar/stateful
+campaigns and bounded original-firewall full-state observations.
 Resume with these bounded tasks rather than claiming the roadmap complete:
 
-1. Extend scalar checking to variable reads under an explicit relation
-   between typing contexts and runtime frames. Prove evaluation preservation
-   for that fragment before adding aggregate lvalues and assignment. Keep
-   the existing closed theorem as a special case, not an unchecked rewrite.
+1. Add writable scalar assignment/sequence/if under explicit declaration,
+   permission and exact environment/frame relations. Prove finite traces
+   into the existing step machine, exact source-state correspondence and
+   noninterference. Then add typed packet field paths toward useful examples;
+   do not delay them for every scalar operator. The scoped plan is
+   [notes/typed-frames-plan.md](notes/typed-frames-plan.md).
 2. Generate small validated action/sub-block calls and changing host table
    snapshots across packet sequences. Challenge copy-in/copyback ordering,
    aliasing and fault paths with independent mutations and retained replays.

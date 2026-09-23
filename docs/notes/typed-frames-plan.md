@@ -9,6 +9,11 @@ inspected commits those namespaces are `P4bloLean` and `P4blo` respectively.
 
 ## Recommendation
 
+Checkpoint 2026-09-23: increment 1 is implemented in `cb69a86` and
+`faa373f`, integrated at `46893ff`. See `../../lean/ASSURANCE.md` and
+`reviews/typed-frames.md` for actual theorem boundaries and evidence.
+The investigation below remains the rationale; increment 2 is next.
+
 Make the next useful milestone a **verified scalar block-body fragment**:
 typed variable reads, scalar assignment, sequencing and boolean conditionals.
 Finish it in two independently reviewed increments:

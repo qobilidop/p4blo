@@ -574,3 +574,16 @@ one that says so.
   proof audits do not certify an external algorithm absent a theorem stating
   that contract. Revisit CRC refinement with an independent specification,
   not a theorem that merely restates the implementation being checked.
+- **Keep exact frame agreement distinct from declaration validity.**
+  Contextual scalar expressions use independent positional Fin/Bool values,
+  while their lowering theorem observes actual action-first frame lookup.
+  A constructive frame witness establishes nonvacuity, not that arbitrary
+  block initialization is valid. Confidence: high on this separation;
+  assignments must additionally establish real declaration and write-mode
+  agreement. Context checking is sound and complete only for its declared
+  scalar fragment. The reviewed `Quot.sound` addition to the typing audit
+  comes from standard list membership/uniqueness, not a new trusted axiom.
+  Surface accessors and exported inputs retain independent known answers
+  because a valid-but-unintended source term can satisfy every lowering
+  theorem. Confidence: medium on positional-reference ergonomics; revisit
+  when writable places and packet fields are authored.

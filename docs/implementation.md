@@ -24,8 +24,9 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   source semantics, lowering-validity and semantic-preservation theorems.
   Start with a small proved fragment and extend it toward actual applications;
   do not present raw IR constructors as a verified complete frontend.
-  Closed scalar literals/addition/equality/mux now have these guarantees;
-  references, statements and complete applications remain to be implemented.
+  Closed scalar literals/addition/equality/mux and typed variable reads now
+  have these guarantees under explicit context/frame premises. Writable
+  statements and complete applications remain to be implemented.
 - [ ] Provide an ergonomic Lean surface and interpreter API using the reference
   execution functions. Test diagnostics and notation, including rejection cases.
 - [ ] Define a versioned restricted interchange profile and representability
@@ -33,6 +34,8 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   conversions, missing variants, limits, unknown fields and semantic versioning.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
+  Contextual scalar checking now has both proofs and rejects malformed
+  contexts. Statement and whole-program validity remain open.
 - [ ] Exercise existing forwarder/stateful examples through both authoring
   paths and execution APIs, with named application properties and mutations.
 

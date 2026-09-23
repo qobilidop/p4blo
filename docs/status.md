@@ -6,9 +6,23 @@ checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
 Last updated: 2026-09-23, implementing the accepted Python/Lean architecture,
-verified scalar authoring and independently tested CRC services. The original prototype's
+verified scalar references and independently tested firewall state. The original prototype's
 steps are complete. The stronger assurance work is in progress; its
 acceptance criteria and trust boundaries are in [verification.md](verification.md).
+
+## Latest checked checkpoint
+
+Typed-context integration at `46893ff`: both Lean package gates and audits
+pass, including **357 spec checks**, 21 user known answers and nine negative
+typing checks. Required real-Lean DRT: **175 passed**. Full Python/schema/
+oracle gate: **1180 passed, 5 precise expected discrepancies, no skips**;
+formatting, lint, typechecking, schema generation and workflow checks pass.
+The saved typed-read mutant bundle replays successfully after restoration.
+Independent review: [notes/reviews/typed-frames.md](notes/reviews/typed-frames.md).
+All four remote workflows passed for the earlier firewall checkpoint
+`2010876`; newer CI must be checked separately. Earlier checkpoint evidence
+remains in the named review/assurance reports and git history, not as competing
+current instructions below.
 
 ## Claim matrix
 
@@ -17,7 +31,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 348 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, scalar soundness/value laws, exact closed eDSL lowering, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 357 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, contextual scalar soundness/completeness, exact scalar eDSL lowering under frame agreement, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -26,8 +40,8 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 | 0 | Skeleton: flake, Python project, schema stub, CI, docs | done |
 | 1 | Schema, validator, semantics, forwarder in text format, interpreter, STF runner | done: the forwarder's five vectors pass end to end |
 | 2 | Extern registry, stateful program | done: registry with register, counter and checksum16; the stateful program and the forwarder's checksum |
-| 3 | eDSL, four corpus programs, two architectures, metadata contract | done: ten programs in the typed eDSL, both architectures, contract check |
-| 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | done: every program passes on both oracles, each with its own CI job |
+| 3 | eDSL, four corpus programs, two architectures, metadata contract | done: eleven programs in the typed eDSL, both architectures, contract check |
+| 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | done: corpus gates run on both oracles in separate CI jobs; precise expected discrepancies are recorded above |
 | 5 | Lean interpreter, extern models, DRT, the theorem | done |
 | 6 | Coverage table, README claim matrix, write-up | done: coverage table (177 rows, none undecided), README, `docs/writeup.md`; both reviews kept under docs/notes/reviews and their findings fixed |
 
@@ -52,201 +66,108 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 Things a resuming agent should know are in motion or deliberately left.
 
 - **Architecture implementation: authorized and active.**
-  Read [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md) before starting
-  the next implementation step. Lean is to own abstract syntax, validity,
-  and meaning; protobuf owns encoding, connected by explicitly specified
-  conversion. The updated note also records the agreed separate Lean
-  eDSL/interpreter package, typed core with verified lowering and selective
-  proof-producing elaboration, reference-execution reuse before proved
-  refinements, and prior-art lessons. It now includes the P4 expressiveness
-  north star and agreed example progression: consolidate the existing
-  corpus, then tutorial firewall, `xdp-filter`, conditional flowlet switching,
-  and a bounded Katran configuration, with a common acceptance bar. Upstream
-  pins and precise application profiles remain open. Rust is excluded. Bili has now
-  authorized autonomous implementation and explicitly resumed small commits
-  and pushes. Follow [implementation.md](implementation.md), recording low-
-  confidence choices and revisit triggers rather than waiting for feedback.
-  The specification and schema now live in `ir/` (`p4blo-ir`, `P4bloIR` imports);
-  the separate `lean/` package (`p4blo`, `P4blo` imports) exposes reference block
-  and switch execution, not a second engine or full validator. The typed
-  eDSL currently covers closed scalars. `scripts/check-lean.sh` explicitly builds and tests both
-  packages with matching toolchains and the spec's proof audit; dependency
-  compilation alone would omit that audit. Generated protobuf bindings and
-  executable protocol are unchanged. The old executable path no longer exists.
-  Independent review: `notes/reviews/package-boundary.md`; its wrong empty-
-  packet expectation was fixed without changing semantics. New layout tests
-  guard dependency direction, toolchains and descriptor/binary locations.
-  Verification: both Lean package gates pass (287 spec checks and the API
-  smoke tests), required DRT **95 passed**, schema generation has no drift.
-  Full Python/schema/oracle gate: **1004 passed, 1 expected BMv2 divergence,
-  no skips**, lint/typecheck/format/schema/workflow checks pass. Clean-worktree
-  review also passed from no build caches and no active default toolchain:
-  both Lean packages, 3 layout tests, 95 required DRT and Buf/no-drift checks.
-  Shared corpus and oracle tooling now live under `tests/`, with unchanged
-  source/golden/vector bytes and oracle pins. All three replay suites discover
-  the same 10 programs/15 vector files, guarded by a layout regression. The
-  migrated Docker context builds; oracle drivers now also pass pyright.
-  Consolidation gates: both Lean packages and 95 required DRT pass; full gate
-  **1005 passed, 1 expected divergence, no skips**. Independent review is in
-  `notes/reviews/shared-verification-layout.md`; the strengthened discovery
-  check separately passes. Next: verified typed scalar authoring, then typed references and
-  statements for stage-0 examples. Package migration remote Lean/SpecTec/BMv2
-  workflows passed at `931e47f`; Python/schema CI was still running when checked.
-  Scalar equality is now proof-visible for exact eDSL lowering proofs, with
-  audited equations depending only on `propext`. Its 529 ordered comparison
-  regressions preserve prior derived equality, including width and cross-kind
-  cases. Review: `notes/reviews/scalar-equality.md`. Both package gates (288
-  spec checks), 95 required DRT, and full **1005 passed/1 expected divergence**
-  pass. No universal equality/production equivalence proof is claimed.
-  Original firewall preflight is now a permanent independent oracle input,
-  not printer output: pinned source, distinct per-request TCP sequence IDs,
-  exact packet/checksum expectations and negative observer/configuration tests.
-  Both original-program oracle tests pass. Full gate before final profile
-  hardening: **1010 passed/1 expected divergence/no skips**; afterward all
-  six focused tests and lint/typecheck pass. Reviews and reproducible profile:
-  `notes/reviews/original-firewall.md`, `notes/firewall-preflight.md`.
-  CRC work exposed a SpecTec odd-byte CRC32 disagreement hidden by this simple
-  stateful sequence; CRC known answers/state observations must not be replaced
-  by packet-only connection tests. No p4blo firewall port is claimed yet.
-  The first typed Lean eDSL increment is integrated from `52fbebb`: closed
-  bits/bools, addition, equality and mux; independent Fin/Bool denotation;
-  lowering typing, exact-value and arbitrary-Run preservation proofs, each
-  audited. Six negative elaboration cases and 13 independently expected
-  cross-language packet results cover the surface boundary. Two wrong
-  lowerings fail the semantic proof; a wrong `+` surface instance builds
-  with all proofs but is killed by runtime known answers. Review:
-  `notes/reviews/lean-edsl-scalars.md`; exact evidence/decisions/exclusions:
-  `lean/ASSURANCE.md`. Integration gates passed: both Lean packages/audits,
-  108 required DRT tests, and 1025 full tests plus the existing strict BMv2
-  expected discrepancy (no skips). This is not whole-program authoring/validity.
-  The user's revised public naming (`P4blo` for users, `P4bloIR` for spec)
-  passes both Lean packages/audits, 114 required DRT and the full 1070-test
-  gate (three exact expected discrepancies, no skips). Independent diff
-  inspection confirms all Lean bodies differ only by renamed tokens. The
-  independent clean-worktree reproduction at `411ba82` also passes both
-  packages/audits, 114 required DRT, four layout guards and Buf/no-drift
-  with no active default toolchain: `notes/reviews/lean-public-names.md`.
-  Typed references
-  follow. The stage-2 source/environment audit is preserved in
-  `notes/xdp-preflight.md`: pinned original Ethernet-allow profile, complete
-  per-CPU map observations, and an FD-only non-attaching oracle design.
-  No BPF compile/load/run evidence exists yet. Build-tool availability,
-  scoped kernel capabilities and source licensing need explicit handling;
-  macOS itself is not a blocker because Docker provides a Linux kernel.
-  CRC16/CRC32 services and the existing-family suffix dispatch repair are
-  integrated (`198f5b3`, `ee3980a`). Original/printed BMv2 known answers pass;
-  pinned SpecTec's odd-byte CRC32 padding bug has two exact strict expected
-  discrepancies beside ordinary passing controls. Both oracle CI jobs now
-  select these probes. Independent review fixed a crash-masking classifier
-  and constructor-arity rejection gaps: `notes/reviews/crc-externs.md`.
-  Integration gates: both Lean packages/audits (336 spec checks), 114 required
-  DRT tests, full **1070 passed, 3 expected discrepancies, no skips**, with
-  lint/typecheck/schema/workflow checks passing. Python firewall port and
-  original register-state observation are next, in an isolated worktree;
-  neither is claimed complete by the CRC increment.
-  All four remote workflows passed at CRC integration checkpoint `c6a72c3`.
-  Next scoped proof work is specified in `notes/typed-frames-plan.md`:
-  context-indexed scalar expressions with exact environment/frame agreement,
-  followed by writable statements proved against the existing step machine.
-  The plan is investigated, not implemented; packet field paths follow promptly
-  so proofs serve readable examples instead of delaying them for all operators.
-  Decimal-string decoding no longer turns missing/null bits or LPM/ternary
-  fields into zero. Eight test-first failures reproduced the original compiled
-  defect; independent review reproduced them too. Forty-two cross-language
-  cases now pass, including stateful valid/malformed/valid requests with
-  counters exactly 1/1/2. Review: `notes/reviews/decimal-wire-defaults.md`.
-  Gates: both Lean packages/audits (348 spec checks), 156 required DRT,
-  **1112 full tests passed, 3 exact expected discrepancies, no skips**;
-  lint/typecheck/schema/workflow gates pass. This is not a verified codec:
-  representability, resource limits, unknown keys and semantic version policy
-  remain open. All four remote workflows passed at naming checkpoint `e8c8bb9`.
-  The typed Python firewall port is now integrated with separately committed
-  BMv2 readback support (`a7a2f9d`, `e865975`). Independent packet/full-cell
-  expectations preserve the two-partial-collision Bloom false positive.
-  Original source is unchanged; 30 bounded prefix observations match all
-  8192 cells. Four validator-accepted wrong ports are killed by both engines;
-  observer corruptions are rejected. Review: `notes/reviews/firewall-port.md`;
-  exact profile, oracle defects, minimality and remaining obligations:
-  `notes/firewall-port.md`. The default Docker image was rebuilt and both
-  Lean package gates (348 spec checks), 167 required DRT tests and the full
-  **1172 passed / 5 precise expected discrepancies / no skips** gate pass,
-  including formatting/lint/typechecking/schema/workflow checks.
-  Original SpecTec's table-mask defect is isolated in two additional strict
-  probes, not excused across a whole corpus vector. Both oracle jobs select
-  the new profiles. Lean authoring/application proofs, wider generated flows
-  and truncated Ethernet/IPv4 coverage remain open. All four remote workflows
-  passed at `2010876`. The actual Python/Lean CRC mutation campaign is now
-  complete: independently XORing one CRC32 output bit survives packet-only
-  checks but produces three state-only divergences in the four-request
-  connection sequence. Numeric/full-state tests kill both compiled mutants;
-  the Lean mutant still builds every proof audit, whose claims do not specify
-  the intended external CRC algorithm. Both faults are restored; both package
-  gates, 110 focused tests, 167 required DRT and both complete replays pass.
-  Exact patches, source-only reconstruction and artifact hashes are preserved
-  in `notes/mutations/firewall-hash-state.md`; independent review is in
-  `notes/reviews/firewall-hash-state.md`. No external-oracle rerun is claimed
-  for this report-only campaign. Typed-frame implementation proceeds separately.
+  Follow [implementation.md](implementation.md) and the agreed design in
+  [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). Python and Lean only;
+  full architecture-independent P4 remains a north star. Small commits and
+  pushes are authorized. Record uncertain choices and revisit triggers.
 
-- **Verification program: active.** Follow `verification.md` in order.
-  Required Lean CI, complete-sequence replay bundles and abstract extern
-  state comparison landed. Independent reviews found descendant-pipe
-  timeout, lost protocol-failure replay and wide-state decimal-limit gaps;
-  all are fixed with regressions. Reviews live in `notes/reviews/`.
-  The closed scalar checker and `ScalarTyping.check_sound` landed and were
-  independently reviewed: accepted expressions evaluate with the inferred
-  type and preserve any Run. This is not Python or whole-program soundness.
-  Typed generated-program DRT covers scalar operators systematically,
-  200 shrinking examples and faulting unselected parser branches. CI retains
-  failure bundles for 14 days. Latest full gate at `0bb5659`: **1001 passed, 1 expected
-  BMv2 divergence, no skips**, with the pinned SpecTec oracle built locally;
-  build/audit and 287 Lean checks pass. Required DRT now includes 95 tests,
-  including an old error-reason test that review found excluded by its name.
-  All four remote workflows passed for the preceding checkpoint `836b194`.
-  The statement interpreter now uses a total continuation step and an
-  unfoldable actual runner, with a finite-trace soundness theorem. It was
-  independently compared with the old executor on fault/copyback cases.
-  Eleven scalar value/branch laws complement the type-safety theorem.
-  First mutation round: four killed, two survived; the strengthened suite
-  kills both survivors and two fresh faults. A third round kills all three
-  eager branch mutants with replayable mismatches
-  (`notes/mutations/2026-09-23.md`). Proof-integrity mutation tests separately
-  reject `sorry` and a forged axiom. The reviewed bounded reexecution checker
-  is integrated; its fixed-program JSON bridge passed independent review,
-  including 58 CLI tamper probes (`notes/reviews/certificate-wire.md`). See
-  `certificates.md` for its exact trust boundary.
-  Building the Python producer exposed a real zero-literal serialization
-  defect: Lean omitted numeric zero in protobuf string fields. The encoder
-  now emits `"0"`; explicit tests and independent cross-language review pass
-  (`notes/reviews/zero-encoding.md`). No adapter normalization hides the bug.
-  Generated stateful programs passed independent review and 28 tests,
-  including 100 shrinking campaigns and 247 deterministic comparisons.
-  A reset-before-read fault shrinks to a two-request persistence witness
-  and its complete replay works (`notes/reviews/stateful-generation.md`).
-  The Python certificate producer is integrated with 55 focused tests.
-  Independent adversarial review exposed stale-binding and malformed-cell
-  false acceptance, successful-peer descendant leakage and duplicate keys;
-  fixes and regressions pass locally and independent follow-up confirms them
-  (`notes/reviews/python-certificate.md`). See `certificates.md` for the CLI.
-  Fourth semantic round: Python and Lean counter-OOB mutations each survive
-  the previous 27-test gate and fail the new stateful known-answer sequence
-  on state alone. Both replays reproduce; restored code/replay and 28 new
-  stateful tests pass. Exact patches, commands and results are preserved in
-  `notes/mutations/2026-09-23.md`. State-only CLI diagnostics now show the
-  actual differing cells, even when an input cannot be represented in STF.
-  All sub-agent changes are integrated and reviewed; temporary worktrees
-  were removed after confirming clean status and merged commits. No pending
-  agent task or unmerged implementation is needed to resume.
-  Still open: whole-program validity/soundness, validated-program termination,
-  variables/aggregates and generation of tables, nested calls, parser faults
-  and further extern families. Next concrete step: extend scalar checking to
-  variables under an explicit typed-frame relation, then aggregate lvalues
-  and assignment preservation. `verification.md` lists the bounded follow-on
-  tasks. Neither finite traces nor matching test results prove universal
-  Python equivalence.
+  Package boundaries and shared verification layout are complete:
+  `ir/` owns `p4blo-ir` / `P4bloIR`, abstract meaning and the wire schema;
+  `lean/` owns user-facing `p4blo` / `P4blo` and imports the spec one-way;
+  `python/p4blo/` provides Python authoring and interpretation. Shared corpus
+  and oracles live under `tests/`. Wire identities and generated bytes are
+  preserved. Both Lean packages and their default proof audits are explicit
+  gates. Independent reviews include clean builds without caches or an
+  active default toolchain: `notes/reviews/package-boundary.md`,
+  `shared-verification-layout.md` and `lean-public-names.md`.
+
+- **Verified Lean authoring: typed scalar references integrated.**
+  Closed bits/bools/addition/equality/mux and context-indexed variable reads
+  share one AST and independent Fin/Bool source semantics. Exact lowering
+  preserves the source value and the entire Run under actual action-first
+  frame agreement. A constructive frame witness rules out vacuous premises.
+  The scoped IR checker validates unique nonempty names/positive widths and
+  has soundness and completeness for its scalar relation.
+  Declaration agreement is separate: no validated block initialization,
+  writable statement, complete program or verified codec claim follows.
+
+  Twenty-one independently expected authored expressions include eight
+  variable cases; malformed contexts/references, missing/wrong-width frames
+  and action shadowing are tested. Mutation evidence distinguishes proof
+  rejection, compiled-but-wrong surface accessors, corrupted input fixtures
+  and a replayed actual Python-read mismatch. Exact obligations, axioms,
+  decisions, commands and exclusions: `lean/ASSURANCE.md`; independent
+  review: `notes/reviews/typed-frames.md`.
+  Next: writable scalar assignment/sequence/if into existing
+  `Execution.step`/`Finishes.sound`, per `notes/typed-frames-plan.md`.
+  Then typed packet fields promptly, not every remaining arithmetic operator.
+  Implementation is active in isolated `work/typed-statements`, based on
+  committed `46893ff`; no unmerged statement proof is required to use main.
+
+- **Tutorial firewall: bounded Python port and original-state oracle done.**
+  The typed port adds no core IR construct. Independent packet and complete
+  8192-cell expectations retain Bloom false positives. Original pinned BMv2
+  matches 30 bounded prefix observations. CRC16/CRC32 services have explicit
+  positive byte-aligned contracts, no hidden padding or range reduction.
+  Exact strict probes expose pinned SpecTec's odd-byte CRC32 and table-mask
+  defects; passing controls remain separate. Oracle CI discovers both sets.
+  Scope, pins, observer barrier, exclusions and authoring costs:
+  `notes/firewall-port.md`, `notes/crc-contract.md`.
+  Reviews: `notes/reviews/firewall-port.md`, `crc-externs.md`.
+
+  Four validator-accepted wrong ports fail both engines. Subsequent actual
+  Python/Lean CRC XOR-one mutations pass packet-only gates but produce three
+  state-only divergences in four requests. Strong known-answer/full-state
+  gates kill both compiled mutants; all faults are restored. Proof audits
+  do not certify CRC's intended external algorithm. Reproduction and review:
+  `notes/mutations/firewall-hash-state.md`,
+  `notes/reviews/firewall-hash-state.md`.
+  Broader malformed coverage is active in isolated `work/firewall-boundaries`
+  at `50322dd`; truncated Ethernet/IPv4 behavior and generated flow sequences
+  are not yet claimed. Lean authoring/application proofs remain open.
+
+- **Verification infrastructure is established; broader proofs remain open.**
+  [verification.md](verification.md) records exact claims. Required real-Lean
+  CI, complete-sequence failure replays, abstract extern-state comparison,
+  timeout/process cleanup, typed generated scalar/stateful programs and
+  shrinking are in place. Finite-trace execution soundness, scalar value
+  laws and a bounded reexecution checker connect to actual production
+  execution. The Python certificate producer is documented in
+  [certificates.md](certificates.md); it is not universal equivalence or a
+  standalone proof term. Reviews and fixes cover stale binding observations,
+  malformed cells, duplicate responses and descendant process leakage.
+
+  Earlier adversarial campaigns found and killed eager branches and
+  state-only out-of-bounds/persistence faults; exact patches/replays are in
+  `notes/mutations/2026-09-23.md`. Compiler/surface faults are additionally
+  recorded in `lean/ASSURANCE.md`. A proof-integrity gate rejects `sorry`,
+  forged axioms and unexpected transitive axioms; theorem statements still
+  require review. Matching tests never prove universal Python equivalence.
+  Still open: whole-program validity/soundness and termination, aggregates,
+  assignment preservation, tables/nested calls/parser-fault generation,
+  further extern contracts and application properties.
+
+- **Interchange is tested, not verified.**
+  Real encoder/decoder defects were fixed without adapter normalization:
+  zero literals now emit decimal `"0"`; missing/null decimal string fields
+  no longer become numeric zero. Forty-two wire cases include persistent
+  valid/malformed/valid requests with counters exactly 1/1/2. Reviews:
+  `notes/reviews/zero-encoding.md`, `decimal-wire-defaults.md`.
+  Versioned representability, codec proofs, resource limits, duplicate input
+  keys and unknown-field policy remain open.
+
+- **XDP and later examples: source/environment preflight only.**
+  `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter
+  build and libbpf, complete per-CPU observations and an FD-only non-attaching
+  oracle design. No BPF compile/load/run evidence exists. A reproducible
+  compile-only image is a safe next independent step; capability-bearing
+  execution and redistribution licensing need explicit handling.
+  Do not treat Docker availability or skipped kernel tests as an oracle pass.
+  Flowlet time/randomness and the bounded Katran profile still require audit.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;
-  all ten corpus programs are authored in v2 with byte-identical
+  all eleven corpus programs are authored in v2 with byte-identical
   goldens, type-checked in CI; `tests/test_pyright.py` guards the
   static rules with must-pass and must-fail fixtures. The review is
   `notes/reviews/edsl-v2.md` and every finding is fixed.

@@ -107,7 +107,7 @@ typechecked with p4c through Docker when it is available.
 |---|---|
 | `ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
-| `lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified closed scalar authoring and reference execution API |
+| `lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
 | `tests/corpus/` | eleven programs: eDSL source, IR golden, README, STF vectors |
 | `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, semantics, coverage, status, decisions, notes |
