@@ -1,0 +1,6 @@
+{
+    "//": "tests/test_pyright.py runs pyright on the fixtures with this config; the project-wide run (pyproject.toml) excludes them, and an excluded file is skipped even when named on the command line. Keep the options in step with [tool.pyright] there.",
+    "include": ["must_pass", "must_fail"],
+    "pythonVersion": "3.13",
+    "typeCheckingMode": "standard"
+}
