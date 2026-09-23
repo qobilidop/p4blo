@@ -16,8 +16,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo.drt.case import Case
 from p4blo import arch
+from p4blo.drt.case import Case
 from p4blo.drt.programs import binary, bits, boolean, parser_condition_program, scalar_program
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
