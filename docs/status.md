@@ -60,12 +60,11 @@ Things a resuming agent should know are in motion or deliberately left.
   type and preserve any Run. This is not Python or whole-program soundness.
   Typed generated-program DRT covers scalar operators systematically,
   200 shrinking examples and faulting unselected parser branches. CI retains
-  failure bundles for 14 days. Latest full gate: **915 passed, 1 expected
+  failure bundles for 14 days. Latest full gate at `0bb5659`: **1001 passed, 1 expected
   BMv2 divergence, no skips**, with the pinned SpecTec oracle built locally;
-  The gate was rerun at `33d5cf1` with the same full result; build/audit and
-  287 Lean checks pass. Required DRT now includes 27 tests after independent
-  review found an old error-reason test excluded by its name. All four
-  remote workflows passed for the earlier checkpoint `a3de320`.
+  build/audit and 287 Lean checks pass. Required DRT now includes 95 tests,
+  including an old error-reason test that review found excluded by its name.
+  All four remote workflows passed for the preceding checkpoint `836b194`.
   The statement interpreter now uses a total continuation step and an
   unfoldable actual runner, with a finite-trace soundness theorem. It was
   independently compared with the old executor on fault/copyback cases.
@@ -89,17 +88,24 @@ Things a resuming agent should know are in motion or deliberately left.
   The Python certificate producer is integrated with 55 focused tests.
   Independent adversarial review exposed stale-binding and malformed-cell
   false acceptance, successful-peer descendant leakage and duplicate keys;
-  fixes and regressions pass locally, with independent follow-up pending
+  fixes and regressions pass locally and independent follow-up confirms them
   (`notes/reviews/python-certificate.md`). See `certificates.md` for the CLI.
   Fourth semantic round: Python and Lean counter-OOB mutations each survive
   the previous 27-test gate and fail the new stateful known-answer sequence
   on state alone. Both replays reproduce; restored code/replay and 28 new
-  stateful tests pass. Preserve the exact patches in the mutation report
-  before final checkpoint. Root owns CI and integration documentation.
+  stateful tests pass. Exact patches, commands and results are preserved in
+  `notes/mutations/2026-09-23.md`. State-only CLI diagnostics now show the
+  actual differing cells, even when an input cannot be represented in STF.
+  All sub-agent changes are integrated and reviewed; temporary worktrees
+  were removed after confirming clean status and merged commits. No pending
+  agent task or unmerged implementation is needed to resume.
   Still open: whole-program validity/soundness, validated-program termination,
   variables/aggregates and generation of tables, nested calls, parser faults
-  and further extern families. Neither finite
-  traces nor matching test results prove universal Python equivalence.
+  and further extern families. Next concrete step: extend scalar checking to
+  variables under an explicit typed-frame relation, then aggregate lvalues
+  and assignment preservation. `verification.md` lists the bounded follow-on
+  tasks. Neither finite traces nor matching test results prove universal
+  Python equivalence.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;

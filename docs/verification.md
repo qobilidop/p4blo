@@ -95,3 +95,25 @@ Keep the models independently implemented. Common wire syntax is useful;
 sharing semantic algorithms between the two would weaken differential
 testing. Within one implementation, duplicated type analysis can be
 consolidated without removing that independence.
+
+## Next concrete extensions
+
+The current checkpoint has the closed-scalar proof, proof-visible statement
+machine, fixed stateful claim checker and typed scalar/stateful campaigns.
+Resume with these bounded tasks rather than claiming the roadmap complete:
+
+1. Extend scalar checking to variable reads under an explicit relation
+   between typing contexts and runtime frames. Prove evaluation preservation
+   for that fragment before adding aggregate lvalues and assignment. Keep
+   the existing closed theorem as a special case, not an unchecked rewrite.
+2. Generate small validated action/sub-block calls and changing host table
+   snapshots across packet sequences. Challenge copy-in/copyback ordering,
+   aliasing and fault paths with independent mutations and retained replays.
+3. Formalize the validator assumptions needed for machine progress and
+   termination: acyclic calls, well-formed stores/externs, finite packet input
+   and the parser's no-consumption revisit rule. The current finite-trace
+   theorem supplies no proof that every valid program has such a trace.
+
+Generalizing the claim checker beyond the fixed fragment should follow
+explicit validity and observation contracts. A broader JSON interface alone
+would not discharge these obligations.

@@ -36,6 +36,10 @@ The tests compare persistent extern state as well as packets. Recorded
 mutation campaigns challenge both implementations; failing experiments
 retain concrete replay bundles. These are layered evidence, not a proof of
 universal Python–Lean equivalence or whole-program type safety.
+The [execution-claim experiment](docs/certificates.md) also runs a fixed
+stateful program in production Python and checks its claimed result with
+a Lean checker whose acceptance theorem is proved. Its compiled runtime
+and observation adapter remain explicit trust boundaries.
 
 ## Reading order
 

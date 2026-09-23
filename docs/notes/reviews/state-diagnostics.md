@@ -12,3 +12,7 @@ the same path.
 Fix: print the diagnostic header in the conversion-error branch too. Extend
 the two-CLI regression to an empty packet, requiring both the state values
 and the STF limitation to remain visible. No change to comparison semantics.
+Independent follow-up on `8c448c9` confirmed the fix, with no remaining
+finding. The same reviewer checked the fourth counter-mutation report
+against the program and known-answer test and independently reproduced its
+artifact filename; the semantic mutation runs themselves were not repeated.
