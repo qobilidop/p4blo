@@ -14,7 +14,7 @@ import P4blo.CommandPrefixTests
 import P4blo.CallEntryTests
 import P4blo.CallBodyEntryTests
 import P4blo.CallInitializerTests
-import P4blo.GuardedCallPrefix
+import P4blo.GuardedCallPrefixTests
 
 /-- info: 'P4blo.GuardedCallPrefix.initializers_eq' does not depend on any axioms -/
 #guard_msgs in
@@ -31,6 +31,10 @@ import P4blo.GuardedCallPrefix
 /-- info: 'P4blo.GuardedCallPrefix.source_prefix' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.GuardedCallPrefix.source_prefix
+
+/-- info: 'P4blo.GuardedCallPrefixTests.concrete_prefix' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedCallPrefixTests.concrete_prefix
 
 /-- info: 'P4blo.CallEntry.WithBody.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

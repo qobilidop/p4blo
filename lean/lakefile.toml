@@ -1,6 +1,6 @@
 name = "p4blo"
 version = "0.1.0"
-defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands", "fieldExpressions", "fieldCommands", "headerReads", "guardedForward", "callEntry", "callBodyEntry"]
+defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands", "fieldExpressions", "fieldCommands", "headerReads", "guardedForward", "callEntry", "callBodyEntry", "guardedCallPrefix"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "userTests"
 
@@ -49,3 +49,7 @@ root = "CallEntryMain"
 [[lean_exe]]
 name = "callBodyEntry"
 root = "CallBodyEntryMain"
+
+[[lean_exe]]
+name = "guardedCallPrefix"
+root = "GuardedCallPrefixMain"
