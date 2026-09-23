@@ -13,6 +13,7 @@ import Tests.CodecLaws
 import Tests.ExternFamilies
 import Tests.FrameInitialization
 import Tests.PlainCallEntry
+import Tests.PlainCallReturn
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -209,6 +210,7 @@ def main (args : List String) : IO UInt32 := do
     ExternFamiliesTests.tests
     FrameInitializationTests.tests
     PlainCallEntryTests.tests
+    PlainCallReturnTests.tests
     certificateWireTests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
