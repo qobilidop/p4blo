@@ -3,6 +3,27 @@ import P4blo.ScalarCommands
 import P4blo.Fields
 import P4blo.FieldExpressions
 import P4blo.FieldCommandExamples
+import P4blo.ForwardPolicy
+
+/-- info: 'P4blo.ForwardPolicy.observe_restore' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.ForwardPolicy.observe_restore
+
+/-- info: 'P4blo.ForwardPolicy.restore_observe' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.ForwardPolicy.restore_observe
+
+/-- info: 'P4blo.ForwardPolicy.authored_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwardPolicy.authored_policy
+
+/-- info: 'P4blo.ForwardPolicy.source_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwardPolicy.source_policy
+
+/-- info: 'P4blo.ForwardPolicy.execute_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwardPolicy.execute_policy
 
 /-- info: 'P4blo.Fields.Modes.scope_agrees' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

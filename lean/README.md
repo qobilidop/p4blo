@@ -212,3 +212,13 @@ write-fault regressions. The wrapper uses actual `inout` header/metadata and
 input-only route parameters, and observes fields only after the body finishes.
 It preserves a nonempty payload; it is still unverified scaffolding for the
 proved body, not a proof of calls, initialization or architecture behavior.
+
+`import P4blo.ForwardPolicy` adds an independent application-intent contract
+for that forwarding body. `source_policy` covers arbitrary source stores;
+`execute_policy` lifts it to real reference execution under the same concrete
+Index/declaration/frame premises. The named full-state policy uses ordinary
+TTL comparison/predecessor, separately from the authored equality guards and
+modular addition. It covers stored invalid-header contents but does not prove
+parsing, routing-table lookup, checksum maintenance or architecture fate.
+See [the policy assurance note](../docs/notes/forward-policy.md) for independent
+anchors and faults that generic lowering proofs alone do not reject.
