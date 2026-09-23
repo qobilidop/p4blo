@@ -9,6 +9,7 @@ import P4blo.ForwardPolicy
 import P4blo.SourceZero
 import P4blo.InitialFrames
 import P4blo.InitialFrameTests
+import P4blo.CommandPrefixTests
 
 /-- info: 'P4blo.Fields.Shape.zeroWith_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -337,3 +338,19 @@ not guarantee that a theorem expresses its intended property. -/
 /-- info: 'P4blo.InitialFrameTests.extras_initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.InitialFrameTests.extras_initialized
+
+/-- info: 'P4blo.Scalar.CmdWith.steps_prefix_with' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Scalar.CmdWith.steps_prefix_with
+
+/-- info: 'P4blo.Scalar.Cmd.steps_prefix' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Scalar.Cmd.steps_prefix
+
+/-- info: 'P4blo.Fields.Cmd.steps_prefix' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Cmd.steps_prefix
+
+/-- info: 'P4blo.CommandPrefixTests.prefix_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CommandPrefixTests.prefix_correct
