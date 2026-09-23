@@ -903,3 +903,13 @@ one that says so.
   more roots. Independent literal answers reject a paired body/source/result
   change that correctly preserves the generic proof; actual Python faults
   additionally require a saved clean-output mismatch and restored replay.
+- **Check mutable copy isolation by branch, not equal snapshots alone.**
+  Normal-return review reproduced three selective-alias faults that survived
+  complete value snapshots and one Ethernet write. Require disjoint mutable
+  aggregate objects and field lists, plus real Ethernet, IPv4, metadata and
+  observer writes against the retained callee. Immutable leaf sharing remains
+  allowed. Confidence: high for these fixed tree-shaped fixtures; no generic
+  Stack/cycle or whole-Python memory theorem follows. Revisit this observer
+  whenever a new mutable value shape enters the verified call profile. Keep
+  the demonstrated survivors as permanent regressions. Evidence and review:
+  `notes/plain-call-return.md`, `notes/reviews/plain-call-return.md`.

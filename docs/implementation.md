@@ -83,8 +83,12 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   exact finite-prefix/source-state and separate permission proofs, with
   independent literal answers and retained actual Python fault replays.
   Next: compose entry, locals and guarded forwarding up to the unexecuted observer suffix, following
-  `notes/call-body-prefix-plan.md`. Call return, copyback and complete
-  applications remain unproved.
+  `notes/call-body-prefix-plan.md`. Actual fixed-profile normal return now has
+  an exact operational proof: restore the captured caller, copy three writable
+  roots and preserve the current callee-after non-frame state. Independent
+  complete-state, ordered-write and branch-complete isolation tests accompany
+  it. Composing those boundaries into a whole call and proving complete
+  applications remain separate obligations.
 
 ## Application milestones
 
