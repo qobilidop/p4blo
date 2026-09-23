@@ -727,3 +727,19 @@ one that says so.
   Feasibility evidence and limits: `notes/codec-recursion-plan.md`. Logical
   termination is not a runtime resource bound; process failures must retain
   replay evidence rather than escape the observer.
+- **Separate intended forwarding policy from faithful lowering.** A wrong
+  same-width destination accessor passes generic correctness and differential
+  agreement, but independent answers reject it. Add a complete constructor-
+  based state view with inverse laws, then prove the authored body implements
+  an independent hit/TTL policy for arbitrary stores and lift it to actual
+  execution. Confidence: high in this bounded contract; no packet parser,
+  routing table, checksum or architecture fate follows. Keep invalid-header
+  stored values in scope because the body does not test validity. Revisit
+  assumptions when integrating a complete authored application.
+- **Resolve names before adding custom Lean authoring syntax.** Existing
+  typed references and commands remain the sole source representations.
+  A total unambiguous named-path resolver can remove positional mistakes;
+  a later list-sequencing combinator can remove nested parentheses.
+  Confidence: high in preserving meaning, medium in constructor diagnostics.
+  Review against `notes/authoring-ergonomics-plan.md`; introduce an elaborator
+  only if ordinary checked constructors remain materially awkward.

@@ -1028,8 +1028,12 @@ generic seam plus this candidate. All intentional edits were restored:
    assignment in production `python/p4blo/interp/expr.py:write_lvalue`, add:
 
    ```python
-   if (env.block.name == "RewriteBody" and isinstance(container, Header)
-       and container.type_name == "IPv4" and lv.member.field == "ttl"):
+   if (
+       env.block.name == "RewriteBody"
+       and isinstance(container, Header)
+       and container.type_name == "IPv4"
+       and lv.member.field == "ttl"
+   ):
        container.valid = True
    ```
 

@@ -12,25 +12,28 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `ba274f3`, including shared command factoring, actual
+Combined integration at `ae9ca87`, including concrete field commands, actual
 KeyValue codec laws and call-copy conformance: both Lean package gates and
 default audits pass, with **444 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
-six additional kernel rejection examples. Required real-Lean DRT:
-**393 passed**, no skips. Full gate:
-**1724 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+six additional field-expression kernel rejection examples, plus ten field-
+command full-state answers and declaration/permission/continuation checks.
+Required real-Lean DRT: **405 passed**, no skips. Full gate:
+**1737 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
-required native XDP CI passes at `1f2d8f5`, including lifecycle regressions.
+required native XDP CI passes at `5b93ad1`, including lifecycle regressions.
 Latest reviews under `notes/reviews/`: `field-permissions.md`,
-`command-seam.md`, `keyvalue-codec.md` and `call-copy.md`.
+`command-seam.md`, `field-commands.md`, `keyvalue-codec.md` and `call-copy.md`.
 
-All five remote workflows pass for `1f2d8f5`; newer CI must be checked
-separately. Twelve retained execution-fault bundles and nine raw leaf-codec
+All five remote workflows pass for `5b93ad1`; newer CI must be checked
+separately. Fourteen retained execution-fault bundles and nine raw leaf-codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All twelve execution bundles replay successfully on the integrated binaries
-(nineteen requests), as do all nine raw codec inputs after fault restoration.
+The previous twelve execution bundles replay successfully on `ba274f3`
+(nineteen requests); both new authored field-write bundles replay on this
+integration (two more requests). All nine raw codec inputs replay after
+fault restoration at the previous checked checkpoint.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -41,7 +44,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 444 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and scalar command lowering, aggregate path correspondence, representable leaf codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 444 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, aggregate path correspondence, representable leaf codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -91,7 +94,7 @@ Things a resuming agent should know are in motion or deliberately left.
   active default toolchain: `notes/reviews/package-boundary.md`,
   `shared-verification-layout.md` and `lean-public-names.md`.
 
-- **Verified Lean authoring: typed scalar commands integrated.**
+- **Verified Lean authoring: scalar and field commands integrated.**
   Closed bits/bools/addition/equality/mux and context-indexed variable reads
   share one AST and independent Fin/Bool source semantics. Exact lowering
   preserves the source value and the entire Run under actual action-first
@@ -128,8 +131,9 @@ Things a resuming agent should know are in motion or deliberately left.
   persistent writes, preserving validity, siblings, unrelated roots and
   non-value Run fields. Local shape checks do not imply nominal coherence;
   positive witnesses and impossible conflicting-layout examples expose that
-  boundary. No root permission or integrated expression/command proof is
-  claimed yet. Review: `notes/reviews/aggregate-paths.md`.
+  boundary. Root permission and integrated expression/command proofs were
+  separate follow-up obligations, now implemented below. Review:
+  `notes/reviews/aggregate-paths.md`.
   `a271370`/`a3f3537` are integrated at `d8e2341`: one shared `ExprWith`
   operator AST now serves scalar references and aggregate paths. Concrete
   field typing uses actual declarations/Index, and evaluation returns the
@@ -155,9 +159,22 @@ Things a resuming agent should know are in motion or deliberately left.
   The scalar API/theorems are preserved through concrete adapters, with all
   prior authored fixtures unchanged. Both Lean gates and 62 authored/call
   focused checks pass. Review: `notes/reviews/command-seam.md`.
-  Concrete field modes/places and the actual aggregate command theorem are
-  next in `work/field-commands`; the generic leaf-law theorem alone does not
-  establish that instance.
+  Concrete field modes/places and command proofs `9755077`/`7a4a05b` are
+  integrated at `3f1efb6`: actual root permission, exact full source values,
+  all validity bits, preserved declarations, unrelated runtime state and
+  arbitrary continuations. Ten authored cases include a route-selected
+  forwarding rewrite; real subcontrol directions and complete post-body
+  snapshots constrain the unverified wrapper. Three generic proof faults
+  fail; a compiled same-width wrong accessor passes generic proofs/DRT but
+  fails independent expected bytes. Two actual authored-write validity/
+  sibling faults save and replay live/restored. Review:
+  `notes/reviews/field-commands.md`; recipes and scope: `lean/ASSURANCE.md`.
+  The body theorem does not prove a router, initializer or call copying.
+  Next, active separately: independent arbitrary-store forwarding-policy
+  properties in `work/forward-policy` (based on committed `ab9d5d5`) and
+  typed named paths in `work/named-paths` (based on committed `ae9ca87`).
+  `notes/authoring-ergonomics-plan.md` separates naming/sequence ergonomics
+  from intended application policy; neither is claimed complete here.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete

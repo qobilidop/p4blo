@@ -29,8 +29,10 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   scalar assignment/sequence/if now have exact source-state preservation and
   finite execution proofs, with declaration and permission witnesses.
   Typed aggregate paths and shared scalar/field read expressions now have
-  exact nominal/frame correspondence. Writable field commands and complete
-  applications remain to be implemented.
+  exact nominal/frame correspondence. Writable scalar-leaf field commands
+  now preserve full source state, declarations, validity and unrelated runtime
+  state under concrete premises. Independent application-policy properties
+  and complete applications remain to be implemented.
 - [ ] Provide an ergonomic Lean surface and interpreter API using the reference
   execution functions. Test diagnostics and notation, including rejection cases.
 - [ ] Define a versioned restricted interchange profile and representability
