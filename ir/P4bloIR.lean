@@ -20,3 +20,4 @@ import P4bloIR.FieldLaws
 import P4bloIR.FieldTyping
 import P4bloIR.ScalarLaws
 import P4bloIR.ExecutionCertificate
+import P4bloIR.FrameInitialization
