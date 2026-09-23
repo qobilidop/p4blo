@@ -39,6 +39,13 @@ to a peer that stops reading. Local tests may skip an absent binary unless
 `P4BLO_REQUIRE_LEAN=1`; an existing but broken binary is always a failure.
 Build Lean first, then run the Python gate: rebuilding and testing in the
 same worktree concurrently can remove the executable while a test needs it.
+Prefer fresh build directories in new worktrees. Do not copy entire old
+Lean caches across package/namespace moves: stale modules can shadow current
+imports in standalone queries even when Lake's explicit build graph passes.
+For a clean-build check, wait for all binary consumers to finish, move only
+the two worktree-owned `.lake/build` directories to a recoverable temporary
+location, verify their absence, rebuild both packages, and rerun required
+DRT. Never move a source directory or shared toolchain as cache cleanup.
 New real-Lean tests use the shared `lean_binary` fixture and names beginning
 with `test_lean_agrees`; CI discovers them across the complete test tree.
 In authored-program gates, retain differential failure bundles before a

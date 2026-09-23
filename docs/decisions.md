@@ -774,3 +774,25 @@ one that says so.
   the small duplicated navigation and coercion ergonomics. Revisit a generic
   endpoint path when a second aggregate operation justifies its broader
   refactor. Reviewed scope/probe: `notes/header-validity-plan.md`.
+- **Discharge initialization premises in bounded layers.** Independent source
+  zero corresponds to the actual initializer under nominal agreement and an
+  explicit maximum-depth fuel bound. Do not infer that bound from arbitrary
+  nominal declarations or replace runtime fuel to simplify a proof. Prove
+  Frame.forBlock next against every actual scope variable, including observer
+  extras; call entry/copyback stay separate. Confidence: high in the zero
+  correspondence, medium in the generic HashMap-loop proof cost. Prefer a
+  concrete forwarding instance if generalization delays the useful bridge.
+  Scope: `notes/initialization-bridge-plan.md`, `notes/source-zero.md`.
+- **Use fresh Lean caches across package moves.** A standalone query exposed
+  stale pre-rename modules in a copied IR build cache. Retaining the old cache
+  outside the worktree, rebuilding both packages from empty build directories,
+  and rerunning required DRT closes this dependency concern. Confidence: high
+  for the reproduced cache issue; fresh CI remains independent confirmation.
+  Never move build directories while binary consumers are still running.
+- **Reuse checked recursive codec helpers for LValue and compose Arg laws.**
+  LValue's index expression uses the already-total Expr decoder; no mutual
+  recursion or new traversal helper is needed, and Arg's decoder is unchanged.
+  Bound only embedded Expr wire fields and retain invalid semantic syntax.
+  Confidence: high in this boundary, supported by exact original transcripts,
+  independent decoded constructors and paired mapping faults. Revisit helper
+  equivalence separately for statement arrays and their first-error order.

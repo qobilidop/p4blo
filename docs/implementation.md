@@ -39,18 +39,20 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   Typed named scalar paths now resolve with spelling/permission soundness and
   independent diagnostics. List sequencing now preserves the previous ASTs
   and exports, with independent order/branch answers and default-audited laws.
-  Read-only header-validity primitives are the next small semantic increment;
-  a unified read adapter and separately specified guarded policy follow.
+  Read-only header-validity primitives now have concrete typing/evaluation
+  laws and independent answers. A unified read adapter is active; a separately
+  specified guarded policy follows without changing the existing body.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.
-  Actual decimal/uint32 and representable Literal/Ty/KeyValue/Expr JSON-value
-  round trips are proved and default-audited. The actual Expr decoder uses
-  terminating recursion; helper erasure and exact malformed-input answers
+  Actual decimal/uint32 and representable Literal/Ty/KeyValue/Expr/LValue/Arg
+  JSON-value round trips are proved and default-audited. The actual Expr and
+  LValue decoders use terminating recursion; helper erasure and malformed answers
   preserve its previous behavior. Independent constructor observations catch
   paired wrong-wire mappings, including a shared operator-name fault that
-  originally survived the tests. LValue/Arg proofs are next; statement/program
-  codecs, text parsing, resource limits and version policy remain open.
+  originally survived the tests. Paired LValue operand and Arg tag mappings
+  are likewise caught independently. Statement/program codecs, text parsing,
+  resource limits and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
   Contextual scalar checking now has both proofs and rejects malformed
@@ -58,6 +60,11 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   a complete statement checker and whole-program validity remain open.
 - [ ] Exercise existing forwarder/stateful examples through both authoring
   paths and execution APIs, with named application properties and mutations.
+  Independent aggregate source zero now corresponds to the actual initializer
+  under exact nominal agreement and explicit sufficient fuel. The forwarding
+  roots supply a constructive instance. Actual complete-scope frame creation
+  is the next proof bridge; call entry/return and complete applications remain
+  unproved.
 
 ## Application milestones
 
