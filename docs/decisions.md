@@ -564,3 +564,13 @@ one that says so.
   hashes: SpecTec's wrong CRC32 indices preserve their collision relation.
   Current support is a bounded, externally checked Python port, not universal
   translation correctness or a completed Lean firewall proof milestone.
+- **Retain exact state and numeric contracts beside packet equivalence.**
+  Actual Python and Lean CRC32 XOR-one mutations each preserve firewall
+  packet behavior while permuting register indices. Existing full-state and
+  independent known-answer gates detect both compiled faults; weaker packet
+  gates survive. Confidence: high for these selected mutants, not general
+  mutation adequacy. Record patches, complete replay reconstruction and
+  restored baselines in `notes/mutations/firewall-hash-state.md`. Passing
+  proof audits do not certify an external algorithm absent a theorem stating
+  that contract. Revisit CRC refinement with an independent specification,
+  not a theorem that merely restates the implementation being checked.

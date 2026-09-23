@@ -174,9 +174,18 @@ Things a resuming agent should know are in motion or deliberately left.
   Original SpecTec's table-mask defect is isolated in two additional strict
   probes, not excused across a whole corpus vector. Both oracle jobs select
   the new profiles. Lean authoring/application proofs, wider generated flows
-  and truncated Ethernet/IPv4 coverage remain open. A new isolated campaign
-  is challenging actual Python/Lean hash implementations, beyond IR-port
-  mutants, while typed-frame implementation proceeds separately.
+  and truncated Ethernet/IPv4 coverage remain open. All four remote workflows
+  passed at `2010876`. The actual Python/Lean CRC mutation campaign is now
+  complete: independently XORing one CRC32 output bit survives packet-only
+  checks but produces three state-only divergences in the four-request
+  connection sequence. Numeric/full-state tests kill both compiled mutants;
+  the Lean mutant still builds every proof audit, whose claims do not specify
+  the intended external CRC algorithm. Both faults are restored; both package
+  gates, 110 focused tests, 167 required DRT and both complete replays pass.
+  Exact patches, source-only reconstruction and artifact hashes are preserved
+  in `notes/mutations/firewall-hash-state.md`; independent review is in
+  `notes/reviews/firewall-hash-state.md`. No external-oracle rerun is claimed
+  for this report-only campaign. Typed-frame implementation proceeds separately.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern
