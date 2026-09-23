@@ -116,3 +116,8 @@ so the required CI gate discovers them without a hand-maintained file list.
   appropriate to the task's complexity. Create each worktree before
   delegating and include its absolute path and file ownership in the
   brief. Sub-agents must not edit the integrator's working tree.
+  Worktrees do not isolate external resources: use distinct Docker image
+  tags and `P4BLO_BMV2_IMAGE` per implementation worktree. Never rebuild the
+  shared oracle image while another agent's tests use it. Coordinate other
+  mutable caches, ports and fixtures explicitly; immutable pinned caches
+  may be shared.
