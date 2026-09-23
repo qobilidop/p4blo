@@ -82,3 +82,18 @@ def scalar_program(expression: pb.Expr, width: int | None) -> pb.Program:
     )
     program.blocks[1].body[1].assign.value.CopyFrom(value)
     return program
+
+
+def parser_condition_program(condition: pb.Expr, expected_error: str) -> pb.Program:
+    """Expose a parser condition's error outcome as a single emitted bit.
+
+    This makes skipped packet reads observable: unlike closed pure scalar
+    expressions, a lookahead on empty input can fault if evaluated eagerly.
+    """
+    parser_error = pb.Expr(member=pb.Member(base=pb.Expr(var="meta"), field="parser_error"))
+    expected = pb.Expr(literal=pb.Literal(error=expected_error))
+    program = scalar_program(binary(pb.BINARY_OP_EQ, parser_error, expected), None)
+    program.name = "parser-condition"
+    program.struct_types[1].fields.add(name="parser_error", type=pb.Type(error=pb.ErrorType()))
+    program.blocks[0].states[0].body.add(verify=pb.Verify(condition=condition, error="NoMatch"))
+    return program

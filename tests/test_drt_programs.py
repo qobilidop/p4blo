@@ -17,9 +17,10 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from p4blo.drt.case import Case
-from p4blo.drt.programs import binary, bits, boolean, scalar_program
+from p4blo import arch
+from p4blo.drt.programs import binary, bits, boolean, parser_condition_program, scalar_program
 from p4blo.drt.replay import save
-from p4blo.drt.run import ProtocolError, compare_program
+from p4blo.drt.run import ProtocolError, compare_program, run_python
 from p4blo.v0 import p4blo_pb2 as pb
 
 WIDTHS = st.sampled_from([1, 7, 8, 9, 16, 31, 32, 64, 65, 127])
@@ -112,7 +113,10 @@ def scalar(draw: st.DrawFn, width: int | None, depth: int = 3) -> pb.Expr:
 
 
 def check_expression(expression: pb.Expr, width: int | None, lean_binary: Path) -> None:
-    program = scalar_program(expression, width)
+    check_program(scalar_program(expression, width), lean_binary)
+
+
+def check_program(program: pb.Program, lean_binary: Path) -> None:
     # compare_program validates; generator mistakes fail, never get filtered.
     cases = [Case(pb.Entries(), 0, b"")]
     try:
@@ -130,6 +134,80 @@ def check_expression(expression: pb.Expr, width: int | None, lean_binary: Path) 
         pytest.fail(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
+
+
+def test_lean_agrees_on_cast_slice_mux_boundaries(lean_binary: Path) -> None:
+    for value in (False, True):
+        check_expression(
+            pb.Expr(unary=pb.Unary(op=pb.UNARY_OP_NOT, operand=boolean(value))), None, lean_binary
+        )
+        check_expression(
+            pb.Expr(cast=pb.Cast(to=pb.Type(bits=1), operand=boolean(value))), 1, lean_binary
+        )
+        check_expression(
+            pb.Expr(cast=pb.Cast(to=pb.Type(boolean=pb.BoolType()), operand=bits(1, int(value)))),
+            None,
+            lean_binary,
+        )
+        check_expression(
+            pb.Expr(
+                mux=pb.Mux(
+                    **{
+                        "condition": boolean(value),
+                        "then": bits(7, 21),
+                        "otherwise": bits(7, 106),
+                    }
+                )
+            ),
+            7,
+            lean_binary,
+        )
+    for source in (1, 8, 65):
+        for target in (1, 7, 8, 9, 65):
+            check_expression(
+                pb.Expr(
+                    cast=pb.Cast(to=pb.Type(bits=target), operand=bits(source, (1 << source) - 1))
+                ),
+                target,
+                lean_binary,
+            )
+    for hi, lo in ((0, 0), (7, 7), (7, 0), (6, 2)):
+        check_expression(
+            pb.Expr(slice=pb.Slice(operand=bits(8, 0xDA), hi=hi, lo=lo)), hi - lo + 1, lean_binary
+        )
+
+
+def test_lean_agrees_on_faulting_unselected_branches(lean_binary: Path) -> None:
+    trap = pb.Expr(
+        cast=pb.Cast(
+            to=pb.Type(boolean=pb.BoolType()),
+            operand=pb.Expr(lookahead=pb.Lookahead(type=pb.Type(bits=1))),
+        )
+    )
+    cases = [
+        (binary(pb.BINARY_OP_AND, boolean(False), trap), "NoMatch"),
+        (binary(pb.BINARY_OP_OR, boolean(True), trap), "NoError"),
+        (binary(pb.BINARY_OP_AND, boolean(True), trap), "PacketTooShort"),
+        (binary(pb.BINARY_OP_OR, boolean(False), trap), "PacketTooShort"),
+        (
+            pb.Expr(
+                mux=pb.Mux(**{"condition": boolean(True), "then": boolean(True), "otherwise": trap})
+            ),
+            "NoError",
+        ),
+        (
+            pb.Expr(
+                mux=pb.Mux(
+                    **{"condition": boolean(False), "then": trap, "otherwise": boolean(True)}
+                )
+            ),
+            "NoError",
+        ),
+    ]
+    for condition, expected_error in cases:
+        program = parser_condition_program(condition, expected_error)
+        assert run_python(arch.load(program), Case(pb.Entries(), 0, b""), 4) == [(0, b"\x80")]
+        check_program(program, lean_binary)
 
 
 @pytest.mark.parametrize("width", [1, 7, 8, 9, 31, 32, 65])
