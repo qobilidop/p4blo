@@ -1,0 +1,254 @@
+"""Actual leaf wire laws: independent payloads, not just self round-trips."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
+
+import pytest
+from google.protobuf import json_format
+
+from p4blo import ir
+from p4blo.drt._json import loads
+from p4blo.v0 import p4blo_pb2 as pb
+
+ROOT = Path(__file__).resolve().parents[1]
+LeafKind = Literal["literal", "type"]
+
+
+@dataclass(frozen=True)
+class Leaf:
+    kind: LeafKind
+    wire: dict[str, object]
+    value: dict[str, object]
+
+
+def leaves() -> list[Leaf]:
+    result = [
+        Leaf("literal", {"bits": {"value": str(n)}}, {"tag": "bits", "width": 0, "value": str(n)})
+        for n in [0, 1, 9, 10, 99, 100, 2**32 - 1, 2**32, 10**100 + 7]
+    ]
+    for width in [1, 8, 2**32 - 1]:
+        result.append(
+            Leaf(
+                "literal",
+                {"bits": {"width": width, "value": "0"}},
+                {"tag": "bits", "width": width, "value": "0"},
+            )
+        )
+    for b in [False, True]:
+        result.append(Leaf("literal", {"boolean": b}, {"tag": "boolean", "value": b}))
+    for name in ["", "NoError", 'quoted"\\\n名字']:
+        result.extend(
+            [
+                Leaf("literal", {"error": name}, {"tag": "error", "name": name}),
+                Leaf("type", {"header": name}, {"tag": "header", "name": name}),
+                Leaf("type", {"struct": name}, {"tag": "struct", "name": name}),
+                Leaf("type", {"enum_type": name}, {"tag": "enum_type", "name": name}),
+            ]
+        )
+    for enum_type, member in [("", ""), ("E", ""), ("", "m"), ("E", "m")]:
+        fields = {k: v for k, v in [("enum_type", enum_type), ("member", member)] if v}
+        result.append(
+            Leaf(
+                "literal",
+                {"enum_member": fields},
+                {"tag": "enum_member", "enum_type": enum_type, "member": member},
+            )
+        )
+    result.extend(
+        [
+            Leaf("type", {"bits": width}, {"tag": "bits", "width": width})
+            for width in [0, 1, 2**32 - 1]
+        ]
+    )
+    result.extend([Leaf("type", {tag: {}}, {"tag": tag}) for tag in ["boolean", "error"]])
+    for header, size in [("", 0), ("H", 0), ("", 1), ("H", 2**32 - 1)]:
+        fields: dict[str, object] = {}
+        if header:
+            fields["header"] = header
+        if size:
+            fields["size"] = size
+        result.append(
+            Leaf("type", {"stack": fields}, {"tag": "stack", "header": header, "size": size})
+        )
+    return result
+
+
+def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, object], dict]:
+    """The production protobuf adapter, with no semantic validator in between."""
+    program = pb.Program()
+    observed: dict[str, object]
+    if kind == "literal":
+        value = json_format.ParseDict(wire, pb.Literal())
+        program.extern_instances.add().args.add().CopyFrom(value)
+        recovered = ir.load_json(ir.dump_json(program)).extern_instances[0].args[0]
+        assert recovered == value
+        encoded = json.loads(ir.dump_json(program))["extern_instances"][0]["args"][0]
+        match value.WhichOneof("value"):
+            case "bits":
+                observed = {"tag": "bits", "width": value.bits.width, "value": value.bits.value}
+            case "boolean":
+                observed = {"tag": "boolean", "value": value.boolean}
+            case "enum_member":
+                observed = {
+                    "tag": "enum_member",
+                    "enum_type": value.enum_member.enum_type,
+                    "member": value.enum_member.member,
+                }
+            case "error":
+                observed = {"tag": "error", "name": value.error}
+            case _:
+                raise AssertionError("test requires a set literal oneof")
+    else:
+        value = json_format.ParseDict(wire, pb.Type())
+        program.struct_types.add().fields.add().type.CopyFrom(value)
+        recovered = ir.load_json(ir.dump_json(program)).struct_types[0].fields[0].type
+        assert recovered == value
+        encoded = json.loads(ir.dump_json(program))["struct_types"][0]["fields"][0]["type"]
+        match value.WhichOneof("kind"):
+            case "bits":
+                observed = {"tag": "bits", "width": value.bits}
+            case "boolean" | "error" as tag:
+                observed = {"tag": tag}
+            case "header" | "struct" | "enum_type" as tag:
+                observed = {"tag": tag, "name": getattr(value, tag)}
+            case "stack":
+                observed = {"tag": "stack", "header": value.stack.header, "size": value.stack.size}
+            case _:
+                raise AssertionError("test requires a set type oneof")
+    return observed, encoded
+
+
+def assert_leaf(
+    lean_binary: Path, kind: LeafKind, wire: dict[str, object], expected: dict[str, object]
+) -> dict[str, object]:
+    """Retain raw leaf JSON before an independent known answer can fail."""
+    binary = lean_binary.with_name("codec-leaves")
+    assert binary.is_file(), f"missing test endpoint: {binary} (build ir/ default targets)"
+    request = {"kind": kind, "wire": wire}
+    result = subprocess.run(
+        [str(binary)], input=json.dumps(request) + "\n", text=True, capture_output=True, timeout=10
+    )
+    try:
+        actual = loads(result.stdout)
+    except ValueError:
+        actual = {"malformed_stdout": result.stdout}
+    if result.returncode != 0 or result.stderr or not same_json(actual, expected):
+        artifact = {
+            "format": "p4blo.codec-leaf.v0",
+            "request": request,
+            "expected": expected,
+            "actual": actual,
+            "returncode": result.returncode,
+            "stderr": result.stderr,
+        }
+        digest = hashlib.sha256(json.dumps(request, sort_keys=True).encode()).hexdigest()[:24]
+        folder = Path(os.environ.get("P4BLO_CODEC_FAILURE_DIR", ROOT / ".artifacts/codec"))
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / f"leaf-{digest}.json").write_text(json.dumps(artifact, indent=2) + "\n")
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == ""
+    assert same_json(actual, expected), (actual, expected)
+    assert isinstance(actual, dict)
+    return dict(actual)
+
+
+def same_json(left: object, right: object) -> bool:
+    """Canonical rendering compares JSON structure without bool/int/float equality."""
+    return json.dumps(left, sort_keys=True) == json.dumps(right, sort_keys=True)
+
+
+@pytest.mark.parametrize("leaf", leaves())
+def test_leaf_protobuf_known_answers(leaf: Leaf) -> None:
+    value, encoded = protobuf_value(leaf.kind, leaf.wire)
+    assert same_json(value, leaf.value)
+    assert same_json(encoded, leaf.wire)
+
+
+@pytest.mark.parametrize("leaf", leaves())
+def test_lean_agrees_leaf_known_answers(lean_binary: Path, leaf: Leaf) -> None:
+    actual = assert_leaf(
+        lean_binary, leaf.kind, leaf.wire, {"value": leaf.value, "encoded": leaf.wire}
+    )
+    actual_encoded = actual["encoded"]
+    assert isinstance(actual_encoded, dict)
+    value, encoded = protobuf_value(leaf.kind, actual_encoded)
+    assert same_json(value, leaf.value) and same_json(encoded, leaf.wire)
+
+
+@pytest.mark.parametrize("wrong", [0, 0.0, 1, 1.0])
+def test_leaf_observer_retains_type_confusion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, wrong: object
+) -> None:
+    (tmp_path / "codec-leaves").touch()
+    monkeypatch.setenv("P4BLO_CODEC_FAILURE_DIR", str(tmp_path / "failures"))
+    expected = {"value": {"tag": "boolean", "value": False}, "encoded": {"boolean": False}}
+    bad = {"value": {"tag": "boolean", "value": wrong}, "encoded": {"boolean": wrong}}
+
+    def fake_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(["fake"], 0, json.dumps(bad), "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(AssertionError):
+        assert_leaf(tmp_path / "p4blo-lean", "literal", {"boolean": False}, expected)
+    bundles = list((tmp_path / "failures").glob("*.json"))
+    assert len(bundles) == 1
+    saved = json.loads(bundles[0].read_text())
+    assert same_json(saved["actual"], bad) and same_json(saved["expected"], expected)
+
+
+@pytest.mark.parametrize("left, right", [(False, 0), (True, 1), (8, 8.0)])
+def test_leaf_observer_requires_exact_json_types(left: object, right: object) -> None:
+    assert left == right
+    assert not same_json({"nested": [left]}, {"nested": [right]})
+
+
+@pytest.mark.parametrize(
+    "kind, wire, message",
+    [
+        (
+            "literal",
+            {"bits": {}},
+            "leaf.bits.value: expected a decimal number, got an empty string",
+        ),
+        (
+            "literal",
+            {"bits": {"value": None}},
+            "leaf.bits.value: expected a decimal number, got an empty string",
+        ),
+        ("literal", {"bits": {"value": 0}}, "leaf.bits.value: expected a string"),
+        ("type", {}, "leaf: no kind set"),
+        ("literal", {"boolean": None}, "leaf: no kind set"),
+        ("type", {"bits": 2**32}, "leaf.bits: 4294967296 does not fit in uint32"),
+        ("type", {"stack": {"size": 2**32}}, "leaf.stack.size: 4294967296 does not fit in uint32"),
+        (
+            "literal",
+            {"bits": {"width": 2**32, "value": "0"}},
+            "leaf.bits.width: 4294967296 does not fit in uint32",
+        ),
+    ],
+)
+def test_lean_agrees_leaf_rejection_profile(
+    lean_binary: Path, kind: LeafKind, wire: dict[str, object], message: str
+) -> None:
+    # Deliberately not a full ProtoJSON acceptance-parity assertion: protobuf
+    # permits empty messages and missing strings before semantic validation.
+    assert_leaf(lean_binary, kind, wire, {"error": message})
+
+
+def test_lean_agrees_leaf_decimal_canonicalization(lean_binary: Path) -> None:
+    assert_leaf(
+        lean_binary,
+        "literal",
+        {"bits": {"width": "0008", "value": "0007"}},
+        {
+            "value": {"tag": "bits", "width": 8, "value": "7"},
+            "encoded": {"bits": {"width": 8, "value": "7"}},
+        },
+    )
