@@ -898,3 +898,76 @@ or if compatibility pressures create a second sequencing implementation.
 The field campaign will distinguish proof-rejected faults from compiled
 surface/runtime kills; this factoring alone adds no new mutation-adequacy
 claim beyond the earlier retained scalar command experiments.
+
+## Concrete scalar-field commands
+
+The concrete `Fields.Cmd modes` instance adds no source operator/command
+AST, recursive sequencing evaluator or alternative IR executor.
+`FieldPlaces` reuses `Scalar.Mode` and its authoritative local/out/inout
+policy through a general `Mode.declarationIR` helper; the scalar declaration
+API and prior proof audits remain unchanged. Aggregate Modes are indexed
+by the existing Layout, and `Modes.Agrees` checks the actual root's name,
+nominal type and direction. `Modes.scope_agrees`/`frame_matches` construct
+declaration and value witnesses. `Place.typed` carries writable-root
+evidence down existing variable/member paths to `FieldTyping.WritablePath`.
+
+The public `Fields.Cmd.steps` and `execute_correct` have only concrete
+premises: `RootWellFormed roots`, `roots.IndexAgrees initial.index`,
+`modes.Agrees initial.frame.scope`, exact `FrameMatches source initial.frame`
+and both halves of `BlockFrame`. They derive authoritative body typing and
+actual finite-prefix/execution success. The full final source store is
+related exactly, actual declaration agreement is preserved, all non-value
+Run fields are unchanged, and names outside the possible root-target set
+retain their values. `Cmd.validities` additionally proves that every stored
+header-validity bit is unchanged. An arbitrary continuation remains
+unexecuted in the prefix theorem; `Steps.execute`/`Finishes.sound` connects
+the empty-continuation case to the existing production executor.
+
+Read laws are discharged by actual `Ref.evaluate`; writes by actual
+`Ref.write_matches`, which reconstructs each nested parent and writes its
+complete root. The invariant also carries actual index agreement across
+every update. No public field theorem asks a caller to assume correctness
+of a callback or of an entire lowered command. Mutable storage alone does
+not establish permission: a kernel witness has exactly matching values but
+an actual input declaration where Modes says inout, and its declaration
+agreement is provably false.
+
+The mixed constructive fixture contains Ethernet and IPv4 headers, metadata,
+a read-only route record and a scalar local. Its exact source/index/frame
+witness instantiates final execution, with an extra unmodeled runtime root,
+nonempty packet and nonzero cursor/emitter/visits/extern state/table defaults.
+Ten independent Lean full-root answers exercise dependent writes to the same
+header, updated-state branch conditions, both branches and shared tail,
+wraparound, all combinations of the two initial header validity bits, and
+a route-selected forwarding rewrite. Source answers are explicit IR values,
+not results obtained by evaluating the lowered body. Additional kernel
+checks reject input/directionless Places, wrong assignment/condition types,
+forged root direction/type, missing nominal index and a hidden action-value
+layer. A supplied continuation is both left untouched by a kernel proof
+and shown to genuinely fault when run separately. Actual `Index.build` and
+`Frame.forBlock` construct local/out/inout aggregate roots; a scalar write
+then retains zero siblings and invalid header bits in all three cases.
+
+Seven new default audits cover the constructive scope/frame, writable-path
+bridge, validity preservation, concrete prefix and execution, and the mixed
+fixture's final correspondence witness. The validity lemma uses precisely
+`[propext, Quot.sound]`; the other six use precisely
+`[propext, Classical.choice, Quot.sound]`. Both complete Lean package gates,
+all default audits and the old/new user tests pass. There is no new trusted
+axiom or native-evaluation escape.
+
+These are already-initialized, action-free scalar-field body theorems, not
+general initialization, aggregate assignment/copyback, whole-program
+validity, universal Python equivalence or a verified packet-processing
+application. The forwarding body consumes provided route-hit and next-hop
+values. It guards TTL 0/1, then uses existing wrapping addition by 255 to
+decrement the eight-bit TTL. Parser extraction, header-validity tests, table
+lookup, checksum recomputation, architecture fate and deparsing are excluded.
+
+Confidence is high in the concrete correspondence boundary and medium in
+positional paths/mode ergonomics. References and Places are declared once;
+the forwarding body itself uses ordinary assign/if/sequence and `place.read`
+without casts or proof terms. Revisit when parsing or application predicates
+force repeated path transports, or when a named-field surface can improve
+readability without obscuring the single underlying typed AST. Do not add
+an independent forwarding evaluator to make the example easier to prove.
