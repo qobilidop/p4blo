@@ -110,7 +110,7 @@ class MyParser(Parser[headers, metadata]):
 
     @state
     def parse_first_h2(self) -> Transition:
-        self.call(SubParser, self.meta.next_type)
+        self.call(SubParser, self.hdr, self.meta.next_type)
         return self.select(
             self.meta.next_type, {HdrType.H2: self.parse_other_h2}, default=self.accept
         )

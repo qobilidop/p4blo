@@ -10,15 +10,14 @@ The directory is excluded from the project-wide pyright run
 (pyproject.toml) and checked here under its own tests/pyright/pyrightconfig.json,
 so the must_fail files are seen only by this suite.
 
-Until the v2 surface is published as `p4blo.edsl`, its names do not
-import; a file whose errors include one on an import line is skipped as
-"surface not available yet" rather than failed, so the suite is green
-before the surface lands and becomes real when it does.
+A must_pass file is also a program: it is imported, built and validated
+here. Type-checking it alone would leave the one construct the design
+puts at run time by accepted deviation -- a sub-block call's arguments --
+checked nowhere.
 """
 
 from __future__ import annotations
 
-import ast
 import importlib.util
 import json
 import re
@@ -28,8 +27,12 @@ import sys
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
 
 import pytest
+
+from p4blo import validator
+from p4blo.edsl import EdslError, Program, bit8
 
 ROOT = Path(__file__).resolve().parent.parent
 SUITE = ROOT / "tests" / "pyright"
@@ -113,23 +116,19 @@ def diagnostics() -> dict[Path, list[Diagnostic]]:
     return by_file
 
 
-def import_lines(file: Path) -> set[int]:
-    """The 1-based lines of every import statement in `file`."""
-    lines: set[int] = set()
-    for node in ast.walk(ast.parse(file.read_text(), filename=str(file))):
-        if isinstance(node, ast.Import | ast.ImportFrom):
-            lines.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
-    return lines
+def errors_of(file: Path, diagnostics: dict[Path, list[Diagnostic]]) -> list[Diagnostic]:
+    """The errors pyright reports on `file`."""
+    return [d for d in diagnostics[file] if d.severity == "error"]
 
 
-def errors_or_skip(file: Path, diagnostics: dict[Path, list[Diagnostic]]) -> list[Diagnostic]:
-    """The errors pyright reports on `file`, unless one sits on an import
-    line: then the surface the file is written against is not there yet."""
-    errors = [d for d in diagnostics[file] if d.severity == "error"]
-    on_imports = [d for d in errors if d.line in import_lines(file)]
-    if on_imports:
-        pytest.skip(f"surface not available yet: {on_imports[0]}")
-    return errors
+def import_fixture(file: Path) -> ModuleType:
+    """A fixture module, executed: its `program` is what it declares."""
+    spec = importlib.util.spec_from_file_location(f"pyright_fixture_{file.stem}", file)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def expectations(file: Path) -> list[Expectation]:
@@ -143,8 +142,17 @@ def expectations(file: Path) -> list[Expectation]:
 
 @pytest.mark.parametrize("file", MUST_PASS, ids=lambda f: f.stem)
 def test_must_pass_has_no_errors(file: Path, diagnostics: dict[Path, list[Diagnostic]]) -> None:
-    errors = errors_or_skip(file, diagnostics)
+    errors = errors_of(file, diagnostics)
     assert not errors, "\n".join(map(str, errors))
+
+
+@pytest.mark.parametrize("file", MUST_PASS, ids=lambda f: f.stem)
+def test_must_pass_builds_and_validates(file: Path) -> None:
+    """Every must_pass file declares a `program` that builds into IR the
+    validator accepts. Pyright never runs a file; this does."""
+    program = import_fixture(file).program
+    assert isinstance(program, Program)
+    assert validator.validate(program.build()) == []
 
 
 @pytest.mark.parametrize("file", MUST_FAIL, ids=lambda f: f.stem)
@@ -153,7 +161,7 @@ def test_must_fail_fails_for_the_named_reasons(
 ) -> None:
     expected = expectations(file)
     assert expected, f"{file.name} names no `# expect:` diagnostic"
-    errors = errors_or_skip(file, diagnostics)
+    errors = errors_of(file, diagnostics)
     missing = [e for e in expected if not any(e.matches(d) for d in errors)]
     unexpected = [d for d in errors if not any(e.matches(d) for e in expected)]
     report = [
@@ -176,12 +184,9 @@ def test_an_expression_has_no_truth_value() -> None:
     """`if hdr.ipv4.ttl == 1:` is the one mistake pyright cannot see: a
     comparison is a `Bool` expression, and Python asks it for a truth value.
     The design's answer is a `__bool__` that raises and names the cause."""
-    edsl = pytest.importorskip("p4blo.edsl")
-    if not hasattr(edsl, "Bits"):
-        pytest.skip("surface not available yet: p4blo.edsl does not export Bits")
-    ttl = edsl.bit8(1)
-    with pytest.raises(edsl.EdslError):
+    ttl = bit8(1)
+    with pytest.raises(EdslError):
         if ttl == 1:
             pass
-    with pytest.raises(edsl.EdslError):
+    with pytest.raises(EdslError):
         bool(ttl)
