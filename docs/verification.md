@@ -50,6 +50,18 @@ the relevant gates. `status.md` records what actually landed, the evidence,
 and remaining obligations. Proofs must be imported by a checked target;
 unchecked axioms and `sorry` are not accepted substitutes for proofs.
 
+## Adversarial iterations
+
+Deliberately mutate both implementations in isolated worktrees. Begin with
+a passing baseline, make one anchored semantic change, rebuild when Lean
+changes, and run the conformance gate. Record the patch, command and
+outcome: killed by a semantic disagreement, survived, or invalid because
+the mutant did not build. A compiler failure is not a semantic kill.
+Use surviving mutants to add focused component cases or broaden generated
+programs, then rerun both the original and mutant. Retain the regression,
+never the mutation. Repeat across arithmetic, control flow, packet and
+stateful behavior; selected mutants are evidence, not a completeness claim.
+
 ## Prior art and choices
 
 Cedar was inspected at `acb0db7daa838249d894d2af64c850e1c9bf0d7d`:

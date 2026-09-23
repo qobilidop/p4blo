@@ -88,6 +88,15 @@ full gates table, every pin, and the procedure for each kind of change.
   Inspect the branch and remote first, preserve unrelated changes, and
   never force-push or bypass failing gates. Record unavailable gates
   explicitly rather than presenting skips as successful checks.
+- **Continue autonomously within the requested direction.** Make scoped
+  design decisions without waiting for feedback and record their reasons
+  in `docs/decisions.md` for later review. Keep advancing the active
+  roadmap while a safe, concrete next step is known.
+- **Challenge verification adversarially.** Introduce deliberate semantic
+  faults in isolated worktrees on both the Python and Lean sides. Record
+  which conformance tests kill each mutant, investigate survivors, and
+  improve coverage before repeating. A failure to build is not a test
+  that detected a semantic inconsistency. Never merge intentional faults.
 - **Sub-agents** work in their own worktree, own a disjoint set of
   files, build against interfaces already committed on `main`, and
   finish with the gates green. Integration happens on `main`. Each
