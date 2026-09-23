@@ -76,6 +76,35 @@ example : Expr.decode "test" (Json.mkObj [("member", Json.mkObj [])]) =
   rw [Expr.decode_unfold]
   rfl
 
+def nestedLValue : LValue := .member
+  (.index (.next (.next (.var ""))) nestedExpression) ""
+
+theorem nestedLValue_representable : CodecLaws.LValueRepresentable nestedLValue := by
+  simp [nestedLValue, CodecLaws.LValueRepresentable, nestedExpression_representable]
+
+example (path : String) : LValue.decode path nestedLValue.toJson = .ok nestedLValue :=
+  CodecLaws.lvalue_roundtrip path nestedLValue nestedLValue_representable
+
+example (path : String) : Arg.decode path (Arg.lvalue nestedLValue).toJson =
+    .ok (.lvalue nestedLValue) :=
+  CodecLaws.arg_roundtrip path _ nestedLValue_representable
+
+example (path : String) : Arg.decode path (Arg.expr nestedExpression).toJson =
+    .ok (.expr nestedExpression) :=
+  CodecLaws.arg_roundtrip path _ nestedExpression_representable
+
+example : ¬ CodecLaws.LValueRepresentable
+    (.index (.var "array") (.lookahead (.bits (2 ^ 32)))) := by
+  simp [CodecLaws.LValueRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+
+example : LValue.decode "test" (Json.mkObj [("next", Json.mkObj [])]) =
+    .error "test.next.stack: no kind set" := by
+  rw [LValue.decode_unfold]
+  change LValue.next <$> LValue.decode "test.next.stack" (Json.mkObj []) = _
+  rw [LValue.decode_unfold]
+  rfl
+
 /-- A separate semantic observation, not the production wire encoder. -/
 def literalValue : Literal → Json
   | .bits width value => Json.mkObj
@@ -153,6 +182,18 @@ def exprValue : Expr → Json
        ("then", exprValue then_), ("otherwise", exprValue otherwise)]
   | .lookahead type => Json.mkObj [("tag", .str "lookahead"), ("type", typeValue type)]
 
+def lvalueValue : LValue → Json
+  | .var name => Json.mkObj [("tag", .str "var"), ("name", .str name)]
+  | .member base field => Json.mkObj
+      [("tag", .str "member"), ("base", lvalueValue base), ("field", .str field)]
+  | .index base index => Json.mkObj
+      [("tag", .str "index"), ("base", lvalueValue base), ("index", exprValue index)]
+  | .next stack => Json.mkObj [("tag", .str "next"), ("stack", lvalueValue stack)]
+
+def argValue : Arg → Json
+  | .expr value => Json.mkObj [("tag", .str "expr"), ("value", exprValue value)]
+  | .lvalue value => Json.mkObj [("tag", .str "lvalue"), ("value", lvalueValue value)]
+
 /-- Test-only access to actual syntax decoding/encoding, without validation. -/
 def reply (request : Json) : Except String Json := do
   let kind ← (← request.getObjVal? "kind").getStr?
@@ -170,6 +211,12 @@ def reply (request : Json) : Except String Json := do
   | "expr" =>
     let value ← Expr.decode "leaf" wire
     pure (Json.mkObj [("value", exprValue value), ("encoded", value.toJson)])
+  | "lvalue" =>
+    let value ← LValue.decode "leaf" wire
+    pure (Json.mkObj [("value", lvalueValue value), ("encoded", value.toJson)])
+  | "arg" =>
+    let value ← Arg.decode "leaf" wire
+    pure (Json.mkObj [("value", argValue value), ("encoded", value.toJson)])
   | _ => throw "unsupported test leaf kind"
 
 def tests : T Unit := do
@@ -241,6 +288,36 @@ def tests : T Unit := do
   check "codec oneof diagnostics precede child decoding"
     (match Expr.decode "test" (Json.mkObj [("var", .num 1), ("literal", .num 2)]) with
      | .error message => message == "test: more than one kind set: [literal, var]"
+     | .ok _ => false)
+  checkOk "codec lvalue index independently ordered operands"
+    (LValue.decode "" (Json.mkObj [("index", Json.mkObj [("base", left), ("index", right)])]))
+    (· == .index (.var "left") (.var "right"))
+  checkOk "codec lvalue next and member independent shape"
+    (LValue.decode "" (Json.mkObj [("member", Json.mkObj
+      [("base", Json.mkObj [("next", Json.mkObj [("stack", left)])]),
+       ("field", .str "field")])]))
+    (· == .member (.next (.var "left")) "field")
+  checkOk "codec arg expr independent branch"
+    (Arg.decode "" (Json.mkObj [("expr", left)])) (· == .expr (.var "left"))
+  checkOk "codec arg lvalue independent branch"
+    (Arg.decode "" (Json.mkObj [("lvalue", left)])) (· == .lvalue (.var "left"))
+  checkOk "codec nested invalid-but-representable lvalue"
+    (LValue.decode "" nestedLValue.toJson) (· == nestedLValue)
+  checkOk "codec nested invalid-but-representable argument"
+    (Arg.decode "" (Arg.lvalue nestedLValue).toJson) (· == .lvalue nestedLValue)
+  check "codec lvalue missing stack retains exact path"
+    (match LValue.decode "test" (Json.mkObj [("next", Json.mkObj [])]) with
+     | .error message => message == "test.next.stack: no kind set"
+     | .ok _ => false)
+  check "codec lvalue index reports base error first"
+    (match LValue.decode "test" (Json.mkObj [("index", Json.mkObj
+      [("base", Json.mkObj []), ("index", Json.mkObj [])])]) with
+     | .error message => message == "test.index.base: no kind set"
+     | .ok _ => false)
+  check "codec arg oneof diagnostics retain declared order"
+    (match Arg.decode "test" (Json.mkObj [("expr", Json.mkObj []),
+      ("lvalue", Json.mkObj [])]) with
+     | .error message => message == "test: more than one kind set: [expr, lvalue]"
      | .ok _ => false)
 
 end CodecLawTests
