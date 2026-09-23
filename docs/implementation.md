@@ -48,15 +48,17 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.
-  Actual decimal/uint32 and representable Literal/Ty/KeyValue/Expr/LValue/Arg
-  JSON-value round trips are proved and default-audited. The actual Expr and
-  LValue decoders use terminating recursion; helper erasure and malformed answers
+  Actual decimal/uint32 and representable Literal/Ty/KeyValue/Expr/LValue/Arg/Stmt
+  JSON-value round trips are proved and default-audited. The actual Expr,
+  LValue and Stmt decoders use terminating recursion; helper erasure and malformed answers
   preserve its previous behavior. Independent constructor observations catch
   paired wrong-wire mappings, including a shared operator-name fault that
   originally survived the tests. Paired LValue operand and Arg tag mappings
-  are likewise caught independently. The statement-array helper/descent plan
-  now has an independently checked probe; production Stmt totality/roundtrip
-  work is active under `notes/stmt-codec-plan.md`. Program codecs, text parsing,
+  are likewise caught independently. The statement implementation preserves
+  all 79 old raw transcripts; independent answers catch paired tag/branch
+  mappings, path-index changes and null-default faults that retain roundtrip
+  proofs. Scope and review: `notes/stmt-codec.md` and its matching review.
+  Program codecs, text parsing,
   resource limits and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.

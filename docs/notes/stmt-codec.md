@@ -343,3 +343,22 @@ checks; and inspected/replayed all 25 retained live-fault observations. The
 review also compared the full original recurrence, inspected all six actual
 fault logs and verified restored clean production hashes. All checks passed;
 no candidate edits or rebuilds were made by the reviewer.
+
+## Combined integration
+
+Root integrated the reviewed commits at `dcbf392`, alongside the complete
+guarded-control call. Both Lean package/default/native gates pass (498 spec
+checks), required real-Lean discovery passes **822 / 1565 deselected**, and
+the ordinary full gate passes **2381 / 5 strict expected discrepancies /
+1 explicit unavailable-local-XDP skip**, including static/schema/workflow
+checks. Every final command exits 0. Logs:
+`/tmp/p4blo-stmt-integrated-{lean,drt,check}.log`.
+
+Root independently checked the copied four bundle hashes, all 25 companion
+filenames/envelopes, exact raw input bytes, clean live response disagreement,
+tracked expected answers and restored native agreement (20 distinct inputs).
+All 79 old statement transcripts match their original source identities and
+current fixture pairs, then replay byte-exact. The earlier 59+69 codec
+baselines, 24 earlier codec fault observations and 17 execution bundles
+(24 requests) also pass. Historical and new artifact inventories are counted
+separately; adding new evidence is not an old behavioral discrepancy.

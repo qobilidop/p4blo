@@ -941,3 +941,24 @@ one that says so.
   second real client or a proposed semantic change. The plan maps remaining
   action-frame, parser, table, checksum and architecture obligations in
   `notes/lean-forwarder-next.md`; do not substitute the guarded policy.
+- **Keep codec consistency separate from intended wire behavior.** Actual
+  total statement decoding and universal representable roundtrips now use
+  genuine array membership and nested induction. Six compiling challenges
+  distinguish two proof rejections from four faults that keep roundtrips:
+  paired tags/branches, diagnostic indices and null defaults. Frozen
+  independent constructor/error observations catch those faults. Confidence:
+  high for the scoped laws and demonstrated detections, not universal Python
+  codec equivalence. Preserve the old source identities separately from the
+  changed decoder and test witnesses; 25 retained campaign observations are
+  20 distinct requests, not 25 independent inputs. Revisit when constructors,
+  omission/default rules or the pinned array library change. Evidence:
+  `notes/stmt-codec.md` and its independent final review.
+- **Prove the real selected table action before generalizing action authoring.**
+  Table action data enters through `Work.tableAction`, not the expression/
+  lvalue argument path. Add an unshadowed block-write law, then the exact
+  four-assignment trace and return that retains inner block updates while
+  restoring outer action layers. Confidence: high in this boundary, medium
+  in retaining a direct fixed-body proof as the best reusable surface.
+  Revisit on a second action needing parameter writes or copyback. Do not
+  change the one command AST or weaken BlockFrame premises to fit this
+  example. Reviewed plan: `notes/forwarder-action-next.md`.

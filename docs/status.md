@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `9e53f4b`, including total Expr/LValue codec proofs,
+Combined local integration at `dcbf392`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -53,9 +53,13 @@ reject independent observer faults. Its exporter is byte-identical to the
 reviewed candidate. The independently reviewed statement-codec baseline adds
 four spec checks and 107 Python checks, without changing the production
 decoder. All 79 captured old statements replay with exact byte transcripts
-and independent source-matched answers. The separate plan/probe does not
-claim that the new statement decoder/proofs have landed yet. The separately
-named observer-free whole control call adds nine audited roots, 192 native
+and independent source-matched answers. The actual total statement decoder,
+all-input ordinary-helper recurrence and universal representable statement
+roundtrip are now integrated, with eight new audited roots and constructive
+all-constructor witnesses. Two compiling faults are proof-rejected; four
+other faults retain roundtrip proofs but fail independent wire/error answers.
+All 25 saved campaign observations (20 distinct requests) replay restored.
+The separately named observer-free whole control call adds nine audited roots, 192 native
 profiles and 91 Python checks, including actual normal completion, full state,
 all incoming/outgoing mutable copies and independent ordered-write controls.
 Its exporter is byte-identical to the reviewed candidate.
@@ -73,7 +77,7 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
 `plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
-`guarded-control-call.md`.
+`guarded-control-call.md` and `stmt-codec.md`.
 
 All five remote workflows pass for `54cb697`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
@@ -85,11 +89,13 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Seventeen retained execution-fault bundles and twenty-four raw codec
+Seventeen retained execution-fault bundles and forty-nine raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
 All seventeen execution bundles replay successfully on this integration
-(twenty-four requests), as do all twenty-four raw codec inputs. Header-read,
+(twenty-four requests), as do all forty-nine raw codec observations. The new
+statement campaigns contribute 25 observations of 20 distinct requests;
+these counts are not independent-input counts. Header-read,
 guarded and initializer bundles match their current exporter/wrapper and exact request. All fifteen
 Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
 69 LValue/Arg and 79 Stmt source-matched pre-refactor transcripts retain byte-identical
@@ -106,7 +112,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 498 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 498 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -380,6 +386,11 @@ Things a resuming agent should know are in motion or deliberately left.
   public API execution, existing vectors and a bounded invalid-IPv4 ingress
   unchanged theorem. Actual action-frame/positive-path proofs remain later
   obligations, not instances of the no-action BlockFrame command law.
+  The reviewed next plan `notes/forwarder-action-next.md` targets actual
+  selected table-action execution: an unshadowed block-write bridge, exact
+  old-destination/TTL-wrap policy, and action-layer restoration in eleven
+  transitions. Implement it only against the committed real port interface;
+  it does not prove table selection, checksum or complete forwarding.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
   at `45fe743`: the same command induction now retains the exact pending
   suffix/continuation and full source/noninterference facts. Old whole-body
@@ -523,13 +534,14 @@ Things a resuming agent should know are in motion or deliberately left.
   ten raw faults replay restored. Review is clear, isolated full/required
   gates pass; combined integration is checked separately above. Scope:
   `notes/lvalue-codec.md`, `notes/reviews/lvalue-codec.md`.
-  Statement arrays are now the active codec slice in `work/stmt-codec`,
+  Statement arrays are now integrated from `work/stmt-codec`,
   based on committed `1d1168c`. There is no mutual decoder recursion: only
   conditional branch lists recurse into Stmt. An independently checked
   unregistered probe proves attached-array traversal erasure, field bounds,
   repeated-field erasure and generic array roundtrip. Plan and review:
   `notes/stmt-codec-plan.md`, `notes/reviews/stmt-codec-plan.md`; probe:
-  `ir/StmtCodecProbe.lean`. The production decoder remains unchanged on main.
+  `ir/StmtCodecProbe.lean`. The production decoder now uses those bounded
+  helpers, with erasure preserving the old ordinary-helper recurrence.
   Independently reviewed baseline `5cbbc85` is integrated at `8f62b31`:
   direct constructor observations, 28 canonical, 42 malformed/order and nine
   normalization requests, with four native anchors. All 79 source-matched
@@ -537,9 +549,16 @@ Things a resuming agent should know are in motion or deliberately left.
   `5cbbc85`, not expected to equal future refactored files. Reproduction
   refuses a changed old decoder or overwriting retained evidence. Scope:
   `notes/stmt-codec.md`, `notes/reviews/stmt-codec-baseline.md`.
-  Totality, original-body unfolding and universal statement roundtrip now
-  compile in the isolated implementation and pass initial structural review;
-  final mutation/restoration acceptance and integration remain pending.
+  Totality, original-body unfolding and universal statement roundtrip
+  (`dcbcf96`/`4564b66`/`70ef3e8`) are independently reviewed and integrated
+  at `dcbf392`. Eight new audited roots, constructive all-constructor witnesses
+  and overflow controls accompany the proof. All 79 old transcripts remain
+  byte-identical; six compiling challenges distinguish proof kills from
+  paired mapping/default/diagnostic faults that retain roundtrip proofs.
+  All 25 retained live observations (20 distinct inputs) match tracked
+  fixtures and replay restored. Evidence: `notes/stmt-codec.md`; final review:
+  `notes/reviews/stmt-codec.md`. The next declaration/program-codec slice is
+  being scoped separately; no whole-program codec guarantee follows here.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 
