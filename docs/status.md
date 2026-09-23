@@ -12,15 +12,18 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Field-primitive integration at `792a029`, including typed commands and
-generated firewall flows: both Lean package gates/audits pass, with **392
+Combined integration at `4ce3798`, including aggregate paths, strict harness
+envelopes and compile-only XDP: both Lean package gates/audits pass, with **392
 spec checks**, 21 expression answers/nine negative checks, nine command
 answers/four negative checks, real parameter writes and the continuation
-witness. Required real-Lean DRT: **246 passed**. Full Python/schema/oracle
-gate: **1447 passed / 5 precise expected discrepancies / no skips**, plus
+witness, aggregate source/path answers, nested runtime writes and six
+negative shape checks. Required real-Lean DRT: **246 passed**. Full gate:
+**1500 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
-all commands exited 0. Independent reviews: `notes/reviews/typed-statements.md`,
-`field-primitives.md`, `firewall-boundaries.md` and `firewall-generated.md`.
+all commands exited 0. The sole skip is the unavailable local XDP image;
+required native CI `35900039992` passes all ten XDP checks without skips.
+Reviews under `notes/reviews/`: `aggregate-paths.md`, `wire-harness.md`,
+`xdp-build.md`, plus the earlier typed/field/firewall checkpoints.
 
 All four remote workflows passed for checkpoint `eb3ff02`; newer CI must be
 checked separately. The five retained semantic-fault bundles have tracked
@@ -116,10 +119,16 @@ Things a resuming agent should know are in motion or deliberately left.
   sibling/validity preservation. Primitive field bridges are integrated
   from `ddb9f0e`: exact nominal declaration/shape premises, stored invalid-
   header fields, validity and siblings, with three actual setter proof faults
-  rejected. Review: `notes/reviews/field-primitives.md`. These return rebuilt
-  containers, not persistent nested-frame writes. Independent aggregate
-  stores/paths are active in isolated `work/typed-fields`, based on that
-  committed interface.
+  rejected. Review: `notes/reviews/field-primitives.md`. The next aggregate
+  checkpoint `7a2ad91` is integrated at `d2a1921`: independent finite source
+  shapes/stores and scalar paths now correspond to actual nested reads and
+  persistent writes, preserving validity, siblings, unrelated roots and
+  non-value Run fields. Local shape checks do not imply nominal coherence;
+  positive witnesses and impossible conflicting-layout examples expose that
+  boundary. No root permission or integrated expression/command proof is
+  claimed yet. Review: `notes/reviews/aggregate-paths.md`.
+  One shared expression read seam and scoped authoritative field typing are
+  next in isolated `work/typed-fields`; command write factoring follows.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
@@ -188,34 +197,46 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/reviews/zero-encoding.md`, `decimal-wire-defaults.md`.
   Versioned representability, codec proofs, resource limits, duplicate input
   keys and unknown-field policy remain open.
-  A read-only audit reproduced duplicate reply keys erasing a packet and
-  replay envelope versions accepting booleans/floats. Narrow harness
-  hardening is queued in isolated `work/wire-harness`, based on `602d349`;
-  preserve intentionally invalid IR replays rather than applying semantic
-  validation at the artifact boundary. This is distinct from a codec proof.
+  Harness hardening `44beaba` is integrated at `4ce3798`: duplicate keys and
+  nonstandard constants are rejected recursively; replay envelope/version
+  types and error diagnostics are checked without rejecting semantically
+  invalid IR inputs. Actual lossy peers previously erased packets/state and
+  falsely agreed; regressions now retain protocol-failure replays. All five
+  prior concrete mutation bundles still replay through the stricter loader.
+  Evidence/review: `notes/wire-harness.md`, `notes/reviews/wire-harness.md`.
+  This is not general codec equivalence, semantic alias/unknown-field policy
+  or a resource budget. The next scoped real leaf-codec proof is active in
+  isolated `work/codec-proof`, based on `4ce3798`, following
+  `notes/codec-proof-plan.md`.
 
-- **XDP and later examples: compile-only infrastructure in review.**
+- **XDP and later examples: compile-only profile integrated.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter
   build and libbpf, complete per-CPU observations and an FD-only non-attaching
-  oracle design. Main's accepted evidence remains preflight; compile-only
-  work is isolated on `work/xdp-build`. Capability-bearing
-  execution and redistribution licensing need explicit handling.
+  oracle design. `980c642` integrates the pinned original feature build,
+  offline ELF/BTF/map inspection, syscall tracing and negative fixtures.
+  Required clean-runner CI `35900039992` at `63ec6d1` passes all ten checks
+  without skips. Independent review verified the downloaded repeated object,
+  source archive hashes and compiler provenance. Exact evidence and limits:
+  `tests/oracle/xdp/README.md`, `notes/reviews/xdp-build.md`.
+  No kernel load/run or p4blo behavioral equivalence is established.
+  Capability-bearing execution and port redistribution licensing still need
+  explicit handling.
   Do not treat Docker availability or skipped kernel tests as an oracle pass.
   Flowlet time/randomness and the bounded Katran profile still require audit.
-  The pinned object and open-only native metadata inspector build and run
-  without added capabilities; final offline acceptance is not yet complete
-  and no kernel execution is claimed. Docker VM disk capacity
-  blocked an additional build dependency. Only exact own rebuildable cache
-  entries and the own temporary image were removed; the image has a verified
-  host recovery export. The isolated `docs/notes/xdp-build-progress.md`
-  records recovery/hash, tested versus untested files and next steps.
-  Unrelated images/volumes are not authorized cleanup targets. A dedicated
-  workflow now tests the isolated branch on a clean GitHub runner. First CI
-  compiled/repeated the original and passed baseline syscall tracing and
-  map-capacity rejection; an ambiguous BTF test anchor and unreadable public
-  source archives were fixed in small follow-ups. Final rerun/review remains
-  required before integration. The main worktree does not depend on this
-  pending infrastructure; Python/Lean proof work continues independently.
+  The runtime remains non-root, capability-free, network-free and read-only;
+  no security restriction was relaxed to obtain a pass. Native CI is now a
+  fifth required workflow, retaining objects/provenance/corresponding sources
+  for 14 days. The local final image is unavailable because of Docker VM
+  capacity: its one skip is not native evidence. Only exact own rebuildable
+  cache/image data was removed, with a verified host recovery export. The
+  capacity incident, failed fixture/permission checks and recovery are in
+  `notes/xdp-build-progress.md`; unrelated Docker data is not a cleanup target.
+  Next: an FD-only strict adapter and explicit capability-scoped execution
+  preflight, independently of the ongoing Lean authoring work.
+  A separate observer-lifecycle fix is being checked in `work/xdp-cleanup`:
+  Docker client timeout leaves a daemon-owned container alive. The candidate
+  uses a unique owned name and bounded cleanup plus verified absence; live
+  normal/timeout probes pass. No kernel or semantic claim follows.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;

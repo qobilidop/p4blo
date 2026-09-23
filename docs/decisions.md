@@ -642,3 +642,23 @@ one that says so.
   No BPF load, interface attachment, added runtime capability or image
   publication is authorized by this step. Retain object provenance plus
   corresponding upstream sources; merge only after native checks and review.
+- **Separate aggregate shape, nominal coherence and write permission.**
+  Use independent finite indexed shapes/stores with explicit header validity
+  and positional scalar paths. Actual nested writes preserve the converted
+  full source store and unrelated runtime state. Local name/width checks do
+  not imply one consistent Index exists: repeated type names require equal
+  kinds and layouts. Confidence: high on these separate obligations; no
+  general program initializer or root permission follows from operational
+  correspondence. Factor the existing expression read seam next, then writes,
+  retaining concrete final theorems rather than arbitrary correctness
+  callbacks. Confidence: medium on generic API ergonomics; revisit against
+  a realistic already-parsed forwarding body and preserve scalar examples.
+- **Reject ambiguous harness JSON without validating away bad IR inputs.**
+  Recursive duplicate keys and nonstandard numeric constants are malformed
+  envelopes, as are boolean/float replay versions and wrong object shapes.
+  Reject them before information is lost; normalize decoding failures to
+  controlled protocol/CLI errors. Confidence: high from actual false-
+  agreement controls and retained regressions. Continue to represent negative
+  ingress, invalid installations and empty program objects for experiments.
+  Unknown semantic fields/aliases, resource budgets and general ProtoJSON
+  parity remain separate decisions; this narrow hardening cannot settle them.
