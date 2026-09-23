@@ -8,7 +8,8 @@ from pathlib import Path
 from p4blo import arch, ir
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, replay, save
-from p4blo.drt.run import Outcome, compare_cases, run_python
+from p4blo.drt.run import Outcome, compare_cases, python_outcome
+from p4blo.drt.state import snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,7 @@ def test_replay_keeps_the_prefix_that_establishes_register_state(tmp_path: Path)
     # A broken implementation resets state before each packet. The second
     # request alone cannot expose the fault; replaying the prefix must.
     def reset_each_packet(case: Case) -> Outcome:
-        return Outcome(outputs=tuple(run_python(arch.load(program), case, 4)))
+        return python_outcome(arch.load(program), case, 4)
 
     report = compare_cases("register_bounds", arch.load(program), cases, 4, reset_each_packet)
     assert [d.number for d in report.divergences] == [1]
@@ -69,7 +70,9 @@ def test_matching_errors_are_not_a_successful_valid_input_campaign() -> None:
         arch.load(program),
         [case],
         4,
-        lambda _: Outcome(error="ingress_port 99 is not a port of this switch"),
+        lambda _: Outcome(
+            error="ingress_port 99 is not a port of this switch", state=snapshot(arch.load(program))
+        ),
     )
     assert not report.divergences
     assert not report.passed

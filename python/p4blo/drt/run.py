@@ -7,8 +7,8 @@ line from stdin and writes one per line to stdout:
 
     request:  {"entries": <pb.Entries as protobuf JSON, proto field names>,
                "ingress_port": n, "packet": "<hex>"}
-    reply:    {"outputs": [[port, "<hex>"], ...], "diagnostic": "..."}
-              or   {"error": "..."}
+    reply:    {"outputs": [[port, "<hex>"], ...], "state": {...}, "diagnostic": "..."}
+              or   {"error": "...", "state": {...}}
 
 `diagnostic` is present when the architecture dropped the packet for a
 reason the program did not decide (a misaligned parse, an egress port the
@@ -17,10 +17,13 @@ Extern state persists across the requests of one process, as it does in
 one `Loaded` on the Python side, so both sides see the same case sequence
 from the same fresh state. Anything else on stdout, or a reply that does
 not parse, is a `ProtocolError`: the harness never guesses.
+`state` is required, including on errors: logical extern observations as
+specified in `p4blo.drt.state`, not either runtime's object layout.
 
 ## Agreement
 
-Two sides agree on a case when their outputs are equal as sequences of
+Two sides agree only when their abstract extern states are equal. Their
+outputs must also be equal as sequences of
 (port, bytes) and either both or neither carry a diagnostic (the texts are
 not compared), or when both report an error for the same stated reason:
 Lean copies the Python sentences, so the messages are compared after the
@@ -49,6 +52,7 @@ from google.protobuf import json_format
 from p4blo import arch, ir
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
+from p4blo.drt.state import Snapshot, decode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = [
@@ -87,8 +91,11 @@ class Outcome:
     outputs: tuple[tuple[int, bytes], ...] | None = None
     error: str | None = None
     diagnostic: str | None = None
+    state: Snapshot = ()
 
     def agrees_with(self, other: Outcome) -> bool:
+        if self.state != other.state:
+            return False
         if self.error is not None or other.error is not None:
             return (
                 self.error is not None
@@ -157,9 +164,9 @@ def python_outcome(loaded: arch.Loaded, case: Case, ports: int) -> Outcome:
     try:
         outputs = switch.run(loaded, loaded.entries(case.entries), case.ingress_port, case.packet)
     except Exception as e:  # noqa: BLE001 - any failure is this side's outcome
-        return Outcome(error=f"{type(e).__name__}: {e}")
+        return Outcome(error=f"{type(e).__name__}: {e}", state=snapshot(loaded))
     diagnostic = "; ".join(switch.diagnostics) if switch.diagnostics else None
-    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic)
+    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic, state=snapshot(loaded))
 
 
 def request_json(case: Case) -> str:
@@ -181,10 +188,14 @@ def parse_reply(line: str) -> Outcome:
         raise ProtocolError(f"reply is not JSON: {line!r}") from e
     if not isinstance(reply, dict):
         raise ProtocolError(f"reply is not an object: {line!r}")
+    try:
+        state = decode(reply.get("state"))
+    except ValueError as e:
+        raise ProtocolError(f"bad extern state: {e}") from e
     if "error" in reply:
         if not isinstance(reply["error"], str) or "outputs" in reply:
             raise ProtocolError(f"bad error reply: {line!r}")
-        return Outcome(error=reply["error"])
+        return Outcome(error=reply["error"], state=state)
     if "outputs" not in reply or not isinstance(reply["outputs"], list):
         raise ProtocolError(f"reply has neither outputs nor error: {line!r}")
     outputs: list[tuple[int, bytes]] = []
@@ -201,7 +212,7 @@ def parse_reply(line: str) -> Outcome:
     diagnostic = reply.get("diagnostic")
     if diagnostic is not None and not isinstance(diagnostic, str):
         raise ProtocolError(f"bad diagnostic {diagnostic!r} in {line!r}")
-    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic)
+    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic, state=state)
 
 
 class LeanRunner:

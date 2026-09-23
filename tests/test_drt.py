@@ -32,6 +32,7 @@ from p4blo.drt import (
 )
 from p4blo.drt.coverage import parser_visits
 from p4blo.drt.run import default_lean_binary, parse_reply, python_outcome
+from p4blo.drt.state import snapshot
 from p4blo.edsl.core import Program, bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -264,9 +265,9 @@ def test_table_lookups_hit_and_miss() -> None:
 
 
 def test_parse_reply_rejects_what_is_not_the_protocol() -> None:
-    assert parse_reply('{"outputs": [[1, "ab"]]}') == Outcome(outputs=((1, b"\xab"),))
-    assert parse_reply('{"error": "boom"}') == Outcome(error="boom")
-    assert parse_reply('{"outputs": [], "diagnostic": "why"}') == Outcome(
+    assert parse_reply('{"outputs": [[1, "ab"]], "state": {}}') == Outcome(outputs=((1, b"\xab"),))
+    assert parse_reply('{"error": "boom", "state": {}}') == Outcome(error="boom")
+    assert parse_reply('{"outputs": [], "diagnostic": "why", "state": {}}') == Outcome(
         outputs=(), diagnostic="why"
     )
     for bad in [
@@ -353,7 +354,7 @@ def test_an_error_on_one_side_diverges_and_on_both_sides_agrees() -> None:
     assert report.divergences[3].python.error.startswith("InstallError: ")
     # A Lean that states the same reason, without Python's class prefix,
     # agrees.
-    same = Outcome(error="table 'ipv4_lpm' has 1 keys")
+    same = Outcome(error="table 'ipv4_lpm' has 1 keys", state=snapshot(loaded))
     report = compare_cases("forwarder", loaded, cases[3:], PORTS, lambda _: same)
     assert report.both_errored == 1
     assert report.divergences == []
@@ -364,10 +365,12 @@ def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
     case = Case(pb.Entries(), 0, b"\x00")
     python = python_outcome(loaded, case, PORTS)
     assert python.diagnostic is None
-    same = Outcome(outputs=python.outputs)
+    same = Outcome(outputs=python.outputs, state=python.state)
     report = compare_cases("forwarder", loaded, [case], PORTS, lambda _: same)
     assert report.divergences == []
-    dropped = Outcome(outputs=python.outputs, diagnostic="egress_port 9 is not a port")
+    dropped = Outcome(
+        outputs=python.outputs, diagnostic="egress_port 9 is not a port", state=python.state
+    )
     report = compare_cases("forwarder", loaded, [case], PORTS, lambda _: dropped)
     assert [d.number for d in report.divergences] == [0]
 

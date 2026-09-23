@@ -303,3 +303,16 @@ one that says so.
   program and input sequence, because extern state survives packets and
   STF cannot express every IR value. Seeds and single-packet excerpts are
   useful diagnostics, not self-contained stateful reproductions.
+- **Observe logical extern state after every request.** Differential
+  replies include named register widths/cells, counter values and checksum
+  instance presence, including on errors. Naturals use decimal strings;
+  instance ordering is irrelevant. Missing state or unsupported adapters
+  fail instead of silently comparing packets alone. Internal errors are
+  not claimed transactional: observing the state makes any mismatch
+  visible, while valid-input campaigns reject all such errors anyway.
+- **Adversarial verification is recurring work.** At Bili's request,
+  intentionally mutate both implementations in isolated worktrees, record
+  killed and surviving mutants, improve tests for survivors, and repeat.
+  Build failures do not count as detected semantic inconsistencies.
+  Scoped decisions and commits proceed autonomously and remain recorded
+  for later user review.

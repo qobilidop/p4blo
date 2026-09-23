@@ -1,4 +1,5 @@
 import P4blo
+import P4blo.Observe
 
 /-!
 `p4blo-lean`: the pipe endpoint for differential testing.
@@ -24,6 +25,8 @@ import P4blo
         mapping and may be omitted; `ingress_port` defaults to 0. Extern
         state persists across requests. `--ports N` (default 4) is the
         number of ports a flood reaches.
+        Every reply also carries `state`, the abstract extern observations
+        from `P4blo.Observe`, including when the request cannot run.
 -/
 
 open P4blo
@@ -57,13 +60,13 @@ def Request.decode (line : String) : Except String Request := do
   pure { entries, ingressPort, packet }
 
 /-- The JSON line answering a request. -/
-def answer (r : Except String SwitchResult) : String :=
+def answer (r : Except String SwitchResult) (externs : Externs) : String :=
   let j := match r with
-    | .error e => Lean.Json.mkObj [("error", .str e)]
+    | .error e => Lean.Json.mkObj [("error", .str e), ("state", externs.observe)]
     | .ok result =>
       let outputs := result.outputs.map fun ((port, bytes) : Nat × ByteArray) =>
         Lean.Json.arr #[Lean.toJson port, .str (bytesToHex bytes)]
-      Lean.Json.mkObj ([("outputs", Lean.Json.arr outputs.toArray)] ++
+      Lean.Json.mkObj ([("outputs", Lean.Json.arr outputs.toArray), ("state", externs.observe)] ++
         (result.diagnostic.map fun d => ("diagnostic", Lean.Json.str d)).toList)
   j.compress
 
@@ -83,8 +86,8 @@ partial def serve (sw : Switch) (externs : Externs) : IO Unit := do
     match outcome with
     | .ok (result, externs') =>
       externs := externs'
-      stdout.putStrLn (answer (.ok result))
-    | .error e => stdout.putStrLn (answer (.error e))
+      stdout.putStrLn (answer (.ok result) externs)
+    | .error e => stdout.putStrLn (answer (.error e) externs)
     stdout.flush
 
 /-- The `run` mode: parse its flags, load the program, serve. -/

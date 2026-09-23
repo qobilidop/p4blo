@@ -21,6 +21,7 @@ from pathlib import Path
 from google.protobuf import json_format
 
 from p4blo import arch, ir
+from p4blo.drt.state import encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -52,6 +53,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             reply = {"outputs": [[port, data.hex()] for port, data in outputs]}
             if switch.diagnostics:
                 reply["diagnostic"] = "; ".join(switch.diagnostics)
+        reply["state"] = encode(snapshot(loaded))
         sys.stdout.write(json.dumps(reply) + "\n")
         sys.stdout.flush()
     return 0

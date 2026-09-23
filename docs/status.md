@@ -51,12 +51,17 @@ boundaries are in [verification.md](verification.md).
 Things a resuming agent should know are in motion or deliberately left.
 
 - **Verification program: active.** Follow `verification.md` in order.
-  First checkpoint in progress: required Lean CI, bounded process requests,
-  strict reply parsing, and versioned JSON replay bundles with the exact
-  program and complete stateful input sequence. Full gates and independent
-  review are pending. Next:
-  compare abstract extern state, generate typed IR programs with shrinking,
-  and make statement execution available to Lean proofs. The existing
+  Required Lean CI, strict reply parsing, and versioned complete-sequence
+  replay bundles landed. Baseline full gate: 859 passed, 15 SpecTec skips,
+  1 expected BMv2 divergence; Lean build/tests and required DRT passed.
+  Independent harness review found descendant-pipe timeout and missing
+  protocol-failure replay gaps; fixes are next, before pushing.
+  Abstract extern-state comparison is implemented: 77 focused tests pass,
+  including a counter-only mutant invisible in packet outputs. State review
+  and full integrated gates are pending. A closed scalar-expression
+  soundness proof is underway in an isolated worktree. Next: fix the review
+  findings, run semantic mutation campaigns on both sides, generate typed
+  IR programs with shrinking, and expose statement execution to proofs. The existing
   `partial` executor is executable but opaque to the logic; the packing
   theorem is not a theorem about complete program execution.
 

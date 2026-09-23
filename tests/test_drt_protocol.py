@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -27,7 +28,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 )
 def test_malformed_replies_cannot_be_coerced_to_agreement(reply: str) -> None:
     with pytest.raises(ProtocolError):
-        parse_reply(reply)
+        parse_reply(json.dumps({**json.loads(reply), "state": {}}))
 
 
 @pytest.mark.parametrize("packet_size", [1, 1_000_000])
