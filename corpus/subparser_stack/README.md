@@ -33,7 +33,7 @@ valid bits `03`.
   5.
 - **Slice lvalues.** `hdr.h1.h2_valid_bits[i:i] = 1` becomes the
   read-modify-write `f = (f & ~mask) | (v << lo)` on the whole `bit<8>`
-  field, written by `set_slice` in the source, exactly as in
+  field, which `assign_slice` in the source emits, exactly as in
   [stacks](../stacks/README.md#elaborated-away).
 - **Unsized literals.** The select cases `2:` and `3:` and the comparisons
   `== 1`, `== 2`, `== 3` take their widths from the key or the other
