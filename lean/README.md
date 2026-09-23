@@ -70,8 +70,9 @@ These are **expression** correctness claims, not verified whole-program
 lowering, serialization correctness, or universal Python equivalence.
 `Declares` separately describes declaration/type agreement; a value-matching
 frame by itself does not certify declarations, writable directions, or a
-valid block. Field references and complete programs remain future
-increments. The Lean compiler/runtime and notation implementation are not
+valid block. Aggregate path primitives are described below; integrating them
+into expressions/commands and complete programs remains work in progress.
+The Lean compiler/runtime and notation implementation are not
 verified by the lowering theorem; independent known answers exercise the
 authored syntax, JSON boundary and both production interpreters.
 
@@ -116,10 +117,33 @@ or alternate statement interpreter.
 `Modes.scope_agrees` and `Modes.frame_matches` give constructive witnesses.
 Real `Index.build`/`Frame.forBlock` initialization and writable parameter
 execution are also tested; a general theorem connecting these constructors
-to whole-program validity is **not** claimed. Header/metadata paths, calls,
+to whole-program validity is **not** claimed. Header/metadata commands, calls,
 externs, packet operations and complete-program lowering remain future work.
 
 After the Lean build, run required `pytest tests/test_lean_edsl_statements.py`
 for nine independently expected complete-local-state packet cases. The raw
 packet wrapper is outside the lowering proof. Differential failures are
 saved before expected-answer checks, so Python faults retain replay bundles.
+
+## Aggregate values and scalar paths
+
+`P4blo.Fields` supplies independent finite `Shape`/`Layout` schemas,
+heterogeneous `Data`/`Record` values and scalar-leaf `Path`s. Headers carry
+their validity bit; structs do not. `Path.get`/`Path.set` operate only on
+source data. Proved readback and preservation of **every** header-validity
+bit accompany conversion to IR values.
+
+`Ref` adds a root variable to a path. Exact `FrameMatches` and recursive
+`IndexAgrees` premises connect reads to actual `evaluate` and nested writes
+to actual `writeLValue`. `Ref.write_matches` gives the exact updated source
+store, unchanged non-value Run state and unchanged unrelated roots. These
+are primitive operations, not a second expression or command AST.
+
+`LocallyWellFormed` checks widths and each aggregate's field names/kinds;
+it does not establish coherence of repeated nominal names. `IndexAgrees`
+requires one actual index to agree with every reachable declaration;
+it does not by itself check scalar widths or root declarations. Distinct
+root names are a separate write-preservation premise. Concrete witnesses
+and positive/negative nominal-reuse examples are tested. Permissions,
+nonempty root names, expression/command integration and whole-program
+initialization remain obligations for the next authoring layer.

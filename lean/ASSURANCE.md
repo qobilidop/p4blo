@@ -594,3 +594,97 @@ API factoring. Revisit if a realistic nested forwarding body requires
 pervasive Lean inference annotations; do not replace concrete aggregate
 correspondence with an unconstrained callback premise. Parser, tables,
 checksum, deparser and whole-forwarder correctness remain separate.
+
+## Aggregate source/store/path checkpoint
+
+`P4blo.Fields` implements finite mutually indexed `Shape`/`Layout` and
+`Data`/`Record`: scalar leaves reuse independent Fin/Bool meanings, header
+data carries Bool validity, and structs carry Unit instead of a redundant
+validity bit. A root `Store` is the same record representation. Positional
+`Slot`s select fields/roots and recursive `Path`s terminate only at scalar
+leaves. There is no new expression AST, arithmetic evaluator or command
+interpreter. Generic integration into the existing Expr/Cmd read/write seam
+is deliberately a later checkpoint.
+
+Source `Record.get/set`, `Path.get/set` and `Ref.get/set` are total functions
+over source data, independent of IR evaluation and lowering. Readback laws
+are proved. `Path.validities_set` and `Ref.validities_set` preserve the list
+of **all** stored header validity bits, not only the targeted header. Exact
+conversion laws relate record selection/update to the primitive field laws.
+`Path.evaluate` and `Path.readLValue` preserve the entire Run. The recursive
+`Path.writeLValue` theorem reduces an actual nested write to one actual
+root-container write; it does not assume a callback already asserting write
+correctness. `Ref.write_matches` establishes successful actual frame update,
+exact updated source-store agreement, unchanged non-value Run state, and
+every unrelated root unchanged, under no active action layer.
+
+### Independent premises and nonvacuity
+
+- `LocallyWellFormed` checks positive scalar widths, each aggregate's
+  nonempty unique fields/name and scalar-only header fields. It does not
+  establish coherent reuse of nominal names across a schema tree. Applied
+  to a root Layout it checks the root *shapes*, not root-name distinctness
+  or nonemptiness.
+- `IndexAgrees` recursively requires the real index to match each ordered
+  nominal declaration with the correct kind. It does not itself impose
+  positive widths or scalar-only headers. Theorems `nominal_fields_unique`
+  and `nominal_kind_unique` show that one agreeing index cannot assign
+  incompatible layouts or kinds to the same name.
+- Exact `FrameMatches` is independent of declarations/permissions.
+  `Record.frame_matches` constructs a witness under distinct root names;
+  `Ref.write_matches` additionally requires those distinct names and no
+  action layer. Nonempty root names, write modes and real variable
+  declarations belong to the next authoring boundary, not these operational
+  primitive laws. The laws describe exact computation even for source
+  shapes outside the locally well-formed fragment.
+
+Kernel examples instantiate an actual mixed nested header/struct/metadata
+Index and source store, prove exact frame agreement even with an unrelated
+aggregate present, and apply both the complete read theorem and the complete
+write-preservation theorem. Repeated use of the same nominal H type at two
+roots is accepted. Two different same-kind H declarations are each locally
+well formed, but a universal negative example proves that **no index** can
+agree with both. Another universally rejects a header/struct H clash.
+These are scoped consistency witnesses, not a general validated-program or
+`Index.build`/`Frame.forBlock` correctness theorem.
+
+Independent runtime answers include unequal-width/unequal-value siblings,
+metadata and nested headers, both validity states, full stored aggregate
+values (including invalid headers), an unrelated aggregate root, packet
+cursor, emitter and parser bookkeeping. Three kernel shape negatives reject
+zero-width leaves, aggregate-valued header fields and duplicate field names;
+three failed elaborations reject a wrong-width reference, a scalar value
+at aggregate type and a nonexistent/wrong-typed field slot.
+
+### Aggregate-path adversarial checks and gates
+
+Two isolated mutations exercise different boundaries:
+
+1. In `Path.expr`, replace `.member base slot.name` by
+   `.member base (slot.name ++ "wrong")`. Building `P4blo.Fields` exits 1
+   at `Path.evaluate`: the actual field read with the altered name cannot
+   use the exact source selection theorem. This is proof rejection only.
+2. In `FieldTests.lean`, replace the definition of the nine-bit `port`
+   reference with the also-nine-bit `right` reference. The default user
+   build and all audits pass. `lake test` exits 1 at the independently
+   expected full source aggregate update: the header field becomes 19
+   instead of 511 and metadata remains 3 instead of 19. This is a compiled
+   valid-but-unintended source accessor, caught by a runtime known answer,
+   not by generic correctness proofs. Restoring the accessor restores the
+   default build and all user tests.
+
+The unmutated `scripts/check-lean.sh` passes both packages/audits, all 392
+spec checks and all old/new user tests. Required legacy authored-expression
+and command conformance suites pass **34 tests**, no skips. There is no new
+Python-facing aggregate exporter in this checkpoint and no new claim of
+aggregate Python differential coverage; full aggregate-state DRT and actual
+Python setter faults with saved live/restored replays remain required for
+the field-command integration. No Docker build or oracle rerun was needed.
+Independent review: `docs/notes/reviews/aggregate-paths.md` (integrator copy).
+
+Representation confidence is medium: custom finite Layout and positional
+Slot keep dependent proofs small and reuse one Record for nested/root
+storage. Revisit if ergonomic concrete forwarding bodies require pervasive
+type annotations. Do not retain duplicate scalar Expr/Cmd implementations
+as an expedient; factor their read/write seam once and retain the current
+scalar API as a specialization.
