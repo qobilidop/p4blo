@@ -25,8 +25,13 @@ required native CI `35900039992` passes all ten XDP checks without skips.
 Reviews under `notes/reviews/`: `aggregate-paths.md`, `wire-harness.md`,
 `xdp-build.md`, plus the earlier typed/field/firewall checkpoints.
 
-All four remote workflows passed for checkpoint `eb3ff02`; newer CI must be
-checked separately. The five retained semantic-fault bundles have tracked
+At checkpoint `8de329b`, remote Python/schema, Lean, P4-SpecTec and XDP
+compile workflows pass; BMv2 remains in progress at this checkpoint.
+The reviewed XDP lifecycle increment adds seven pure regression cases;
+its integrated focused gate passes 16 checks with one explicit missing-image
+skip. Live restricted normal/timeout probes verify exact container removal;
+see `notes/reviews/xdp-cleanup.md`. The full count above precedes this increment.
+The five retained semantic-fault bundles have tracked
 reconstruction recipes and ignored concrete copies under `.artifacts/drt`.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
@@ -233,10 +238,13 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/xdp-build-progress.md`; unrelated Docker data is not a cleanup target.
   Next: an FD-only strict adapter and explicit capability-scoped execution
   preflight, independently of the ongoing Lean authoring work.
-  A separate observer-lifecycle fix is being checked in `work/xdp-cleanup`:
-  Docker client timeout leaves a daemon-owned container alive. The candidate
-  uses a unique owned name and bounded cleanup plus verified absence; live
-  normal/timeout probes pass. No kernel or semantic claim follows.
+  Observer-lifecycle fix `1fecd97` is integrated: Docker client timeout had
+  left a daemon-owned container alive. The helper uses a unique owned name,
+  bounded cleanup and successful exact-name absence verification. Seven pure
+  failure-path regressions and live normal/timeout probes pass. Review:
+  `notes/reviews/xdp-cleanup.md`. Daemon outages, forced interpreter death
+  and late creation races remain outside the scoped cleanup guarantee.
+  No kernel or semantic claim follows.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;

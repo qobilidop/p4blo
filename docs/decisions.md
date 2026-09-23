@@ -662,3 +662,13 @@ one that says so.
   ingress, invalid installations and empty program objects for experiments.
   Unknown semantic fields/aliases, resource budgets and general ProtoJSON
   parity remain separate decisions; this narrow hardening cannot settle them.
+- **Own and verify the lifecycle of each offline XDP check container.**
+  A real timeout reproduced a daemon container surviving its attached client.
+  Generate an internal unique name, reclaim that exact target in `finally`,
+  and verify absence with a successful bounded listing. Preserve nonroot,
+  network-free, capability-free and read-only execution. Confidence: high
+  for ordinary exception/timeout cleanup, not daemon outages, process death
+  or late creation races. Revisit a split create/start lifecycle if that
+  stronger guarantee becomes necessary. Never use global pruning as cleanup.
+  Independent reproduction, review and post-fix evidence are retained in
+  `notes/reviews/xdp-cleanup.md`; this changes no BPF or semantic claim.
