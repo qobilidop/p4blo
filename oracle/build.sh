@@ -8,8 +8,8 @@
 # headers plus pkgconf, which zarith's opam packages probe for. On Linux and
 # macOS:
 #
+#   nix:     nix develop .#oracle -c oracle/build.sh   (the pinned way; CI does this)
 #   ubuntu:  sudo apt-get install -y opam libgmp-dev pkg-config
-#   nix:     nix-shell -p opam gmp pkgconf --run oracle/build.sh
 #
 # Environment:
 #   P4BLO_ORACLE_DIR   where P4-SpecTec is cloned and built
@@ -23,6 +23,11 @@ P4_SPECTEC_REPO=https://github.com/kaist-plrg/p4-spectec
 # the one place to bump.
 P4_SPECTEC_COMMIT=2730cfd9e74048bb5439da0f8afcef124079a064
 P4C_REPO=https://github.com/p4lang/p4c
+# The opam package universe is pinned too, so the same versions of every
+# OCaml dependency are chosen on every machine. Bump together with the
+# P4-SpecTec commit when its build needs newer packages.
+OPAM_REPO=https://github.com/ocaml/opam-repository
+OPAM_REPO_COMMIT=6261f3c853ae417b354c06496e8458053131f14b
 SWITCH=5.1.0
 # What README.md and p4spectec.dockerfile install, plus ppx_let, which the
 # dune-project lists and the README omits.
@@ -91,8 +96,11 @@ fi
 
 # 3. The opam switch and its packages.
 if ! opam var root >/dev/null 2>&1; then
-    log "initializing opam"
-    opam init --bare --no-setup --disable-sandboxing -y
+    log "initializing opam at opam-repository $OPAM_REPO_COMMIT"
+    opam init --bare --no-setup --disable-sandboxing -y "git+$OPAM_REPO#$OPAM_REPO_COMMIT"
+else
+    opam repository set-url default "git+$OPAM_REPO#$OPAM_REPO_COMMIT" >/dev/null 2>&1 || true
+    opam update -q default >/dev/null 2>&1 || true
 fi
 if ! opam switch list --short 2>/dev/null | grep -qx "$SWITCH"; then
     log "creating the OCaml $SWITCH switch (compiles OCaml; takes a while)"

@@ -215,3 +215,17 @@ about four seconds.
   `warning[elab/dec-missing-clauses]: function `sink` has no clauses
   defined` from the spec itself; `run.py` ignores it and it does not
   affect the verdict.
+
+## Reproducible build
+
+The pinned way is the flake's oracle shell, which carries opam, gmp and
+pkgconf at the versions in `flake.lock`; CI uses it:
+
+```
+nix develop .#oracle -c oracle/build.sh
+```
+
+`build.sh` pins P4-SpecTec (`P4_SPECTEC_COMMIT`), the p4c submodule it
+reads `p4include` from, the OCaml switch (5.1.0) and the opam-repository
+commit (`OPAM_REPO_COMMIT`) that decides every dependency's version. Bump
+the two commits together.
