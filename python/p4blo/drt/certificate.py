@@ -112,10 +112,24 @@ def _invoke(
         )
     except OSError as error:
         raise CertificateError(f"cannot start {command[0]}: {error}") from error
+    cleanup_attempted = False
+    cleanup_error: OSError | None = None
+
+    def cleanup_group() -> None:
+        nonlocal cleanup_attempted, cleanup_error
+        if cleanup_attempted:
+            return
+        cleanup_attempted = True
+        try:
+            _kill_owned_process_group(process)
+        except OSError as error:
+            cleanup_error = error
+
     try:
         stdout, stderr = process.communicate(input=payload_bytes, timeout=timeout)
     except subprocess.TimeoutExpired:
-        _kill_owned_process_group(process)
+        cleanup_group()
+        reap_error: OSError | None = None
         try:
             process.communicate(timeout=1)
         except subprocess.TimeoutExpired:
@@ -127,16 +141,60 @@ def _invoke(
             try:
                 process.wait(timeout=1)
             except subprocess.TimeoutExpired:
-                _kill_owned_process_group(process)
+                pass
+            except OSError as error:
+                reap_error = error
+        except OSError as error:
+            reap_error = error
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                pass
+            except OSError as wait_error:
+                reap_error = wait_error
+        if cleanup_error is not None:
+            raise CertificateError(
+                f"Lean {mode} timed out after {timeout:g}s; "
+                f"process-group cleanup failed: {cleanup_error}"
+            ) from cleanup_error
+        if reap_error is not None:
+            raise CertificateError(
+                f"Lean {mode} timed out after {timeout:g}s; reap failed: {reap_error}"
+            ) from reap_error
+        if process.returncode is None:
+            raise CertificateError(
+                f"Lean {mode} timed out after {timeout:g}s; leader did not terminate"
+            ) from None
         raise CertificateError(f"Lean {mode} timed out after {timeout:g}s") from None
     except OSError as error:
-        _kill_owned_process_group(process)
-        process.wait(timeout=1)
+        cleanup_group()
+        try:
+            process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            pass
+        except OSError as reap_error:
+            if cleanup_error is None:
+                raise CertificateError(
+                    f"Lean {mode} exchange failed: {error}; reap failed: {reap_error}"
+                ) from reap_error
+        if cleanup_error is not None:
+            raise CertificateError(
+                f"Lean {mode} exchange failed: {error}; "
+                f"process-group cleanup failed: {cleanup_error}"
+            ) from cleanup_error
+        if process.returncode is None:
+            raise CertificateError(
+                f"Lean {mode} exchange failed: {error}; leader did not terminate"
+            ) from error
         raise CertificateError(f"Lean {mode} exchange failed: {error}") from error
     finally:
         # A successful leader can leave descendants after closing the pipes.
         # The process group belongs to this invocation even on normal exit.
-        _kill_owned_process_group(process)
+        cleanup_group()
+    if cleanup_error is not None:
+        raise CertificateError(f"Lean {mode} process-group cleanup failed: {cleanup_error}") from (
+            cleanup_error
+        )
     try:
         output = stdout.decode("utf-8")
         details = stderr.decode("utf-8").strip()
