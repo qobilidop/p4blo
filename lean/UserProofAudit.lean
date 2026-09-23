@@ -12,6 +12,31 @@ import P4blo.InitialFrameTests
 import P4blo.GuardedForwardPolicy
 import P4blo.CommandPrefixTests
 import P4blo.CallEntryTests
+import P4blo.CallBodyEntryTests
+
+/-- info: 'P4blo.CallEntry.WithBody.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.WithBody.index_built
+
+/-- info: 'P4blo.CallEntry.WithBody.block_lookup' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.WithBody.block_lookup
+
+/-- info: 'P4blo.CallEntry.WithBody.scope_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.WithBody.scope_block
+
+/-- info: 'P4blo.CallEntry.WithBody.initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.WithBody.initialized
+
+/-- info: 'P4blo.CallEntry.source_entry_with_body' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.source_entry_with_body
+
+/-- info: 'P4blo.CallBodyEntryTests.concrete_entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallBodyEntryTests.concrete_entry
 
 /-- info: 'P4blo.GuardedForwardPolicy.authored_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
