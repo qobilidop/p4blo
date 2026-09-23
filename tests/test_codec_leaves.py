@@ -18,7 +18,7 @@ from p4blo.drt._json import loads
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
-LeafKind = Literal["literal", "type"]
+LeafKind = Literal["literal", "type", "key"]
 
 
 @dataclass(frozen=True)
@@ -105,7 +105,7 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
                 observed = {"tag": "error", "name": value.error}
             case _:
                 raise AssertionError("test requires a set literal oneof")
-    else:
+    elif kind == "type":
         value = json_format.ParseDict(wire, pb.Type())
         program.struct_types.add().fields.add().type.CopyFrom(value)
         recovered = ir.load_json(ir.dump_json(program)).struct_types[0].fields[0].type
@@ -122,6 +122,31 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
                 observed = {"tag": "stack", "header": value.stack.header, "size": value.stack.size}
             case _:
                 raise AssertionError("test requires a set type oneof")
+    else:
+        value = json_format.ParseDict(wire, pb.KeyValue())
+        program.blocks.add().tables.add().const_entries.add().keys.add().CopyFrom(value)
+        recovered = ir.load_json(ir.dump_json(program)).blocks[0].tables[0].const_entries[0].keys[0]
+        assert recovered == value
+        encoded = json.loads(ir.dump_json(program))["blocks"][0]["tables"][0]["const_entries"][0][
+            "keys"
+        ][0]
+        match value.WhichOneof("kind"):
+            case "exact":
+                observed = {"tag": "exact", "value": value.exact}
+            case "lpm":
+                observed = {
+                    "tag": "lpm",
+                    "value": value.lpm.value,
+                    "prefix_len": value.lpm.prefix_len,
+                }
+            case "ternary":
+                observed = {
+                    "tag": "ternary",
+                    "value": value.ternary.value,
+                    "mask": value.ternary.mask,
+                }
+            case _:
+                raise AssertionError("test requires a set key oneof")
     return observed, encoded
 
 
@@ -251,4 +276,162 @@ def test_lean_agrees_leaf_decimal_canonicalization(lean_binary: Path) -> None:
             "value": {"tag": "bits", "width": 8, "value": "7"},
             "encoded": {"bits": {"width": 8, "value": "7"}},
         },
+    )
+
+
+def key_leaves() -> list[tuple[str, Leaf]]:
+    result = [
+        (f"exact-{n}", Leaf("key", {"exact": str(n)}, {"tag": "exact", "value": str(n)}))
+        for n in [0, 1, 9, 10, 2**32, 10**100 + 7]
+    ]
+    for value in [0, 1, 10**100 + 7]:
+        for prefix in [0, 1, 2**32 - 1]:
+            fields: dict[str, object] = {"value": str(value)}
+            if prefix:
+                fields["prefix_len"] = prefix
+            result.append(
+                (
+                    f"lpm-{value}-{prefix}",
+                    Leaf(
+                        "key",
+                        {"lpm": fields},
+                        {"tag": "lpm", "value": str(value), "prefix_len": prefix},
+                    ),
+                )
+            )
+    for value, mask in [
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (3, 12),
+        (12, 3),
+        (2**32 - 1, 2**32 - 1),
+        (10**100 + 7, 2**32),
+        (2**32, 10**100 + 7),
+    ]:
+        fields = {"value": str(value), "mask": str(mask)}
+        result.append(
+            (
+                f"ternary-{value}-{mask}",
+                Leaf("key", {"ternary": fields}, {"tag": "ternary", **fields}),
+            )
+        )
+    return result
+
+
+@pytest.mark.parametrize(
+    "leaf", [leaf for _, leaf in key_leaves()], ids=[name for name, _ in key_leaves()]
+)
+def test_key_protobuf_known_answers(leaf: Leaf) -> None:
+    value, encoded = protobuf_value(leaf.kind, leaf.wire)
+    assert same_json(value, leaf.value) and same_json(encoded, leaf.wire)
+
+
+@pytest.mark.parametrize(
+    "leaf", [leaf for _, leaf in key_leaves()], ids=[name for name, _ in key_leaves()]
+)
+def test_lean_agrees_key_known_answers(lean_binary: Path, leaf: Leaf) -> None:
+    actual = assert_leaf(lean_binary, "key", leaf.wire, {"value": leaf.value, "encoded": leaf.wire})
+    encoded = actual["encoded"]
+    assert isinstance(encoded, dict)
+    value, canonical = protobuf_value("key", encoded)
+    assert same_json(value, leaf.value) and same_json(canonical, leaf.wire)
+
+
+@pytest.mark.parametrize(
+    "wire, message",
+    [
+        ({}, "leaf: no kind set"),
+        ({"exact": None}, "leaf: no kind set"),
+        ({"exact": ""}, "leaf.exact: expected a decimal number, got an empty string"),
+        ({"exact": 0}, "leaf.exact: expected a string"),
+        ({"lpm": {}}, "leaf.lpm.value: expected a decimal number, got an empty string"),
+        (
+            {"lpm": {"value": None}},
+            "leaf.lpm.value: expected a decimal number, got an empty string",
+        ),
+        (
+            {"lpm": {"value": "0", "prefix_len": 2**32}},
+            "leaf.lpm.prefix_len: 4294967296 does not fit in uint32",
+        ),
+        (
+            {"lpm": {"value": "0", "prefix_len": -1}},
+            "leaf.lpm.prefix_len: expected a non-negative integer",
+        ),
+        ({"lpm": {"value": "0", "prefix_len": True}}, "leaf.lpm.prefix_len: expected a number"),
+        (
+            {"ternary": {"value": "0"}},
+            "leaf.ternary.mask: expected a decimal number, got an empty string",
+        ),
+        (
+            {"ternary": {"mask": "0"}},
+            "leaf.ternary.value: expected a decimal number, got an empty string",
+        ),
+        (
+            {"ternary": {"value": "0", "mask": None}},
+            "leaf.ternary.mask: expected a decimal number, got an empty string",
+        ),
+        (
+            {"ternary": {"value": None, "mask": "0"}},
+            "leaf.ternary.value: expected a decimal number, got an empty string",
+        ),
+        ({"ternary": {"value": "0", "mask": 0}}, "leaf.ternary.mask: expected a string"),
+    ],
+)
+def test_lean_agrees_key_rejection_profile(
+    lean_binary: Path, wire: dict[str, object], message: str
+) -> None:
+    assert_leaf(lean_binary, "key", wire, {"error": message})
+
+
+@pytest.mark.parametrize(
+    "wire, value, encoded",
+    [
+        ({"exact": "0007"}, {"tag": "exact", "value": "7"}, {"exact": "7"}),
+        (
+            {"lpm": {"value": "0007", "prefix_len": None}},
+            {"tag": "lpm", "value": "7", "prefix_len": 0},
+            {"lpm": {"value": "7"}},
+        ),
+        (
+            {"lpm": {"value": "0007", "prefix_len": "0032"}},
+            {"tag": "lpm", "value": "7", "prefix_len": 32},
+            {"lpm": {"value": "7", "prefix_len": 32}},
+        ),
+        (
+            {"ternary": {"value": "0003", "mask": "0012"}},
+            {"tag": "ternary", "value": "3", "mask": "12"},
+            {"ternary": {"value": "3", "mask": "12"}},
+        ),
+    ],
+)
+def test_lean_agrees_key_normalization(
+    lean_binary: Path, wire: dict[str, object], value: dict[str, object], encoded: dict[str, object]
+) -> None:
+    actual = assert_leaf(lean_binary, "key", wire, {"value": value, "encoded": encoded})
+    actual_encoded = actual["encoded"]
+    assert isinstance(actual_encoded, dict)
+    observed, canonical = protobuf_value("key", actual_encoded)
+    assert same_json(observed, value) and same_json(canonical, encoded)
+
+
+@pytest.mark.parametrize("position", ["exact", "lpm.value", "ternary.value", "ternary.mask"])
+@pytest.mark.parametrize("spelling", ["-1", "0x1", "١"])
+def test_lean_agrees_key_rejects_nondecimal_spelling(
+    lean_binary: Path, position: str, spelling: str
+) -> None:
+    wire: dict[str, object]
+    if position == "exact":
+        wire = {"exact": spelling}
+    elif position == "lpm.value":
+        wire = {"lpm": {"value": spelling}}
+    else:
+        field = position.split(".")[1]
+        fields = {"value": "0", "mask": "0", field: spelling}
+        wire = {"ternary": fields}
+    assert_leaf(
+        lean_binary,
+        "key",
+        wire,
+        {"error": f'leaf.{position}: expected a decimal number, got "{spelling}"'},
     )

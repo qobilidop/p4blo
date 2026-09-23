@@ -28,6 +28,32 @@ example : Decode.uint32 "width" (toJson (2 ^ 32 : Nat)) =
     .error "width: 4294967296 does not fit in uint32" :=
   CodecLaws.uint32_toJson_reject _ _ (by unfold CodecLaws.UInt32; decide)
 
+example : CodecLaws.KeyValueRepresentable (.lpm (10 ^ 100) 0) := by
+  unfold CodecLaws.KeyValueRepresentable CodecLaws.UInt32
+  decide
+example : CodecLaws.KeyValueRepresentable (.ternary 255 0) := by trivial
+example : ¬ CodecLaws.KeyValueRepresentable (.lpm 0 (2 ^ 32)) := by
+  unfold CodecLaws.KeyValueRepresentable CodecLaws.UInt32
+  decide
+example : KeyValue.decode "" (KeyValue.ternary 255 0).toJson = .ok (.ternary 255 0) :=
+  CodecLaws.keyValue_roundtrip _ _ (by trivial)
+example : KeyValue.decode "" (KeyValue.lpm (10 ^ 100) 0).toJson = .ok (.lpm (10 ^ 100) 0) :=
+  CodecLaws.keyValue_roundtrip _ _ (by
+    unfold CodecLaws.KeyValueRepresentable CodecLaws.UInt32
+    decide)
+example : KeyValue.decode "" (KeyValue.lpm 0 (2 ^ 32)).toJson =
+    .error "lpm.prefix_len: 4294967296 does not fit in uint32" := by
+  change (do
+    let value ← Decode.decimal "lpm.value" (toString (0 : Nat))
+    let prefixLen ← Decode.uint32 "lpm.prefix_len" (toJson (2 ^ 32 : Nat))
+    pure (KeyValue.lpm value prefixLen)) = _
+  rw [CodecLaws.decimal_toString]
+  change (do
+    let prefixLen ← Decode.uint32 "lpm.prefix_len" (toJson (2 ^ 32 : Nat))
+    pure (KeyValue.lpm 0 prefixLen)) = _
+  rw [CodecLaws.uint32_toJson_reject _ _ (by unfold CodecLaws.UInt32; decide)]
+  rfl
+
 /-- A separate semantic observation, not the production wire encoder. -/
 def literalValue : Literal → Json
   | .bits width value => Json.mkObj
@@ -47,6 +73,13 @@ def typeValue : Ty → Json
   | .stack header size => Json.mkObj
       [("tag", .str "stack"), ("header", .str header), ("size", toJson size)]
 
+def keyValue : KeyValue → Json
+  | .exact value => Json.mkObj [("tag", .str "exact"), ("value", .str (toString value))]
+  | .lpm value prefixLen => Json.mkObj
+      [("tag", .str "lpm"), ("value", .str (toString value)), ("prefix_len", toJson prefixLen)]
+  | .ternary value mask => Json.mkObj
+      [("tag", .str "ternary"), ("value", .str (toString value)), ("mask", .str (toString mask))]
+
 /-- Test-only access to actual leaf decoding/encoding, without validation. -/
 def reply (request : Json) : Except String Json := do
   let kind ← (← request.getObjVal? "kind").getStr?
@@ -58,6 +91,9 @@ def reply (request : Json) : Except String Json := do
   | "type" =>
     let value ← Ty.decode "leaf" wire
     pure (Json.mkObj [("value", typeValue value), ("encoded", value.toJson)])
+  | "key" =>
+    let value ← KeyValue.decode "leaf" wire
+    pure (Json.mkObj [("value", keyValue value), ("encoded", value.toJson)])
   | _ => throw "unsupported test leaf kind"
 
 def tests : T Unit := do
@@ -87,5 +123,20 @@ def tests : T Unit := do
     checkError s!"codec rejects nondecimal {repr bad}" (Decode.decimal "value" bad) "decimal"
   checkOk "codec leading zero normalization is not wire identity"
     (Decode.decimal "value" "0007") (· == 7)
+  for n in [0, 1, 2 ^ 32, 10 ^ 100 + 7] do
+    checkOk s!"codec exact key {n}"
+      (KeyValue.decode "" (KeyValue.exact n).toJson) (· == .exact n)
+    checkOk s!"codec zero-prefix key {n}"
+      (KeyValue.decode "" (KeyValue.lpm n 0).toJson) (· == .lpm n 0)
+  for (value, mask) in [(0, 0), (0, 255), (255, 0), (3, 12), (10 ^ 100, 2 ^ 32)] do
+    checkOk s!"codec ternary preserves independent components {value}/{mask}"
+      (KeyValue.decode "" (KeyValue.ternary value mask).toJson) (· == .ternary value mask)
+  checkOk "codec LPM max uint32 prefix is representable"
+    (KeyValue.decode "" (KeyValue.lpm 1 (2 ^ 32 - 1)).toJson) (· == .lpm 1 (2 ^ 32 - 1))
+  checkError "codec LPM first overflow is unrepresentable"
+    (KeyValue.decode "" (KeyValue.lpm 0 (2 ^ 32)).toJson) "does not fit in uint32"
+  checkOk "codec ternary independently named payload"
+    (KeyValue.decode "" (Json.mkObj [("ternary", Json.mkObj
+      [("value", .str "3"), ("mask", .str "12")])])) (· == .ternary 3 12)
 
 end CodecLawTests
