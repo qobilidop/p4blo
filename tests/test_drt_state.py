@@ -11,7 +11,15 @@ import pytest
 
 from p4blo import arch, ir
 from p4blo.drt.case import Case
-from p4blo.drt.run import LeanRunner, ProtocolError, compare_cases, parse_reply, python_outcome
+from p4blo.drt.run import (
+    Divergence,
+    LeanRunner,
+    Outcome,
+    ProtocolError,
+    compare_cases,
+    parse_reply,
+    python_outcome,
+)
 from p4blo.drt.state import Observation, decode, encode, snapshot
 from p4blo.externs.counter import Counter
 from p4blo.externs.register import Register
@@ -92,6 +100,19 @@ def test_state_difference_is_visible_even_when_errors_match() -> None:
     outcome = python_outcome(loaded, Case(pb.Entries(), 99, b""), 4)
     assert outcome.error is not None
     assert not outcome.agrees_with(replace(outcome, state=()))
+
+
+def test_state_only_diagnostics_show_values_without_decimal_limits() -> None:
+    left = Outcome(outputs=(), state=(Observation("counter", "counter", values=(2**16384,)),))
+    right = replace(left, state=(Observation("counter", "counter", values=(3,)),))
+    difference = Divergence(2, Case(pb.Entries(), 0, b""), left, right)
+    description = difference.describe()
+    assert "case 2: Python no packet; Lean no packet" in description
+    assert "state counter:" in description
+    assert hex(2**16384) in description
+    assert '"0x3"' in description
+    missing = replace(difference, lean=replace(right, state=()))
+    assert "Lean null" in missing.describe()
 
 
 def wide_register_roundtrip(tmp_path: Path, command: list[str | Path]) -> None:

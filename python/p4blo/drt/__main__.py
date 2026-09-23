@@ -73,6 +73,7 @@ def show(report: Report, program_dir: Path, limit: int, save: Path | None) -> No
             f"# {report.program}: divergence on case {d.number} of seed {report.seed}, "
             f"found by python -m p4blo.drt\n"
         )
+        header += "# " + d.describe().replace("\n", "\n# ") + "\n"
         try:
             text = header + "# Single-case excerpt; replay the JSON bundle for prior state.\n"
             text += case_to_stf(index, d.case, comments=comments)

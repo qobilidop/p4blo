@@ -12,19 +12,40 @@ from p4blo import arch, ir
 from p4blo.drt import __main__ as cli
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, replay, save
+from p4blo.drt.replay import main as replay_main
 from p4blo.drt.run import (
+    Divergence,
     Outcome,
     ProtocolError,
+    Report,
     compare,
     compare_cases,
     compare_program,
     python_outcome,
 )
-from p4blo.drt.state import snapshot
+from p4blo.drt.state import Observation, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
 FAKE = [sys.executable, "-m", "p4blo.drt.fake_lean"]
+
+
+def test_both_clis_describe_state_only_divergences(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    case = Case(pb.Entries(), 0, b"\x00\x01\x00")
+    left = Outcome(outputs=(), state=(Observation("counter", "counter", values=(3,)),))
+    right = Outcome(outputs=(), state=(Observation("counter", "counter", values=(2,)),))
+    report = Report("register_bounds", 0, 4, cases=1)
+    report.divergences.append(Divergence(0, case, left, right))
+    monkeypatch.setitem(replay_main.__globals__, "replay", lambda *_: report)
+    assert replay_main(["unused.json", "--fake"]) == 1
+    replay_output = capsys.readouterr().out
+    cli.show(report, ROOT / "corpus/register_bounds", 1, None)
+    excerpt_output = capsys.readouterr().out
+    for output in (replay_output, excerpt_output):
+        assert "state counter: Python" in output
+        assert '"0x3"' in output and '"0x2"' in output
 
 
 def register_program() -> pb.Program:

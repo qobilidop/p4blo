@@ -97,7 +97,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     print(report.summary())
     for d in report.divergences[:3]:
-        print(f"case {d.number}: Python {d.python}; Lean {d.lean}")
+        print(d.describe())
     return 0 if report.passed else 1
 
 

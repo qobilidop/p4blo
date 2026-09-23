@@ -53,7 +53,7 @@ from google.protobuf import json_format
 from p4blo import arch, ir
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
-from p4blo.drt.state import Snapshot, decode, snapshot
+from p4blo.drt.state import Snapshot, decode, encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = [
@@ -127,6 +127,19 @@ class Divergence:
     case: Case
     python: Outcome
     lean: Outcome
+
+    def describe(self) -> str:
+        """Include state-only differences, using the lossless hex wire values."""
+        lines = [f"case {self.number}: Python {self.python}; Lean {self.lean}"]
+        if self.python.state != self.lean.state:
+            left, right = encode(self.python.state), encode(self.lean.state)
+            for name in sorted(left.keys() | right.keys()):
+                if left.get(name) != right.get(name):
+                    lines.append(
+                        f"state {name}: Python {json.dumps(left.get(name))}; "
+                        f"Lean {json.dumps(right.get(name))}"
+                    )
+        return "\n".join(lines)
 
 
 @dataclass
