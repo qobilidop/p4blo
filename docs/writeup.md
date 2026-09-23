@@ -155,13 +155,51 @@ runnable reference; Lean is normative.
 
 ### The eDSL
 
-`python/p4blo/edsl/` is a builder that constructs IR: plain constructors
-for declarations, operator overloading for expressions, explicit
-constructs for control flow in the manner of JAX's `lax.cond`. It gives
-integer literals a width from context and inserts nothing else; every
-cast in a golden is one the author wrote. There is no decorator that
-reads Python source, because the IR is the product and the eDSL should
-teach it by use, not hide it.
+`python/p4blo/edsl/` is typed by construction. Headers and structs are
+classes whose annotated fields are real attributes; parsers, controls
+and deparsers are classes whose states and actions are methods; widths
+are `Literal` type parameters spelled through aliases, `bit8`, `bit48`;
+a program names its blocks as keyword arguments. Every reference is a
+Python object pyright resolves, so a misspelled field, state, action or
+table is an error in the editor rather than at build time, and `Var[W]`
+against `Bits[W]` makes assigning to an expression one too. Where the
+type system has no width arithmetic, `concat`, slices and `lookahead`,
+the result is `Bits[int]`, which no typed place accepts until `as_`
+asserts the width at run time and narrows it for the checker.
+
+Nothing reads Python source: a state or action body is called once with
+a recording `self`, control flow is explicit, `with self.if_(...)` in
+the manner of JAX's `lax.cond`, and the IR is exactly what the calls
+recorded. The eDSL gives integer literals a width from context and
+inserts nothing else; every cast in a golden is one the author wrote.
+Underneath is `p4blo.edsl.core`, the builder that produced the goldens
+before the typed surface existed and remains the dynamic API for
+generated programs; its run-time checks stay authoritative. From the
+forwarder, the parser state and one action:
+
+```python
+class MyParser(Parser[headers, metadata]):
+    @state
+    def parse_ethernet(self) -> Transition:
+        self.extract(self.hdr.ethernet)
+        return self.select(
+            self.hdr.ethernet.etherType, {EtherType.IPV4: self.parse_ipv4}, default=self.accept
+        )
+
+
+class MyIngress(Control[headers, metadata]):
+    @action
+    def ipv4_forward(self, dstAddr: bit48, port: bit9) -> None:
+        self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
+```
+
+pyright rejects a misspelled field, state, action or table, unequal
+widths in arithmetic, comparison or assignment, a wrong cast width, a
+`concat` used without `as_`, an assignment to an expression, and an
+action or extern call with the wrong arguments; `tests/test_pyright.py`
+checks that the 14 files under `tests/pyright/must_fail/` fail for
+exactly the diagnostic each names and that the two under `must_pass/`
+type-check clean.
 
 ### The corpus
 
