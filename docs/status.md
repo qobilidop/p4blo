@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `dbfa37c`, including total Expr/LValue codec proofs,
+Combined local integration at `21410b6`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -41,8 +41,11 @@ observer regressions. Body-parametric entry adds six audited roots, twelve
 native entry boundaries and eighteen Python checks comparing complete selected
 block syntax and strictly typed snapshots. The old entry exporter remains
 byte-identical; the new exporter matches the reviewed candidate exactly.
-Required real-Lean DRT: **607 passed**, no skips. Full gate:
-**2063 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+The actual local-initializer prefix adds five audited roots, sixteen native
+boundaries and four missing-extra controls. An actual Python initializer fault
+is caught, saved, replayed live and checked again after restoration.
+Required real-Lean DRT: **608 passed**, no skips. Full gate:
+**2064 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -53,9 +56,9 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
 `header-validity-expressions.md`, `initial-source-frames.md` and
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
-`plain-call-entry.md` and `body-parametric-entry.md`.
+`plain-call-entry.md`, `body-parametric-entry.md` and `call-initializers.md`.
 
-All five remote workflows pass for `eb245f7`; newer CI must be checked
+All five remote workflows pass for `e37ee2c`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -65,12 +68,12 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Sixteen retained execution-fault bundles and twenty-four raw codec
+Seventeen retained execution-fault bundles and twenty-four raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All sixteen execution bundles replay successfully on this integration
-(twenty-three requests), as do all twenty-four raw codec inputs. Header-read
-and guarded bundles match their current exporter/wrapper and exact request. All fifteen
+All seventeen execution bundles replay successfully on this integration
+(twenty-four requests), as do all twenty-four raw codec inputs. Header-read,
+guarded and initializer bundles match their current exporter/wrapper and exact request. All fifteen
 Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
 69 LValue/Arg source-matched pre-refactor transcripts retain byte-identical
 stdout/stderr and exit status. Artifact
@@ -314,14 +317,20 @@ Things a resuming agent should know are in motion or deliberately left.
   Staged contract: `notes/call-body-prefix-plan.md`. Do not substitute the
   empty declaration witness, reshape the wrapper or claim copyback/global
   validity from a successful finite prefix.
-  A disjoint local-assignment prerequisite is active in
-  `work/call-initializers` against the same committed interfaces; it will
-  prove the exact scratch19/unrelated165 prefix without assuming an actual
-  body-bearing call. Normal-return implementation is active separately in
-  `work/plain-call-return` after its reviewed feasibility probe; contract:
+  The disjoint local-assignment prerequisite (`70f5775`/`0d983ab`) is
+  integrated at `21410b6`: the exact scratch19/unrelated165 prefix preserves
+  full source agreement, outside names and arbitrary pending work. It does
+  not itself assume or establish entry to an actual body-bearing call.
+  Independent review and adversarial evidence: `notes/call-initializers.md`
+  and its matching review. Composition is active in `work/guarded-call-prefix`
+  against committed `21410b6`, including explicit initializer syntax identity.
+  Normal return is independently reviewed and committed in
+  `work/plain-call-return` at `884a168`, pending integration; contract:
   `notes/plain-call-return-plan.md`. It preserves the current post-callee Run
   outside the restored caller frame, not a historical entry Run. No return
-  implementation has landed yet.
+  implementation has landed on main yet. Review found three selective-alias
+  observer gaps; recursive mutable-container detachment checks and four real
+  branch writes now reject them, with permanent negative controls.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
   at `45fe743`: the same command induction now retains the exact pending
   suffix/continuation and full source/noninterference facts. Old whole-body

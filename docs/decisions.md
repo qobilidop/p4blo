@@ -893,3 +893,13 @@ one that says so.
   unwinding out of this slice. Distinct writes commute, so order requires a
   delegating trace observer rather than an order claim from final state alone.
   The reviewed boundary and tests are in `notes/plain-call-return-plan.md`.
+- **Prove the two actual local writes without extending the source layout.**
+  Use the reviewed plain-variable write law twice, then prove constructor
+  source agreement and separate local declaration permissions. This keeps
+  the unrelated observer-local extra outside the authored policy's roots
+  and avoids a mixed one-command/one-raw-write proof. Confidence: high for
+  this exact prefix, medium for a fixed two-local API. Revisit typed authoring
+  of initializers when a second initializer shape requires expressions or
+  more roots. Independent literal answers reject a paired body/source/result
+  change that correctly preserves the generic proof; actual Python faults
+  additionally require a saved clean-output mismatch and restored replay.

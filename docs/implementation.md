@@ -79,8 +79,10 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   queue, retaining pending observer/return work and existing whole-body APIs.
   Actual-built body-parametric entry now preserves that API and supplies
   exact real block/scope identity; complete selected-block syntax is checked
-  against the tracked Python guarded wrapper. Next: real local assignments
-  plus guarded forwarding up to the unexecuted observer suffix, following
+  against the tracked Python guarded wrapper. Real local assignments now have
+  exact finite-prefix/source-state and separate permission proofs, with
+  independent literal answers and retained actual Python fault replays.
+  Next: compose entry, locals and guarded forwarding up to the unexecuted observer suffix, following
   `notes/call-body-prefix-plan.md`. Call return, copyback and complete
   applications remain unproved.
 
