@@ -105,6 +105,53 @@ example : LValue.decode "test" (Json.mkObj [("next", Json.mkObj [])]) =
   rw [LValue.decode_unfold]
   rfl
 
+def nestedStatement : Stmt := .conditional nestedExpression
+  [.conditional (.var "")
+    [.assign nestedLValue nestedExpression, .setValid (.var "header")]
+    [.callAction "" [.expr nestedExpression, .lvalue nestedLValue], .apply "" none],
+   .callBlock "unresolved" [], .push (.var "stack") 0, .verify (.var "") ""]
+  [.conditional (.literal (.boolean false))
+    [.callExtern "" "" [.lvalue nestedLValue] (some (.next (.var ""))), .extract nestedLValue]
+    [.emit nestedExpression, .advance (.literal (.bits 0 (10 ^ 100)))],
+   .pop (.var "stack") (2 ^ 32 - 1), .setInvalid (.var "header"), .apply "table" (some (.var ""))]
+
+theorem nestedStatement_representable : CodecLaws.StmtRepresentable nestedStatement := by
+  simp [nestedStatement, CodecLaws.StmtRepresentable, CodecLaws.ArgRepresentable,
+    nestedExpression_representable, nestedLValue_representable,
+    CodecLaws.LValueRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+
+/-- Both branches contain nested conditionals; all fourteen constructors occur. -/
+theorem nestedStatement_roundtrip (path : String) :
+    Stmt.decode path nestedStatement.toJson = .ok nestedStatement :=
+  CodecLaws.stmt_roundtrip path nestedStatement nestedStatement_representable
+
+example : ¬ CodecLaws.StmtRepresentable (.push (.var "s") (2 ^ 32)) := by
+  simp [CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StmtRepresentable (.pop (.var "s") (2 ^ 32)) := by
+  simp [CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StmtRepresentable
+    (.conditional (.var "c") [] [.emit (.lookahead (.bits (2 ^ 32)))]) := by
+  simp [CodecLaws.StmtRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StmtRepresentable
+    (.callExtern "" "" [.lvalue (.index (.var "x") (.slice (.var "x") (2 ^ 32) 0))] none) := by
+  simp [CodecLaws.StmtRepresentable, CodecLaws.ArgRepresentable,
+    CodecLaws.LValueRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+
+example : Stmt.decode "test" (Stmt.push (.var "s") (2 ^ 32)).toJson =
+    .error "test.push.count: 4294967296 does not fit in uint32" := by
+  rw [Stmt.decode_unfold]
+  simp only [Stmt.toJson]
+  change (do
+    let stack ← LValue.decode "test.push.stack" (LValue.var "s").toJson
+    let count ← Decode.uint32 "test.push.count" (toJson (2 ^ 32 : Nat))
+    pure (Stmt.push stack count)) = _
+  rw [CodecLaws.lvalue_var]
+  change (Stmt.push (.var "s") <$> Decode.uint32 _ (toJson (2 ^ 32 : Nat))) = _
+  rw [CodecLaws.uint32_toJson_reject _ _ (by unfold CodecLaws.UInt32; decide)]
+  rfl
+
 /-- A separate semantic observation, not the production wire encoder. -/
 def literalValue : Literal → Json
   | .bits width value => Json.mkObj
