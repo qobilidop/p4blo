@@ -1,12 +1,11 @@
 """`python -m p4blo.drt <program dir> <count> [--seed N] [--ports N]
 [--lean PATH | --fake] [--show N] [--save DIR]`
 
-Prints the report's summary and the first divergences, each as the STF
-vector that replays it with both sides' outputs as comments. `--save`
-also writes each of those vectors to a file, named by program, seed and
-case number, so it can be dropped under `corpus/<program>/` once the
-divergence is attributed. Exit status 1 when anything diverged, 2 on a
-protocol error.
+Prints the summary and STF excerpts of the first divergences. `--save`
+writes a self-contained JSON replay of the program and full input sequence,
+plus the excerpts. Stateful failures require that JSON bundle; the single
+packet excerpts omit prior extern state. Exit status 1 on divergence or
+unexpected shared errors, 2 on a protocol error.
 """
 
 from __future__ import annotations
@@ -17,6 +16,7 @@ from pathlib import Path
 
 from p4blo import ir
 from p4blo.drt.case import Outputs, case_to_stf
+from p4blo.drt.replay import save as save_replay
 from p4blo.drt.run import Outcome, ProtocolError, Report, compare, default_lean_binary
 
 
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     print(report.summary())
     show(report, args.program_dir, args.show, args.save)
-    return 1 if report.divergences else 0
+    return 0 if report.passed else 1
 
 
 def comment(outcome: Outcome) -> Outputs | str:
@@ -57,6 +57,11 @@ def comment(outcome: Outcome) -> Outputs | str:
 
 
 def show(report: Report, program_dir: Path, limit: int, save: Path | None) -> None:
+    if save is not None and not report.passed:
+        save.mkdir(parents=True, exist_ok=True)
+        bundle = save / f"drt_{report.program}_seed{report.seed}.json"
+        save_replay(report, bundle)
+        print(f"# complete stateful replay: python -m p4blo.drt.replay {bundle}")
     if not report.divergences:
         return
     index = ir.Index.build(ir.load_text(program_dir / f"{program_dir.name}.txtpb"))
@@ -66,7 +71,12 @@ def show(report: Report, program_dir: Path, limit: int, save: Path | None) -> No
             f"# {report.program}: divergence on case {d.number} of seed {report.seed}, "
             f"found by python -m p4blo.drt\n"
         )
-        text = header + case_to_stf(index, d.case, comments=comments)
+        try:
+            text = header + "# Single-case excerpt; replay the JSON bundle for prior state.\n"
+            text += case_to_stf(index, d.case, comments=comments)
+        except ValueError as e:
+            print(f"# case {d.number} cannot be represented in STF: {e}")
+            continue
         print()
         print(text, end="")
         if save is not None:

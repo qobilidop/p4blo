@@ -14,7 +14,7 @@ locally before pushing, and check exit codes, not output.
 |---|---|---|
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
 | Lean | `cd lean && lake build && lake test` | `all tests passed`, exit 0 |
-| Lean vs Python | `uv run pytest tests/test_drt.py -k lean_agrees` | 11 passed after `lake build`; skips only when the binary is missing |
+| Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_drt.py -k lean_agrees` | runs after `lake build`; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
@@ -25,6 +25,19 @@ A larger differential sweep, for a change to either interpreter:
 ```
 uv run python -m p4blo.drt corpus/<program> 2000 --seed <n> --lean lean/.lake/build/bin/p4blo-lean
 ```
+
+Use `--save <directory>` to retain a failed experiment. Its JSON bundle
+contains the actual program and every request from fresh extern state;
+replay it with `uv run python -m p4blo.drt.replay <bundle.json>`. STF files
+beside it are single-packet excerpts, not standalone stateful reproductions.
+The CLI fails on matching errors as well as divergences for campaigns of
+generated valid inputs. Every Lean request has a timeout, including writes
+to a peer that stops reading. Local tests may skip an absent binary unless
+`P4BLO_REQUIRE_LEAN=1`; an existing but broken binary is always a failure.
+
+The active assurance roadmap is [verification.md](verification.md). Keep
+proved properties, tested agreement and open obligations separate in every
+checkpoint. Passing differential tests is not a proof of equivalence.
 
 ## Where every external input is pinned
 

@@ -49,6 +49,7 @@ from google.protobuf import json_format
 from p4blo import arch, ir
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
+from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = [
     "Divergence",
@@ -126,6 +127,13 @@ class Report:
     # entries and in-range ports, so on a sweep the count should be zero.
     both_errored: int = 0
     divergences: list[Divergence] = field(default_factory=list)
+    inputs: tuple[Case, ...] = ()
+    program_ir: pb.Program | None = field(default=None, repr=False)
+
+    @property
+    def passed(self) -> bool:
+        """Generated valid inputs must execute, not merely fail alike."""
+        return not self.divergences and self.both_errored == 0
 
     @property
     def agreed(self) -> int:
@@ -330,7 +338,9 @@ def compare_cases(
     seed: int = 0,
 ) -> Report:
     """Run every case on both sides, in order, and collect the divergences."""
-    report = Report(program, seed, ports)
+    frozen_program = pb.Program()
+    frozen_program.CopyFrom(loaded.index.program)
+    report = Report(program, seed, ports, inputs=tuple(cases), program_ir=frozen_program)
     for number, case in enumerate(cases):
         python = python_outcome(loaded, case, ports)
         lean = run_lean(case)
