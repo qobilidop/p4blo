@@ -42,8 +42,9 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   Read-only header-validity primitives now have concrete typing/evaluation
   laws and independent answers. A unified read adapter preserves scalar writes
   and legacy exports; full post-read observations catch actual Python return
-  and state-only faults. A separately specified guarded policy is active,
-  without changing the existing body's invalid-header contract.
+  and state-only faults. A separately specified guarded policy now has arbitrary
+  source/execution proofs, an exact invalid-drop-only contract and independent
+  full-state answers, without changing the old invalid-header contract.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.

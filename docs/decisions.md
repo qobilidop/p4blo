@@ -824,3 +824,12 @@ one that says so.
   needed no production refactor. Revisit the extras API when real call entry
   needs scope-extension lemmas. Hand-extended observer fixtures do not stand
   in for the packet wrapper or prove argument binding.
+- **Keep validity-guarded forwarding a separately named application.**
+  Reuse the complete independent Snapshot and earlier hit/TTL policy; add
+  both-header validity and a separate full-state invalid-drop-only theorem.
+  Neither a valid-header premise nor the old body is changed. Confidence:
+  high for this exact stored-state contract, medium in positional HeaderRef
+  ergonomics. Revisit certified named header endpoints when further aggregate
+  operations need them. Independent expected packets must also check exporter
+  selection: choosing the old body passes its proofs and engine agreement but
+  is not the intended guarded program. Metadata drop is not network fate.

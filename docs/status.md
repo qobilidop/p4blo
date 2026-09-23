@@ -12,10 +12,11 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `c269994`, including total Expr/LValue codec proofs,
+Combined integration at `cffad0d`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
-policy proofs: both Lean package gates and default audits pass, with
+policy proofs and the separately named validity-guarded policy: both Lean
+package gates and default audits pass, with
 **481 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
@@ -30,8 +31,10 @@ Unified reads add 20 expressions and four commands with full post-read
 observations; frame tests cover all entries, map keys and action absence.
 The source-frame adapter adds kernel-checked actual-built forwarding
 initialization, independent expected values and explicit extra declarations.
-Required real-Lean DRT: **564 passed**, no skips. Full gate:
-**1982 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Guarded forwarding adds 64 independent Lean state answers and 32 exported
+Python/Lean cases, including invalid headers and boundary TTLs.
+Required real-Lean DRT: **597 passed**, no skips. Full gate:
+**2016 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -40,15 +43,16 @@ Latest reviews under `notes/reviews/`: `field-permissions.md`,
 Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `command-blocks.md`, `expr-codec.md`, `header-validity-primitives.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
-`header-validity-expressions.md` and `initial-source-frames.md`.
+`header-validity-expressions.md`, `initial-source-frames.md` and
+`guarded-forwarding.md`.
 
-All five remote workflows pass for `ac23e52`; newer CI must be checked
-separately. Fifteen retained execution-fault bundles and twenty-four raw codec
+All five remote workflows pass for `6ee07c3`; newer CI must be checked
+separately. Sixteen retained execution-fault bundles and twenty-four raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All fifteen execution bundles replay successfully on this integration
-(twenty-two requests), as do all twenty-four raw codec inputs. The header-read
-bundle matches the current exporter/wrapper and exact request. All fifteen
+All sixteen execution bundles replay successfully on this integration
+(twenty-three requests), as do all twenty-four raw codec inputs. Header-read
+and guarded bundles match their current exporter/wrapper and exact request. All fifteen
 Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
 69 LValue/Arg source-matched pre-refactor transcripts retain byte-identical
 stdout/stderr and exit status. Artifact
@@ -225,10 +229,15 @@ Things a resuming agent should know are in motion or deliberately left.
   Python wrong-return/side-effect faults save and replay the same complete
   witness, with restored agreement. Independent review is clear; scope and
   recipes: `notes/header-validity-expressions.md` and its matching review.
-  Checkpoint 3 is active in isolated `work/guarded-forwarding`, based on
-  committed `2713999`: a separately named both-valid-header policy, arbitrary
-  source-store proof and concrete execution lift. Preserve the old body's
-  invalid-header contract and do not infer parsing or complete routing.
+  Checkpoint 3 (`74ef437`/`fe17a77`) is integrated at `cffad0d`: a separately
+  named both-valid-header policy, arbitrary-store proof, exact invalid-drop-only
+  contract and concrete execution lift. Independent review is clear and combined
+  gates pass above. Missing/inverted/paired guards fail the independent contract;
+  exporting the old body passes generic proofs and engine agreement but fails
+  independent answers. An actual Python bypass saves/live-replays divergence
+  and agrees restored. Scope: `notes/guarded-forwarding.md` and its review.
+  The old body's invalid-header contract and byte exports remain unchanged;
+  parsing, route lookup, checksum and actual network drop remain unproved.
   An independent initialization review recommends the next premise-discharge
   bridge in `notes/initialization-bridge-plan.md` (committed `6ff0449`).
   Independent structural source zero and actual fuel-bounded Value.zero
