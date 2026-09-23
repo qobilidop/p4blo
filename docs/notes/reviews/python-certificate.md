@@ -20,7 +20,12 @@ found defects that those tests did not cover:
 The integrator fixed all four and added regressions for replacement and
 deletion of each binding, inconsistent register cells, successful-peer
 descendants and duplicate verdicts. Formatting, lint, types and 55 focused
-tests pass. Independent follow-up on those fixes is pending.
+tests pass. Independent follow-up on `3c155ac` confirmed all four fixes and
+found no new defect: replacement/deletion/wrong kinds produce faithful
+claims rejected by Lean; inconsistent widths, negative/Boolean counters and
+malformed locals fail before projection; duplicate verdicts are rejected;
+the original successful-peer reproducer's child terminates. The reviewer
+rebuilt Lean and repeated all 55 certificate tests; the worktree stayed clean.
 
 Injected production InterpError and ParseError already preserved correct
 partial state and tagged completion, and Lean rejected the claims. Apart
