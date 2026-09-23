@@ -1,4 +1,17 @@
 import P4bloIR
+import P4bloIR.ScalarStatements
+
+/-- info: 'P4bloIR.ScalarStatements.writeVar_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarStatements.writeVar_block
+
+/-- info: 'P4bloIR.Execution.Steps.finishes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Execution.Steps.finishes
+
+/-- info: 'P4bloIR.Execution.Steps.execute' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Execution.Steps.execute
 
 /-- info: 'P4bloIR.Value.equal_bits' depends on axioms: [propext] -/
 #guard_msgs in
