@@ -1,7 +1,9 @@
 import P4bloLean
 import P4blo.Json
+import P4bloLean.ScalarTests
 
 def main : IO Unit := do
+  P4bloLean.ScalarTests.run
   let source ← IO.FS.readFile "../ir/Tests/forwarder.json"
   let program ← IO.ofExcept (P4blo.Program.fromJsonString source)
   let (sw, externs) ← IO.ofExcept (P4bloLean.prepareSwitch program)
