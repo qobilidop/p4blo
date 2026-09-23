@@ -12,6 +12,7 @@ from enum import IntEnum
 import pytest
 from google.protobuf import text_format
 
+from p4blo import validator
 from p4blo.edsl import (
     Bits,
     Bool,
@@ -39,6 +40,7 @@ from p4blo.edsl import (
     bit16,
     bit32,
     concat,
+    dont_care,
     entry,
     exact,
     lpm,
@@ -205,8 +207,11 @@ def test_reserved_and_renamed_fields() -> None:
     class ok(Header, name="renamed_t", rename={"is_valid_": "is_valid"}):
         is_valid_: bit8
 
-    assert ok.__core_type__ is not None
-    assert ok.__core_type__.build() == text_format.Parse(
+    class Renaming(Control[headers, metadata]):
+        def apply(self) -> None:
+            self.local("renamed", ok)
+
+    assert build(control=Renaming).header_types[-1] == text_format.Parse(
         'name: "renamed_t" fields { name: "is_valid" type { bits: 8 } }', pb.HeaderType()
     )
 
@@ -292,6 +297,58 @@ def test_a_state_must_return_its_transition() -> None:
         build(parser=P)
 
 
+def test_select_keysets_of_every_kind_reach_the_ir() -> None:
+    """A literal or an enum member is a keyset like any other. Two of them in
+    one select used to ask an eDSL value for its truth value, because the
+    repeated-case check compared the cases with `==`."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            self.extract(self.hdr.h)
+            return self.select(self.hdr.h.g, {bit16(0x800): self.colored, bit16(0x86DD): self.done})
+
+        @state
+        def colored(self) -> Transition:
+            color = self.local("color", Color)
+            return self.select(color, {Color.RED: self.done, Color.GREEN: self.done})
+
+        @state
+        def done(self) -> Transition:
+            return self.accept
+
+    states = build(parser=P).blocks[0].states
+    assert [c.sets[0].exact.bits.value for c in states[0].transition.select.cases] == [
+        "2048",
+        "34525",
+    ]
+    assert [c.sets[0].exact.enum_member.member for c in states[1].transition.select.cases] == [
+        "RED",
+        "GREEN",
+    ]
+
+
+def test_a_keyset_repeated_under_another_spelling_is_refused() -> None:
+    """The keysets are compared as the IR holds them, so `bit16(1)` and the
+    int `1` are the same case even though they are different objects."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            return self.select(self.hdr.h.g, {bit16(1): self.accept, 1: self.reject})
+
+    with pytest.raises(EdslError, match="is repeated"):
+        build(parser=P)
+
+    class Q(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            return self.select(self.hdr.h.g, {dont_care: self.accept, bit16(1): self.reject})
+
+    with pytest.raises(EdslError, match="unreachable"):
+        build(parser=Q)
+
+
 # -- actions and tables ------------------------------------------------------------
 
 
@@ -351,6 +408,34 @@ def test_actions_in_bodies_and_as_literals() -> None:
     )
 
 
+def test_an_action_may_call_another_action() -> None:
+    """`call_action` in an action body is IR the validator accepts, and the
+    eDSL used to be the only thing that could not author it. The callee may
+    come later in the class body: every action is declared before any body
+    runs."""
+
+    class C(Control[headers, metadata]):
+        @action
+        def outer(self) -> None:
+            self.inner(bit8(7))
+
+        @action
+        def inner(self, value: bit8) -> None:
+            self.assign(self.hdr.h.f, value)
+
+        def apply(self) -> None:
+            self.outer()
+
+    program = build(control=C)
+    control = program.blocks[1]
+    assert control.actions[0].body[0] == text_format.Parse(
+        'call_action { action: "inner"'
+        ' args { expr { literal { bits { width: 8 value: "7" } } } } }',
+        pb.Stmt(),
+    )
+    assert validator.validate(program) == []
+
+
 def test_tables_with_typed_entries_over_two_keys() -> None:
     c = control_of(Acting)
     assert (
@@ -372,6 +457,65 @@ def test_tables_with_typed_entries_over_two_keys() -> None:
     assert c.body[2] == text_format.Parse(
         f'apply {{ table: "t2" hit {{ {member('var: "meta"', "ok")} }} }}', pb.Stmt()
     )
+
+
+def test_a_const_entry_value_of_the_wrong_width_is_refused() -> None:
+    """The run-time half of the typed entries: the IR writes an entry value
+    as a decimal string of the key's width, so a wrong width is gone by the
+    time the validator sees it. `keys=(...)` makes it a static error;
+    `keys=[...]` and `bit(n)` still reach this check."""
+
+    class C(Control[headers, metadata]):
+        @action
+        def nop(self) -> None:
+            pass
+
+        t = Table(
+            keys=[exact(headers.h.f)],
+            actions=[nop],
+            default=nop(),
+            entries=[entry(bit16(1), nop())],
+        )
+
+        def apply(self) -> None:
+            self.apply_table(self.t)
+
+    with pytest.raises(EdslError, match=r"the value is bit<16>, the key is bit<8>"):
+        control_of(C)
+
+
+def test_a_table_the_validator_would_reject_is_refused_at_build_time() -> None:
+    """An entry priority on a table with no ternary key, and an empty action
+    list: two shapes the eDSL used to build and the validator then rejected,
+    while the neighbouring rules were refused at build time. The eDSL's
+    refusal names the user's line; the validator's names a protobuf path."""
+
+    class Prio(Control[headers, metadata]):
+        @action
+        def nop(self) -> None:
+            pass
+
+        t = Table(
+            keys=(exact(headers.h.f),),
+            actions=[nop],
+            default=nop(),
+            entries=[entry(1, nop(), priority=3)],
+        )
+
+        def apply(self) -> None:
+            self.apply_table(self.t)
+
+    with pytest.raises(EdslError, match="only a table with a ternary key has priorities"):
+        control_of(Prio)
+
+    class NoActions(Control[headers, metadata]):
+        t = Table(keys=(exact(headers.h.f),), actions=[])
+
+        def apply(self) -> None:
+            self.apply_table(self.t)
+
+    with pytest.raises(EdslError, match="lists at least one action"):
+        control_of(NoActions)
 
 
 def test_a_key_path_binds_to_the_parameter_of_its_type() -> None:
@@ -472,6 +616,21 @@ def test_extern_results_must_be_assigned_and_instances_listed() -> None:
         build(control=Unlisted)
 
 
+def test_an_extern_result_assigned_twice_is_refused() -> None:
+    """The second assignment used to reach `list.remove` and escape as a
+    `ValueError` the surface's own `except EdslError` does not catch."""
+
+    class Twice(Control[headers, metadata]):
+        def apply(self) -> None:
+            data = concat(self.hdr.h.f, self.hdr.h.g).as_(Bits[L[24]])
+            result = csum.compute(data)
+            self.assign(self.hdr.h.g, result)
+            self.assign(self.hdr.h.g, result)
+
+    with pytest.raises(EdslError, match="is already assigned"):
+        build(control=Twice, externs=[csum])
+
+
 # -- program assembly: errors, enums, exports --------------------------------------
 
 
@@ -531,3 +690,40 @@ def test_errors_carry_the_users_location() -> None:
 
         class bad(Struct):
             x: int
+
+
+def test_a_duplicate_block_name_is_an_edsl_error_with_a_location() -> None:
+    """Placing a block was the one core call in `_assemble` outside
+    `provenance()`, so the clash escaped as the core's own `EdslError`,
+    which `except EdslError` against this surface does not catch."""
+
+    class Clash(Parser[headers, metadata], name="Same"):
+        @state
+        def start(self) -> Transition:
+            return self.accept
+
+    class C(Control[headers, metadata], name="Same"):
+        pass
+
+    with pytest.raises(EdslError, match=rf"reuses the name of a block.*\(defined at {__file__}"):
+        build(parser=Clash, control=C)
+
+
+def test_a_state_is_named_not_called() -> None:
+    """`return self.parse_ipv4()` is the natural slip; pyright refuses it,
+    and a program that is not type-checked gets an `EdslError` naming the
+    fix instead of `TypeError: 'StateRef' object is not callable`."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            return self.other()  # pyright: ignore[reportCallIssue]
+
+        @state
+        def other(self) -> Transition:
+            return self.accept
+
+    with pytest.raises(
+        EdslError, match=r"a state is named, not called: write self.goto\(self.other\)"
+    ):
+        build(parser=P)

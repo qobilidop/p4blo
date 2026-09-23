@@ -561,6 +561,12 @@ class Enum(Value):
         with provenance():
             return _bool(self._expr != operand(other))
 
+    def _same(self, other: Self) -> None:
+        """Never called: the `Self` parameter is what pins one enum type.
+        `assign`'s enum overload takes its target through a protocol
+        requiring this method, so the type variable cannot widen to the
+        union of two enum types (see `_EnumPlace` in `blocks`)."""
+
     __hash__ = Value.__hash__
 
 

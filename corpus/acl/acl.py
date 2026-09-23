@@ -148,27 +148,27 @@ class ingress(Control[packet_t, Meta]):
 
     # Key names are the ones p4c's STF uses, so the vectors read unchanged.
     test1 = Table(
-        keys=[ternary(packet_t.data.f1, name="data.f1")],
+        keys=(ternary(packet_t.data.f1, name="data.f1"),),
         actions=[setb1, noop],
         default=noop(),
     )
     ex1 = Table(
-        keys=[ternary(packet_t.extra[0].h, name="extra[0].h")],
+        keys=(ternary(packet_t.extra[0].h, name="extra[0].h"),),
         actions=[setbyte, act1, act2, act3, noop],
         default=noop(),
     )
     tbl1 = Table(
-        keys=[ternary(packet_t.data.f2, name="data.f2")],
+        keys=(ternary(packet_t.data.f2, name="data.f2"),),
         actions=[setbyte_1, noop],
         default=noop(),
     )
     tbl2 = Table(
-        keys=[ternary(packet_t.data.f2, name="data.f2")],
+        keys=(ternary(packet_t.data.f2, name="data.f2"),),
         actions=[setbyte_2, noop],
         default=noop(),
     )
     tbl3 = Table(
-        keys=[ternary(packet_t.data.f2, name="data.f2")],
+        keys=(ternary(packet_t.data.f2, name="data.f2"),),
         actions=[setbyte_3, noop],
         default=noop(),
     )

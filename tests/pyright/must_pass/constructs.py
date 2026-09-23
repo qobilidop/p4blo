@@ -110,7 +110,7 @@ class MyParser(Parser[headers, metadata]):
 
     @state
     def parse_first_h2(self) -> Transition:
-        self.call(SubParser, self.meta.next_type)
+        self.call(SubParser, self.hdr, self.meta.next_type)
         return self.select(
             self.meta.next_type, {HdrType.H2: self.parse_other_h2}, default=self.accept
         )
@@ -155,7 +155,7 @@ class MyIngress(Control[headers, metadata]):
         self.assign(self.hdr.h2[0].f2, f2)
 
     ops = Table(
-        keys=[ternary(headers.h1.op1), exact(headers.h1.hdr_type)],
+        keys=(ternary(headers.h1.op1), exact(headers.h1.hdr_type)),
         actions=[set_port, fill, drop, NoAction],
         default=NoAction(),
         entries=[

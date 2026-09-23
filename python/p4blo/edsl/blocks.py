@@ -13,7 +13,7 @@
         def forward(self, port: bit9) -> None:
             self.assign(self.meta.egress_port, port)
 
-        t = Table(keys=[lpm(headers.ipv4.dstAddr)], actions=[forward], default=forward(bit9(1)))
+        t = Table(keys=(lpm(headers.ipv4.dstAddr),), actions=[forward], default=forward(bit9(1)))
 
         def apply(self) -> None:
             self.apply_table(self.t)
@@ -36,12 +36,22 @@ The static rules:
   a body records a call, and `forward(bit9(1))` in the class body is the
   literal a table's `default=` or `entry(...)` takes. Both are checked
   against the declared parameters, names, count and widths. Action
-  parameters are directionless in the IR.
+  parameters are directionless in the IR. Action data is written
+  `bit9(1)`, never a bare int: a parameter declared `port: bit9` is a
+  `bit<9>` place inside the body, so widening it to `bit9 | int` would
+  make it an int there too, and `self.forward(1)` is the one place the
+  literal rule ("an int takes the other operand's width") is denied
+  statically although the build accepts it.
 - `Table` is a class attribute holding action objects and typed keys;
-  `keys=(k1, k2)` as a tuple types the entries for one to four keys.
+  `keys=(k1, k2)` as a tuple types the entries for one to four keys, so
+  that a const entry value of the wrong width is a static error. A
+  `keys=[...]` list is the untyped form, for generated programs; its
+  entries are checked at run time alone.
 - `self.assign(target: Var[W], value: Bits[W] | int)`: a place on the
   left, anything of that width on the right; `Bool`, `Enum` and `Error`
-  places have their own overloads. `self.call(Sub, args...)` calls a
+  places have their own overloads, and the enum one pins the target's own
+  enum type, so a `Shape` into a `Color` is a static error too.
+  `self.call(Sub, args...)` calls a
   sub-block, whose arguments are checked at run time against its
   parameters. `self.local(name, bit8)` declares a block local, a `Var`.
 - Control flow is explicit: `with self.if_(c):`, `elif_`, `else_`.
@@ -62,6 +72,8 @@ from typing import (
     Any,
     ClassVar,
     Concatenate,
+    Never,
+    Protocol,
     Self,
     cast,
     get_args,
@@ -76,6 +88,8 @@ from typing import (
 from p4blo.edsl.core.blocks import (
     ACCEPT,
     REJECT,
+    ActionBody,
+    CallsActions,
     ControlBody,
     DeparserBody,
     DontCare,
@@ -85,6 +99,7 @@ from p4blo.edsl.core.blocks import (
     StateBody,
     Stmts,
     dont_care,
+    keyset,
     masked,
     prefix,
     range_,
@@ -98,6 +113,7 @@ from p4blo.edsl.core.blocks import Parser as CoreParser
 from p4blo.edsl.core.blocks import Table as CoreTable
 from p4blo.edsl.core.expr import Expr as CoreExpr
 from p4blo.edsl.core.types import ParamSpec as CoreParam
+from p4blo.edsl.core.types import type_str
 from p4blo.edsl.errors import EdslError, caller_location, provenance
 from p4blo.edsl.values import Bits, Bool, Enum, Error, Value, Var, operand
 from p4blo.edsl.views import (
@@ -161,6 +177,14 @@ class StateRef:
 
     def __repr__(self) -> str:
         return f"{self.owner.__name__}.{self.name}"
+
+    if not TYPE_CHECKING:
+        # Hidden from the checker on purpose: pyright already refuses
+        # `self.parse_ipv4()` as "not callable", which is the better
+        # diagnostic, and this only names the fix for a program that is
+        # not type-checked.
+        def __call__(self, *args: object, **kwargs: object) -> Never:
+            raise EdslError(f"a state is named, not called: write self.goto(self.{self.name})")
 
 
 type Target = StateRef | Accept | Reject
@@ -307,6 +331,9 @@ class Key[W: int]:
         self.match_kind = match_kind
         self.name = name
 
+    # Never called: `W` in both a parameter and a return makes `Key`
+    # invariant in it, so a `Key[L[8]]` is not a `Key[L[16]]` and the
+    # entries of a tuple of keys are typed by their exact widths.
     def _invariant(self, w: W) -> W:
         return w
 
@@ -348,6 +375,9 @@ class Entry[KS]:
         self.action = action
         self.priority = priority
 
+    # Never called; see `Key._invariant`: it makes `Entry` invariant in the
+    # tuple of key widths, so `Entry[tuple[L[16]]]` is not an
+    # `Entry[tuple[L[8]]]`.
     def _invariant(self, ks: KS) -> KS:
         return ks
 
@@ -436,7 +466,7 @@ class Table[KS]:
     @overload
     def __init__(
         self: Table[tuple[Any, ...]],
-        keys: Sequence[Key[Any]] = (),
+        keys: list[Key[Any]] = ...,
         *,
         actions: Sequence[AnyAction],
         default: ActionCall | None = None,
@@ -469,6 +499,9 @@ class Table[KS]:
             if not isinstance(a, Action):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise EdslError(f"a table's actions are @action methods; got {a!r}")
 
+    # Never called; see `Key._invariant`: it makes `Table` invariant in the
+    # tuple of key widths, so the typed overloads' `entries` parameter
+    # accepts only entries of exactly this table's widths.
     def _invariant(self, ks: KS) -> KS:
         return ks
 
@@ -525,6 +558,19 @@ type ParamDecl = tuple[str, str, object]
 """A block parameter: name, direction, the annotation inside the direction."""
 
 
+class _EnumPlace[E: Enum](Protocol):
+    """An enum value of exactly one enum type, for `assign`'s enum overload.
+
+    `assign[E: Enum](target: E, value: E)` lets pyright solve `E` to
+    `Color | Shape` and so accepts an assignment across two enum types.
+    Taking the target through this protocol puts `E` in a contravariant
+    position -- a `Color` satisfies `_EnumPlace[E]` only for `E` no wider
+    than `Color` -- so the value must be of the target's own enum type.
+    """
+
+    def _same(self, other: E) -> None: ...
+
+
 class Block:
     """The base of `Parser`, `Control` and `Deparser`: parameters, locals,
     the statements every kind may record, and the assembly machinery."""
@@ -552,9 +598,10 @@ class Block:
                 cls._meta_type = _struct_arg(cls, args[1]) if len(args) > 1 else None
         params: list[ParamDecl] = []
         locals_: list[tuple[str, object]] = []
+        # Only this class's own body, so `hdr` and `meta` declared on
+        # `Parser`, `Control` and `Deparser` stay the conventional defaults
+        # until a subclass annotates them itself.
         for attr, annotation in own_annotations(cls).items():
-            if attr in ("hdr", "meta") and attr not in cls.__dict__.get("__annotations__", {}):
-                continue
             direction, t = direction_of(annotation)
             if direction is not None:
                 params.append((attr, direction, t))
@@ -621,7 +668,8 @@ class Block:
     def _assemble(cls, build: Build, before: CoreBlock | None) -> CoreBlock:
         """Build this block into `build`, placed before `before` when given."""
         core = cls._make_core(build)
-        build.core.add_block(core, before=before)
+        with provenance():
+            build.core.add_block(core, before=before)
         build.blocks[cls] = core
         inst = cls(build, core)
         _ACTIVE.append(inst)
@@ -649,17 +697,23 @@ class Block:
     @overload
     def assign(self, target: Bool, value: Bool | bool) -> None: ...
     @overload
-    def assign[E: Enum](self, target: E, value: E) -> None: ...
+    def assign[E: Enum](self, target: _EnumPlace[E], value: E) -> None: ...
     @overload
     def assign(self, target: Error, value: Error) -> None: ...
-    def assign(self, target: Value, value: object) -> None:
-        """`target = value`; an int value takes the target's width."""
+    def assign(self, target: Value | _EnumPlace[Any], value: object) -> None:
+        """`target = value`; an int value takes the target's width.
+
+        The overloads are the contract; the enum one takes its target
+        through a protocol, so the implementation widens to it and narrows
+        straight back -- every value the overloads admit is a `Value`.
+        """
+        place = cast("Value", target)
         stmts = self._record()
         if isinstance(value, ExternResult):
-            self._call_extern_stmt(value, stmts, target)
+            self._call_extern_stmt(value, stmts, place)
             return
         with provenance():
-            stmts.assign(target._expr, operand(value))  # pyright: ignore[reportPrivateUsage]
+            stmts.assign(place._expr, operand(value))  # pyright: ignore[reportPrivateUsage]
 
     def assign_slice(self, target: Var[Any], hi: int, lo: int, value: int) -> None:
         """`target[hi:lo] = value`, as the read-modify-write the IR has (see
@@ -755,7 +809,15 @@ class Block:
 
     def _call_extern_stmt(self, result: ExternResult, stmts: Stmts, target: Value) -> None:
         core_instance = self._build.extern_core(result.instance)
-        self._build.pending.remove(result)
+        # By identity: `list.remove` would compare with `==`, which on an
+        # eDSL value builds a comparison expression rather than deciding.
+        pending = self._build.pending
+        for i, p in enumerate(pending):
+            if p is result:
+                del pending[i]
+                break
+        else:
+            raise EdslError(f"the result of {result.method}(...) is already assigned")
         with provenance():
             stmts.call(
                 core_instance,
@@ -887,20 +949,30 @@ class Parser[H: Struct, M: Struct](Block):
         """`transition select(keys) { ... }`: `cases` maps a keyset (a tuple
         of them for several keys) to a target, in order; `default` matches
         anything. A keyset repeated, or one after a case that matches
-        anything, is refused as unreachable."""
+        anything, is refused as unreachable; the two are compared as IR
+        keysets, because two equal eDSL values are distinct objects whose
+        `==` builds a comparison expression rather than deciding."""
         key_tuple = keys if isinstance(keys, tuple) else (keys,)
         with provenance():
             core_keys = [k._expr for k in key_tuple]  # pyright: ignore[reportPrivateUsage]
         core_cases: list[tuple[tuple[_CoreKeySet, ...], Target]] = []
-        seen: list[tuple[object, ...]] = []
+        seen: list[tuple[pb.KeySet, ...]] = []
         for spec, target in cases.items():
             sets = spec if isinstance(spec, tuple) else (spec,)
-            if seen and all(isinstance(s, DontCare) for s in seen[-1]):
+            if len(sets) != len(core_keys):
+                raise EdslError(f"select has {len(core_keys)} keys; case {spec!r} has {len(sets)}")
+            core_sets = tuple(_core_keyset(s) for s in sets)
+            with provenance():
+                normal = tuple(
+                    keyset(self._core.types, s, k.type)
+                    for s, k in zip(core_sets, core_keys, strict=True)
+                )
+            if seen and all(s.WhichOneof("kind") == "dont_care" for s in seen[-1]):
                 raise EdslError(f"select: case {spec!r} is unreachable after one matching anything")
-            if sets in seen:
+            if normal in seen:
                 raise EdslError(f"select: case {spec!r} is repeated")
-            seen.append(sets)
-            core_cases.append((tuple(_core_keyset(s) for s in sets), target))
+            seen.append(normal)
+            core_cases.append((core_sets, target))
         return _Select(core_keys, core_cases, default)
 
     def extract(self, target: Header) -> None:
@@ -960,9 +1032,16 @@ class Control[H: Struct, M: Struct](Block):
             return CoreControl(build.core, cls.__ir_name__, cls._core_params(build))
 
     def _run(self) -> None:
+        """Actions, then tables, then `apply`, whatever the class-body order:
+        that is the order the IR wants, and a table's `default=` and entries
+        need the actions declared. Every action is declared before any action
+        body runs, so one action may call another whichever comes first in
+        the class. A table must still be *written* below the actions it
+        lists, since the class body names them as plain Python values."""
         cls = type(self)
         core = self._core
         assert isinstance(core, CoreControl)
+        bodies: list[tuple[Action[...], ActionBody, list[Value]]] = []
         for name, act in cls.__actions__.items():
             params = act._params()  # pyright: ignore[reportPrivateUsage]
             kinds = {p: kind_of(t) for p, t in params}
@@ -970,7 +1049,8 @@ class Control[H: Struct, M: Struct](Block):
                 self._build.pb_type(t)
             with provenance():
                 body = core.action(name, **{p: k.pb_type for p, k in kinds.items()})
-            values = [kinds[p].at(body.var(p), None) for p, _ in params]
+            bodies.append((act, body, [kinds[p].at(body.var(p), None) for p, _ in params]))
+        for act, body, values in bodies:
             self._stmts = body
             with provenance():
                 act.func(self, *values)
@@ -993,8 +1073,16 @@ class Control[H: Struct, M: Struct](Block):
         default = None if table.default is None else self._action_spec(table.default, what)
         entries: list[CoreEntry] = []
         for i, e in enumerate(table.entries):
-            spec = self._action_spec(e.action, f"{what} entry {i}")
-            entries.append(CoreEntry(tuple(_core_key_value(k) for k in e.keys), spec, e.priority))
+            where = f"{what} entry {i}"
+            spec = self._action_spec(e.action, where)
+            # Pair each value with its key's type, so that a typed value of
+            # the wrong width is refused here and not only where it fits; a
+            # value with no key is left to the core's arity check.
+            values = tuple(
+                _core_key_value(v, keys[j].expr.type if j < len(keys) else None, where)
+                for j, v in enumerate(e.keys)
+            )
+            entries.append(CoreEntry(values, spec, e.priority))
         with provenance():
             return core.table(
                 name,
@@ -1025,8 +1113,11 @@ class Control[H: Struct, M: Struct](Block):
 
     def _record_action_call(self, call: ActionCall) -> None:
         stmts = self._record()
-        if not isinstance(stmts, ControlBody):
-            raise EdslError(f"an action is called from apply(), not from {call.action.name}")
+        if not isinstance(stmts, CallsActions):
+            raise EdslError(
+                f"an action is called from apply() or from another action, "
+                f"not from {call.action.name}"
+            )
         name, *args = self._action_spec(call, f"call of {call.action.name}")
         with provenance():
             stmts.call_action(name, *args)
@@ -1048,7 +1139,13 @@ class Control[H: Struct, M: Struct](Block):
         """The control's body; override it. Empty by default."""
 
 
-def _core_key_value(k: object) -> int | Masked | Prefix | DontCare:
+def _core_key_value(
+    k: object, key_type: pb.Type | None, what: str
+) -> int | Masked | Prefix | DontCare:
+    """One entry value as the core takes it, an int. The IR stores decimal
+    strings of the key's width, so the value's own width is gone by then:
+    a typed value is checked against `key_type` here, the run-time half of
+    the static guarantee `Table`'s typed overloads give."""
     if isinstance(k, Masked | Prefix | DontCare):
         return k
     if isinstance(k, Bits):
@@ -1056,6 +1153,10 @@ def _core_key_value(k: object) -> int | Masked | Prefix | DontCare:
             expr = k._expr  # pyright: ignore[reportPrivateUsage]
         if not expr.is_literal:
             raise EdslError(f"an entry value is a constant, got {k!r}")
+        if key_type is not None and expr.type != key_type:
+            raise EdslError(
+                f"{what}: the value is {type_str(expr.type)}, the key is {type_str(key_type)}"
+            )
         return int(expr.pb.literal.bits.value)
     if isinstance(k, bool) or not isinstance(k, int):
         raise EdslError(

@@ -1102,6 +1102,17 @@ def _default_not_among_actions(p: Program) -> None:
     c.table("t", actions=["a"], default="b")
 
 
+def _no_actions(p: Program) -> None:
+    c = p.control("C")
+    c.table("t", keys=[exact(c.hdr.h.f)], actions=[])
+
+
+def _priority_without_a_ternary_key(p: Program) -> None:
+    c = p.control("C")
+    c.action("a")
+    c.table("t", keys=[exact(c.hdr.h.f)], actions=["a"], const_entries=[entry(1, "a", priority=3)])
+
+
 def _entry_arity(p: Program) -> None:
     c = p.control("C")
     c.action("a")
@@ -1197,6 +1208,8 @@ def _unknown_enum_member(p: Program) -> None:
         _state_without_transition,
         _unknown_action_in_table,
         _default_not_among_actions,
+        _no_actions,
+        _priority_without_a_ternary_key,
         _entry_arity,
         _select_arity,
         _else_without_if,

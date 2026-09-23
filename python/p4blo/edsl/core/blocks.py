@@ -94,7 +94,10 @@ type KeyValueSpec = int | Masked | Prefix | DontCare
 lpm key, `masked(v, m)` or an int or `dont_care` for a ternary key."""
 
 
-def _keyset(types: TypeTable, spec: KeySetSpec, key: pb.Type) -> pb.KeySet:
+def keyset(types: TypeTable, spec: KeySetSpec, key: pb.Type) -> pb.KeySet:
+    """One select keyset as the IR holds it. Public because the typed
+    surface normalises through it before comparing two keysets: a
+    `pb.KeySet` compares by value, an `Expr` does not."""
     if isinstance(spec, DontCare):
         return pb.KeySet(dont_care=pb.DontCare())
     if isinstance(spec, Masked):
@@ -468,8 +471,29 @@ class Stmts:
         self._emit(pb.Stmt(pop=pb.Pop(stack=lval, count=count)))
 
 
-class ActionBody(Stmts):
-    """An action's body; its params are attributes (`a.port`)."""
+class CallsActions(Stmts):
+    """A statement list that may call an action of the enclosing control:
+    a control's body and an action's own body alike, which is what the IR
+    and the validator allow (the validator reports a cycle among a
+    control's actions as CALL_CYCLE)."""
+
+    def call_action(self, action: str | ActionBody, *args: Operand) -> None:
+        """Call an action of this control directly, with its action data."""
+        control = self.block
+        if not isinstance(control, Control):
+            raise EdslError("call_action belongs in a control")
+        a = control.action_named(action.name if isinstance(action, ActionBody) else action)
+        stmt = pb.Stmt(
+            call_action=pb.CallAction(
+                action=a.name, args=self._args(a.params, args, f"action {a.name}")
+            )
+        )
+        self._emit(stmt)
+
+
+class ActionBody(CallsActions):
+    """An action's body; its params are attributes (`a.port`). It may call
+    another of the control's actions."""
 
     def __init__(self, block: Control, name: str, params: Sequence[pb.Param]) -> None:
         self.name = name
@@ -491,8 +515,8 @@ class ActionBody(Stmts):
         return pb.Action(name=self.name, params=self.params, body=self.stmts)
 
 
-class ControlBody(Stmts):
-    """A control's body: adds table application and direct action calls."""
+class ControlBody(CallsActions):
+    """A control's body: adds table application to the action calls."""
 
     def apply(self, table: Table | str, hit: Expr | None = None) -> None:
         """Apply a table; `hit`, a bool lvalue, receives whether an entry matched."""
@@ -505,19 +529,6 @@ class ControlBody(Stmts):
             if hit.type != boolean:
                 raise EdslError(f"hit must be a bool lvalue, got {type_str(hit.type)}")
             stmt.apply.hit.CopyFrom(hit.lval)
-        self._emit(stmt)
-
-    def call_action(self, action: str | ActionBody, *args: Operand) -> None:
-        """Call an action of this control directly, with its action data."""
-        control = self.block
-        if not isinstance(control, Control):
-            raise EdslError("call_action belongs in a control")
-        a = control.action_named(action.name if isinstance(action, ActionBody) else action)
-        stmt = pb.Stmt(
-            call_action=pb.CallAction(
-                action=a.name, args=self._args(a.params, args, f"action {a.name}")
-            )
-        )
         self._emit(stmt)
 
 
@@ -615,7 +626,7 @@ class StateBody(Stmts):
                 raise EdslError(f"select has {len(key_list)} keys; case {spec!r} has {len(sets)}")
             case = select.cases.add(target=_target(target))
             for s, k in zip(sets, key_list, strict=True):
-                case.sets.append(_keyset(self.types, s, k.type))
+                case.sets.append(keyset(self.types, s, k.type))
         if default is not None:
             case = select.cases.add(target=_target(default))
             for _ in key_list:
@@ -853,6 +864,8 @@ class Control(Block):
         """
         self.declare(name, "table")
         names = [self.action_named(self._action_name(a)).name for a in actions]
+        if not names:
+            raise EdslError(f"table {name}: a table lists at least one action")
         if len(set(names)) != len(names):
             raise EdslError(f"table {name}: an action is listed twice")
         message = pb.Table(name=name, actions=names, const_default_action=const_default, size=size)
@@ -865,10 +878,13 @@ class Control(Block):
             message.default_action.CopyFrom(call)
         elif const_default:
             raise EdslError(f"table {name}: const_default needs a default action")
+        has_ternary = any(k.match_kind == pb.MATCH_KIND_TERNARY for k in keys)
         for i, e in enumerate(const_entries):
             what = f"table {name} entry {i}"
             if not isinstance(e, Entry):
                 raise EdslError(f"{what}: entries are entry(keys, action, priority)")
+            if e.priority != 0 and not has_ternary:
+                raise EdslError(f"{what}: only a table with a ternary key has priorities")
             if len(e.keys) != len(keys):
                 raise EdslError(f"{what}: {len(keys)} keys expected, got {len(e.keys)}")
             row = message.const_entries.add(priority=e.priority)
@@ -914,6 +930,7 @@ __all__ = [
     "REJECT",
     "ActionBody",
     "Block",
+    "CallsActions",
     "Control",
     "ControlBody",
     "Deparser",
@@ -930,6 +947,7 @@ __all__ = [
     "dont_care",
     "entry",
     "exact",
+    "keyset",
     "lpm",
     "masked",
     "prefix",
