@@ -20,6 +20,25 @@ boundaries. A successful build is not a proof of an unproved property; a
 skipped oracle is not successful verification; matching internal failures
 are not successful execution of valid inputs.
 
+## What is proved, checked, or still open
+
+These are distinct obligations, not interchangeable confidence scores.
+
+| Evidence | Exact boundary | Does not establish |
+|---|---|---|
+| `extract_emit` | Packing/extraction round trip under its stated premises | Whole parser/deparser correctness |
+| `ScalarTyping.check_sound` | Every accepted closed scalar expression evaluates at its inferred type and preserves the initial Run | Variables, aggregates, whole-program validation, Python |
+| `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
+| `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
+| `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
+| Differential tests and semantic mutants | Concrete independent Python/Lean executions and sensitivity to recorded faults | All inputs or all possible implementation defects |
+| External oracles | Corpus behavior through the pinned P4 adapters | Correctness outside tested behavior or documented adapter limits |
+
+`lean/ProofAudit.lean` checks the proof dependencies of the advertised
+roots. Independent review checks the statements and integration, which the
+axiom audit cannot do. [certificates.md](certificates.md) specifies the
+compiled claim-checking experiment and its additional trust assumptions.
+
 ## Work sequence and acceptance
 
 1. **Reliable comparison and reproduction.** Required CI fails if Lean
