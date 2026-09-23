@@ -2,6 +2,35 @@ import P4blo.Scalar
 import P4blo.ScalarCommands
 import P4blo.Fields
 import P4blo.FieldExpressions
+import P4blo.FieldCommandExamples
+
+/-- info: 'P4blo.Fields.Modes.scope_agrees' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Modes.scope_agrees
+
+/-- info: 'P4blo.Fields.Modes.frame_matches' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Modes.frame_matches
+
+/-- info: 'P4blo.Fields.Place.typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Place.typed
+
+/-- info: 'P4blo.Fields.Cmd.validities' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Cmd.validities
+
+/-- info: 'P4blo.Fields.Cmd.steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Cmd.steps
+
+/-- info: 'P4blo.Fields.Cmd.execute_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Cmd.execute_correct
+
+/-- info: 'P4blo.FieldCommandExamples.correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.FieldCommandExamples.correct
 
 /-- info: 'P4blo.Scalar.CmdWith.denoteWith_seq' does not depend on any axioms -/
 #guard_msgs in

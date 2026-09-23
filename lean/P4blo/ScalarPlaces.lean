@@ -12,13 +12,26 @@ inductive Mode
   | param (direction : P4bloIR.Direction)
   deriving DecidableEq
 
-def Mode.declaration (mode : Mode) (name : String) (t : Ty) : P4bloIR.VarDecl :=
+def Mode.declarationIR (mode : Mode) (name : String) (t : P4bloIR.Ty) : P4bloIR.VarDecl :=
   match mode with
-  | .local => .var ⟨name, Ty.toIR t⟩
-  | .param direction => .param ⟨name, Ty.toIR t, direction⟩
+  | .local => .var ⟨name, t⟩
+  | .param direction => .param ⟨name, t, direction⟩
+
+def Mode.declaration (mode : Mode) (name : String) (t : Ty) : P4bloIR.VarDecl :=
+  mode.declarationIR name t.toIR
 
 def Mode.writable (mode : Mode) : Bool :=
   P4bloIR.ScalarStatements.writable (mode.declaration "" .boolean)
+
+theorem Mode.declarationIR_name (mode : Mode) (name : String) (t : P4bloIR.Ty) :
+    (mode.declarationIR name t).name = name := by cases mode <;> rfl
+
+theorem Mode.declarationIR_type (mode : Mode) (name : String) (t : P4bloIR.Ty) :
+    (mode.declarationIR name t).type = t := by cases mode <;> rfl
+
+theorem Mode.declarationIR_writable (mode : Mode) (name : String) (t : P4bloIR.Ty) :
+    P4bloIR.ScalarStatements.writable (mode.declarationIR name t) = mode.writable := by
+  cases mode <;> rfl
 
 inductive Modes : Context → Type
   | nil : Modes []
@@ -94,7 +107,7 @@ theorem Place.canAssign {modes : Modes ctx} (place : Place modes t)
   simp only [P4bloIR.ScalarStatements.canAssign, hw, ite_true, place.ref.lookup hw, hd place.ref]
   have h := place.writable
   cases hm : modes.get place.ref <;> cases t <;>
-    simp_all [Mode.declaration, Mode.writable, P4bloIR.VarDecl.name, P4bloIR.VarDecl.type,
+    simp_all [Mode.declaration, Mode.declarationIR, Mode.writable, P4bloIR.VarDecl.name, P4bloIR.VarDecl.type,
       Ty.toIR, P4bloIR.ScalarStatements.irType, P4bloIR.ScalarStatements.writable]
 
 end P4blo.Scalar

@@ -70,8 +70,8 @@ These are **expression** correctness claims, not verified whole-program
 lowering, serialization correctness, or universal Python equivalence.
 `Declares` separately describes declaration/type agreement; a value-matching
 frame by itself does not certify declarations, writable directions, or a
-valid block. Aggregate path expressions are described below; writable field
-commands and complete programs remain work in progress.
+valid block. Aggregate path expressions and writable scalar-field commands
+are described below; complete programs remain work in progress.
 The Lean compiler/runtime and notation implementation are not
 verified by the lowering theorem; independent known answers exercise the
 authored syntax, JSON boundary and both production interpreters.
@@ -124,8 +124,9 @@ or alternate statement interpreter.
 `Modes.scope_agrees` and `Modes.frame_matches` give constructive witnesses.
 Real `Index.build`/`Frame.forBlock` initialization and writable parameter
 execution are also tested; a general theorem connecting these constructors
-to whole-program validity is **not** claimed. Header/metadata commands, calls,
-externs, packet operations and complete-program lowering remain future work.
+to whole-program validity is **not** claimed. Scalar-leaf header/metadata
+commands are described below; calls, externs, packet operations and
+complete-program lowering remain future work.
 
 After the Lean build, run required `pytest tests/test_lean_edsl_statements.py`
 for nine independently expected complete-local-state packet cases. The raw
@@ -162,8 +163,8 @@ it does not by itself check scalar widths or root declarations. Distinct
 root names are a separate write-preservation premise. `RootWellFormed` adds
 nonempty/distinct root names for expression typing; `RootDeclares` supplies
 actual variable declarations. Concrete witnesses and positive/negative
-nominal-reuse examples are tested. Permissions, command integration and
-whole-program initialization remain obligations for the next layer.
+nominal-reuse examples are tested. Root permissions and command integration
+are described below; whole-program initialization remains an obligation.
 
 After building, `pytest tests/test_lean_edsl_fields.py` compares seven field
 expressions and an independently specified complete stored-state observer.
@@ -172,3 +173,35 @@ validity bit, including invalid-header fields. A regression demonstrates
 that a pre-expression observer misses a read-side-effect fault while the
 corrected observer saves and replays it. This unverified fixture wrapper is
 not a whole-program compiler or a packet-processing application proof.
+
+## Verified scalar-field command bodies
+
+`Fields.Modes roots` assigns the existing local/parameter modes to aggregate
+roots. `Fields.Place modes type` pairs a scalar path with evidence that its
+**root** is writable. A field under an input or directionless parameter is
+readable but not writable. `Modes.Agrees` requires the exact real declaration,
+including nominal kind and direction, not merely a matching runtime value.
+`Modes.scope_agrees` and `Modes.frame_matches` construct concrete witnesses.
+
+`Fields.Cmd modes` specializes the same `Scalar.CmdWith` implementation.
+Use `Cmd.assign`, `Cmd.ite`, `.seq` and `.done`, and `place.read` for a writable
+place's expression. Bind typed paths once; ordinary command bodies need no
+proof arguments. [FieldCommandExamples.lean](P4blo/FieldCommandExamples.lean)
+contains a dependent update and an already-parsed, route-selected Ethernet/
+IPv4 rewrite with TTL guards and next-hop MAC/port copies.
+
+`Fields.Cmd.execute_correct` proves authoritative body typing, successful
+actual execution and exact full source-store correspondence. All header
+validity bits, unrelated roots and non-value Run fields are preserved.
+Premises are root well-formedness, exact nominal index agreement, actual
+mode/declaration agreement, exact initial values and no active action layer.
+`Cmd.steps` retains an arbitrary continuation without executing it. Concrete
+path laws discharge the generic read/write assumptions internally.
+
+The body fragment permits only scalar-leaf assignments and conditionals.
+It does not parse packets, inspect validity, perform routing-table lookup,
+recompute checksums, change header validity or copy whole aggregates. The
+forwarding fixture assumes its inputs are already parsed and route-selected;
+it is not a verified router. Kernel negatives and actual `Index.build`/
+`Frame.forBlock` tests check selected initialization and permission cases,
+not a general initializer or complete-program validity theorem.
