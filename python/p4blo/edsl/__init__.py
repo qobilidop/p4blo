@@ -39,6 +39,58 @@ The dynamic API of the same builder, `p4blo.edsl.core`, is documented for
 generated programs: plain constructors, strings for names, `bit(n)` for
 widths. This package is a typed front over it, and the core's run-time
 checks remain authoritative.
+
+What pyright checks, and what it cannot
+---------------------------------------
+
+The design note's contract, kept here because no single module carries the
+whole of it: `values` has the value rules, `views` the field rules,
+`blocks` the block rules. A row marked (*) is one of the four deviations
+from the note that the type checker forced; each is accepted and recorded
+in `docs/decisions.md`, and each holds its run-time side.
+
+Checked statically:
+
+- field, state, action, table, extern and block names, every reference
+  being an attribute pyright resolves rather than a string;
+- equal widths in arithmetic, in comparison and in assignment, and the
+  width of a cast target;
+- action argument count, names and widths, in a direct call, in a table's
+  `default=` and in its const entries -- the entries only when `keys` is a
+  tuple of one to four keys, which is what types them;
+- extern method names, argument directions, and the width of an `out`
+  argument;
+- that a place is required where the IR requires one: an rvalue assigned
+  to, or passed as an extern's `out` argument, is refused.
+
+Run time only:
+
+- the width of a `concat`, a slice or a `lookahead`: `Bits[Any]` until
+  `x.as_(bit16)` asserts it;
+- that an `int` literal fits its width, and that a `select` keyset fits
+  its key's type;
+- a table's key match-kind rules, and everything the validator owns;
+- (*) that a `bitN(...)` literal is not a place: the aliases name places
+  (`bitN = Var[L[N]]`) so that annotated fields are assignable and an
+  action parameter accepts `bit9(1)`, so a literal written as a target is
+  caught by the core;
+- (*) that a `Bool`, `Enum` or `Error` target is a place: those three have
+  no static place split. An assignment between two different enum types is
+  run time only for the same reason, though a comparison between them is
+  a static error;
+- (*) the width of an extern's `in` arguments, typed `Val[T]`, since
+  binding `T` to a place type would reject a cast rvalue;
+- (*) a sub-block call's arguments, `self.call(Sub, ...)`, since a
+  callable protocol cannot be expressed from the annotations. This is why
+  `tests/test_pyright.py` builds and validates every must_pass fixture
+  instead of only type-checking it.
+
+Two notes on what a diagnostic looks like. `assign` is overloaded over the
+kinds of target, so pyright reports a failed assignment as
+`reportCallIssue`, "No overloads match", rather than as an argument type;
+four must_fail headers say so. And action data is written `bit9(1)`, never
+a bare int: that is the one place the literal rule is denied statically
+although the build accepts it, for the reason `blocks` gives.
 """
 
 from p4blo.edsl.blocks import (

@@ -13,7 +13,7 @@
         def forward(self, port: bit9) -> None:
             self.assign(self.meta.egress_port, port)
 
-        t = Table(keys=[lpm(headers.ipv4.dstAddr)], actions=[forward], default=forward(bit9(1)))
+        t = Table(keys=(lpm(headers.ipv4.dstAddr),), actions=[forward], default=forward(bit9(1)))
 
         def apply(self) -> None:
             self.apply_table(self.t)
@@ -328,6 +328,9 @@ class Key[W: int]:
         self.match_kind = match_kind
         self.name = name
 
+    # Never called: `W` in both a parameter and a return makes `Key`
+    # invariant in it, so a `Key[L[8]]` is not a `Key[L[16]]` and the
+    # entries of a tuple of keys are typed by their exact widths.
     def _invariant(self, w: W) -> W:
         return w
 
@@ -369,6 +372,9 @@ class Entry[KS]:
         self.action = action
         self.priority = priority
 
+    # Never called; see `Key._invariant`: it makes `Entry` invariant in the
+    # tuple of key widths, so `Entry[tuple[L[16]]]` is not an
+    # `Entry[tuple[L[8]]]`.
     def _invariant(self, ks: KS) -> KS:
         return ks
 
@@ -490,6 +496,9 @@ class Table[KS]:
             if not isinstance(a, Action):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise EdslError(f"a table's actions are @action methods; got {a!r}")
 
+    # Never called; see `Key._invariant`: it makes `Table` invariant in the
+    # tuple of key widths, so the typed overloads' `entries` parameter
+    # accepts only entries of exactly this table's widths.
     def _invariant(self, ks: KS) -> KS:
         return ks
 
