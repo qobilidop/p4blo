@@ -29,7 +29,10 @@ jobs:
           path: ~/.elan
           key: elan-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain') }}
       - name: Install the pinned toolchain
-        run: nix develop -c sh -c 'elan toolchain install "$(cat lean/lean-toolchain)"'
+        run: |
+          # The $(cat) must expand in the inner shell, not here.
+          # shellcheck disable=SC2016
+          nix develop -c sh -c 'elan toolchain install "$(cat lean/lean-toolchain)"'
       - name: Build
         run: nix develop -c sh -c 'cd lean && lake build'
       - name: Test
