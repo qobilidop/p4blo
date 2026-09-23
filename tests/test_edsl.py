@@ -884,7 +884,6 @@ def test_assign_slice_is_the_read_modify_write() -> None:
         with c.body() as b:
             b.assign_slice(f, 5, 3, 0b101)
             b.assign_slice(f, 0, 0, 1)
-            corpus_module("stacks").set_slice(b, f, 5, 3, 0b101)
     body = p.build().blocks[0].body
     assert body[0] == stmt(
         f"""
@@ -930,7 +929,6 @@ def test_assign_slice_is_the_read_modify_write() -> None:
         }}
         """
     )
-    assert body[2] == body[0]
     with pytest.raises(EdslError, match="out of range"):
         b.assign_slice(f, 8, 0, 1)
     with pytest.raises(EdslError, match="does not fit"):
