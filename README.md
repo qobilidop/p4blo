@@ -18,7 +18,7 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | the schema and its contract fit in a few pages; nine corpus programs need only named elaborations, no escape hatch | [`proto/p4blo/v0/p4blo.proto`](proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`corpus/`](corpus/) |
+| The core is small and post-elaboration | the schema and its contract fit in a few pages; ten corpus programs need only named elaborations, no escape hatch | [`proto/p4blo/v0/p4blo.proto`](proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`corpus/`](corpus/) |
 | The core is semantically complete for real programs | every corpus vector matches P4-SpecTec's simulator packet for packet, through a printed P4 program under a v1model shim | [`oracle/`](oracle/), `tests/test_oracle.py` |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`python/p4blo/arch/`](python/p4blo/arch/) |
 | The semantics is mechanized and agrees with the reference | a Lean interpreter, differential random testing against the Python one, one theorem | [`lean/`](lean/), `python/p4blo/drt/` |
@@ -48,6 +48,8 @@ The first thing a community version would build is a p4c backend;
    P4-SpecTec's elaborated IL and its status in p4blo.
 7. [`docs/decisions.md`](docs/decisions.md): every choice made while
    building, with its reason.
+8. [`docs/workflows.md`](docs/workflows.md): the gates, where every
+   external input is pinned, and how to make each kind of change.
 
 ## Getting started
 
@@ -71,7 +73,8 @@ scripts/check.sh              # every Python and schema check CI runs
 cd lean && lake build && lake test
 ```
 
-The oracle needs P4-SpecTec, built by `oracle/build.sh` with opam; see
+The oracle needs P4-SpecTec: `nix develop .#oracle -c oracle/build.sh`
+builds it in a pinned OCaml environment; see
 [`oracle/README.md`](oracle/README.md). The printer's goldens are
 typechecked with p4c through Docker when it is available.
 
@@ -82,7 +85,7 @@ typechecked with p4c through Docker when it is available.
 | `proto/p4blo/v0/` | the IR schema, normative for syntax |
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
 | `lean/` | the Lean interpreter, extern models, the theorem, the run mode for differential testing |
-| `corpus/` | nine programs: eDSL source, IR golden, README, STF vectors |
+| `corpus/` | ten programs: eDSL source, IR golden, README, STF vectors |
 | `oracle/` | P4-SpecTec build and replay |
 | `docs/` | design, semantics, coverage, status, decisions, notes |
 | `tests/` | everything that runs |

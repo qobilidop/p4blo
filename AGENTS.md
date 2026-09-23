@@ -1,42 +1,46 @@
 # AGENTS.md
 
-Instructions for anyone, human or agent, working in this repository.
+The entry point for anyone, human or agent, working in this repository.
+It is written so that work can be resumed without any memory of how it
+was done: everything needed is in the files named here.
 
 ## What this is
 
 p4blo: P4's semantic core as an IR, architecture-free, with an
 independent Lean semantics validated against a runnable reference.
-Read `docs/design.md` before changing anything; it is the source of
-truth for what the project is and is not. `docs/status.md` says where
-the work stands. `docs/decisions.md` records every choice with its
-reason; add a dated entry there whenever you decide something the
-design doc does not already settle.
+
+## Read first, in this order
+
+1. `docs/status.md`: where the work stands, per claim and per step, and
+   the open threads.
+2. `docs/decisions.md`: every choice made while building, dated, with
+   its reason. Overrule one by adding a new entry that says so.
+3. `docs/design.md`: what the project is, the four claims, how each is
+   tested, what is out of scope.
+4. `docs/workflows.md`: the gates, where every external input is
+   pinned, and how to make each kind of change.
+5. `docs/semantics.md` and `proto/p4blo/v0/p4blo.proto` when touching
+   meaning or syntax; `docs/coverage.md` for what P4 constructs are in.
 
 ## Environment
 
-The Nix flake is the development environment. With direnv, `cd` into
-the repository and everything is on the path. Without direnv, prefix
-commands with `nix develop -c`. Without Nix, `uv sync` gives a working
-Python environment but not `buf`, `protoc` or `elan`.
+The Nix flake is the development environment and the only reproducible
+path. With direnv, `cd` into the repository and everything is on the
+path; without it, prefix commands with `nix develop -c`. Without Nix,
+`uv sync` gives a working Python environment but not the pinned
+interpreter, `buf`, `protoc` or `elan`.
 
 ```
-uv sync --locked          # install Python packages into .venv
-uv run pytest             # tests
-uv run ruff check .       # lint
-uv run ruff format .      # format
-uv run pyright            # type check
-buf lint                  # schema lint
-buf generate              # regenerate python/p4blo/v0 from proto/
+scripts/check.sh                                   # every Python and schema check CI runs
+cd lean && lake build && lake test                 # the Lean interpreter and theorem
+uv run pytest tests/test_drt.py -k lean_agrees     # Lean versus Python
+nix develop .#oracle -c oracle/build.sh            # the P4-SpecTec oracle, once
+uv run pytest tests/test_oracle.py                 # corpus vectors on the oracle
 ```
 
-`scripts/check.sh` runs all of them in order and stops at the first
-failure; CI runs exactly these commands inside the flake on Linux and
-macOS. Keep `main` green, and check the script's exit code, not its
-output.
-
-Optional: with Docker running, `docker run --rm -v "$PWD":/w p4lang/p4c
-p4test /w/<file>.p4` typechecks a printed program; the printer tests
-use it when available and skip otherwise.
+Keep `main` green on all of them; check exit codes, not output. Docker
+with the pinned p4c image typechecks the printer's goldens when
+available and is skipped otherwise.
 
 ## Conventions
 
@@ -45,15 +49,15 @@ use it when available and skip otherwise.
 - **Generated code is committed.** `python/p4blo/v0/*_pb2.py*` come
   from `buf generate`. Never edit them; edit the schema and regenerate.
   CI fails on drift.
-- **The schema is normative for syntax.** Change `proto/p4blo/v0/
-  p4blo.proto` deliberately, and expect every golden under `corpus/`
-  to need regeneration afterwards.
-- **Closed behaviors go in `docs/semantics.md`.** If the interpreter
-  has to choose what P4 leaves open, the choice is written there
-  first and implemented second.
-- **Tests live under `tests/`.** One file per concern. Corpus
-  programs live under `corpus/<program>/` with their goldens and STF
-  vectors beside them.
+- **The schema is normative for syntax; the Lean interpreter for
+  meaning.** A closed behavior is written in `docs/semantics.md` first
+  and implemented in both interpreters second.
+- **Corpus programs** live under `corpus/<name>/` with their eDSL
+  source, golden, README and STF vectors; `tests/test_corpus.py` picks
+  new ones up by itself.
+- **Every decision the design does not settle** becomes a dated entry
+  in `docs/decisions.md`. `docs/status.md` is updated at every
+  checkpoint, including its "Open threads".
 - **Commits** follow the usual git conventions (Chris Beams' seven
   rules; the kernel's "describe your changes"). One logical change per
   commit: if the subject wants an "and" or a semicolon, split it. The
@@ -66,4 +70,6 @@ use it when available and skip otherwise.
   `Co-Authored-By: <agent> <email>` trailer after a blank line.
 - **Sub-agents** work in their own worktree, own a disjoint set of
   files, build against interfaces already committed on `main`, and
-  finish with a green test run. Integration happens on `main`.
+  finish with the gates green. Integration happens on `main`. Each
+  build step is followed by an independent read-only review, kept
+  under `docs/notes/reviews/`. Details in `docs/workflows.md`.

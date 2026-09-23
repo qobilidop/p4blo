@@ -1,7 +1,9 @@
 # Status
 
 Where the work stands, by build-order step from
-[design.md](design.md#build-order). Updated at every checkpoint.
+[design.md](design.md#build-order), and what is open. Updated at every
+checkpoint. To resume the work, read this, then
+[decisions.md](decisions.md), then [workflows.md](workflows.md).
 
 Last updated: 2026-09-22, after the step 1 checkpoint.
 
@@ -40,6 +42,38 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 | verify_error | p4c `issue1824-bmv2` | eDSL, landed | p4c STF, 1 packet, passing | pass on P4-SpecTec |
 | priority | p4c `table-entries-priority-bmv2` | eDSL, landed | p4c STF, 3 packets, passing | pass on P4-SpecTec |
 | register_bounds | own program from the second review | eDSL, landed | 9 hand-derived packets, passing | pass on P4-SpecTec |
+
+## Open threads
+
+Things a resuming agent should know are in motion or deliberately left.
+
+- **eDSL v2 design (in progress, 2026-09-22).** Bili asked for better
+  ergonomics and static type safety: no references by string, widths a
+  type checker can see, headers as annotated Python classes. A pyright
+  probe showed `Literal` width parameters catch mismatches statically.
+  Prior-art surveys of pakeles, p4py and the HDL eDSLs are being
+  written up; the design note will land under `docs/notes/` and the
+  decision in `decisions.md` before any code changes. Corpus goldens
+  must not change shape when the eDSL does.
+- **BMv2 as a second oracle** was never run; the design lists it as
+  optional. It would independently check longest-prefix and `flood`,
+  which P4-SpecTec cannot (see the oracle entries in `decisions.md`).
+- **Playground** (Pyodide/marimo) was removed from the plan on
+  2026-09-22; the pure-Python and Python 3.13 constraints keep it
+  possible.
+- **Unconfirmed review points left open**, from
+  `notes/reviews/steps2-5.md`: checksum16 padding for data widths not
+  a multiple of 16 has not been judged by the oracle; sub-block
+  instance names `<block>_inst` are not checked against the caller's
+  scope; a case with both a bad entry and a bad port reports different
+  first errors on Python and Lean.
+- **Three type checkers** compute expression types: the validator,
+  `interp/widths.py`, and the printer's `_Typer`; they must agree, and
+  one would do.
+- **Elaborated-but-unexercised rows** of `coverage.md` (functions,
+  newtypes, constructor parameters, named arguments) are rulings, not
+  performed rewrites; a p4c backend is the experiment that would test
+  them.
 
 ## Blocked
 
