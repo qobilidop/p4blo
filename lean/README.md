@@ -222,3 +222,11 @@ modular addition. It covers stored invalid-header contents but does not prove
 parsing, routing-table lookup, checksum maintenance or architecture fate.
 See [the policy assurance note](../docs/notes/forward-policy.md) for independent
 anchors and faults that generic lowering proofs alone do not reject.
+
+Use `Scalar.Cmd.block [...]` or `Fields.Cmd.block [...]` for ordinary
+left-to-right command lists. Branch bodies can be lists too; subsequent
+commands run after the selected branch. These functions compose the existing
+typed AST, not a new interpreter or Lean `do` language. The field examples
+retain kernel checks that their new spelling constructs the exact old ASTs.
+See [the sequencing note](../docs/notes/command-blocks.md) for composition
+proofs, independent order checks and deliberate reversal/omission faults.

@@ -84,7 +84,7 @@ theorem authored_policy (s : Snapshot) :
     observe (forward.denote (restore s)) = policy s := by
   cases s with
   | mk dst src etherType ev ttl protocol checksum iv port drop sentinel hit rd rs rp scratch =>
-    dsimp [forward, Cmd.ite, Cmd.assign, Cmd.seq, Cmd.denote,
+    dsimp [forward, Cmd.ite, Cmd.assign, Cmd.seq, Cmd.block, Scalar.CmdWith.block, Cmd.denote,
       Scalar.CmdWith.ite, Scalar.CmdWith.assign, Scalar.CmdWith.seq,
       Scalar.CmdWith.denoteWith, Scalar.denoteWith, Scalar.bitsWith, Place.read,
       FieldCommandExamples.dst, FieldCommandExamples.src, FieldCommandExamples.ttl,

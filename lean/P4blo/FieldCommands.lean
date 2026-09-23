@@ -16,6 +16,7 @@ end Cmd
 def Cmd.assign (place : Place modes t) (value : Expr roots t) : Cmd modes := Scalar.CmdWith.assign place value
 def Cmd.ite (condition : Expr roots .boolean) (yes no : Cmd modes) : Cmd modes := Scalar.CmdWith.ite condition yes no
 def Cmd.seq (first second : Cmd modes) : Cmd modes := Scalar.CmdWith.seq first second
+def Cmd.block (commands : List (Cmd modes)) : Cmd modes := Scalar.CmdWith.block commands
 
 def Cmd.denote (cmd : Cmd modes) (store : Store roots) : Store roots :=
   cmd.denoteWith (fun store {_} ref => ref.get store) (fun store {_} place value => place.ref.set store value) store
@@ -32,6 +33,14 @@ theorem Cmd.denote_seq (first second : Cmd modes) (store : Store roots) :
 theorem Cmd.lower_seq (first second : Cmd modes) :
     (first.seq second).lower = first.lower ++ second.lower :=
   Scalar.CmdWith.lowerWith_seq _ _ first second
+
+theorem Cmd.denote_block (commands : List (Cmd modes)) (store : Store roots) :
+    (Cmd.block commands).denote store = commands.foldl (fun state cmd => cmd.denote state) store :=
+  Scalar.CmdWith.denoteWith_block _ _ commands store
+
+theorem Cmd.lower_block (commands : List (Cmd modes)) :
+    (Cmd.block commands).lower = commands.flatMap Cmd.lower :=
+  Scalar.CmdWith.lowerWith_block _ _ commands
 
 /-- Scalar-leaf writes preserve every header validity bit, including those
 outside the selected path. This is a property of the independent source
