@@ -30,11 +30,11 @@ fields may exceed protobuf uint32; representability must constrain any
 roundtrip theorem. Unknown-key handling above is current adapter behavior,
 not a safe semantic-version compatibility policy; that boundary remains open.
 
-`Expr.decode` uses well-founded recursion on the structural size of JSON.
+`Expr.decode` and `LValue.decode` use well-founded recursion on JSON size.
 An actual child is smaller; a synthesized empty-message default is no
 larger than its object payload and hence smaller than the enclosing oneof.
-`LValue` and `Stmt` remain `partial`; making their object/array recursion
-proof-visible is a separate obligation.
+`Stmt` remains `partial`; making its array recursion proof-visible is a
+separate obligation.
 -/
 
 namespace P4bloIR
@@ -531,16 +531,36 @@ theorem Expr.decode_unfold (path : String) (j : Json) :
   rfl
 
 open Decode in
-/-- Decode an `LValue` message. `partial`: see the module comment. -/
-partial def LValue.decode (path : String) (j : Json) : Dec LValue :=
-  oneof path j
-    [("var", fun p v => LValue.var <$> str p v),
-     ("member", fun p v => do
-       pure (LValue.member (← msgField p v "base" LValue.decode) (← strField p v "field"))),
-     ("index", fun p v => do
-       pure (LValue.index (← msgField p v "base" LValue.decode)
+/-- Decode an `LValue` with checked finite-JSON descent and no fuel cutoff. -/
+def LValue.decode (path : String) (j : Json) : Dec LValue :=
+  let recur := fun p v (_ : sizeOf v < sizeOf j) => LValue.decode p v
+  oneofBounded path j
+    [("var", fun p v _ => LValue.var <$> str p v),
+     ("member", fun p v h => do
+       pure (LValue.member (← msgFieldBounded j p v h "base" recur) (← strField p v "field"))),
+     ("index", fun p v h => do
+       pure (LValue.index (← msgFieldBounded j p v h "base" recur)
          (← msgField p v "index" Expr.decode))),
-     ("next", fun p v => LValue.next <$> msgField p v "stack" LValue.decode)]
+     ("next", fun p v h => LValue.next <$> msgFieldBounded j p v h "stack" recur)]
+termination_by sizeOf j
+
+open Decode in
+/-- The actual total decoder unfolds to the original proof-erased body,
+including defaults, recognized-case ordering and first-error behavior. -/
+theorem LValue.decode_unfold (path : String) (j : Json) :
+    LValue.decode path j =
+      oneof path j
+        [("var", fun p v => LValue.var <$> str p v),
+         ("member", fun p v => do
+           pure (LValue.member (← msgField p v "base" LValue.decode) (← strField p v "field"))),
+         ("index", fun p v => do
+           pure (LValue.index (← msgField p v "base" LValue.decode)
+             (← msgField p v "index" Expr.decode))),
+         ("next", fun p v => LValue.next <$> msgField p v "stack" LValue.decode)] := by
+  rw [LValue.decode.eq_def]
+  simp only [msgFieldBounded_erasure]
+  rw [← oneofBounded_erasure]
+  rfl
 
 open Decode in
 /-- Decode an `Arg` message. -/

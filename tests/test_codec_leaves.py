@@ -19,7 +19,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
 LeafKind = Literal["literal", "type", "key"]
-CodecKind = LeafKind | Literal["expr"]
+CodecKind = LeafKind | Literal["expr", "lvalue", "arg"]
 
 
 @dataclass(frozen=True)

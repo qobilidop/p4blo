@@ -3,9 +3,9 @@ import Init.Data.Nat.ToString
 import Init.Data.String.Lemmas
 
 /-!
-Laws for actual leaf and expression codecs. Wire representability is deliberately
+Laws for actual leaf, expression, lvalue and argument codecs. Representability is
 weaker than semantic validity. These are JSON-value laws, not text-parser
-or general recursive-program codec theorems; LValue and Stmt remain open.
+or general recursive-program codec theorems; Stmt remains open.
 -/
 
 namespace P4bloIR.CodecLaws
@@ -419,5 +419,97 @@ theorem expr_roundtrip (path : String) (value : Expr) (h : ExprRepresentable val
     exact expr_mux path condition then_ otherwise
       (fun p => ihc p h.1) (fun p => iht p h.2.1) (fun p => iho p h.2.2)
   | lookahead type => exact expr_lookahead path type h
+
+/-- Only nested index expressions add wire bounds; names need not resolve. -/
+def LValueRepresentable : LValue → Prop
+  | .var _ => True
+  | .member base _ | .next base => LValueRepresentable base
+  | .index base index => LValueRepresentable base ∧ ExprRepresentable index
+
+def ArgRepresentable : Arg → Prop
+  | .expr value => ExprRepresentable value
+  | .lvalue value => LValueRepresentable value
+
+private theorem lvalue_object (value : LValue) : ∃ fields, value.toJson = Lean.Json.obj fields := by
+  cases value <;> exact ⟨_, rfl⟩
+
+theorem lvalue_var (path name : String) :
+    LValue.decode path (LValue.var name).toJson = .ok (.var name) := by
+  rw [LValue.decode_unfold]
+  rfl
+
+theorem lvalue_member (path field : String) (base : LValue)
+    (ih : ∀ p, LValue.decode p base.toJson = .ok base) :
+    LValue.decode path (LValue.member base field).toJson = .ok (.member base field) := by
+  obtain ⟨fields, obj⟩ := lvalue_object base
+  rw [LValue.decode_unfold]
+  by_cases empty : field.isEmpty = true
+  all_goals simp only [LValue.toJson, Encode.ofStr, empty, ↓reduceIte, obj]
+  · have zero : field = "" := String.isEmpty_iff.mp empty
+    subst field
+    change ((fun value => LValue.member value "") <$> LValue.decode _ (Lean.Json.obj fields)) = _
+    rw [← obj, ih]
+    rfl
+  · change ((fun value => LValue.member value field) <$> LValue.decode _ (Lean.Json.obj fields)) = _
+    rw [← obj, ih]
+    rfl
+
+theorem lvalue_index (path : String) (base : LValue) (index : Expr)
+    (hb : ∀ p, LValue.decode p base.toJson = .ok base) (hi : ExprRepresentable index) :
+    LValue.decode path (LValue.index base index).toJson = .ok (.index base index) := by
+  obtain ⟨bf, bo⟩ := lvalue_object base
+  obtain ⟨ixf, ixo⟩ := expr_object index
+  rw [LValue.decode_unfold]
+  simp only [LValue.toJson, bo, ixo]
+  change (do
+    let b ← LValue.decode _ (.obj bf)
+    let i ← Expr.decode _ (.obj ixf)
+    pure (LValue.index b i)) = _
+  rw [← bo, hb]
+  change (LValue.index base <$> Expr.decode _ (.obj ixf)) = _
+  rw [← ixo, expr_roundtrip _ _ hi]
+  rfl
+
+theorem lvalue_next (path : String) (stack : LValue)
+    (ih : ∀ p, LValue.decode p stack.toJson = .ok stack) :
+    LValue.decode path (LValue.next stack).toJson = .ok (.next stack) := by
+  obtain ⟨fields, obj⟩ := lvalue_object stack
+  rw [LValue.decode_unfold]
+  simp only [LValue.toJson, obj]
+  change (LValue.next <$> LValue.decode _ (.obj fields)) = _
+  rw [← obj, ih]
+  rfl
+
+/-- Every representable LValue round-trips through its actual total decoder. -/
+theorem lvalue_roundtrip (path : String) (value : LValue) (h : LValueRepresentable value) :
+    LValue.decode path value.toJson = .ok value := by
+  induction value generalizing path with
+  | var name => exact lvalue_var path name
+  | member base field ih => exact lvalue_member path field base (fun p => ih p h)
+  | index base index ih => exact lvalue_index path base index (fun p => ih p h.1) h.2
+  | next stack ih => exact lvalue_next path stack (fun p => ih p h)
+
+theorem arg_expr (path : String) (value : Expr) (h : ExprRepresentable value) :
+    Arg.decode path (Arg.expr value).toJson = .ok (.expr value) := by
+  obtain ⟨fields, obj⟩ := expr_object value
+  simp only [Arg.toJson, obj]
+  change (Arg.expr <$> Expr.decode _ (.obj fields)) = _
+  rw [← obj, expr_roundtrip _ _ h]
+  rfl
+
+theorem arg_lvalue (path : String) (value : LValue) (h : LValueRepresentable value) :
+    Arg.decode path (Arg.lvalue value).toJson = .ok (.lvalue value) := by
+  obtain ⟨fields, obj⟩ := lvalue_object value
+  simp only [Arg.toJson, obj]
+  change (Arg.lvalue <$> LValue.decode _ (.obj fields)) = _
+  rw [← obj, lvalue_roundtrip _ _ h]
+  rfl
+
+/-- Argument syntax representability does not assert call-direction validity. -/
+theorem arg_roundtrip (path : String) (value : Arg) (h : ArgRepresentable value) :
+    Arg.decode path value.toJson = .ok value := by
+  cases value with
+  | expr value => exact arg_expr path value h
+  | lvalue value => exact arg_lvalue path value h
 
 end P4bloIR.CodecLaws
