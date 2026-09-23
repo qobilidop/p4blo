@@ -1,4 +1,4 @@
-import P4blo.FieldExpressions
+import P4blo.Fields
 
 /-! Read-only header targets. These paths observe independent source validity
 bits, never scalar writable locations. No parser, initializer, global validity

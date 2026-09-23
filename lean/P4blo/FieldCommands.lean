@@ -3,14 +3,14 @@ import P4blo.FieldPlaces
 
 namespace P4blo.Fields
 
-abbrev Cmd {roots : Layout} (modes : Modes roots) := Scalar.CmdWith (Ref roots) (Place modes)
+abbrev Cmd {roots : Layout} (modes : Modes roots) := Scalar.CmdWith (Read roots) (Place modes)
 
 variable {roots : Layout} {modes : Modes roots}
 
 namespace Cmd
-abbrev done {roots : Layout} {modes : Modes roots} := @Scalar.CmdWith.done (Ref roots) (Place modes)
-abbrev write {roots : Layout} {modes : Modes roots} := @Scalar.CmdWith.write (Ref roots) (Place modes)
-abbrev branch {roots : Layout} {modes : Modes roots} := @Scalar.CmdWith.branch (Ref roots) (Place modes)
+abbrev done {roots : Layout} {modes : Modes roots} := @Scalar.CmdWith.done (Read roots) (Place modes)
+abbrev write {roots : Layout} {modes : Modes roots} := @Scalar.CmdWith.write (Read roots) (Place modes)
+abbrev branch {roots : Layout} {modes : Modes roots} := @Scalar.CmdWith.branch (Read roots) (Place modes)
 end Cmd
 
 def Cmd.assign (place : Place modes t) (value : Expr roots t) : Cmd modes := Scalar.CmdWith.assign place value
