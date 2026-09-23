@@ -3,6 +3,31 @@ import P4blo.ScalarCommands
 import P4blo.Fields
 import P4blo.FieldExpressions
 import P4blo.FieldCommandExamples
+import P4blo.NamedFields
+
+/-- info: 'P4blo.Fields.Ref.resolve_sound' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Ref.resolve_sound
+
+/-- info: 'P4blo.Fields.Ref.named_sound' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Ref.named_sound
+
+/-- info: 'P4blo.Fields.Ref.named_expr' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Ref.named_expr
+
+/-- info: 'P4blo.Fields.Place.resolve_sound' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Place.resolve_sound
+
+/-- info: 'P4blo.Fields.Place.named_sound' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Place.named_sound
+
+/-- info: 'P4blo.Fields.Place.named_lvalue' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Place.named_lvalue
 
 /-- info: 'P4blo.Fields.Modes.scope_agrees' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
