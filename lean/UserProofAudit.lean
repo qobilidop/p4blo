@@ -9,6 +9,23 @@ import P4blo.ForwardPolicy
 import P4blo.SourceZero
 import P4blo.InitialFrames
 import P4blo.InitialFrameTests
+import P4blo.GuardedForwardPolicy
+
+/-- info: 'P4blo.GuardedForwardPolicy.authored_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedForwardPolicy.authored_policy
+
+/-- info: 'P4blo.GuardedForwardPolicy.source_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedForwardPolicy.source_policy
+
+/-- info: 'P4blo.GuardedForwardPolicy.source_invalid' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedForwardPolicy.source_invalid
+
+/-- info: 'P4blo.GuardedForwardPolicy.execute_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedForwardPolicy.execute_policy
 
 /-- info: 'P4blo.Fields.Shape.zeroWith_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
