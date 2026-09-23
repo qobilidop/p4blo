@@ -20,6 +20,7 @@ ADD --checksum=sha256:b83d1a74deacf2ba48ee50798bb38a389ddda402967413c6c2ad1389da
 ADD --checksum=sha256:f94a66ab80e79aa11e15409479d8bc2572649f0ef25dbd2daf503ea5b05067ad \
     https://codeload.github.com/libbpf/libbpf/tar.gz/09b9e83102eb8ab9e540d36b4559c55f3bcdb95d /opt/archives/libbpf.tar.gz
 RUN mkdir -p /opt/src/xdp-tools /opt/src/libbpf /opt/bpf-headers/bpf /opt/artifacts && \
+    chmod 0644 /opt/archives/xdp-tools.tar.gz /opt/archives/libbpf.tar.gz && \
     tar -xzf /opt/archives/xdp-tools.tar.gz --strip-components=1 -C /opt/src/xdp-tools && \
     tar -xzf /opt/archives/libbpf.tar.gz --strip-components=1 -C /opt/src/libbpf && \
     cp /opt/src/libbpf/src/bpf_helpers.h /opt/src/libbpf/src/bpf_helper_defs.h \
