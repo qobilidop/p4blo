@@ -21,6 +21,19 @@ OCaml toolchain is heavy and only the oracle needs it.
 The pin lives in one place, `P4_SPECTEC_COMMIT` in `build.sh`; the CI
 cache key reads it from there.
 
+A second, optional oracle lives in [`bmv2/`](bmv2/README.md): p4c's BMv2
+backend and BMv2's `simple_switch` in one pinned Docker image, replaying
+the same vectors on the reference implementation rather than on the
+specification. It exists for what this one cannot judge on its own. The
+simulator has no longest-prefix rule and no tie-break without
+priorities, so the translation below supplies both; BMv2's lpm tables,
+its `const entries` and its runtime ternary priorities are real, so the
+switch decides them and the corpus's claims about them are checked
+against something that did not read this repository. It skips without
+Docker or the image, runs in `.github/workflows/oracle-bmv2.yml`, and
+has found one genuine divergence so far, over an out-of-range register
+read.
+
 ## Building
 
 `build.sh` clones the pinned commit into `$P4BLO_ORACLE_DIR` (default

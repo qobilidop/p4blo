@@ -15,6 +15,7 @@ push; run them locally before pushing and check exit codes, not output.
 | Lean | `cd lean && lake build && lake test` | `all tests passed`, exit 0 |
 | Lean vs Python | `uv run pytest tests/test_drt.py -k lean_agrees` | 11 passed after `lake build`; skips only when the binary is missing |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
+| BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 
 A larger differential sweep, for a change to either interpreter:
