@@ -1,6 +1,6 @@
 name = "p4blo"
 version = "0.1.0"
-defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples"]
+defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "userTests"
 
@@ -21,3 +21,7 @@ name = "UserProofAudit"
 [[lean_exe]]
 name = "scalarExamples"
 root = "ScalarExamplesMain"
+
+[[lean_exe]]
+name = "scalarCommands"
+root = "ScalarCommandsMain"

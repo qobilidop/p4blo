@@ -1,8 +1,8 @@
 # Scalar construction assurance
 
-The historical closed-scalar increment below is followed by the contextual
-increment at the end of this file; its expanded claims supersede the older
-"Next boundary" section without rewriting the earlier experiment record.
+The historical closed-scalar increment below is followed by contextual and
+command increments. Their expanded claims supersede older "next" boundaries
+without rewriting the earlier experiment records.
 
 Implementation increment: 2026-09-23. This file records the exact boundary
 and experiments for the first user-facing Lean eDSL, independently of the
@@ -326,3 +326,192 @@ On the unmutated candidate, 2026-09-23:
 
 These counts are for this branch's base and increment; the integrator must
 rerun merged-main gates because other reviewed work is progressing in parallel.
+
+## Command increment: finite writable scalar bodies
+
+Implemented 2026-09-23 against `46893ff`. This extends the contextual slice
+without replacing its Context, Ref, ExprIn or Env APIs. The independent
+source command meaning is a total `Env -> Env` transformation using typed
+`Env.set`. It never calls IR evaluation, lowering or statement execution.
+
+### Exact boundary and decisions
+
+- `Modes context` is a finite, context-indexed declaration-mode list:
+  local or parameter direction. A `Place modes type` contains an existing
+  typed reference and proof that its mode is writable. Permission policy
+  comes from the spec's `ScalarStatements.writable`: local/out/inout only.
+  Input and directionless parameters cannot form writable places.
+  `Modes.Agrees` independently requires the actual scope to resolve every
+  binding to its exact name/type/direction declaration. The runtime still
+  does not enforce declaration permissions. Confidence: high on policy,
+  medium on parallel mode metadata ergonomics. Revisit with typed fields,
+  not by replacing the already verified expression AST prematurely.
+- The authoritative `Typed`/`BodyTyped` statement relations live in the
+  spec and reuse `ScalarTyping.TypedIn`. Their executable target check
+  `canAssign` rejects malformed entire contexts, missing or mismatched
+  names/types/declarations, and read-only targets. This is not a complete
+  statement checker or whole-block validity judgment.
+- The one command AST is a structured list: empty, write with a tail, and
+  conditional with two bodies and a tail. Public assign/ite/seq combinators
+  provide ordinary statement composition. `denote_seq` proves sequencing
+  means executing the second transformation after the first; `lower_seq`
+  proves it lowers to list append. This representation introduces no
+  synthetic IR conditionals or alternate executor. Confidence: high on
+  semantics, medium on syntax. Revisit when readable packet programs expose
+  concrete authoring friction; keep independent expected-output tests.
+- `Cmd.steps` constructs a finite prefix of the existing `Execution.step`
+  with an arbitrary continuation left untouched. `Steps.execute` invokes
+  the existing `Finishes.sound`, not fuel or a second recursive reference
+  semantics. Confidence: high. A concrete continuation that raises a parser
+  fault if run is a kernel-checked witness/test of the prefix boundary.
+- `Cmd.execute_correct` requires context well-formedness, actual declaration
+  agreement, exact initial value agreement, and an inactive action layer
+  (`action = none`, `actionVars = none`). It proves lowered body typing,
+  successful reference execution, exact final source values, typed-frame
+  and declaration preservation, `ChangesOnlyVars`, and `PreservesOutside`.
+  The former gives an exact Run equality with only frame.vars replaced;
+  the latter preserves every runtime lookup outside the possible target
+  set, including unrelated names absent from the source context. No stronger
+  equality between independently rebuilt hash maps is needed. Confidence:
+  high; action/block calls require separately proved layering/copyback.
+- `Modes.scope_agrees` and `Modes.frame_matches` are constructive witnesses
+  under well-formedness, not arbitrary uninhabited assumptions. The actual
+  Index.build/Frame.forBlock path is also tested for locals and in/out/inout
+  parameters, including real out/inout writes. These tests are not a general
+  proof that the witness constructors build globally valid programs. For
+  example, scope/program name collisions and directionless *block* parameter
+  validity are outside this fragment. Confidence: high in this distinction;
+  prove the full construction bridge before advertising program validity.
+
+Header/metadata paths, aggregate assignments, loops, extern/packet operations,
+calls, complete-program lowering, serialization correctness and universal
+Python equivalence remain outside the claim. Typed scalar field paths are
+next; complete arithmetic coverage is not a prerequisite for useful packets.
+
+### Acceptance evidence
+
+- Twelve specification permission tests include input/directionless
+  rejection, out/inout/local acceptance, wrong RHS/declaration width,
+  wrong declaration name, missing source/runtime declarations, and invalid
+  unused or duplicate contexts. A kernel example rejects an input write
+  in the actual syntax-directed statement relation.
+- Four negative user elaboration checks reject input and directionless
+  places, a boolean RHS for a bits place, and a bits conditional.
+- Nine independent source and actual-executor answers cover
+  `(255,7) -> (0,7,true)` and `(3,7) -> (4,11,false)`, a wrapping second
+  update, zeros, both input-dependent branches, branch wrap, empty bodies
+  and a boolean-only assignment. Every source binding is observed.
+- Each runtime case starts with unrelated nonempty packet/cursor, emitter,
+  register array, table-default, parser-visit, index and extra local state;
+  those observations must remain unchanged. The universal unchanged-field
+  and untouched-name theorems are stronger than this finite sample.
+- The default `scalarCommands` exporter supplies only source-built syntax
+  and inputs. Python independently checks fixture IDs and exact input
+  fields/types/values, assembles validated packet wrappers, and exposes all
+  final locals plus an unrelated sentinel as four bytes. The raw wrapper
+  is explicitly outside the lowering proof. DRT failures are saved before
+  the independent answer assertion, so a production fault retains replay.
+- All advertised sequencing, permission, witness, update, finite-prefix
+  and execute theorems have exact default axiom audits. `Env.get_set` and
+  `Cmd.denote_seq` use no axioms; `Cmd.lower_seq` uses propext; the remaining
+  audited roots use only propext, Classical.choice and Quot.sound.
+
+### Statement adversarial campaign
+
+All mutants run separately in detached worktree `p4blo-statement-mutants`
+at `46893ff` with the candidate applied, never in the implementation tree.
+Default baseline builds/audits/tests pass before mutation. The first four
+experiments are **proof/build rejections**, not runtime DRT kills:
+
+1. **Reverse source update ordering.** In `Cmd.denote`, replace
+   `next.denote (env.set place.ref (denoteIn env value))` with
+   `(next.denote env).set place.ref (denoteIn env value)`. The IR compiler
+   and its typing proof are untouched. Default build exits 1 in
+   `Cmd.denote_seq` and `Cmd.steps`: the source sequencing law and the
+   exact final-frame result no longer match the executor.
+2. **Write the wrong lowered target.** Change the `.write` lowering target
+   from `.var place.ref.name` to `.var (place.ref.name ++ "wrong")`. Default
+   build exits 1 in `Cmd.lower_typed` and the write case of `Cmd.steps`.
+   The original permission evidence cannot justify that different name;
+   the actual machine-step equality also fails.
+3. **Omit a write.** Lower `.write _ _ next` as `next.lower`; change its
+   typing proof case to `exact ih` and rename the now-unused `hd` premise
+   `_hd`. Default build exits 1 specifically in the write case of `Cmd.steps`:
+   the claimed assignment transition no longer exists. The adjusted typing
+   proof accepts the smaller body, so no stale type derivation or unused
+   variable warning is being counted as the detector.
+4. **Invert an if.** Lower the conditional with `no.lower` before
+   `yes.lower`; swap `hy`/`hn` in its typing derivation too. Default build
+   exits 1 in `Cmd.steps`' branch transition equality. Typing still accepts
+   both same-context branches, but the actual selected continuation differs.
+
+5. **Wrong same-width source place.** Change `ScalarCommandExamples.x`
+   from `⟨.here, rfl⟩` to `⟨.there .here, rfl⟩`. Default build and all proof
+   audits pass. `lake test` exits 1 at `statement source known answer
+   failed: update-wrap`. Required pytest for `update-dependent` first
+   observes DRT agreement, then exits 1 at the independent expected answer:
+   actual `031000a5`, expected `040b00a5`. This is a compiled frontend
+   semantic kill; mutual interpreter agreement is insufficient here.
+6. **Production Python skips writes to x.** In `interp.env.Env.write`'s
+   existing-block-binding branch, replace `self.vars[name] = value` with
+   `self.vars[name] = self.vars[name] if name == "x" else value`. This affects
+   the wrapper's input initialization as well as its body; both are actual
+   IR assignments whose execution must agree. Required pytest for
+   `update-dependent` exits 1 at DRT before the independent answer assertion,
+   automatically saving a complete bundle. Python emits `000701a5`; Lean
+   emits `040b00a5`, with no faults, diagnostics or extern-state differences.
+   Replaying that bundle while the mutant is live exits 1 (one divergence);
+   restoring the single Python line and replaying the **same bundle** exits
+   0 (one agreement), without rebuilding Lean.
+
+Reproduce each proof/surface experiment by applying the exact single edit
+(plus the specified typing-proof adjustments) in a separate worktree with
+this increment, then running its default user build:
+`nix develop -c lake +leanprover/lean4:v4.34.0 -d lean build`.
+For experiment 5, run `lake test` inside `lean/` and the focused pytest below.
+Restore every edit before the next experiment. No mutant is committed.
+
+Experiment 6 uses the tracked test itself to reconstruct, compare and save
+the exact program; no temporary reconstruction helper is required. Run from
+the isolated worktree with its one-line Python mutation active:
+
+```sh
+P4BLO_REQUIRE_LEAN=1 nix develop -c uv run pytest \
+  'tests/test_lean_edsl_statements.py::test_lean_agrees_on_authored_statement_known_answers[update-dependent]' -q
+nix develop -c uv run python -m p4blo.drt.replay \
+  /Users/qobilidop/my/work/p4blo-statement-mutants/.artifacts/drt/lean-statements-update-dependent.json \
+  --lean /Users/qobilidop/my/work/p4blo-statement-mutants/ir/.lake/build/bin/p4blo-lean
+```
+
+Both commands exit 1 under the Python mutation. Remove the mutation and run
+the identical replay command again: exit 0, one agreed, zero divergences or
+shared errors. The saved request is empty packet, ingress port 0, empty table
+entries, with four ports and seed 0. Adjust only the absolute worktree paths
+when reproducing. Bundle SHA-256:
+`1f806e5de1c788cc573182229b9a6b6a240226e77c49729728d22aedb77cf313`.
+The ignored bundle contains concrete program/inputs and is replayable without
+the source exporter. This tracked reconstruction recipe removes dependence
+on its retention in a temporary worktree.
+
+### Command completed gates
+
+On the unmutated candidate:
+
+- `scripts/check-lean.sh`: exit 0, both packages/default axiom audits, spec
+  permission tests, all old expression tests, nine command/state cases,
+  four command negative typing checks, real declaration initialization and
+  writable-parameter execution, and the faulting-continuation check.
+- Required `pytest tests/test_lean_edsl_statements.py -q`: **10 passed**.
+- Required `pytest tests -k lean_agrees -q`: **184 passed**, 1011 deselected,
+  no skips. The Python/schema full gate also exits 0: **1190 passed,
+  5 expected discrepancies**, no skips, plus formatting/lint/type/schema
+  and workflow checks.
+- The root IR import/export was then added (no semantic body changed).
+  Both Lean package gates reran successfully; combined required expression
+  and statement pytest suites then passed **32 tests**. Documentation-only
+  assurance changes followed. The full integration gate must be rerun on
+  merged main, which includes independent parallel work absent from this base.
+
+No proof/build rejection above is represented as an executable semantic
+kill. These are selected adversarial experiments, not exhaustive mutation
+adequacy or proof of universal Python correctness.
