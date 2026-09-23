@@ -193,6 +193,16 @@ one that says so.
   interpreter loop. That is what is provable without Mathlib in a day
   and what the design meant; the module doc says exactly what the
   monad plumbing leaves uncovered.
+- **Every external input is pinned, and the pins are listed.** After
+  Bili's requirement that anyone reproduce the build and any agent
+  resume the work: the p4c image by digest, GitHub Actions by commit,
+  the oracle's opam-repository by commit inside a flake shell of its
+  own, all in the table in `docs/workflows.md`. The earlier choice to
+  keep OCaml out of the default shell stands; it lives in
+  `devShells.oracle`.
+- **AGENTS.md is the resumption entry point** and `docs/workflows.md`
+  the procedures; `docs/status.md` carries an "Open threads" section.
+  Nothing needed to continue the work may live outside the repository.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
