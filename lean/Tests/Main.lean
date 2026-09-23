@@ -3,6 +3,7 @@ import Tests.Interp
 import Tests.Forwarder
 import Tests.ScalarTyping
 import Tests.Execution
+import Tests.ExecutionCertificate
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -163,7 +164,8 @@ def main (args : List String) : IO UInt32 := do
     negativeTests
     interpTests
     ScalarTypingTests.tests
-    ExecutionTests.tests).run []
+    ExecutionTests.tests
+    ExecutionCertificateTests.tests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0

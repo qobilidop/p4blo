@@ -348,3 +348,12 @@ one that says so.
   This preserves existing behavior without treating a resource budget as
   ParserTimeout. Global termination for validated programs is a separate,
   still-open theorem.
+- **Prototype certificates by bounded reexecution.** The total checker
+  uses the actual machine step and proves accepted observations equal the
+  actual driver's result for the complete supplied initial machine.
+  Exhaustion is a checker verdict, not a P4 fault. Start with a standalone
+  register/counter control fragment and include exact fault tags/messages
+  and relevant persistent/local state. This is deliberately not a faster
+  verifier, a whole-switch certificate or universal Python verification.
+  Concrete acceptance relies on the compiled checker and serialization;
+  the artifact itself is not a kernel-checkable proof term.

@@ -77,3 +77,15 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4blo.ScalarLaws.mux_false' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.ScalarLaws.mux_false
+
+/-- info: 'P4blo.ExecutionCertificate.bounded_finishes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ExecutionCertificate.bounded_finishes
+
+/-- info: 'P4blo.ExecutionCertificate.bounded_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ExecutionCertificate.bounded_sound
+
+/-- info: 'P4blo.ExecutionCertificate.check_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ExecutionCertificate.check_sound
