@@ -86,9 +86,9 @@ typechecked with p4c through Docker when it is available.
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
 | `lean/` | the Lean interpreter, extern models, the theorem, the run mode for differential testing |
 | `corpus/` | ten programs: eDSL source, IR golden, README, STF vectors |
-| `oracle/` | P4-SpecTec build and replay |
+| `oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, semantics, coverage, status, decisions, notes |
-| `tests/` | everything that runs |
+| `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |
 
 ## Neighbors
 

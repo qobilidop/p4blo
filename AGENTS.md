@@ -35,12 +35,16 @@ scripts/check.sh                                   # every Python and schema che
 cd lean && lake build && lake test                 # the Lean interpreter and theorem
 uv run pytest tests/test_drt.py -k lean_agrees     # Lean versus Python
 nix develop .#oracle -c oracle/build.sh            # the P4-SpecTec oracle, once
-uv run pytest tests/test_oracle.py                 # corpus vectors on the oracle
+uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
+docker build -t p4blo-bmv2 oracle/bmv2             # the BMv2 oracle image, once
+uv run pytest tests/test_oracle_bmv2.py            # corpus vectors on BMv2
 ```
 
-Keep `main` green on all of them; check exit codes, not output. Docker
-with the pinned p4c image typechecks the printer's goldens when
-available and is skipped otherwise.
+Keep `main` green on all of them; check exit codes, not output. Four
+workflows run them in CI: Python and schema, Lean, and one per oracle.
+Docker with the pinned p4c image also typechecks the printer's goldens
+when available and is skipped otherwise. `docs/workflows.md` has the
+full gates table, every pin, and the procedure for each kind of change.
 
 ## Conventions
 
@@ -54,7 +58,9 @@ available and is skipped otherwise.
   and implemented in both interpreters second.
 - **Corpus programs** live under `corpus/<name>/` with their eDSL
   source, golden, README and STF vectors; `tests/test_corpus.py` picks
-  new ones up by itself.
+  new ones up by itself. Sources are written in the typed eDSL
+  (`p4blo.edsl`), are type-checked by pyright in CI, and must rebuild
+  their golden byte for byte.
 - **Every decision the design does not settle** becomes a dated entry
   in `docs/decisions.md`. `docs/status.md` is updated at every
   checkpoint, including its "Open threads".

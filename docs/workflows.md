@@ -6,8 +6,9 @@ the flake (`direnv allow` once, or prefix with `nix develop -c`).
 
 ## Gates
 
-`main` is green when all of these pass. CI runs the first three on every
-push; run them locally before pushing and check exit codes, not output.
+`main` is green when all of these pass, and four workflows run them on
+every push: Python and schema, Lean, and one per oracle. Run them
+locally before pushing, and check exit codes, not output.
 
 | Gate | Command | Expected |
 |---|---|---|
