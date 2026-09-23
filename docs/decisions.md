@@ -717,3 +717,13 @@ one that says so.
   named campaign inputs explicitly and require each to exist so campaigns
   can coexist without an empty-input false pass. Investigate actual recursive
   decoder termination next, not a duplicate decoder used only in proofs.
+- **Make the actual Expr decoder total before extending codec proofs.**
+  Preserve accepted finite JSON, null/default behavior and diagnostic order
+  through proof-carrying helpers with erasure laws. Checked structural bounds
+  handle synthetic empty objects without changing their errors. Confidence:
+  high in descent, medium in helper-refactor size; review the first Expr-only
+  implementation before LValue and statement arrays. The pinned Except
+  fixed-point machinery is not a drop-in alternative for non-tail recursion.
+  Feasibility evidence and limits: `notes/codec-recursion-plan.md`. Logical
+  termination is not a runtime resource bound; process failures must retain
+  replay evidence rather than escape the observer.

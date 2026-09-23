@@ -21,11 +21,11 @@ six additional kernel rejection examples. Required real-Lean DRT:
 **1724 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
-required native XDP CI passes at `8829000`, including lifecycle regressions.
+required native XDP CI passes at `1f2d8f5`, including lifecycle regressions.
 Latest reviews under `notes/reviews/`: `field-permissions.md`,
 `command-seam.md`, `keyvalue-codec.md` and `call-copy.md`.
 
-All five remote workflows pass for `8829000`; newer CI must be checked
+All five remote workflows pass for `1f2d8f5`; newer CI must be checked
 separately. Twelve retained execution-fault bundles and nine raw leaf-codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
@@ -269,10 +269,15 @@ Things a resuming agent should know are in motion or deliberately left.
   all replay restored. The focused codec suite now has 170 checks and native
   codec driver 52. Review: `notes/reviews/keyvalue-codec.md`; exact source
   recipes and proof boundary: `notes/keyvalue-codec.md`.
-  Next investigate proof-visible recursion in the actual recursive decoder,
-  isolated `work/codec-recursion` at `ba274f3`; a parallel proof-only decoder
-  would not close the boundary. Text parsing and semantic-version policy
-  remain separate obligations.
+  The independently reviewed Expr-only recursion plan is committed at
+  `939e762`: `notes/codec-recursion-plan.md` and its two isolated probes.
+  Actual finite-tree/default descent bounds kernel-check; the fixed-point
+  negative probe fails as documented. Production decoding is unchanged in
+  this checkpoint. Implementation is active in `work/codec-recursion`,
+  based on `ba274f3`: preserve defaults and exact error order, prove helper
+  erasure, then replace the actual Expr decoder with well-founded recursion.
+  No parallel proof-only decoder or fuel cutoff. LValue/Stmt, text parsing,
+  semantic-version policy and general resource limits remain separate.
 
 - **XDP and later examples: compile-only profile integrated.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter
