@@ -36,7 +36,12 @@ The static rules:
   a body records a call, and `forward(bit9(1))` in the class body is the
   literal a table's `default=` or `entry(...)` takes. Both are checked
   against the declared parameters, names, count and widths. Action
-  parameters are directionless in the IR.
+  parameters are directionless in the IR. Action data is written
+  `bit9(1)`, never a bare int: a parameter declared `port: bit9` is a
+  `bit<9>` place inside the body, so widening it to `bit9 | int` would
+  make it an int there too, and `self.forward(1)` is the one place the
+  literal rule ("an int takes the other operand's width") is denied
+  statically although the build accepts it.
 - `Table` is a class attribute holding action objects and typed keys;
   `keys=(k1, k2)` as a tuple types the entries for one to four keys, so
   that a const entry value of the wrong width is a static error. A
