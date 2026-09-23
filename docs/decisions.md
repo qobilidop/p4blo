@@ -616,3 +616,13 @@ one that says so.
   for typed aggregate paths rather than copying a second AST. Confidence:
   medium in that API factoring; revisit if a forwarding body needs pervasive
   transport annotations. See `notes/typed-fields-plan.md` for obligations.
+- **Generate host policy changes while retaining exact Bloom behavior.**
+  The bounded `tcp-flow-policy-v1` varies both directional table snapshots,
+  client ports, flags and packet sequences. Independent GF(2) CRC16 and zlib
+  CRC32 expectations compare every cell; the model is not exact conntrack.
+  Unique sequence IDs prevent aggregate packet matching from hiding temporal
+  admission mistakes. Confidence: high within this profile, medium on
+  generator diversity. A real table-hit fault shrinks to one SYN with absent
+  rules and is killed only by state comparison. Original BMv2 checks fixed
+  policies; its current protocol cannot replace rules mid-sequence. Revisit
+  that limitation before claiming original-oracle coverage of host changes.

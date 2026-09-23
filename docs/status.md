@@ -159,9 +159,17 @@ Things a resuming agent should know are in motion or deliberately left.
   cursor fault creates two payload-only mismatches, automatically saves its
   five-request bundle and agrees after restoration. Review and full recipes:
   `notes/reviews/firewall-boundaries.md`, `notes/firewall-boundaries.md`.
-  Broader generated flows, Lean authoring and application proofs remain open.
-  A bounded independently modeled flow/policy generator is active in isolated
-  `work/firewall-generated`, based on committed `8b2ebdd`.
+  Generated `tcp-flow-policy-v1` is integrated from `b7f59a1`: forty shrinking
+  examples per engine, full-cell independent GF(2)/zlib expectations,
+  mid-sequence host policy replacement and targeted Bloom correlations.
+  Three unchanged-original BMv2 scenarios add eleven prefix observations;
+  host changes within one sequence remain Python/Lean-only evidence.
+  An actual table-hit fault shrinks to one absent-rule SYN: packets match
+  but two wrong cells expose it. The complete saved replay fails live and
+  passes restored; inputs are promoted into a tracked named regression.
+  See `notes/firewall-generated.md` and `notes/reviews/firewall-generated.md`.
+  The external job selects this suite. Lean authoring/application proofs
+  and broader profiles remain open.
 
 - **Verification infrastructure is established; broader proofs remain open.**
   [verification.md](verification.md) records exact claims. Required real-Lean

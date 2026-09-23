@@ -51,3 +51,5 @@ jobs:
         run: nix develop -c uv run pytest tests/test_firewall.py -k bmv2 -v
       - name: Check original firewall truncation and persistence boundaries
         run: nix develop -c uv run pytest tests/test_firewall_boundaries.py -k bmv2 -v
+      - name: Check original firewall generated flow profiles
+        run: nix develop -c uv run pytest tests/test_firewall_generated.py -k bmv2 -v

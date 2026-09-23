@@ -54,8 +54,10 @@ mutation evidence, and an IR-minimality review. See the design for details.
   before/after initiation and malformed inputs. No exact-conntrack claim.
   The typed Python port now has independent packet/full-state expectations,
   original BMv2 prefix observations, strict SpecTec discrepancy probes and
-  deliberate wrong-port detection. Lean authoring/application proofs and
-  broader malformed/generated sequences remain open.
+  deliberate wrong-port detection. Exhaustive byte cuts of a fixed frame,
+  valid-malformed-valid persistence, structured generated flow/policy changes
+  and runtime state-only mutants extend the bounded evidence. Lean authoring/
+  application proofs and broader profiles remain open.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.
