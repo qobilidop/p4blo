@@ -10,6 +10,7 @@ with the reason otherwise.
 
 from __future__ import annotations
 
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -415,12 +416,14 @@ def test_case_to_stf_refuses_an_empty_packet() -> None:
 def lean_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
     binary = default_lean_binary()
     if not binary.exists():
+        if os.environ.get("P4BLO_REQUIRE_LEAN") == "1":
+            pytest.fail(f"required Lean executable is missing: {binary}")
         pytest.skip(f"{binary} is not built (cd lean && lake build)")
     program_json = tmp_path_factory.mktemp("lean") / "forwarder.json"
     program_json.write_text(ir.dump_json(golden(CORPUS / "forwarder")))
     reason = LeanRunner.probe([binary], program_json, PORTS)
     if reason is not None:
-        pytest.skip(f"p4blo-lean has no working `run` mode: {reason}")
+        pytest.fail(f"p4blo-lean has no working `run` mode: {reason}")
     return binary
 
 
