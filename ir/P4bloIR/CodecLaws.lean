@@ -133,4 +133,61 @@ theorem type_roundtrip (path : String) (type : Ty) (h : TypeRepresentable type) 
   | stack header size => exact type_stack path header size h
   | boolean | header _ | struct _ | enumType _ | error => rfl
 
+/-- Key validity is separate: only the numeric protobuf prefix field is bounded. -/
+def KeyValueRepresentable : KeyValue → Prop
+  | .lpm _ prefixLen => UInt32 prefixLen
+  | _ => True
+
+theorem keyValue_exact (path : String) (value : Nat) :
+    KeyValue.decode path (KeyValue.exact value).toJson = .ok (.exact value) := by
+  change (KeyValue.exact <$> Decode.decimal (Decode.sub path "exact") (toString value)) = _
+  rw [decimal_toString]
+  rfl
+
+theorem keyValue_lpm (path : String) (value prefixLen : Nat) (h : UInt32 prefixLen) :
+    KeyValue.decode path (KeyValue.lpm value prefixLen).toJson = .ok (.lpm value prefixLen) := by
+  by_cases zero : prefixLen = 0
+  · subst prefixLen
+    change (do
+      let value ← Decode.decimal (Decode.sub (Decode.sub path "lpm") "value") (toString value)
+      pure (KeyValue.lpm value 0)) = _
+    rw [decimal_toString]
+    rfl
+  · simp only [KeyValue.toJson, Encode.ofNat, beq_iff_eq, zero, ↓reduceIte]
+    change (do
+      let value ← Decode.decimal (Decode.sub (Decode.sub path "lpm") "value") (toString value)
+      let prefixLen ← Decode.uint32 (Decode.sub (Decode.sub path "lpm") "prefix_len")
+        (Lean.toJson prefixLen)
+      pure (KeyValue.lpm value prefixLen)) = _
+    rw [decimal_toString]
+    change (do
+      let prefixLen ← Decode.uint32 (Decode.sub (Decode.sub path "lpm") "prefix_len")
+        (Lean.toJson prefixLen)
+      pure (KeyValue.lpm value prefixLen)) = _
+    rw [uint32_toJson _ _ h]
+    rfl
+
+theorem keyValue_ternary (path : String) (value mask : Nat) :
+    KeyValue.decode path (KeyValue.ternary value mask).toJson = .ok (.ternary value mask) := by
+  -- Infer the actual diagnostic paths: successful roundtrip does not prove
+  -- the intended wire field names. Independent wire vectors check that.
+  change (do
+    let value ← Decode.decimal _ (toString value)
+    let mask ← Decode.decimal _ (toString mask)
+    pure (KeyValue.ternary value mask)) = _
+  rw [decimal_toString]
+  change (do
+    let mask ← Decode.decimal _ (toString mask)
+    pure (KeyValue.ternary value mask)) = _
+  rw [decimal_toString]
+  rfl
+
+/-- All representable keys round-trip, including semantically noncanonical keys. -/
+theorem keyValue_roundtrip (path : String) (key : KeyValue) (h : KeyValueRepresentable key) :
+    KeyValue.decode path key.toJson = .ok key := by
+  cases key with
+  | exact value => exact keyValue_exact path value
+  | lpm value prefixLen => exact keyValue_lpm path value prefixLen h
+  | ternary value mask => exact keyValue_ternary path value mask
+
 end P4bloIR.CodecLaws

@@ -21,3 +21,7 @@ import P4bloIR.CodecLaws
 /-- info: 'P4bloIR.CodecLaws.type_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.CodecLaws.type_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.keyValue_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.keyValue_roundtrip
