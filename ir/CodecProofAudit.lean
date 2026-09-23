@@ -1,4 +1,5 @@
 import P4bloIR.CodecLaws
+import Tests.CodecLaws
 
 /-! Checked trust boundary for actual JSON-value syntax codec laws. -/
 
@@ -65,3 +66,35 @@ import P4bloIR.CodecLaws
 /-- info: 'P4bloIR.CodecLaws.arg_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.CodecLaws.arg_roundtrip
+
+/-- info: 'P4bloIR.JsonBounds.array_mem_lt' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.JsonBounds.array_mem_lt
+
+/-- info: 'P4bloIR.Decode.arrayBounded_erasure' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Decode.arrayBounded_erasure
+
+/-- info: 'P4bloIR.Decode.listFieldBounded_erasure' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Decode.listFieldBounded_erasure
+
+/-- info: 'P4bloIR.Stmt.decode' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Stmt.decode
+
+/-- info: 'P4bloIR.Stmt.decode_unfold' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Stmt.decode_unfold
+
+/-- info: 'P4bloIR.CodecLaws.array_encoded_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.array_encoded_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.stmt_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.stmt_roundtrip
+
+/-- info: 'CodecLawTests.nestedStatement_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms CodecLawTests.nestedStatement_roundtrip
