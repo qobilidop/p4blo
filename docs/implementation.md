@@ -46,6 +46,10 @@ mutation evidence, and an IR-minimality review. See the design for details.
 - [ ] Tutorial stateful firewall: source audit and oracle preflight; model CRC
   services explicitly; preserve Bloom collisions; test routing/direction rules,
   before/after initiation and malformed inputs. No exact-conntrack claim.
+  The typed Python port now has independent packet/full-state expectations,
+  original BMv2 prefix observations, strict SpecTec discrepancy probes and
+  deliberate wrong-port detection. Lean authoring/application proofs and
+  broader malformed/generated sequences remain open.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.

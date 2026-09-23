@@ -34,6 +34,28 @@ Docker or the image, runs in `.github/workflows/oracle-bmv2.yml`, and
 has found one genuine divergence so far, over an out-of-range register
 read.
 
+## Stronger probes and known limitations
+
+Passing the corpus does not establish that the pinned simulator correctly
+implements every hash or table match. Independent original-source probes
+found two further discrepancies at this pin:
+
+- Odd-byte CRC32 inputs are effectively prepended with zero before hashing.
+  CRC16 and even-byte CRC32 controls pass. See the exact known answers in
+  [the CRC contract](../../docs/notes/crc-contract.md).
+- LPM/ternary mask construction casts the key's base rather than the computed
+  mask in the affected input branches. An original firewall /32 route miss
+  is incorrectly forwarded. The existing priority/wildcard normalization
+  below does not fix that defect. See [the firewall evidence](../../docs/notes/firewall-port.md).
+
+BMv2 confirms the intended behavior in both probes. CI runs original and
+printed cases, precise strict expected-discrepancy classifiers, and passing
+controls. Corrected oracle behavior becomes an XPASS requiring review; an
+unrelated crash or mismatch still fails. No adapter changes the input to
+conceal these differences. The original firewall's complete register arrays
+are additionally observed on BMv2 after sequence prefixes; matching packet
+fates alone can hide different hash indices.
+
 ## Building
 
 `build.sh` clones the pinned commit into `$P4BLO_ORACLE_DIR` (default

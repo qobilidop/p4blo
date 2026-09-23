@@ -544,3 +544,23 @@ one that says so.
   full ProtoJSON parity. Invalid request decoding must preserve extern state
   and leave the service usable for later valid requests. The complete codec
   representability and semantic-version contract still needs formalization.
+- **Observe original firewall state through a scoped BMv2 barrier.**
+  Replay fresh-switch sequence prefixes, append a distinct non-stateful
+  final sentinel, wait for it and output settling, then allow only complete
+  register reads. Parse the entire pinned CLI transcript and compare all
+  8192 cells, including zeros. Confidence: high for the pinned single-ingress
+  FIFO implementation and this ingress-only firewall; medium as a reusable
+  observer. Revisit before recirculation, asynchronous externs or another
+  worker model. No general quiescence proof is claimed. Preserve legacy
+  requests without the new deadline. See `notes/firewall-port.md` and its
+  independent review for original-source state evidence and limitations.
+- **Treat the original-program oracle as evidence to challenge, not a
+  definition to copy.** Firewall route-miss probes exposed a separate pinned
+  SpecTec LPM/ternary mask construction defect. Keep exact original/printed
+  discrepancy tests and passing controls; BMv2 and the IR retain the intended
+  route rejection. Confidence: high from source inspection and reproduction.
+  Revisit on oracle upgrades; strict XPASS prevents stale exceptions.
+  Packet equivalence alone is also insufficient for the fixed-width Bloom
+  hashes: SpecTec's wrong CRC32 indices preserve their collision relation.
+  Current support is a bounded, externally checked Python port, not universal
+  translation correctness or a completed Lean firewall proof milestone.

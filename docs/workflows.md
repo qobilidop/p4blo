@@ -17,6 +17,8 @@ locally before pushing, and check exit codes, not output.
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
+| Original-source SpecTec probes | `uv run pytest tests/test_crc.py tests/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
+| Original-source BMv2 probes | `uv run pytest tests/test_crc.py tests/test_firewall.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after prefixes pass |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 
@@ -38,6 +40,10 @@ Build Lean first, then run the Python gate: rebuilding and testing in the
 same worktree concurrently can remove the executable while a test needs it.
 New real-Lean tests use the shared `lean_binary` fixture and names beginning
 with `test_lean_agrees`; CI discovers them across the complete test tree.
+New external-oracle tests must also be selected by the job that builds that
+oracle; ordinary Python CI can skip unavailable tools. Rebuild the BMv2 image
+after driver changes. In concurrent worktrees use distinct image tags and
+`P4BLO_BMV2_IMAGE`, never replace an image while another gate is using it.
 
 The active assurance roadmap is [verification.md](verification.md). Keep
 proved properties, tested agreement and open obligations separate in every

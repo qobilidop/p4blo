@@ -14,8 +14,8 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 | Claim | Experiment | Status |
 |---|---|---|
-| 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
-| 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
+| 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
+| 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
 | 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 348 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, scalar soundness/value laws, exact closed eDSL lowering, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
@@ -45,6 +45,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 | verify_error | p4c `issue1824-bmv2` | eDSL, landed | p4c STF, 1 packet, passing | pass on both oracles |
 | priority | p4c `table-entries-priority-bmv2` | eDSL, landed | p4c STF, 3 packets, passing | pass on both oracles |
 | register_bounds | own program from the second review | eDSL, landed | 9 hand-derived packets, passing | passes on P4-SpecTec; two packets diverge on BMv2 by the recorded out-of-range register rule, carried as a strict xfail |
+| tutorial_firewall | pinned p4lang tutorial solution | typed Python eDSL, landed | connection establishment and Bloom false-positive vectors; six bounded profiles total | original BMv2 packets/all 8192 register cells at 30 prefix boundaries; SpecTec controls pass but exact CRC/mask probes disagree; Lean-authored port/proofs still open |
 
 ## Open threads
 
@@ -159,6 +160,23 @@ Things a resuming agent should know are in motion or deliberately left.
   lint/typecheck/schema/workflow gates pass. This is not a verified codec:
   representability, resource limits, unknown keys and semantic version policy
   remain open. All four remote workflows passed at naming checkpoint `e8c8bb9`.
+  The typed Python firewall port is now integrated with separately committed
+  BMv2 readback support (`a7a2f9d`, `e865975`). Independent packet/full-cell
+  expectations preserve the two-partial-collision Bloom false positive.
+  Original source is unchanged; 30 bounded prefix observations match all
+  8192 cells. Four validator-accepted wrong ports are killed by both engines;
+  observer corruptions are rejected. Review: `notes/reviews/firewall-port.md`;
+  exact profile, oracle defects, minimality and remaining obligations:
+  `notes/firewall-port.md`. The default Docker image was rebuilt and both
+  Lean package gates (348 spec checks), 167 required DRT tests and the full
+  **1172 passed / 5 precise expected discrepancies / no skips** gate pass,
+  including formatting/lint/typechecking/schema/workflow checks.
+  Original SpecTec's table-mask defect is isolated in two additional strict
+  probes, not excused across a whole corpus vector. Both oracle jobs select
+  the new profiles. Lean authoring/application proofs, wider generated flows
+  and truncated Ethernet/IPv4 coverage remain open. A new isolated campaign
+  is challenging actual Python/Lean hash implementations, beyond IR-port
+  mutants, while typed-frame implementation proceeds separately.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern
