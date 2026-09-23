@@ -37,10 +37,10 @@ p4c maintainers.
   program's `Meta` has the one contract field the source writes,
   `egress_port`, and the parser's and control's `inout Meta m` and
   `inout standard_metadata_t meta` become one `meta`.
-- **`hdrs.extra.last`.** `hdrs.extra[hdrs.extra.lastIndex]`; the eDSL has
-  `last_index` and no `.last`, which is that expression in one word. The
-  select keyset `8w0x80 &&& 8w0x80` is `masked(0x80, 0x80)` at the key's
-  width.
+- **`hdrs.extra.last`.** `hdrs.extra[hdrs.extra.lastIndex]`; the eDSL's
+  `.last` is that expression in one word, and the IR holds the index. The
+  select keyset `8w0x80 &&& 8w0x80` is `masked(ExtraB2.MORE, ExtraB2.MORE)`
+  at the key's width.
 - **Key names.** `Key.name` is what p4c's STF calls each key, `data.f1`,
   `extra[0].h` and `data.f2`: the header-struct parameter stripped and, for
   the stack element, p4c's `$0` written `[0]`. A key on a stack element has
