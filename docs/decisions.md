@@ -743,3 +743,10 @@ one that says so.
   Confidence: high in preserving meaning, medium in constructor diagnostics.
   Review against `notes/authoring-ergonomics-plan.md`; introduce an elaborator
   only if ordinary checked constructors remain materially awkward.
+- **Anchor even a proved application state mapping independently.** A paired
+  swap of both observed/reconstructed MAC fields and corresponding route
+  fields preserves inverse laws and the universal forwarding policy. Keep a
+  manually built asymmetric Store and independently named Snapshot as kernel
+  and native known answers; those reject the coordinated relabeling.
+  Confidence: high for this demonstrated shared-model fault, not universal
+  observer adequacy. Revisit every new application view for the same trap.

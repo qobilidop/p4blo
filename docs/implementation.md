@@ -31,10 +31,13 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   Typed aggregate paths and shared scalar/field read expressions now have
   exact nominal/frame correspondence. Writable scalar-leaf field commands
   now preserve full source state, declarations, validity and unrelated runtime
-  state under concrete premises. Independent application-policy properties
-  and complete applications remain to be implemented.
+  state under concrete premises. A named forwarding-body policy now relates
+  arbitrary complete source states to actual execution; complete applications
+  and their initialization/parser/table/checksum boundaries remain open.
 - [ ] Provide an ergonomic Lean surface and interpreter API using the reference
   execution functions. Test diagnostics and notation, including rejection cases.
+  Typed named scalar paths now resolve with spelling/permission soundness and
+  independent diagnostics; list sequencing is the next small surface increment.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.

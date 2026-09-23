@@ -12,12 +12,15 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `ae9ca87`, including concrete field commands, actual
+Combined integration at `0dc7b08`, including named field paths, independent
+forwarding-policy proofs, concrete field commands, actual
 KeyValue codec laws and call-copy conformance: both Lean package gates and
 default audits pass, with **444 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
+Named paths add 17 exact diagnostics and 11 rejected constructions; the
+arbitrary-store policy adds seven independent policy/source/runtime answers.
 Required real-Lean DRT: **405 passed**, no skips. Full gate:
 **1737 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
@@ -25,6 +28,7 @@ all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `5b93ad1`, including lifecycle regressions.
 Latest reviews under `notes/reviews/`: `field-permissions.md`,
 `command-seam.md`, `field-commands.md`, `keyvalue-codec.md` and `call-copy.md`.
+The latest authoring reviews are `named-paths.md` and `forward-policy.md`.
 
 All five remote workflows pass for `5b93ad1`; newer CI must be checked
 separately. Fourteen retained execution-fault bundles and nine raw leaf-codec
@@ -170,11 +174,23 @@ Things a resuming agent should know are in motion or deliberately left.
   sibling faults save and replay live/restored. Review:
   `notes/reviews/field-commands.md`; recipes and scope: `lean/ASSURANCE.md`.
   The body theorem does not prove a router, initializer or call copying.
-  Next, active separately: independent arbitrary-store forwarding-policy
-  properties in `work/forward-policy` (based on committed `ab9d5d5`) and
-  typed named paths in `work/named-paths` (based on committed `ae9ca87`).
-  `notes/authoring-ergonomics-plan.md` separates naming/sequence ergonomics
-  from intended application policy; neither is claimed complete here.
+  Named paths `d47f8bc` and independent policy `d31f8bc` are integrated at
+  `0dc7b08`. Names resolve unambiguously into existing typed references;
+  spelling/permission soundness does not imply global schema validity.
+  All six naming roots are default-audited; wrong slot, error diagnostic and
+  valid-but-wrong requested intent faults are distinguished in
+  `notes/named-paths.md` and its review.
+  The forwarding theorem covers arbitrary source stores and actual reference
+  execution against an independent complete-state hit/TTL policy. Five
+  default-audited roots include lossless observation laws. Wrong destination
+  and missing TTL guard faults fail the application proof; paired state
+  relabeling still passes those proofs but fails independent mapping anchors.
+  This does not establish parsing, checksum maintenance or architecture fate.
+  Scope/review: `notes/forward-policy.md`, `notes/reviews/forward-policy.md`.
+  Next: readable list sequencing in isolated `work/command-blocks`, preserving
+  exact previous ASTs and exported bytes. The reviewed design is
+  `notes/authoring-ergonomics-plan.md`; this active increment is not yet a
+  checked main claim.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
