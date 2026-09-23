@@ -71,16 +71,47 @@ theorem ChangesOnlyVars.blockFrame (h : ChangesOnlyVars first last)
 def PreservesOutside (names : List String) (first last : Run) : Prop :=
   ∀ name, name ∉ names → last.frame.vars[name]? = first.frame.vars[name]?
 
+/-- An active action layer may remain installed when it does not shadow the
+written block root. This is operational storage, not source permission. -/
+theorem writeVar_block_unshadowed (run : Run)
+    (unshadowed : run.frame.actionVars.bind (·[name]?) = none)
+    (found : run.frame.vars[name]? = some old) :
+    (writeVar name value).run run =
+      (.ok (), { run with frame := { run.frame with vars := run.frame.vars.insert name value } }) := by
+  have hc : name ∈ run.frame.vars := by
+    exact Std.HashMap.mem_iff_isSome_getElem?.mpr (by simp [found])
+  cases ha : run.frame.actionVars with
+  | none =>
+    simp [writeVar, run_bind, Frame.write?, ha, hc, setFrame]
+    rfl
+  | some avs =>
+    have absent : avs[name]? = none := by simpa [ha] using unshadowed
+    have hn : name ∉ avs := by
+      simp [Std.HashMap.mem_iff_isSome_getElem?, absent]
+    simp [writeVar, run_bind, Frame.write?, ha, hn, hc, setFrame]
+    rfl
+
+/-- Reads prefer an actual action binding even when the block has a decoy. -/
+theorem readVar_action (run : Run) (active : run.frame.actionVars = some avs)
+    (found : avs[name]? = some value) :
+    (readVar name).run run = (.ok value, run) := by
+  simp [readVar, run_bind, Frame.read?, active, found]
+
+/-- An action hit updates only that layer; the complete block store survives. -/
+theorem writeVar_action (run : Run) (active : run.frame.actionVars = some avs)
+    (found : avs[name]? = some old) :
+    (writeVar name value).run run = (.ok (), { run with frame :=
+      { run.frame with actionVars := some (avs.insert name value) } }) := by
+  have hc : name ∈ avs := Std.HashMap.mem_iff_isSome_getElem?.mpr (by simp [found])
+  simp [writeVar, run_bind, Frame.write?, active, hc, setFrame]
+  rfl
+
 theorem writeVar_block (run : Run) (hb : BlockFrame run.frame)
     (found : run.frame.read? name = some old) :
     (writeVar name value).run run =
       (.ok (), { run with frame := { run.frame with vars := run.frame.vars.insert name value } }) := by
-  have hv : run.frame.vars[name]? = some old := by
-    simpa [Frame.read?, hb.2] using found
-  have hc : name ∈ run.frame.vars := by
-    exact Std.HashMap.mem_iff_isSome_getElem?.mpr (by simp [hv])
-  simp [writeVar, run_bind, Frame.write?, hb.2, hc, setFrame]
-  rfl
+  apply writeVar_block_unshadowed run (by simp [hb.2])
+  simpa [Frame.read?, hb.2] using found
 
 end P4bloIR.ScalarStatements
 

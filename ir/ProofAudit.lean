@@ -1,5 +1,6 @@
 import P4bloIR
 import P4bloIR.ScalarStatements
+import Tests.ScalarStatements
 
 /-- info: 'P4bloIR.PlainCallReturn.copyBack_three' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -82,6 +83,22 @@ import P4bloIR.ScalarStatements
 /-- info: 'P4bloIR.ScalarStatements.writeVar_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.ScalarStatements.writeVar_block
+
+/-- info: 'P4bloIR.ScalarStatements.writeVar_block_unshadowed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarStatements.writeVar_block_unshadowed
+
+/-- info: 'P4bloIR.ScalarStatements.readVar_action' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarStatements.readVar_action
+
+/-- info: 'P4bloIR.ScalarStatements.writeVar_action' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarStatements.writeVar_action
+
+/-- info: 'ScalarStatementTests.unshadowed_witness' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms ScalarStatementTests.unshadowed_witness
 
 /-- info: 'P4bloIR.Execution.Steps.finishes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
