@@ -5,9 +5,10 @@ Where the work stands, by build-order step from
 checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
-Last updated: 2026-09-23, after the eDSL v2 review's findings were
-fixed. Every claim is green and every step of the design's build order
-is done; what remains is in "Open threads".
+Last updated: 2026-09-23, during the verification program accepted after
+the Cedar comparison. The original prototype's steps are complete. The
+stronger assurance work is in progress; its acceptance criteria and trust
+boundaries are in [verification.md](verification.md).
 
 ## Claim matrix
 
@@ -49,6 +50,16 @@ is done; what remains is in "Open threads".
 
 Things a resuming agent should know are in motion or deliberately left.
 
+- **Verification program: active.** Follow `verification.md` in order.
+  First checkpoint in progress: required Lean CI, bounded process requests,
+  strict reply parsing, and versioned JSON replay bundles with the exact
+  program and complete stateful input sequence. Full gates and independent
+  review are pending. Next:
+  compare abstract extern state, generate typed IR programs with shrinking,
+  and make statement execution available to Lean proofs. The existing
+  `partial` executor is executable but opaque to the logic; the packing
+  theorem is not a theorem about complete program execution.
+
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;
   all ten corpus programs are authored in v2 with byte-identical
@@ -71,7 +82,7 @@ Things a resuming agent should know are in motion or deliberately left.
 - **Three type checkers** compute expression types: the validator,
   `interp/widths.py`, and the printer's `_Typer`; they must agree, and
   one would do. The typed eDSL is a fourth, at a different level.
-- **The next substantial thing** the design names is a p4c backend, so
+- **The p4c backend is deferred behind verification.** The design names it so
   that p4c's whole test suite becomes the corpus. It is the community
   version's first job and the experiment that would really test claim 1;
   `docs/writeup.md` section 5 and 4ward are the route.

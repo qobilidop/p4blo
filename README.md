@@ -29,6 +29,10 @@ existing P4 source, P4Runtime, hardware, or a replacement for any tool.
 The first thing a community version would build is a p4c backend;
 [4ward](https://github.com/4ward-p4/4ward) shows the route.
 
+The current development focus is a stronger Lean specification and stronger
+evidence that Python implements it. [The verification program](docs/verification.md)
+states the milestones, acceptance criteria, and limits of each guarantee.
+
 ## Reading order
 
 1. [`docs/design.md`](docs/design.md): what p4blo is, why, and how each

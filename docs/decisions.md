@@ -289,3 +289,17 @@ one that says so.
   `drop` is dropped by these architectures for that reason and by
   BMv2 for its own, and the oracle does not judge fates through the
   port count anyway.
+
+## 2026-09-23
+
+- **Verification beyond the prototype, accepted by Bili.** The next
+  substantial work strengthens the Lean specification and its connection
+  to Python, before pursuing the p4c bridge. `docs/verification.md` gives
+  the stages and their acceptance criteria. Cedar's executable formal
+  model, property proofs, typed generators and component-level DRT are
+  the precedent; universal equivalence of Python and Lean is not claimed.
+- **Replay the whole experiment.** STF remains the corpus/oracle format,
+  but a differential failure needs a versioned JSON bundle with the exact
+  program and input sequence, because extern state survives packets and
+  STF cannot express every IR value. Seeds and single-packet excerpts are
+  useful diagnostics, not self-contained stateful reproductions.
