@@ -913,3 +913,20 @@ one that says so.
   whenever a new mutable value shape enters the verified call profile. Keep
   the demonstrated survivors as permanent regressions. Evidence and review:
   `notes/plain-call-return.md`, `notes/reviews/plain-call-return.md`.
+- **Require complete native state and exact Python types at the call prefix.**
+  Review reproduced a packet cursor changing from int3 to float3.0 while the
+  old shared-state equality passed. Recursive type-sensitive comparisons now
+  reject numeric and mutable-container substitutes. Complete native Index,
+  scope, installed-entry and shared-state comparators close the staged plan's
+  coverage gap; corruption controls test the observers themselves. Confidence:
+  high for the fixed observed representation and current constructors, not a
+  universal observer theorem. Revisit whenever state constructors change.
+  Keep the smaller JSON export distinct from the complete native checks.
+- **Advance statement codecs through the real array traversal.** The checked
+  attached-array erasure/descent probe supports a minimal total Stmt decoder
+  with the same recurrence and diagnostics. Record old native transcripts
+  before refactoring; preserve them alongside independent constructor and
+  error-order anchors. Confidence: high in helper feasibility, medium-high in
+  the nested statement roundtrip proof effort. Revisit proof organization if
+  induction becomes unwieldy, not accepted syntax or the universal claim.
+  Plan, probe and independent review are committed under `stmt-codec-plan`.

@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `5061126`, including total Expr/LValue codec proofs,
+Combined local integration at `b115c32`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -46,9 +46,14 @@ boundaries and four missing-extra controls. An actual Python initializer fault
 is caught, saved, replayed live and checked again after restoration.
 Normal return adds six spec checks, nine audited roots and 41 focused Python
 checks. Complete-state, ordered-write and recursive mutable-isolation observers
-reject the independently reproduced selective-alias faults.
-Required real-Lean DRT: **613 passed**, no skips. Full gate:
-**2105 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+reject the independently reproduced selective-alias faults. The guarded call
+prefix adds five audited roots, 192 native boundaries and 78 Python checks;
+complete native Index/scope/shared comparisons and strict frozen Python state
+reject independent observer faults. Its exporter is byte-identical to the
+reviewed candidate. A separate statement-codec plan/probe is independently
+checked but makes no production statement-codec claim yet.
+Required real-Lean DRT: **678 passed**, no skips. Full gate:
+**2183 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -60,9 +65,9 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `header-validity-expressions.md`, `initial-source-frames.md` and
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
-`plain-call-return.md`.
+`plain-call-return.md` and `guarded-call-prefix.md`.
 
-All five remote workflows pass for `7493a0e`; newer CI must be checked
+All five remote workflows pass for `fddab8e`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -169,7 +174,8 @@ Things a resuming agent should know are in motion or deliberately left.
   adversarial changes separate proof rejection, compiled wrong source intent
   and an actual Python-write mismatch saved/replayed live and restored.
   Review: `notes/reviews/typed-statements.md`; exact scope in `lean/ASSURANCE.md`.
-  Next: typed packet/metadata fields, not every remaining scalar operator.
+  The next increment was typed packet/metadata fields rather than every
+  remaining scalar operator; those results are recorded below.
   `notes/typed-fields-plan.md` requires actual Index agreement and full
   sibling/validity preservation. Primitive field bridges are integrated
   from `ddb9f0e`: exact nominal declaration/shape premises, stored invalid-
@@ -193,7 +199,7 @@ Things a resuming agent should know are in motion or deliberately left.
   observer but fails after evaluation is observed first. Three actual Python
   read/setter faults have retained live/restored replay evidence; proof and
   compiled surface faults are separately recorded in `lean/ASSURANCE.md`.
-  Next: command write factoring and actual root permissions, active in
+  Command write factoring and actual root permissions followed in
   isolated `work/field-commands`, based on committed `d8e2341`, following
   `notes/field-commands-plan.md` (committed `480eef4`).
   First specification increment `8b39c06` is integrated: writable member
@@ -316,8 +322,8 @@ Things a resuming agent should know are in motion or deliberately left.
   A wrong empty index fails the proof; two wrong-but-compiling selected bodies
   fail independent syntax identity. No body execution is inferred from entry.
   Scope/review: `notes/body-parametric-entry.md` and its matching review.
-  Next compose real local assignments and guarded forwarding to the exact
-  pending observer suffix and return.
+  The next composition connected real local assignments and guarded
+  forwarding to the exact pending observer suffix and return, as recorded below.
   Staged contract: `notes/call-body-prefix-plan.md`. Do not substitute the
   empty declaration witness, reshape the wrapper or claim copyback/global
   validity from a successful finite prefix.
@@ -326,8 +332,17 @@ Things a resuming agent should know are in motion or deliberately left.
   full source agreement, outside names and arbitrary pending work. It does
   not itself assume or establish entry to an actual body-bearing call.
   Independent review and adversarial evidence: `notes/call-initializers.md`
-  and its matching review. Composition is active in `work/guarded-call-prefix`
-  against committed `21410b6`, including explicit initializer syntax identity.
+  and its matching review. Composition (`dcbdf9c`/`101d2d7`) is independently
+  reviewed and integrated at `b115c32`, including explicit initializer and
+  selected-body syntax identity. It starts at actual call entry and proves
+  full source-policy agreement plus exact non-frame preservation, while the
+  arbitrary suffix and captured caller return remain pending. Five audit
+  roots, 192 native profiles and 78 focused Python checks pass. Review exposed
+  an int/float shared-state comparison survivor; recursive exact-type checks
+  and complete native Index/scope/shared observations now reject it, with
+  permanent corruption controls. A new actual local-write fault reuses the
+  existing guarded packet input, so artifact counts do not increase. Scope:
+  `notes/guarded-call-prefix.md`, `notes/reviews/guarded-call-prefix.md`.
   Normal return (`d019f64`/`16626b5`/`884a168`) is independently reviewed and
   integrated at `5061126`; contract:
   `notes/plain-call-return-plan.md`. It preserves the current post-callee Run
@@ -335,9 +350,12 @@ Things a resuming agent should know are in motion or deliberately left.
   observer gaps; recursive mutable-container detachment checks and four real
   branch writes now reject them, with permanent negative controls.
   All integrated gates and retained replays pass; exact scope and evidence:
-  `notes/plain-call-return.md` and its matching review. Once the guarded prefix
-  lands, follow committed `notes/guarded-call-plan.md` for a separately named
-  observer-free whole control call. It keeps the observer parameter as
+  `notes/plain-call-return.md` and its matching review. With the guarded prefix
+  landed, follow committed `notes/guarded-call-plan.md` for a separately named
+  observer-free whole control call. That work is now active in
+  `work/guarded-control-call`, based on committed `b115c32`; its core compiles
+  and initial structural review is clear, but tests and adversarial acceptance
+  remain pending. It keeps the observer parameter as
   pass-through but does not execute the seventeen observation assignments or
   claim parsing, lookup, checksum, architecture fate or full packet execution.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
@@ -483,8 +501,17 @@ Things a resuming agent should know are in motion or deliberately left.
   ten raw faults replay restored. Review is clear, isolated full/required
   gates pass; combined integration is checked separately above. Scope:
   `notes/lvalue-codec.md`, `notes/reviews/lvalue-codec.md`.
-  Statement arrays/mutual recursion, text parsing, semantic-version policy
-  and general runtime resource limits remain separate obligations.
+  Statement arrays are now the active codec slice in `work/stmt-codec`,
+  based on committed `1d1168c`. There is no mutual decoder recursion: only
+  conditional branch lists recurse into Stmt. An independently checked
+  unregistered probe proves attached-array traversal erasure, field bounds,
+  repeated-field erasure and generic array roundtrip. Plan and review:
+  `notes/stmt-codec-plan.md`, `notes/reviews/stmt-codec-plan.md`; probe:
+  `ir/StmtCodecProbe.lean`. The production decoder remains unchanged on main.
+  Capture actual old transcripts before refactoring, then prove totality,
+  original-body unfolding and universal representable statement roundtrip.
+  Text parsing, semantic-version policy, whole-program codecs and general
+  runtime resource limits remain separate obligations.
 
 - **XDP and later examples: compile-only profile integrated.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter

@@ -54,7 +54,9 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   preserve its previous behavior. Independent constructor observations catch
   paired wrong-wire mappings, including a shared operator-name fault that
   originally survived the tests. Paired LValue operand and Arg tag mappings
-  are likewise caught independently. Statement/program codecs, text parsing,
+  are likewise caught independently. The statement-array helper/descent plan
+  now has an independently checked probe; production Stmt totality/roundtrip
+  work is active under `notes/stmt-codec-plan.md`. Program codecs, text parsing,
   resource limits and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
@@ -82,13 +84,17 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   against the tracked Python guarded wrapper. Real local assignments now have
   exact finite-prefix/source-state and separate permission proofs, with
   independent literal answers and retained actual Python fault replays.
-  Next: compose entry, locals and guarded forwarding up to the unexecuted observer suffix, following
-  `notes/call-body-prefix-plan.md`. Actual fixed-profile normal return now has
+  Actual entry, locals and guarded forwarding are now composed up to the
+  exact unexecuted observer suffix and captured caller return, following
+  `notes/call-body-prefix-plan.md`. Native complete-state and strict Python
+  prefix observers retain the independently discovered comparison faults.
+  Actual fixed-profile normal return now has
   an exact operational proof: restore the captured caller, copy three writable
   roots and preserve the current callee-after non-frame state. Independent
   complete-state, ordered-write and branch-complete isolation tests accompany
-  it. Composing those boundaries into a whole call and proving complete
-  applications remain separate obligations.
+  it. Composing those boundaries into a separately named observer-free whole
+  control call is active under `notes/guarded-call-plan.md`; the existing
+  observer statements and complete applications remain separate obligations.
 
 ## Application milestones
 
