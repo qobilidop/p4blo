@@ -72,20 +72,20 @@ theorem Cmd.lower_typed (cmd : Cmd modes) (hw : RootWellFormed roots)
 open P4bloIR.ScalarStatements (BlockFrame ChangesOnlyVars PreservesOutside)
 open P4bloIR.Execution (Steps)
 
-/-- Concrete aggregate execution, not a callback assumption: reviewed path
-read/write laws discharge every generic leaf operation. An arbitrary
-continuation is retained, and the complete source store is related exactly. -/
-theorem Cmd.steps (cmd : Cmd modes) (store : Store roots) (initial : P4bloIR.Run)
+/-- Concrete aggregate execution of a prefix in an actual flat body. Reviewed
+path laws discharge every leaf; arbitrary suffix/continuation remain pending. -/
+theorem Cmd.steps_prefix (cmd : Cmd modes) (store : Store roots) (initial : P4bloIR.Run)
+    (suffix : List P4bloIR.Stmt)
     (continuation : List P4bloIR.Execution.Work) (hw : RootWellFormed roots)
     (hi : roots.IndexAgrees initial.index) (hd : modes.Agrees initial.frame.scope)
     (hf : FrameMatches store initial.frame) (hb : BlockFrame initial.frame) :
     P4bloIR.FieldTyping.BodyTyped initial.index initial.frame.scope cmd.lower ∧
-    ∃ final, Steps { work := .statements cmd.lower :: continuation, run := initial }
-        { work := continuation, run := final } ∧
+    ∃ final, Steps { work := .statements (cmd.lower ++ suffix) :: continuation, run := initial }
+        { work := .statements suffix :: continuation, run := final } ∧
       FrameMatches (cmd.denote store) final.frame ∧ ChangesOnlyVars initial final ∧
       PreservesOutside cmd.targets initial final := by
   refine ⟨cmd.lower_typed hw hi hd, ?_⟩
-  have trace := cmd.steps_with
+  have trace := cmd.steps_prefix_with
     (fun store {_} ref => ref.get store) (fun store {_} place value => place.ref.set store value)
     (fun ref => ref.expr) (fun place => place.ref.lvalue) (fun place => place.ref.rootName)
     (fun store run => FrameMatches store run.frame ∧ roots.IndexAgrees run.index)
@@ -98,9 +98,25 @@ theorem Cmd.steps (cmd : Cmd modes) (store : Store roots) (initial : P4bloIR.Run
         obtain ⟨_, rfl⟩ := changes
         exact hm.2
       exact ⟨final, write, ⟨hmatches, hiFinal⟩, changes, outside⟩)
-    store initial continuation ⟨hf, hi⟩ hb
+    store initial suffix continuation ⟨hf, hi⟩ hb
   obtain ⟨final, trace, hmatches, changes, outside⟩ := trace
   exact ⟨final, trace, hmatches.1, changes, outside⟩
+
+/-- The whole authored body is the empty-suffix instance, retaining the
+original public theorem and its concrete typing/frame premises. -/
+theorem Cmd.steps (cmd : Cmd modes) (store : Store roots) (initial : P4bloIR.Run)
+    (continuation : List P4bloIR.Execution.Work) (hw : RootWellFormed roots)
+    (hi : roots.IndexAgrees initial.index) (hd : modes.Agrees initial.frame.scope)
+    (hf : FrameMatches store initial.frame) (hb : BlockFrame initial.frame) :
+    P4bloIR.FieldTyping.BodyTyped initial.index initial.frame.scope cmd.lower ∧
+    ∃ final, Steps { work := .statements cmd.lower :: continuation, run := initial }
+        { work := continuation, run := final } ∧
+      FrameMatches (cmd.denote store) final.frame ∧ ChangesOnlyVars initial final ∧
+      PreservesOutside cmd.targets initial final := by
+  obtain ⟨typed, final, trace, hmatches, changes, outside⟩ :=
+    cmd.steps_prefix store initial [] continuation hw hi hd hf hb
+  refine ⟨typed, final, ?_, hmatches, changes, outside⟩
+  simpa using trace.trans (.next rfl .refl)
 
 /-- Exact execution of an already-initialized, action-free body under real
 nominal declarations and root permissions. No initializer, parser, table,

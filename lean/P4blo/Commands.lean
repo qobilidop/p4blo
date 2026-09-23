@@ -112,8 +112,92 @@ theorem lowerWith_block (read : {t : Ty} → Reads t → P4bloIR.Expr)
 open P4bloIR.ScalarStatements (BlockFrame ChangesOnlyVars PreservesOutside)
 open P4bloIR.Execution (Steps)
 
-/-- Exact finite execution through the existing machine. Assumptions concern
-only individual reads/writes at related states, never whole commands. -/
+/-- Exact finite execution of the authored prefix in an actual flat statement
+list. The suffix and continuation remain pending, even if they would fault.
+Assumptions concern individual reads/writes, never whole commands. -/
+theorem steps_prefix_with (cmd : CmdWith Reads Places)
+    (read : Source → {t : Ty} → Reads t → Meaning t)
+    (write : Source → {t : Ty} → Places t → Meaning t → Source)
+    (lowerRead : {t : Ty} → Reads t → P4bloIR.Expr)
+    (lowerPlace : {t : Ty} → Places t → P4bloIR.LValue)
+    (root : {t : Ty} → Places t → String)
+    (Matches : Source → P4bloIR.Run → Prop)
+    (read_ok : ∀ store run, Matches store run → ∀ {t} (ref : Reads t),
+      (P4bloIR.evaluate (lowerRead ref)).run run = (.ok (toValue (read store ref)), run))
+    (write_ok : ∀ {t} (place : Places t) store (value : Meaning t) run,
+      Matches store run → BlockFrame run.frame → ∃ final,
+        (P4bloIR.writeLValue (lowerPlace place) (toValue value)).run run = (.ok (), final) ∧
+        Matches (write store place value) final ∧ ChangesOnlyVars run final ∧
+        PreservesOutside [root place] run final)
+    (store : Source) (initial : P4bloIR.Run) (suffix : List P4bloIR.Stmt)
+    (continuation : List P4bloIR.Execution.Work)
+    (hm : Matches store initial) (hb : BlockFrame initial.frame) :
+    ∃ final, Steps { work := .statements (cmd.lowerWith lowerRead lowerPlace ++ suffix) :: continuation, run := initial }
+        { work := .statements suffix :: continuation, run := final } ∧
+      Matches (cmd.denoteWith read write store) final ∧ ChangesOnlyVars initial final ∧
+      PreservesOutside (cmd.targetsWith root) initial final := by
+  induction cmd generalizing store initial suffix continuation with
+  | done =>
+    refine ⟨initial, .refl, hm, .refl _, ?_⟩
+    intro name _
+    rfl
+  | write place value next ih =>
+    let result := Scalar.denoteWith (read store) value
+    obtain ⟨middle, hwrite, hmiddle, hchange, hwriteOutside⟩ := write_ok place store result initial hm hb
+    obtain ⟨final, tail, hfinal, hfields, houtside⟩ :=
+      ih (write store place result) middle suffix continuation hmiddle (hchange.blockFrame hb)
+    have dispatch : (P4bloIR.Execution.dispatch
+        (.statement (.assign (lowerPlace place) (Scalar.lowerWith lowerRead value)))).run initial =
+        (.ok [], middle) := by
+      simp [P4bloIR.Execution.dispatch, P4bloIR.ScalarTyping.run_bind,
+        P4bloIR.ScalarTyping.run_map,
+        evaluate_lower_with value (read store) lowerRead initial (read_ok store initial hm),
+        hwrite, result]
+    refine ⟨final, .next rfl (.next ?_ tail), hfinal, hchange.trans hfields, ?_⟩
+    · simp [P4bloIR.Execution.step, dispatch]
+    · intro name hname
+      have hn : name ≠ root place ∧ name ∉ next.targetsWith root := by
+        simpa [targetsWith] using hname
+      rw [houtside name hn.2]
+      exact hwriteOutside name (by simpa using hn.1)
+  | branch condition yes no next hy hn ht =>
+    let chosen := if Scalar.denoteWith (read store) condition then yes else no
+    have hc : ∃ middle,
+        Steps { work := .statements (chosen.lowerWith lowerRead lowerPlace) ::
+            .statements (next.lowerWith lowerRead lowerPlace ++ suffix) :: continuation, run := initial }
+          { work := .statements [] :: .statements (next.lowerWith lowerRead lowerPlace ++ suffix) :: continuation, run := middle } ∧
+        Matches (chosen.denoteWith read write store) middle ∧ ChangesOnlyVars initial middle ∧
+        PreservesOutside (chosen.targetsWith root) initial middle := by
+      cases hcondition : Scalar.denoteWith (read store) condition
+      · simpa [chosen, hcondition] using hn store initial []
+          (.statements (next.lowerWith lowerRead lowerPlace ++ suffix) :: continuation) hm hb
+      · simpa [chosen, hcondition] using hy store initial []
+          (.statements (next.lowerWith lowerRead lowerPlace ++ suffix) :: continuation) hm hb
+    obtain ⟨middle, branchTrace, hmiddle, hchange, hbranchOutside⟩ := hc
+    obtain ⟨final, tail, hfinal, hfields, houtside⟩ :=
+      ht (chosen.denoteWith read write store) middle suffix continuation hmiddle (hchange.blockFrame hb)
+    have dispatch : (P4bloIR.Execution.dispatch (.statement (.conditional
+        (Scalar.lowerWith lowerRead condition) (yes.lowerWith lowerRead lowerPlace)
+        (no.lowerWith lowerRead lowerPlace)))).run initial =
+        (.ok [.statements (chosen.lowerWith lowerRead lowerPlace)], initial) := by
+      have hbool (b : Bool) : P4bloIR.expectBool (.bool b) = pure b := rfl
+      cases hcondition : Scalar.denoteWith (read store) condition <;>
+        simp [P4bloIR.Execution.dispatch, P4bloIR.ScalarTyping.run_bind,
+          evaluate_lower_with condition (read store) lowerRead initial (read_ok store initial hm),
+          toValue, hbool, chosen, hcondition]
+    refine ⟨final, .next rfl (.next ?_ (branchTrace.trans (.next rfl tail))), ?_, hchange.trans hfields, ?_⟩
+    · simp [P4bloIR.Execution.step, dispatch]
+    · cases hcondition : Scalar.denoteWith (read store) condition <;>
+        simpa [denoteWith, chosen, hcondition] using hfinal
+    · intro name hname
+      have hnames : name ∉ yes.targetsWith root ∧ name ∉ no.targetsWith root ∧
+          name ∉ next.targetsWith root := by simpa [targetsWith] using hname
+      rw [houtside name hnames.2.2]
+      apply hbranchOutside
+      cases hcondition : Scalar.denoteWith (read store) condition <;> simp_all [chosen]
+
+/-- Whole authored body execution is the empty-suffix instance, followed by
+the actual machine's administrative empty-statements transition. -/
 theorem steps_with (cmd : CmdWith Reads Places)
     (read : Source → {t : Ty} → Reads t → Meaning t)
     (write : Source → {t : Ty} → Places t → Meaning t → Source)
@@ -134,65 +218,10 @@ theorem steps_with (cmd : CmdWith Reads Places)
         { work := continuation, run := final } ∧
       Matches (cmd.denoteWith read write store) final ∧ ChangesOnlyVars initial final ∧
       PreservesOutside (cmd.targetsWith root) initial final := by
-  induction cmd generalizing store initial continuation with
-  | done =>
-    refine ⟨initial, .next rfl .refl, hm, .refl _, ?_⟩
-    intro name _
-    rfl
-  | write place value next ih =>
-    let result := Scalar.denoteWith (read store) value
-    obtain ⟨middle, hwrite, hmiddle, hchange, hwriteOutside⟩ := write_ok place store result initial hm hb
-    obtain ⟨final, tail, hfinal, hfields, houtside⟩ :=
-      ih (write store place result) middle continuation hmiddle (hchange.blockFrame hb)
-    have dispatch : (P4bloIR.Execution.dispatch
-        (.statement (.assign (lowerPlace place) (Scalar.lowerWith lowerRead value)))).run initial =
-        (.ok [], middle) := by
-      simp [P4bloIR.Execution.dispatch, P4bloIR.ScalarTyping.run_bind,
-        P4bloIR.ScalarTyping.run_map,
-        evaluate_lower_with value (read store) lowerRead initial (read_ok store initial hm),
-        hwrite, result]
-    refine ⟨final, .next rfl (.next ?_ tail), hfinal, hchange.trans hfields, ?_⟩
-    · simp [P4bloIR.Execution.step, dispatch]
-    · intro name hname
-      have hn : name ≠ root place ∧ name ∉ next.targetsWith root := by
-        simpa [targetsWith] using hname
-      rw [houtside name hn.2]
-      exact hwriteOutside name (by simpa using hn.1)
-  | branch condition yes no next hy hn ht =>
-    let chosen := if Scalar.denoteWith (read store) condition then yes else no
-    have hc : ∃ middle,
-        Steps { work := .statements (chosen.lowerWith lowerRead lowerPlace) ::
-            .statements (next.lowerWith lowerRead lowerPlace) :: continuation, run := initial }
-          { work := .statements (next.lowerWith lowerRead lowerPlace) :: continuation, run := middle } ∧
-        Matches (chosen.denoteWith read write store) middle ∧ ChangesOnlyVars initial middle ∧
-        PreservesOutside (chosen.targetsWith root) initial middle := by
-      cases hcondition : Scalar.denoteWith (read store) condition
-      · simpa [chosen, hcondition] using hn store initial
-          (.statements (next.lowerWith lowerRead lowerPlace) :: continuation) hm hb
-      · simpa [chosen, hcondition] using hy store initial
-          (.statements (next.lowerWith lowerRead lowerPlace) :: continuation) hm hb
-    obtain ⟨middle, branchTrace, hmiddle, hchange, hbranchOutside⟩ := hc
-    obtain ⟨final, tail, hfinal, hfields, houtside⟩ :=
-      ht (chosen.denoteWith read write store) middle continuation hmiddle (hchange.blockFrame hb)
-    have dispatch : (P4bloIR.Execution.dispatch (.statement (.conditional
-        (Scalar.lowerWith lowerRead condition) (yes.lowerWith lowerRead lowerPlace)
-        (no.lowerWith lowerRead lowerPlace)))).run initial =
-        (.ok [.statements (chosen.lowerWith lowerRead lowerPlace)], initial) := by
-      have hbool (b : Bool) : P4bloIR.expectBool (.bool b) = pure b := rfl
-      cases hcondition : Scalar.denoteWith (read store) condition <;>
-        simp [P4bloIR.Execution.dispatch, P4bloIR.ScalarTyping.run_bind,
-          evaluate_lower_with condition (read store) lowerRead initial (read_ok store initial hm),
-          toValue, hbool, chosen, hcondition]
-    refine ⟨final, .next rfl (.next ?_ (branchTrace.trans tail)), ?_, hchange.trans hfields, ?_⟩
-    · simp [P4bloIR.Execution.step, dispatch]
-    · cases hcondition : Scalar.denoteWith (read store) condition <;>
-        simpa [denoteWith, chosen, hcondition] using hfinal
-    · intro name hname
-      have hnames : name ∉ yes.targetsWith root ∧ name ∉ no.targetsWith root ∧
-          name ∉ next.targetsWith root := by simpa [targetsWith] using hname
-      rw [houtside name hnames.2.2]
-      apply hbranchOutside
-      cases hcondition : Scalar.denoteWith (read store) condition <;> simp_all [chosen]
+  obtain ⟨final, trace, hmatches, changes, outside⟩ := cmd.steps_prefix_with read write
+    lowerRead lowerPlace root Matches read_ok write_ok store initial [] continuation hm hb
+  refine ⟨final, ?_, hmatches, changes, outside⟩
+  simpa using trace.trans (.next rfl .refl)
 
 end CmdWith
 end P4blo.Scalar
