@@ -231,11 +231,42 @@ followed by the payload.
 
 ### Python eDSL
 
-A builder that constructs IR: plain constructors for declarations,
-operator overloading for expressions, explicit constructs for control
-flow in the manner of JAX's `lax.cond`. No decorator that reads Python
-source, because the IR is the product and the eDSL should teach it by
-use, not hide it.
+`p4blo.edsl` is typed by construction: every reference is a Python
+object that pyright resolves, and widths are types. Headers and
+structs are classes whose annotated fields are real attributes
+(`ttl: bit8`), so a misspelled field is an unknown attribute; parsers,
+controls and deparsers are classes whose states and actions are
+methods, so a `select` target is `self.parse_ipv4` and a table's
+action list holds the methods themselves; a program names its roles as
+keyword arguments (`Program(..., parser=MyParser)`), never as strings.
+Widths are `Literal` type parameters, `Bits[L[8]]`, spelled through
+the aliases `bit1`..`bit64`; `Var[W]` is a place of that width and
+`Bits[W]` any value, so assigning to an expression is a static error.
+`concat`, slices and `lookahead` have widths the type system cannot
+compute and return `Bits[int]`, a hole no typed place accepts until
+`x.as_(bit16)` asserts the width at run time and narrows it for the
+checker. Operator overloading builds expressions and control flow
+stays explicit (`with self.if_(...)`, `mux`), in the manner of JAX's
+`lax.cond`; no decorator reads Python source, because the IR is the
+product and the eDSL should teach it by use, not hide it. A state or
+action body is called once with a recording `self`, and an expression
+has no truth value: `if x == y:` raises and names the cause.
+
+The typed surface is a front over `p4blo.edsl.core`, the builder that
+produces the goldens; its plain constructors and string names are the
+documented dynamic API for generated programs. The core's run-time
+checks stay authoritative, and pyright is an earlier line, not a
+replacement. `tests/test_pyright.py` tests the split:
+
+| Checked by pyright | Checked at run time only |
+|---|---|
+| names of fields, states, actions, tables and blocks | that an `int` literal fits its width |
+| equal widths in arithmetic, comparison and assignment | widths of extern `in` arguments (`Val[T]`) |
+| assignment to a non-place (a `Bits` where a `Var` is wanted) | arguments of a sub-block call against its parameters |
+| cast target widths | select key sets against the key type |
+| a `concat`, slice or `lookahead` used without `as_` | a literal used as a place |
+| action argument names, count and widths, in calls, defaults and entries | whether a `Bool`, `Enum` or `Error` value is a place |
+| extern method names and argument count; an `Out`/`InOut` argument being a place of the declared width | every rule the validator owns |
 
 ### Printer
 
@@ -393,7 +424,7 @@ p4blo/
     ir.py                           load, save, text format helpers
     validator.py
     interp/                         the reference interpreter
-    edsl/                           the builder
+    edsl/                           the typed eDSL; core/ is the builder beneath it
     printer.py                      IR to P4-16 text
     externs/                        registry and the corpus externs
     arch/                           filter.py, switch.py
@@ -505,6 +536,12 @@ testing table logic in pytest, until a p4c bridge exists.
   section.
 - **A decorator-based eDSL that reads Python source.** Rejected
   because it hides the IR, and the IR is the product.
+- **The string-referenced eDSL (v1).** Table action lists, state
+  targets and exports named things by string, and field access went
+  through `__getattr__`, so a typo surfaced at build time at best.
+  Replaced on 2026-09-22 by the typed surface above; the builder stays
+  as `p4blo.edsl.core`. The argument is in
+  `docs/notes/edsl-v2-design.md`.
 - **A browser playground as a deliverable.** Removed from the current
   plan to keep the project to its four claims.
 - **Naming.** See [Appendix: naming](#appendix-naming).
