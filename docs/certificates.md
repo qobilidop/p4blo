@@ -42,10 +42,37 @@ The claim has `completion` (a tagged object), `register` (width/cells pair),
 to represent absence, but absence does not match the normal fixture.
 Fuel 10 suffices for this fixed program; 9 exhausts the checker.
 
+## Create a claim from production Python
+
+Build Lean first, then run from the repository root inside the flake:
+
+```
+uv run python -m p4blo.drt.certificate create --register 41 --counter 9 -o claim.json
+uv run python -m p4blo.drt.certificate verify claim.json
+```
+
+Creation alone does **not** mean acceptance. The second command must report
+`{"verdict": "accepted"}` and exit 0. `--fuel 9` produces a well-formed claim
+whose check exhausts. Register 255 exercises wraparound. Integers may be
+given in decimal or `0x` hex. Both modes accept `--lean` and `--timeout`;
+`-` means stdout for creation or stdin for verification.
+
+The Python adapter decodes the exported program unchanged, builds its own
+index and extern bindings, initializes its production environment, seeds
+the two cells, and invokes `p4blo.interp.stmt.execute`. It reads the actual
+resulting state and completion status, rather than computing a second
+expected-answer algorithm. The checker independently reruns Lean from the
+bound initial machine. Malformed or contradictory checker replies and
+timeouts fail closed; POSIX subprocesses use an owned process group.
+
+`tests/test_drt_certificate.py` exercises wraparound and large counters,
+tampered program/initial/result fields, missing fields, insufficient budgets,
+CLI verdicts, malformed peers and descendant-held pipes. Suppressing Python's
+counter update produces a rejected claim. The exported-zero regression
+also guards a real encoder defect discovered while building this adapter.
+
 ## Remaining obligations
 
-- Bind production Python execution and its independent observations to the
-  artifact, then test corruptions of every binding and result field.
 - Generalize initial machines and program coverage only with explicit
   validation and observation contracts.
 - Do not present finite accepted runs as universal implementation

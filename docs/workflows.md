@@ -47,6 +47,12 @@ transitive axiom sets of advertised theorems; `sorry`, custom axioms and
 native-evaluation escapes cannot silently replace those proofs. Update an
 audit expectation only after reviewing the changed trust boundary.
 
+The fixed execution-claim experiment is in [certificates.md](certificates.md).
+`python -m p4blo.drt.certificate create` executes production Python and
+writes a claim; `verify` asks the compiled Lean checker to accept or reject
+it. This is distinct from ordinary differential fuzzing and is not a
+standalone proof term or universal equivalence claim.
+
 `tests/test_drt_programs.py` changes expressions inside validated programs,
 not just packets for a fixed corpus. It includes systematic operator/width
 boundaries and 200 deterministic, shrinking Hypothesis examples. Failures

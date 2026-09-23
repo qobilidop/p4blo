@@ -86,12 +86,16 @@ Things a resuming agent should know are in motion or deliberately left.
   including 100 shrinking campaigns and 247 deterministic comparisons.
   A reset-before-read fault shrinks to a two-request persistence witness
   and its complete replay works (`notes/reviews/stateful-generation.md`).
-  Next: integrate/review the Python certificate producer (isolated
-  `verification/mutation-campaign` branch), still in progress, and finish
-  the fourth semantic mutation round in `verification/stateful-mutations`.
-  An out-of-bounds counter mutation survived the previous 27-test gate;
-  test both implementations against the new stateful suite before accepting
-  this checkpoint. Root owns CI and integration documentation.
+  The Python certificate producer is integrated with 55 focused tests.
+  Independent adversarial review exposed stale-binding and malformed-cell
+  false acceptance, successful-peer descendant leakage and duplicate keys;
+  fixes and regressions pass locally, with independent follow-up pending
+  (`notes/reviews/python-certificate.md`). See `certificates.md` for the CLI.
+  Fourth semantic round: Python and Lean counter-OOB mutations each survive
+  the previous 27-test gate and fail the new stateful known-answer sequence
+  on state alone. Both replays reproduce; restored code/replay and 28 new
+  stateful tests pass. Preserve the exact patches in the mutation report
+  before final checkpoint. Root owns CI and integration documentation.
   Still open: whole-program validity/soundness, validated-program termination,
   variables/aggregates and generation of tables, nested calls, parser faults
   and further extern families. Neither finite

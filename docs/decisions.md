@@ -387,3 +387,17 @@ one that says so.
   lists together without filtering invalid programs. Deterministic cases
   force boundary and persistence behavior; generated sequences explore
   combinations. Include both program and inputs in replay artifact names.
+- **Produce claims by executing production Python unchanged.** The fixed
+  certificate adapter loads Lean's exported syntax, independently binds
+  Python's environment/externs and runs `stmt.execute`. It serializes actual
+  completion and observed state, not a separately calculated answer.
+  Creation and verification are separate commands; only Lean acceptance
+  accepts a claim. Strict verdict/exit-code checks and bounded subprocess
+  lifetimes extend the harness's fail-closed rule to this experiment.
+- **Review the observer adversarially, not just the evaluator.** The first
+  certificate adapter passed its tests but certified stale extern objects
+  after binding replacement and erased inconsistent cell widths. Resolve
+  bindings from the final environment and reject malformed representations
+  before projection. Retain these mutants as tests. Always clean up owned
+  subprocess groups, including after a successful leader exits, and reject
+  duplicate JSON response keys rather than silently choosing one verdict.
