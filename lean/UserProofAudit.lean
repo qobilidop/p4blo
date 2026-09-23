@@ -8,6 +8,7 @@ import P4blo.NamedFields
 import P4blo.ForwardPolicy
 import P4blo.SourceZero
 import P4blo.InitialFrames
+import P4blo.InitialFrameTests
 
 /-- info: 'P4blo.Fields.Shape.zeroWith_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -304,3 +305,19 @@ not guarantee that a theorem expresses its intended property. -/
 /-- info: 'P4blo.Fields.Modes.initialize' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.Fields.Modes.initialize
+
+/-- info: 'P4blo.InitialFrameTests.actualIndex_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.InitialFrameTests.actualIndex_built
+
+/-- info: 'P4blo.InitialFrameTests.forward_initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.InitialFrameTests.forward_initialized
+
+/-- info: 'P4blo.InitialFrameTests.forward_expected' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.InitialFrameTests.forward_expected
+
+/-- info: 'P4blo.InitialFrameTests.extras_initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.InitialFrameTests.extras_initialized
