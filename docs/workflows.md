@@ -45,6 +45,9 @@ boundaries and 200 deterministic, shrinking Hypothesis examples. Failures
 write concrete program/input bundles under `.artifacts/drt/` (override with
 `P4BLO_DRT_FAILURE_DIR`), replayable with the same command above. Selected
 semantic mutation campaigns and exact patches are kept in `notes/mutations/`.
+The Lean workflow uploads failure bundles for 14 days, including the hidden
+`.artifacts` directory. Download them before that retention period expires
+and promote confirmed minimal regressions into tracked tests or corpus data.
 
 ## Where every external input is pinned
 

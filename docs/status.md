@@ -51,17 +51,21 @@ boundaries are in [verification.md](verification.md).
 Things a resuming agent should know are in motion or deliberately left.
 
 - **Verification program: active.** Follow `verification.md` in order.
-  Required Lean CI, strict reply parsing, and versioned complete-sequence
-  replay bundles landed. Baseline full gate: 859 passed, 15 SpecTec skips,
-  1 expected BMv2 divergence; Lean build/tests and required DRT passed.
-  Independent harness review found descendant-pipe timeout and missing
-  protocol-failure replay gaps; fixes are next, before pushing.
-  Abstract extern-state comparison is implemented: 77 focused tests pass,
-  including a counter-only mutant invisible in packet outputs. State review
-  and full integrated gates are pending. A closed scalar-expression
-  soundness proof is underway in an isolated worktree. Next: fix the review
-  findings, run semantic mutation campaigns on both sides, generate typed
-  IR programs with shrinking, and expose statement execution to proofs. The existing
+  Required Lean CI, complete-sequence replay bundles and abstract extern
+  state comparison landed. Independent reviews found descendant-pipe
+  timeout, lost protocol-failure replay and wide-state decimal-limit gaps;
+  all are fixed with regressions. Reviews live in `notes/reviews/`.
+  The closed scalar checker and `ScalarTyping.check_sound` landed and were
+  independently reviewed: accepted expressions evaluate with the inferred
+  type and preserve any Run. This is not Python or whole-program soundness.
+  Typed generated-program DRT now covers scalar operators systematically
+  plus 200 shrinking examples. Latest full gate: 893 passed, 15 SpecTec
+  skips, 1 expected BMv2 divergence; Lean build and 252 Lean checks pass.
+  First semantic mutation campaign: four killed, two scalar survivors
+  (`notes/mutations/2026-09-23.md`). The stronger generator is being tested
+  against those survivors and independently reviewed. Next: finish that
+  iteration, retain CI failure bundles, and integrate the proof-friendly
+  statement machine underway in its own worktree. The existing
   `partial` executor is executable but opaque to the logic; the packing
   theorem is not a theorem about complete program execution.
 
