@@ -3,8 +3,9 @@
     uv run python oracle/bmv2/run.py corpus/forwarder/forwarder.txtpb corpus/forwarder/*.stf
 
 The program is printed with `p4blo.printer.print_program` under the v1model
-shim and compiled once with `p4c-bm2-ss prog.p4 -o prog.json` inside the
-`p4blo-bmv2` Docker image (oracle/bmv2/Dockerfile). Each vector is then
+shim, rewritten for BMv2's parser (see `use_last`) and compiled once with
+`p4c-bm2-ss prog.p4 -o prog.json` inside the `p4blo-bmv2` Docker image
+(oracle/bmv2/Dockerfile). Each vector is then
 translated (see `translate`) into runs of simple_switch: `add` and
 `setdefault` lines become `simple_switch_CLI` commands, `packet` lines
 become pcap records, and the image's driver (oracle/bmv2/driver.py) plays
