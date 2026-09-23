@@ -2,6 +2,7 @@ import Tests.Check
 import Tests.Interp
 import Tests.Forwarder
 import Tests.ScalarTyping
+import Tests.ScalarStatements
 import Tests.Execution
 import Tests.ExecutionCertificate
 import Tests.CertificateWire
@@ -194,6 +195,7 @@ def main (args : List String) : IO UInt32 := do
     negativeTests
     interpTests
     ScalarTypingTests.tests
+    ScalarStatementTests.tests
     ExecutionTests.tests
     ExecutionCertificateTests.tests
     CRCTests.tests
