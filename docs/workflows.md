@@ -67,22 +67,31 @@ source (`uv run python corpus/<name>/<name>.py > corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
 Record the decision in `docs/decisions.md`.
 
-**A corpus program.** Create `corpus/<name>/` with `<name>.py` (the eDSL
-source; `corpus/forwarder/forwarder.py` is the model), `<name>.txtpb`
-(its output), `README.md` (source, what was elaborated away, what is
-deferred, in the style of the others), and `*.stf` vectors in the
-dialect `python/p4blo/stf.py` documents. `tests/test_corpus.py` picks
-the directory up by itself: it validates, rebuilds the golden from the
-source, replays every vector under the switch, and checks the filter's
-fate decisions. Then run the oracle and the Lean-versus-Python gates,
-and add a row to `docs/status.md`. Programs from p4c's test suite are
+**A corpus program.** Create `corpus/<name>/` with `<name>.py` (the
+source, in the typed eDSL `p4blo.edsl`; `corpus/forwarder/forwarder.py`
+is the model), `<name>.txtpb` (its output), `README.md` (source, what
+was elaborated away, what is deferred, in the style of the others), and
+`*.stf` vectors in the dialect `python/p4blo/stf.py` documents.
+Type-check the source with `uv run pyright corpus/<name>/<name>.py`: a
+misspelled field, state, action or table, an unequal width, or a
+`concat` used without `as_` is an error there before the build runs.
+`tests/test_pyright.py` guards those static rules, with a file under
+`tests/pyright/must_fail/` per mistake and its expected diagnostic.
+`tests/test_corpus.py` picks the directory up by itself: it validates,
+rebuilds the golden from the source, replays every vector under the
+switch, and checks the filter's fate decisions. Then run the oracle and
+the Lean-versus-Python gates, and add a row to `docs/status.md`. Programs from p4c's test suite are
 listed with their fitness in `docs/notes/corpus-candidates.md`; the
 sources are in p4c under `testdata/p4_16_samples/`.
 
 **An extern.** Add its implementation under `python/p4blo/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
 `lean/P4blo/Externs.lean`, the printer's v1model form in
-`python/p4blo/printer.py`, and an eDSL helper in
+`python/p4blo/printer.py`, and a typed family class in
+`python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
+are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
+`Counter` and `Checksum16`, from which the IR `ExternType` is derived.
+The dynamic form for generated programs is a helper in
 `python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
 
