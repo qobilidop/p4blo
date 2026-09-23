@@ -1,8 +1,17 @@
 import P4blo
 import P4blo.Observe
+import P4blo.CertificateWire
 
 /-!
 `p4blo-lean`: the pipe endpoint for differential testing.
+
+    p4blo-lean certificate-example-program
+        Export the fixed low-level register/counter example as protobuf JSON.
+
+    p4blo-lean check-example-certificate <artifact.json | ->
+        Check a bounded execution claim for that exact example. Exit 0 means
+        accepted, 1 means mismatch or exhaustion, and 2 means malformed input.
+        This is a compiled checker, not an exported kernel proof term.
 
     p4blo-lean <program.json | ->
         Decode the program, build the name index and print a one-line
@@ -118,6 +127,18 @@ def runMode (args : List String) : IO UInt32 := do
 
 def main (args : List String) : IO UInt32 := do
   match args with
+  | ["certificate-example-program"] =>
+    IO.println (Lean.toJson ExecutionCertificate.Example.program).compress
+    return 0
+  | ["check-example-certificate", path] =>
+    let text ← if path == "-" then (← IO.getStdin).readToEnd else IO.FS.readFile path
+    match Lean.Json.parse text >>= CertificateWire.verify with
+    | .ok verdict =>
+      IO.println (Lean.Json.mkObj [("verdict", .str verdict)]).compress
+      return if verdict == "accepted" then 0 else 1
+    | .error message =>
+      IO.println (Lean.Json.mkObj [("error", .str message)]).compress
+      return 2
   | "run" :: rest => runMode rest
   | [path] =>
     match ← loadProgram path with
@@ -128,5 +149,5 @@ def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"error: {e}"
       return 1
   | _ =>
-    IO.eprintln "usage: p4blo-lean <program.json | -> | p4blo-lean run [--ports N] <program.json>"
+    IO.eprintln "usage: p4blo-lean <program.json | -> | run [--ports N] <program.json> | certificate-example-program | check-example-certificate <artifact.json | ->"
     return 2

@@ -357,3 +357,12 @@ one that says so.
   verifier, a whole-switch certificate or universal Python verification.
   Concrete acceptance relies on the compiled checker and serialization;
   the artifact itself is not a kernel-checkable proof term.
+- **Bind the certificate experiment at the decoded AST boundary.** The
+  Lean executable exports its fixed example's protobuf JSON; the claim
+  envelope carries that complete program and rejects a different decoded
+  AST, initial values or observation. Sharing syntax is intentional;
+  Python must run its own production interpreter, not reuse Lean results.
+  The standalone control is not a valid whole-switch program. Use explicit
+  accepted/mismatch/exhausted/invalid outcomes and canonical hexadecimal
+  state values. `docs/certificates.md` records the wire contract and trust
+  boundary before adding the Python producer.
