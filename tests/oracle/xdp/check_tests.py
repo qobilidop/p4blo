@@ -49,8 +49,13 @@ class ObjectChecks(unittest.TestCase):
             self.assertIn(diagnostic, raised.exception.stderr)
 
     def test_statistics_alias(self) -> None:
+        data = OBJECT.read_bytes()
+        btf = sections(data)[".BTF"].data
+        # DWARF also names this member. Alter only BTF's unique string so
+        # the profile check, not a duplicate anchor in debug data, rejects it.
+        mutated_btf = self.replace(btf, b"rx_packets\0", b"rx_pacKets\0")
         self.rejected_by_native(
-            self.replace(OBJECT.read_bytes(), b"rx_packets\0", b"rx_pacKets\0"),
+            self.replace(data, btf, mutated_btf),
             "profile: wrong statistics alias",
         )
 
