@@ -1,6 +1,8 @@
 import Lean.Data.Json
 import P4bloIR.IR
 import P4bloIR.JsonBounds
+import Init.Data.Array.MapIdx
+import Init.Data.Array.Attach
 
 /-!
 # JSON decoding and encoding of the IR
@@ -30,11 +32,11 @@ fields may exceed protobuf uint32; representability must constrain any
 roundtrip theorem. Unknown-key handling above is current adapter behavior,
 not a safe semantic-version compatibility policy; that boundary remains open.
 
-`Expr.decode` and `LValue.decode` use well-founded recursion on JSON size.
+`Expr.decode`, `LValue.decode` and `Stmt.decode` use well-founded recursion on JSON size.
 An actual child is smaller; a synthesized empty-message default is no
 larger than its object payload and hence smaller than the enclosing oneof.
-`Stmt` remains `partial`; making its array recursion proof-visible is a
-separate obligation.
+Statement branch arrays retain genuine membership bounds during traversal;
+erasure laws recover the original ordered array traversal and its errors.
 -/
 
 namespace P4bloIR
@@ -220,6 +222,56 @@ theorem msgFieldBounded_erasure (outer : Json) (path : String) (j : Json)
       msgField path j key dec := by
   unfold msgFieldBounded msgField
   split <;> simp_all [bind, Except.bind] <;> rfl
+
+private theorem mapIdxM_map (f : Nat → β → Except String γ) (g : α → β) (xs : List α) :
+    (xs.map g).mapIdxM f = xs.mapIdxM (fun i x => f i (g x)) := by
+  have go (ys : List α) (acc : Array γ) :
+      List.mapIdxM.go f (ys.map g) acc =
+        List.mapIdxM.go (fun i x => f i (g x)) ys acc := by
+    induction ys generalizing acc with
+    | nil => rfl
+    | cons head tail ih => simp only [List.map_cons, List.mapIdxM.go, ih]
+  exact go xs #[]
+
+private theorem array_attach_erasure (xs : Array α) (f : Nat → α → Except String β) :
+    Array.toList <$> xs.attach.mapIdxM (fun i x => f i x.val) =
+      Array.toList <$> xs.mapIdxM f := by
+  rw [Array.toList_mapIdxM, Array.toList_mapIdxM]
+  rw [← mapIdxM_map f Subtype.val xs.attach.toList]
+  rw [← Array.toList_map, Array.attach_map_subtype_val]
+
+/-- Ordered traversal with a genuine child bound for each array member. -/
+def arrayBounded (outer : Json) (path : String) (j : Json)
+    (smaller : sizeOf j < sizeOf outer)
+    (dec : String → (child : Json) → sizeOf child < sizeOf outer → Dec α) : Dec (List α) :=
+  match j with
+  | .arr xs => Array.toList <$> xs.attach.mapIdxM fun i x =>
+      dec (at_ path i) x.val
+        (Nat.lt_trans (JsonBounds.array_mem_lt xs x.val x.property) smaller)
+  | _ => fail path "expected an array"
+
+theorem arrayBounded_erasure (outer : Json) (path : String) (j : Json)
+    (smaller : sizeOf j < sizeOf outer) (dec : String → Json → Dec α) :
+    arrayBounded outer path j smaller (fun p v _ => dec p v) = array path j dec := by
+  cases j <;> try rfl
+  exact array_attach_erasure _ _
+
+/-- Missing/null repeated fields stay empty; present arrays retain child bounds. -/
+def listFieldBounded (outer : Json) (path : String) (j : Json)
+    (smaller : sizeOf j < sizeOf outer) (key : String)
+    (dec : String → (child : Json) → sizeOf child < sizeOf outer → Dec α) : Dec (List α) :=
+  match h : get? path j key with
+  | .error error => .error error
+  | .ok none => .ok []
+  | .ok (some v) => arrayBounded outer (sub path key) v
+      (Nat.lt_trans (get_some_lt path j key v h) smaller) dec
+
+theorem listFieldBounded_erasure (outer : Json) (path : String) (j : Json)
+    (smaller : sizeOf j < sizeOf outer) (key : String) (dec : String → Json → Dec α) :
+    listFieldBounded outer path j smaller key (fun p v _ => dec p v) =
+      listField path j key dec := by
+  unfold listFieldBounded listField
+  split <;> simp_all [arrayBounded_erasure, bind, Except.bind, pure, Except.pure]
 
 abbrev Child (j : Json) := {v : Json // sizeOf v < sizeOf j}
 
@@ -570,8 +622,42 @@ def Arg.decode (path : String) (j : Json) : Dec Arg :=
      ("lvalue", fun p v => Arg.lvalue <$> LValue.decode p v)]
 
 open Decode in
-/-- Decode a `Stmt` message. `partial`: see the module comment. -/
-partial def Stmt.decode (path : String) (j : Json) : Dec Stmt :=
+/-- Decode a `Stmt` message by strict descent through conditional arrays. -/
+def Stmt.decode (path : String) (j : Json) : Dec Stmt :=
+  let recur := fun p child (_ : sizeOf child < sizeOf j) => Stmt.decode p child
+  oneofBounded path j
+    [("assign", fun p v _ => do
+       pure (Stmt.assign (← msgField p v "target" LValue.decode)
+         (← msgField p v "value" Expr.decode))),
+     ("conditional", fun p v h => do
+       pure (Stmt.conditional (← msgField p v "condition" Expr.decode)
+         (← listFieldBounded j p v h "then" recur)
+         (← listFieldBounded j p v h "otherwise" recur))),
+     ("apply", fun p v _ => do
+       pure (Stmt.apply (← strField p v "table") (← optField p v "hit" LValue.decode))),
+     ("call_action", fun p v _ => do
+       pure (Stmt.callAction (← strField p v "action") (← listField p v "args" Arg.decode))),
+     ("call_block", fun p v _ => do
+       pure (Stmt.callBlock (← strField p v "block") (← listField p v "args" Arg.decode))),
+     ("call_extern", fun p v _ => do
+       pure (Stmt.callExtern (← strField p v "instance") (← strField p v "method")
+         (← listField p v "args" Arg.decode) (← optField p v "result" LValue.decode))),
+     ("set_valid", fun p v _ => Stmt.setValid <$> msgField p v "header" LValue.decode),
+     ("set_invalid", fun p v _ => Stmt.setInvalid <$> msgField p v "header" LValue.decode),
+     ("push", fun p v _ => do
+       pure (Stmt.push (← msgField p v "stack" LValue.decode) (← uint32Field p v "count"))),
+     ("pop", fun p v _ => do
+       pure (Stmt.pop (← msgField p v "stack" LValue.decode) (← uint32Field p v "count"))),
+     ("extract", fun p v _ => Stmt.extract <$> msgField p v "target" LValue.decode),
+     ("advance", fun p v _ => Stmt.advance <$> msgField p v "bits" Expr.decode),
+     ("verify", fun p v _ => do
+       pure (Stmt.verify (← msgField p v "condition" Expr.decode) (← strField p v "error"))),
+     ("emit", fun p v _ => Stmt.emit <$> msgField p v "value" Expr.decode)]
+termination_by sizeOf j
+
+open Decode in
+/-- Proof-erased original recurrence, including field and first-error order. -/
+theorem Stmt.decode_unfold (path : String) (j : Json) : Stmt.decode path j =
   oneof path j
     [("assign", fun p v => do
        pure (Stmt.assign (← msgField p v "target" LValue.decode)
@@ -598,7 +684,11 @@ partial def Stmt.decode (path : String) (j : Json) : Dec Stmt :=
      ("advance", fun p v => Stmt.advance <$> msgField p v "bits" Expr.decode),
      ("verify", fun p v => do
        pure (Stmt.verify (← msgField p v "condition" Expr.decode) (← strField p v "error"))),
-     ("emit", fun p v => Stmt.emit <$> msgField p v "value" Expr.decode)]
+     ("emit", fun p v => Stmt.emit <$> msgField p v "value" Expr.decode)] := by
+  rw [Stmt.decode.eq_def]
+  simp only [listFieldBounded_erasure]
+  rw [← oneofBounded_erasure]
+  rfl
 
 open Decode in
 /-- Decode a `Key` message. -/

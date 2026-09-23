@@ -46,4 +46,11 @@ theorem empty_object_le (fields : Std.TreeMap.Raw String Json) :
       rw [empty]
       cases tree <;> simp <;> omega
 
+/-- Genuine array membership supplies a strict structural child bound. -/
+theorem array_mem_lt (xs : Array Json) (child : Json) (h : child ∈ xs) :
+    sizeOf child < sizeOf (Json.arr xs) := by
+  have bound := Array.sizeOf_lt_of_mem h
+  simp only [Json.arr.sizeOf_spec]
+  omega
+
 end P4bloIR.JsonBounds
