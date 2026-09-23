@@ -5,7 +5,7 @@ The differential-testing pipe and the vector fixtures carry packets as hex
 strings, two digits per byte, as STF writes them.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 /-- The value of a hex digit. -/
 def hexDigit? (c : Char) : Option Nat :=
@@ -33,4 +33,4 @@ def bytesToHex (bytes : ByteArray) : String :=
   let digit (n : Nat) : Char := if n < 10 then Char.ofNat ('0'.toNat + n) else Char.ofNat ('a'.toNat + n - 10)
   String.ofList (bytes.toList.flatMap fun b => [digit (b.toNat / 16), digit (b.toNat % 16)])
 
-end P4blo
+end P4bloIR

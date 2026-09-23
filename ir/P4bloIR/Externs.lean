@@ -1,5 +1,5 @@
 import Std.Data.HashMap
-import P4blo.Value
+import P4bloIR.Value
 
 /-!
 # Extern models
@@ -16,7 +16,7 @@ model's `Shape`, where a width may be a variable such as `"T"` that the
 declaration binds consistently. The error sentences are the Python ones.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 open Std (HashMap)
 
@@ -198,10 +198,10 @@ def ExternState.call : ExternState → String → List Value → Except String (
     pure (.checksum16, { returns := some (.bits (Bits.wrap 16 (internetChecksum data.width data.value))) })
   | .crc16 width, "compute", [.bits data] => do
     if data.width != width then throw "crc16: call does not fit bound width"
-    pure (.crc16 width, { returns := some (.bits (Bits.wrap 16 (P4blo.crc16 width data.value))) })
+    pure (.crc16 width, { returns := some (.bits (Bits.wrap 16 (P4bloIR.crc16 width data.value))) })
   | .crc32 width, "compute", [.bits data] => do
     if data.width != width then throw "crc32: call does not fit bound width"
-    pure (.crc32 width, { returns := some (.bits (Bits.wrap 32 (P4blo.crc32 width data.value))) })
+    pure (.crc32 width, { returns := some (.bits (Bits.wrap 32 (P4bloIR.crc32 width data.value))) })
   | state, method, args => throw s!"bad extern call {method} with {args.length} arguments on {repr state}"
 
 /-- The value of a literal. -/
@@ -279,4 +279,4 @@ def call (e : Externs) (inst method : String) (args : List Value) :
 
 end Externs
 
-end P4blo
+end P4bloIR

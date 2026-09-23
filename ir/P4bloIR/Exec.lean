@@ -1,4 +1,4 @@
-import P4blo.Eval
+import P4bloIR.Eval
 
 /-!
 # Statements, calls, and the parser's state machine
@@ -22,7 +22,7 @@ theorem is claimed: the validator's acyclic calls and the parser's revisit
 rule still need a joint termination proof. No implementation fuel is used.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 -- ---------------------------------------------------------------------------
 -- Statements of every block kind
@@ -331,7 +331,7 @@ def dispatch : Work → M (List Work)
     enterState state
     pure [.statements state.body, .transition scope state.transition]
   | .transition scope trans => do
-    match ← P4blo.transition trans with
+    match ← P4bloIR.transition trans with
     | .state next =>
       let some s := scope.states[next]? | throwInterp s!"unknown state '{next}'"
       pure [.state scope s]
@@ -416,4 +416,4 @@ def runBlock (block : Block) : M Unit := Execution.run [.runBlock block]
 /-- Walk parser states to acceptance or a parser fault, enforcing revisits. -/
 def runStates (block : Block) : M Unit := Execution.run [.states block]
 
-end P4blo
+end P4bloIR

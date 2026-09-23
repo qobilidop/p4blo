@@ -1,4 +1,4 @@
-import P4blo.Exec
+import P4bloIR.Exec
 
 /-!
 # Bounded reexecution certificates
@@ -16,7 +16,7 @@ equivalence with Python. `Example` provides a reusable stateful experiment
 whose observation distinguishes success and both fault kinds.
 -/
 
-namespace P4blo.ExecutionCertificate
+namespace P4bloIR.ExecutionCertificate
 
 inductive Verdict
   | exhausted
@@ -148,4 +148,4 @@ def observe (outcome : Execution.Outcome) : Observation :=
       | _ => none }
 
 end Example
-end P4blo.ExecutionCertificate
+end P4bloIR.ExecutionCertificate

@@ -517,3 +517,12 @@ one that says so.
   flow sequence cannot detect a consistent wrong hash. Full state/collision
   observations remain required for the port. See `notes/crc-contract.md`
   and `notes/reviews/crc-externs.md` for exact findings and review fixes.
+- **Reserve `P4blo` for the user-facing Lean library.** Supersede the earlier
+  temporary choice to preserve the specification's `P4blo` namespace and
+  name the frontend `P4bloLean`. The independent spec is now `P4bloIR`
+  (Lake package `p4blo-ir`); the user library is `P4blo` (Lake package
+  `p4blo`). This follows Bili's requested public naming and makes the IR
+  dependency explicit. Confidence: high. Preserve the `p4blo-lean` executable
+  and all wire identities; no duplicate compatibility library is needed
+  before the initial API stabilizes. Historical review logs retain the
+  original symbols so their evidence remains attributable to their commits.

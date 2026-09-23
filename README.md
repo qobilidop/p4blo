@@ -45,7 +45,7 @@ and observation adapter remain explicit trust boundaries.
 
 1. [`docs/design.md`](docs/design.md): what p4blo is, why, and how each
    claim is tested.
-2. [`ir/P4blo/IR.lean`](ir/P4blo/IR.lean): the abstract IR;
+2. [`ir/P4bloIR/IR.lean`](ir/P4bloIR/IR.lean): the abstract IR;
    [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto) defines
    its wire syntax. Read them with
    [`docs/semantics.md`](docs/semantics.md), the closed behaviors.
@@ -55,8 +55,10 @@ and observation adapter remain explicit trust boundaries.
    has a README naming what was elaborated away.
 4. [`python/p4blo/interp/`](python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
-5. [`ir/P4blo/`](ir/P4blo/): the same semantics in Lean, normative
-   for meaning.
+5. [`ir/P4bloIR/`](ir/P4bloIR/): the same semantics in Lean, normative
+   for meaning. The independent [Lean user library](lean/README.md) imports
+   this specification and exposes verified scalar authoring and execution:
+   `import P4blo` for users, `import P4bloIR` for the IR contract.
 6. [`docs/coverage.md`](docs/coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
 7. [`docs/decisions.md`](docs/decisions.md): every choice made while

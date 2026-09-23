@@ -3,7 +3,7 @@ import Tests.Check
 /-! Proof-visible execution and continuation regressions, including malformed
 inputs whose fault and frame behavior must survive the executor refactor. -/
 
-open P4blo
+open P4bloIR
 
 namespace ExecutionTests
 

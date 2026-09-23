@@ -1,4 +1,4 @@
-import P4blo.Eval
+import P4bloIR.Eval
 
 /-!
 # Scalar boundary laws for the executable semantics
@@ -15,7 +15,7 @@ always uses the left width, so the stated laws also hold for malformed pairs.
 A type checker separately enforces matching widths where the IR requires it.
 -/
 
-namespace P4blo.ScalarLaws
+namespace P4bloIR.ScalarLaws
 
 /-- Overflowing saturation returns the largest value at the left width,
 rather than wrapping around. -/
@@ -86,4 +86,4 @@ theorem mux_false (condition yes no : Expr) (h : evaluate condition = pure (.boo
     evaluate (.mux condition yes no) = evaluate no := by
   simp [evaluate, h, expectBool_bool]
 
-end P4blo.ScalarLaws
+end P4bloIR.ScalarLaws

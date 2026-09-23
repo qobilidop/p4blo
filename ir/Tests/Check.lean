@@ -1,4 +1,4 @@
-import P4blo
+import P4bloIR
 
 /-!
 The test log shared by the test modules: every check prints one line and

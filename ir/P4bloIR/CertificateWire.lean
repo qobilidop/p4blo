@@ -1,6 +1,6 @@
-import P4blo.ExecutionCertificate
-import P4blo.Json
-import P4blo.Hex
+import P4bloIR.ExecutionCertificate
+import P4bloIR.Json
+import P4bloIR.Hex
 
 /-!
 # Wire boundary for the fixed stateful certificate experiment
@@ -11,7 +11,7 @@ accepted; this is not a general program or switch verifier. Decoding and
 the compiled runtime remain outside `ExecutionCertificate.check_sound`.
 -/
 
-namespace P4blo.CertificateWire
+namespace P4bloIR.CertificateWire
 
 open Lean (Json)
 open ExecutionCertificate
@@ -84,4 +84,4 @@ def verify (artifact : Json) : Except String String := do
   | .exhausted => pure "exhausted"
   | .finished _ => pure "mismatch"
 
-end P4blo.CertificateWire
+end P4bloIR.CertificateWire

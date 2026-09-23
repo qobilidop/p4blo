@@ -1,7 +1,7 @@
-import P4blo.Value
-import P4blo.Packet
-import P4blo.Tables
-import P4blo.Externs
+import P4bloIR.Value
+import P4bloIR.Packet
+import P4bloIR.Tables
+import P4bloIR.Externs
 
 /-!
 # The run-time environment
@@ -21,7 +21,7 @@ that raises reports the headers as they were at that moment, and a
 sub-parser's arguments are copied back before its error propagates.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 open Std (HashMap)
 
@@ -154,4 +154,4 @@ def requireEntries : M Installed := do
   | some e => pure e
   | none => throwInterp s!"block '{(← currentBlock).name}' has no table entries"
 
-end P4blo
+end P4bloIR

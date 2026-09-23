@@ -2,7 +2,7 @@ import Tests.Check
 
 /-!
 End-to-end replay of the forwarder's five STF vectors under the switch
-architecture (`P4blo.Switch`), the same rules the Python driver in
+architecture (`P4bloIR.Switch`), the same rules the Python driver in
 `tests/test_corpus_forwarder.py` implements.
 
 `Tests/forwarder_vectors.json` holds, per vector file, one run per `packet`
@@ -38,7 +38,7 @@ with
 and must be regenerated whenever the STF files change.
 -/
 
-open P4blo
+open P4bloIR
 open Lean (Json)
 
 /-- One `expect` line: `mask` has `f` nibbles where the vector wrote a hex

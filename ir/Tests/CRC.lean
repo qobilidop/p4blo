@@ -1,7 +1,7 @@
 import Tests.Check
-import P4blo.Observe
+import P4bloIR.Observe
 
-open P4blo
+open P4bloIR
 
 namespace CRCTests
 

@@ -17,6 +17,9 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
 - [x] Consolidate shared corpus/oracle infrastructure under `tests/`; keep
   generated bindings with Python, package-local Lean tests with their package.
   Avoid compatibility directories that indefinitely duplicate ownership.
+- [x] Reserve `P4blo` / Lake package `p4blo` for the user library; use
+  `P4bloIR` / `p4blo-ir` for the independent specification. Preserve wire
+  identities and the existing `p4blo-lean` conformance executable.
 - [ ] Provide a typed Lean construction language, independent compositional
   source semantics, lowering-validity and semantic-preservation theorems.
   Start with a small proved fragment and extend it toward actual applications;

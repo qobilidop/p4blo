@@ -5,8 +5,8 @@ Where the work stands, by build-order step from
 checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
-Last updated: 2026-09-23, starting the accepted Python/Lean architecture
-implementation following the verification work. The original prototype's
+Last updated: 2026-09-23, implementing the accepted Python/Lean architecture,
+verified scalar authoring and independently tested CRC services. The original prototype's
 steps are complete. The stronger assurance work is in progress; its
 acceptance criteria and trust boundaries are in [verification.md](verification.md).
 
@@ -17,7 +17,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 287 Lean checks; corpus plus typed generated-program DRT with extern-state comparison; packing, closed scalar soundness/value laws, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 336 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, scalar soundness/value laws, exact closed eDSL lowering, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -65,10 +65,10 @@ Things a resuming agent should know are in motion or deliberately left.
   authorized autonomous implementation and explicitly resumed small commits
   and pushes. Follow [implementation.md](implementation.md), recording low-
   confidence choices and revisit triggers rather than waiting for feedback.
-  The specification and schema now live in `ir/` (`p4blo-ir`); the separate
-  `lean/` package (`p4blo-lean`, `P4bloLean` imports) exposes reference block
+  The specification and schema now live in `ir/` (`p4blo-ir`, `P4bloIR` imports);
+  the separate `lean/` package (`p4blo`, `P4blo` imports) exposes reference block
   and switch execution, not a second engine or full validator. The typed
-  eDSL is next. `scripts/check-lean.sh` explicitly builds and tests both
+  eDSL currently covers closed scalars. `scripts/check-lean.sh` explicitly builds and tests both
   packages with matching toolchains and the spec's proof audit; dependency
   compilation alone would omit that audit. Generated protobuf bindings and
   executable protocol are unchanged. The old executable path no longer exists.
@@ -118,8 +118,12 @@ Things a resuming agent should know are in motion or deliberately left.
   `lean/ASSURANCE.md`. Integration gates passed: both Lean packages/audits,
   108 required DRT tests, and 1025 full tests plus the existing strict BMv2
   expected discrepancy (no skips). This is not whole-program authoring/validity.
-  Next: user's revised public naming (`P4blo` for users, `P4bloIR` for spec)
-  and typed references. The stage-2 source/environment audit is preserved in
+  The user's revised public naming (`P4blo` for users, `P4bloIR` for spec)
+  passes both Lean packages/audits, 114 required DRT and the full 1070-test
+  gate (three exact expected discrepancies, no skips). Independent diff
+  inspection confirms all Lean bodies differ only by renamed tokens; a
+  fresh-worktree rebuild follows to exclude stale imports. Typed references
+  follow. The stage-2 source/environment audit is preserved in
   `notes/xdp-preflight.md`: pinned original Ethernet-allow profile, complete
   per-CPU map observations, and an FD-only non-attaching oracle design.
   No BPF compile/load/run evidence exists yet. Build-tool availability,
@@ -136,6 +140,7 @@ Things a resuming agent should know are in motion or deliberately left.
   lint/typecheck/schema/workflow checks passing. Python firewall port and
   original register-state observation are next, in an isolated worktree;
   neither is claimed complete by the CRC increment.
+  All four remote workflows passed at CRC integration checkpoint `c6a72c3`.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

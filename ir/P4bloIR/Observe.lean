@@ -1,5 +1,5 @@
 import Lean.Data.Json.FromToJson
-import P4blo.Externs
+import P4bloIR.Externs
 
 /-!
 # Differential observations
@@ -11,7 +11,7 @@ not significant. This adapter is not a shared implementation of extern
 semantics; those remain in `Externs` and Python's independent models.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 private def naturalHex (n : Nat) : String :=
   "0x" ++ String.ofList (Nat.toDigits 16 n)
@@ -29,4 +29,4 @@ def ExternState.observe : ExternState → Lean.Json
 def Externs.observe (externs : Externs) : Lean.Json :=
   Lean.Json.mkObj (externs.instances.toList.map fun (name, state) => (name, state.observe))
 
-end P4blo
+end P4bloIR

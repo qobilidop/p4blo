@@ -1,6 +1,6 @@
-name = "p4blo-lean"
+name = "p4blo"
 version = "0.1.0"
-defaultTargets = ["P4bloLean", "UserProofAudit", "scalarExamples"]
+defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "userTests"
 
@@ -9,11 +9,11 @@ name = "p4blo-ir"
 path = "../ir"
 
 [[lean_lib]]
-name = "P4bloLean"
+name = "P4blo"
 
 [[lean_exe]]
 name = "userTests"
-root = "P4bloLeanTests"
+root = "P4bloTests"
 
 [[lean_lib]]
 name = "UserProofAudit"

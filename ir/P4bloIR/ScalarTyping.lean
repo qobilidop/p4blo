@@ -1,4 +1,4 @@
-import P4blo.Eval
+import P4bloIR.Eval
 
 /-!
 # A sound checker for closed scalar expressions
@@ -11,13 +11,13 @@ unselected branches. Widths must be positive, literals must fit, and slices and
 casts follow the schema's restrictions.
 
 `check` produces typing evidence without evaluating values. `check_sound`
-connects that evidence to the actual `P4blo.evaluate`: for every initial run,
+connects that evidence to the actual `P4bloIR.evaluate`: for every initial run,
 evaluation succeeds with exactly the inferred scalar type and preserves the
 entire run. It assumes neither a valid program nor a well-formed run. There is
 no second evaluator here and no theorem about Python, statements, or programs.
 -/
 
-namespace P4blo.ScalarTyping
+namespace P4bloIR.ScalarTyping
 
 inductive ScalarTy
   | bits (width : Nat)
@@ -190,4 +190,4 @@ theorem check_sound (h : infer e = some t) (run : Run) :
     obtain ⟨v, hv, ht⟩ := checked.property.sound
     exact ⟨v, by rw [hv]; rfl, h ▸ ht⟩
 
-end P4blo.ScalarTyping
+end P4bloIR.ScalarTyping

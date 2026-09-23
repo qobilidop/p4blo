@@ -1,6 +1,6 @@
 # IR contract
 
-`P4blo/IR.lean` defines the abstract syntax; the other `P4blo` modules
+`P4bloIR/IR.lean` defines the abstract syntax; the other `P4bloIR` modules
 define execution, scoped validity/properties, and reference architecture and
 extern models. `proto/p4blo/v0/p4blo.proto` defines the versioned wire syntax.
 `Json.lean` is the existing handwritten adapter, not yet a verified codec.

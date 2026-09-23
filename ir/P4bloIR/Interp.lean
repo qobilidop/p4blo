@@ -1,4 +1,4 @@
-import P4blo.Exec
+import P4bloIR.Exec
 
 /-!
 # The three entry points
@@ -17,7 +17,7 @@ mutated in place the way the Python bindings are. `Except String` is for
 parse error is an outcome, not a failure.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 /-- What a parser run produced (docs/semantics.md, "Parsers"). Rejection
 and error are separate: `accept` gives `accepted` with `NoError`; an
@@ -100,4 +100,4 @@ def runDeparser (index : Index) (block : String) (headers : Value) (externs : Ex
   let some emitter := run.emitter | throw "the deparser lost its buffer"
   pure (emitter.toBytes, run.externs)
 
-end P4blo
+end P4bloIR

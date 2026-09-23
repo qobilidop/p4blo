@@ -427,7 +427,9 @@ p4blo/
   README.md                         the sentence, the claims, the table
   docs/                             design, semantics, coverage,
                                     status, decisions
-  proto/p4blo/v0/p4blo.proto        the IR
+  ir/                               Lake package p4blo-ir
+    P4bloIR/                        abstract IR, semantics, scoped proofs
+    proto/p4blo/v0/p4blo.proto       versioned wire encoding
   python/p4blo/                     the package
     v0/                             generated protobuf code, committed
     ir.py                           load, save, text format helpers
@@ -437,24 +439,24 @@ p4blo/
     printer.py                      IR to P4-16 text
     externs/                        registry and the corpus externs
     arch/                           filter.py, switch.py
-  lean/                             a lake project: lakefile,
-                                    lean-toolchain, P4blo/
-  corpus/<program>/                 program.py, program.txtpb,
+  lean/                             Lake package p4blo, user-facing P4blo/
+  tests/                            unit, validator, conformance tests
+    corpus/<program>/               program.py, program.txtpb,
                                     program.p4, *.stf
-  tests/                            pytest: unit, validator, corpus
-                                    replay, oracle drivers, DRT
-  .github/workflows/                ci.yml; lean.yml and oracle.yml
-                                    when their steps arrive
+    oracle/                         original programs and oracle drivers
+  .github/workflows/                Python/schema, Lean, SpecTec and BMv2
 ```
 
 One Python project is rooted at the repository root so that `uv run
 pytest` works from there and `tests/` holds both unit tests and the
 claim tests, which are all pytest even when they shell out to Lean or
-replay vectors. The package still lives at `python/p4blo`. Only two
-top-level directories concern testing: `corpus/`, which is source,
-goldens and vectors for each program side by side, and `tests/`, which
-is everything that runs. Directories for later steps are created when
-their step arrives, not as placeholders.
+replay vectors. The package still lives at `python/p4blo`. Shared tests,
+corpus programs and external oracle infrastructure live under `tests/`;
+package-local Lean tests stay with their Lake package. The two Lean packages
+share a pinned toolchain and depend only from user library to specification.
+Directories for later steps are created when their step arrives, not as
+placeholders. This layout reflects the accepted successor architecture;
+the rest of this original design retains its historical context.
 
 The development environment has three layers, each owning what it is
 best at.
@@ -576,7 +578,7 @@ testing table logic in pytest, until a p4c bridge exists.
 ## Open questions
 
 - ~~The one theorem.~~ Settled: extract-then-emit roundtrip, proved as
-  `P4blo.extract_emit` in `lean/P4blo/Theorems.lean` over the packing
+  `P4bloIR.extract_emit` in `ir/P4bloIR/Theorems.lean` over the packing
   functions the interpreter calls. Parser determinism was not
   attempted.
 - Whether the v1model shim can express flood without BMv2 multicast

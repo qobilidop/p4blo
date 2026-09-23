@@ -163,6 +163,11 @@ not require duplicating definitions. Lean-to-Lean calls pass the actual IR
 values directly; protobuf is for exchanging programs with other languages,
 files, or processes, not an obligatory boundary between Lean libraries.
 
+Package names follow that boundary: `lean/` is Lake package `p4blo`, imported
+as `P4blo`; `ir/` is Lake package `p4blo-ir`, imported as `P4bloIR`. The user
+API owns the project name. The stable conformance executable remains named
+`p4blo-lean`; an executable protocol name need not equal a library namespace.
+
 Use "interpreter" for core IR execution; "simulator" can describe its
 composition with architecture and extern models. eDSL lowering correctness
 is a separate obligation from interpreter correctness. Test combinations of

@@ -19,8 +19,19 @@ def test_lean_package_dependency_is_one_way() -> None:
     spec = tomllib.loads((ROOT / "ir/lakefile.toml").read_text())
     library = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
     assert spec["name"] == "p4blo-ir"
+    assert library["name"] == "p4blo"
     assert not spec.get("require")
     assert library["require"] == [{"name": "p4blo-ir", "path": "../ir"}]
+    assert "P4bloIR" in {lib["name"] for lib in spec["lean_lib"]}
+    assert "P4blo" in {lib["name"] for lib in library["lean_lib"]}
+    assert "P4bloIR" in spec["defaultTargets"]
+    assert "P4blo" in library["defaultTargets"]
+    assert (ROOT / "ir/P4bloIR.lean").is_file()
+    assert (ROOT / "ir/P4bloIR/IR.lean").is_file()
+    assert (ROOT / "lean/P4blo.lean").is_file()
+    assert (ROOT / "lean/P4blo/Scalar.lean").is_file()
+    for old in ("ir/P4blo", "ir/P4blo.lean", "lean/P4bloLean", "lean/P4bloLean.lean"):
+        assert not (ROOT / old).exists()
     assert "ProofAudit" in spec["defaultTargets"]
     assert spec["testDriver"]
     assert library["testDriver"]

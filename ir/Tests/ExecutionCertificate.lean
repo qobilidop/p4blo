@@ -1,6 +1,6 @@
 import Tests.Check
 
-open P4blo
+open P4bloIR
 
 namespace ExecutionCertificateTests
 

@@ -22,7 +22,7 @@ with
       > ir/Tests/forwarder.json
 -/
 
-open P4blo
+open P4bloIR
 
 def forwarderTests (p : Program) : T Unit := do
   check "program name" (p.name == "forwarder")

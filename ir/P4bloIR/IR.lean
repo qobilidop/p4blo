@@ -19,7 +19,7 @@ Decimal strings in the proto (`BitsLiteral.value`, the `KeyValue` values)
 are `Nat` here; the validator, not the decoder, checks them against widths.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 -- ---------------------------------------------------------------------------
 -- Enums
@@ -492,4 +492,4 @@ structure Entries where
   tables : List TableEntries
   deriving Repr, BEq, DecidableEq, Inhabited
 
-end P4blo
+end P4bloIR

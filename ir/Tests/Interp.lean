@@ -8,7 +8,7 @@ deparser, tables and the extern models. The cases mirror the Python
 `tests/test_interp_*.py` and `tests/test_externs.py` where they exist.
 -/
 
-open P4blo
+open P4bloIR
 
 -- ---------------------------------------------------------------------------
 -- Expressions over an empty program
@@ -627,13 +627,13 @@ def externTests : T Unit := do
     (· == (.struct "M" [bits 16 5, bits 16 0x220d], .struct "M" [bits 16 12, bits 16 0x220d]))
   checkOk "counter counts in range and ignores out of range"
     (runTwice.map fun (_, _, e) => e.instances["k"]?.map reprStr)
-    (· == some "P4blo.ExternState.counter #[0, 4]")
+    (· == some "P4bloIR.ExternState.counter #[0, 4]")
   checkOk "register out of range reads zero and ignores writes"
     (do
       let (s, r) ← (ExternState.register 16 #[0, 0]).call "read" [bits 16 0, bits 32 7]
       let (s, _) ← s.call "write" [bits 32 7, bits 16 1]
       pure (r.outs, reprStr s))
-    (· == ([bits 16 0], "P4blo.ExternState.register 16 #[0, 0]"))
+    (· == ([bits 16 0], "P4bloIR.ExternState.register 16 #[0, 0]"))
   checkError "an unknown extern type does not bind"
     (Index.build { externProgram with
         externInstances := [{ name := "m", externType := "mystery", args := [] }],

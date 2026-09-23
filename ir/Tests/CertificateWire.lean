@@ -1,7 +1,7 @@
 import Tests.Check
-import P4blo.CertificateWire
+import P4bloIR.CertificateWire
 
-open P4blo
+open P4bloIR
 
 private def certificateArtifact (seed : String) (fuel : Nat) (cell : String)
     (program : Program := ExecutionCertificate.Example.program) : Lean.Json :=

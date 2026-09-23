@@ -1,4 +1,4 @@
-import P4blo.Eval
+import P4bloIR.Eval
 
 /-!
 # The one theorem: extract after emit is the identity
@@ -41,7 +41,7 @@ Lean core only; `#print axioms` on every theorem here lists nothing beyond
 `propext`, `Classical.choice` and `Quot.sound`.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 -- ---------------------------------------------------------------------------
 -- Arithmetic
@@ -367,4 +367,4 @@ theorem extract_emit {index : Index} {typeName : String} {decl : HeaderType}
   obtain ⟨width, value, hto, hlt, hwidth, hfrom⟩ := headerFromBits_headerToBits hdecl fields hlen hfit
   exact ⟨width, value, hto, hwidth, ⟨_, read_write width value hlt, rfl⟩, hfrom⟩
 
-end P4blo
+end P4bloIR

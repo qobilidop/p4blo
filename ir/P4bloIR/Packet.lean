@@ -7,7 +7,7 @@ first, because headers need not be byte aligned (docs/semantics.md,
 `none`, and the interpreter turns that into `PacketTooShort`.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 /-- The bytes of `data` as one big-endian natural number. -/
 def bytesToNat (data : ByteArray) : Nat :=
@@ -74,4 +74,4 @@ def toBytes (e : Emitter) : ByteArray :=
 
 end Emitter
 
-end P4blo
+end P4bloIR

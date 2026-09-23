@@ -1,9 +1,9 @@
-import P4bloLean.Scalar
+import P4blo.Scalar
 
 /-! Authored examples shared by the Lean tests and JSON fixture exporter.
 Expected results live in the tests, not in this exporter or the lowerer. -/
 
-namespace P4bloLean.ScalarExamples
+namespace P4blo.ScalarExamples
 
 open Scalar
 open scoped Scalar
@@ -30,4 +30,4 @@ def cases : List Case := [
     .mux ((bits[8, 255] + bits[8, 1]) === bits[8, 0])
       (bits[8, 17] + bits[8, 29]) bits[8, 99]⟩]
 
-end P4bloLean.ScalarExamples
+end P4blo.ScalarExamples

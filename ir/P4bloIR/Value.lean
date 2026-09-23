@@ -1,4 +1,4 @@
-import P4blo.Index
+import P4bloIR.Index
 
 /-!
 # Run-time values
@@ -9,7 +9,7 @@ its next index (docs/semantics.md, "Values"). Values are immutable, so the
 Python `copy` is the identity here and is not written.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 -- ---------------------------------------------------------------------------
 -- Bits
@@ -175,4 +175,4 @@ end
 
 end Value
 
-end P4blo
+end P4bloIR

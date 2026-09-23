@@ -1,5 +1,5 @@
-import P4blo.Env
-import P4blo.Widths
+import P4bloIR.Env
+import P4bloIR.Widths
 
 /-!
 # Expressions and lvalues
@@ -19,7 +19,7 @@ down and once on the way up; evaluation has no effect but a `lookahead`
 peek, so that is invisible.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 -- ---------------------------------------------------------------------------
 -- Narrowing in the monad
@@ -41,7 +41,7 @@ def literalValue (lit : Literal) : Value := lit.toValue
 /-- The fields of widths `ws` read out of `raw`, first field in the high
 bits: field `i` is the `ws[i]` bits of `raw` just above its low
 `ws[i+1] + ⋯` bits. The pure core of `extract` and `lookahead`;
-`P4blo.Theorems` proves it the inverse of `packFields`. -/
+`P4bloIR.Theorems` proves it the inverse of `packFields`. -/
 def unpackFields : List Nat → Nat → List Nat
   | [], _ => []
   | w :: ws, raw => (raw >>> ws.sum) % 2 ^ w :: unpackFields ws raw
@@ -257,4 +257,4 @@ def writeLValue : LValue → Value → M Unit
       writeLValue base (.stack headerType (elements.set i.value (.header t valid fields)) nextIndex)
   | .next _, _ => throwInterp "hs.next is only the target of an extract"
 
-end P4blo
+end P4bloIR

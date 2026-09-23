@@ -58,8 +58,9 @@ so the required CI gate discovers them without a hand-maintained file list.
   from `buf generate`. Never edit them; edit the schema and regenerate.
   CI fails on drift.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
-  The spec is the `ir/` Lake package. The `lean/` user package imports it,
-  never the reverse. Whole-program validity and codec proofs remain work
+  The spec is the `ir/` Lake package (`p4blo-ir`, imports `P4bloIR`). The
+  `lean/` user package (`p4blo`, imports `P4blo`) imports it, never the reverse.
+  Whole-program validity and codec proofs remain work
   in progress, not guarantees supplied by this organization. A closed
   behavior is written in `docs/semantics.md` first
   and implemented in both interpreters second.

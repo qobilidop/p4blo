@@ -1,4 +1,4 @@
-import P4blo.Interp
+import P4bloIR.Interp
 
 /-!
 # The switch architecture
@@ -32,7 +32,7 @@ port 0. The deparser runs before the fate is read, as in
 `python/p4blo/arch/switch.py`, so its extern calls happen on a drop too.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 /-- The position of a contract field in `M`. -/
 structure MetaField where
@@ -141,4 +141,4 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat) (pack
 
 end Switch
 
-end P4blo
+end P4bloIR

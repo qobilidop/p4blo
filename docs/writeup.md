@@ -1,5 +1,9 @@
 # p4blo, written up
 
+Historical prototype write-up: paths, names and counts below describe that
+checkpoint. Current architecture and evidence are in [design.md](design.md),
+[implementation.md](implementation.md) and [status.md](status.md).
+
 A post for P4 spec, compiler and architecture people, to decide whether
 the proposal below deserves an RFC. Every number in it comes from a file
 in this repository or from a command run against it, and each is cited.

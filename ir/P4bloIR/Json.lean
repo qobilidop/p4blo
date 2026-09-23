@@ -1,5 +1,5 @@
 import Lean.Data.Json
-import P4blo.IR
+import P4bloIR.IR
 
 /-!
 # JSON decoding and encoding of the IR
@@ -32,7 +32,7 @@ can see, so they are `partial`. They terminate because every recursive
 call is on a proper sub-value of a finite JSON tree.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 open Lean (Json JsonNumber FromJson ToJson)
 
@@ -876,4 +876,4 @@ instance : ToJson Program := ⟨Program.toJson⟩
 instance : ToJson TableEntries := ⟨TableEntries.toJson⟩
 instance : ToJson Entries := ⟨Entries.toJson⟩
 
-end P4blo
+end P4bloIR

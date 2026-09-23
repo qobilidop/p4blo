@@ -1,4 +1,4 @@
-import P4blo.Index
+import P4bloIR.Index
 
 /-!
 # Static types and widths
@@ -9,7 +9,7 @@ has a value: the width of a table key at installation and of the header an
 `extract` or `lookahead` reads.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 /-- `widthOf` with a nesting bound; see `Value.zeroWith` for why the
 recursion is on `fuel`. -/
@@ -85,4 +85,4 @@ def typeOf (index : Index) (scope : BlockScope) (action : Option String := none)
   | .mux _ thenBranch _ => typeOf index scope action thenBranch
   | .lookahead ty => pure ty
 
-end P4blo
+end P4bloIR

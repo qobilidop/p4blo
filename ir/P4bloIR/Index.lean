@@ -1,6 +1,6 @@
 import Std.Data.HashMap
 import Std.Data.HashSet
-import P4blo.IR
+import P4bloIR.IR
 
 /-!
 # Name index
@@ -18,7 +18,7 @@ Errors are the same sentences ir.py raises, so that the two sides can be
 compared on the same inputs.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 open Std (HashMap HashSet)
 
@@ -145,4 +145,4 @@ def fieldIndex? (index : Index) (typeName fieldName : String) : Option Nat := do
 
 end Index
 
-end P4blo
+end P4bloIR

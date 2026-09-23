@@ -2,7 +2,7 @@ import Tests.Check
 
 /-! Acceptance and rejection boundaries of the proved closed-scalar checker. -/
 
-open P4blo
+open P4bloIR
 
 namespace ScalarTypingTests
 

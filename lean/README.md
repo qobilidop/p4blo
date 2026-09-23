@@ -1,8 +1,8 @@
 # Lean user library
 
-The independent `p4blo-lean` Lake package imports `p4blo-ir` from `../ir`.
-Import `P4bloLean` for the user API. Reference definitions remain under
-`P4blo`; frontend/library definitions use `P4bloLean` to avoid collisions.
+The independent `p4blo` Lake package imports `p4blo-ir` from `../ir`.
+Import `P4blo` for the user API. Reference definitions remain under
+`P4bloIR`; frontend/library definitions use `P4blo` to avoid collisions.
 
 `prepareSwitch` performs indexing, extern binding and architecture contract
 checks, not complete validation. `runSwitch` and the block entry points reuse
@@ -12,17 +12,17 @@ is no independent optimized engine or new correctness claim in these aliases.
 ## Verified scalar authoring
 
 ```lean
-import P4bloLean
-open P4bloLean.Scalar
-open scoped P4bloLean.Scalar
+import P4blo
+open P4blo.Scalar
+open scoped P4blo.Scalar
 
 def answer : Expr (.bits 8) :=
   .mux ((bits[8, 255] + bits[8, 1]) === bits[8, 0])
     (bits[8, 17] + bits[8, 29]) bits[8, 99]
 
 example : (denote answer).val = 46 := by decide
-example (run : P4blo.Run) :
-    (P4blo.evaluate (lower answer)).run run =
+example (run : P4bloIR.Run) :
+    (P4bloIR.evaluate (lower answer)).run run =
       (.ok (toValue (denote answer)), run) := evaluate_lower_run answer run
 ```
 

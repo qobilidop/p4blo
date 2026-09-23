@@ -1,6 +1,6 @@
-import P4blo
-import P4blo.Observe
-import P4blo.CertificateWire
+import P4bloIR
+import P4bloIR.Observe
+import P4bloIR.CertificateWire
 
 /-!
 `p4blo-lean`: the pipe endpoint for differential testing.
@@ -19,7 +19,7 @@ import P4blo.CertificateWire
         code 1.
 
     p4blo-lean run [--ports N] <program.json>
-        Load the program under the switch architecture (`P4blo.Switch`)
+        Load the program under the switch architecture (`P4bloIR.Switch`)
         and answer requests read from stdin, one JSON object per line:
 
             {"entries": <Entries>, "ingress_port": n, "packet": "<hex>"}
@@ -35,10 +35,10 @@ import P4blo.CertificateWire
         state persists across requests. `--ports N` (default 4) is the
         number of ports a flood reaches.
         Every reply also carries `state`, the abstract extern observations
-        from `P4blo.Observe`, including when the request cannot run.
+        from `P4bloIR.Observe`, including when the request cannot run.
 -/
 
-open P4blo
+open P4bloIR
 
 /-- The one-line summary of a program. -/
 def summary (p : Program) (index : Index) : String :=

@@ -1,6 +1,6 @@
 import Std.Data.HashMap
-import P4blo.Value
-import P4blo.Widths
+import P4bloIR.Value
+import P4bloIR.Widths
 
 /-!
 # Installed table entries and the match algorithm
@@ -12,7 +12,7 @@ they are addressed by `(block, table)` names. Installation errors are
 strings with the Python sentences.
 -/
 
-namespace P4blo
+namespace P4bloIR
 
 open Std (HashMap)
 
@@ -226,4 +226,4 @@ def lookup (i : Installed) (ref : TableRef) (keys : List Bits) : Except String M
 
 end Installed
 
-end P4blo
+end P4bloIR

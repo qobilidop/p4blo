@@ -2,12 +2,12 @@
 # Independent of the user-facing Lean package. Lean core only; no Mathlib.
 name = "p4blo-ir"
 version = "0.1.0"
-defaultTargets = ["P4blo", "p4blo-lean", "ProofAudit"]
+defaultTargets = ["P4bloIR", "p4blo-lean", "ProofAudit"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "tests"
 
 [[lean_lib]]
-name = "P4blo"
+name = "P4bloIR"
 
 [[lean_lib]]
 name = "ProofAudit"

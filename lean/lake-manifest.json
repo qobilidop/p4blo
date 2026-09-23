@@ -8,6 +8,6 @@
    "inherited": false,
    "dir": "../ir",
    "configFile": "lakefile.toml"}],
- "name": "«p4blo-lean»",
+ "name": "p4blo",
  "lakeDir": ".lake",
  "fixedToolchain": false}

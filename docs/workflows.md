@@ -101,14 +101,14 @@ uv run python tests/oracle/run.py -v tests/corpus/forwarder/forwarder.txtpb test
 ## Changing things
 
 **A closed behavior.** Write it in `docs/semantics.md` first, then
-implement it in `python/p4blo/interp/` and `ir/P4blo/` together, with a
+implement it in `python/p4blo/interp/` and `ir/P4bloIR/` together, with a
 test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
 
 **The schema.** Edit `ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
-`ir/P4blo/IR.lean` and `Json.lean`, update the validator's rules and
+`ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules and
 `docs/coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
@@ -133,7 +133,7 @@ sources are in p4c under `testdata/p4_16_samples/`.
 
 **An extern.** Add its implementation under `python/p4blo/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
-`ir/P4blo/Externs.lean`, the printer's v1model form in
+`ir/P4bloIR/Externs.lean`, the printer's v1model form in
 `python/p4blo/printer.py`, and a typed family class in
 `python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
@@ -147,7 +147,7 @@ program whose vectors observe the extern.
 contract vocabulary is the table in `docs/design.md`, and the rules
 every architecture follows are in the same section and in
 `docs/decisions.md` ("Architecture rules", "Port rules"). If the Lean
-switch must follow, change `ir/P4blo/Switch.lean` in the same commit.
+switch must follow, change `ir/P4bloIR/Switch.lean` in the same commit.
 
 ## Working with agents
 
