@@ -25,8 +25,12 @@ gate. A scoped actual Python-read fault now requires automatic replay
 creation before the expected-output assertion, live replay divergence and
 restored replay agreement. Shared wrong answers still fail independently.
 Review: `notes/reviews/authoring-replay.md`. No Lean or production code changed.
-All four remote workflows passed for checkpoint `50322dd`; the pushed
-typed-frame checkpoint `0ad1b5b` was still running when last checked.
+Firewall-boundary integration at `8b2ebdd`: **233 required DRT** and full
+**1423 passed / 5 precise expected discrepancies / no skips**, including
+formatting/lint/type/schema/workflow gates. Lean source/binaries are unchanged
+from the checked 357-test spec build. The BMv2 job now selects the new file.
+All four remote workflows passed for typed-frame checkpoint `0ad1b5b`;
+newer CI must be checked separately.
 Earlier checkpoint evidence
 remains in the named review/assurance reports and git history, not as competing
 current instructions below.
@@ -129,9 +133,17 @@ Things a resuming agent should know are in motion or deliberately left.
   do not certify CRC's intended external algorithm. Reproduction and review:
   `notes/mutations/firewall-hash-state.md`,
   `notes/reviews/firewall-hash-state.md`.
-  Broader malformed coverage is active in isolated `work/firewall-boundaries`
-  at `50322dd`; truncated Ethernet/IPv4 behavior and generated flow sequences
-  are not yet claimed. Lean authoring/application proofs remain open.
+  Byte-truncation coverage is integrated from `d547a61`: all 55 cuts of one
+  TCP frame, 54 valid-malformed-valid persistence sequences and 41 additional
+  unchanged-original BMv2 prefix observations. Atomic-extract errors, validity
+  and retained payload have independent expectations; the instrumented parser
+  observer is explicitly distinct from the original oracle. An actual Python
+  cursor fault creates two payload-only mismatches, automatically saves its
+  five-request bundle and agrees after restoration. Review and full recipes:
+  `notes/reviews/firewall-boundaries.md`, `notes/firewall-boundaries.md`.
+  Broader generated flows, Lean authoring and application proofs remain open.
+  A bounded independently modeled flow/policy generator is active in isolated
+  `work/firewall-generated`, based on committed `8b2ebdd`.
 
 - **Verification infrastructure is established; broader proofs remain open.**
   [verification.md](verification.md) records exact claims. Required real-Lean
@@ -172,8 +184,12 @@ Things a resuming agent should know are in motion or deliberately left.
   Do not treat Docker availability or skipped kernel tests as an oracle pass.
   Flowlet time/randomness and the bounded Katran profile still require audit.
   Compile-only image implementation is active in isolated `work/xdp-build`
-  based on `0ad1b5b`; no successful compilation or kernel execution is yet
-  claimed. The main worktree does not depend on this pending infrastructure.
+  based on `0ad1b5b`. The pinned object and open-only native metadata inspector
+  build and run without added capabilities; the full offline gate/review is
+  not yet complete and no kernel execution is claimed. Docker VM disk capacity
+  blocked an additional build dependency; unrelated images/volumes are not
+  authorized cleanup targets. The main worktree does not depend on this pending
+  infrastructure; Python/Lean proof work continues independently.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;

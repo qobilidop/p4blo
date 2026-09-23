@@ -18,7 +18,7 @@ locally before pushing, and check exit codes, not output.
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Original-source SpecTec probes | `uv run pytest tests/test_crc.py tests/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
-| Original-source BMv2 probes | `uv run pytest tests/test_crc.py tests/test_firewall.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after prefixes pass |
+| Original-source BMv2 probes | `uv run pytest tests/test_crc.py tests/test_firewall.py tests/test_firewall_boundaries.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation prefixes pass |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 

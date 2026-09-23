@@ -594,3 +594,12 @@ one that says so.
   Confidence: high; regressions replay an actual live/restored read fault
   and independently reject a shared wrong source program. This does not
   weaken known-answer checks or equate agreement with intended semantics.
+- **Exhaust a named malformed profile before broad random traffic.**
+  Check every byte truncation of one fixed firewall frame and state across
+  valid-malformed-valid sequences; compare selected unchanged-original BMv2
+  prefixes. Confidence: high within this bounded profile. A separate observer
+  exposes parser error/validity without changing the parser or pretending to
+  read Lean's internal cursor. Preserve failed-header payload and undefined-
+  value boundaries. The actual consume-on-fault mutation is killed at runtime
+  and saved/replayed. Generated flows remain a deliberate next step requiring
+  independent expected state, not just a larger number of agreeing samples.
