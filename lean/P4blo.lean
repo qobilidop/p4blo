@@ -13,3 +13,4 @@ import P4blo.Interp
 import P4blo.Hex
 import P4blo.Switch
 import P4blo.Theorems
+import P4blo.ScalarTyping
