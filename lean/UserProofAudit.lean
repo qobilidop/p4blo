@@ -5,6 +5,19 @@ import P4blo.FieldExpressions
 import P4blo.FieldCommandExamples
 import P4blo.NamedFields
 import P4blo.ForwardPolicy
+import P4blo.SourceZero
+
+/-- info: 'P4blo.Fields.Shape.zeroWith_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Shape.zeroWith_correct
+
+/-- info: 'P4blo.Fields.Layout.zeroWith_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Layout.zeroWith_correct
+
+/-- info: 'P4blo.Fields.Shape.zero_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Shape.zero_correct
 
 /-- info: 'P4blo.Fields.Ref.resolve_sound' depends on axioms: [propext] -/
 #guard_msgs in
