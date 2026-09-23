@@ -9,6 +9,15 @@ Lean semantics validated against a runnable reference.
 | Date | 2026-09-22 |
 | Authors | Bili Dong, with Claude Fable 5.1 |
 
+**Current direction (2026-09-23):** this document records the original
+prototype. The accepted successor architecture is
+[notes/ir-spec-boundary.md](notes/ir-spec-boundary.md), implemented through
+[implementation.md](implementation.md). It supersedes the original
+protobuf-as-abstract-syntax authority and single-Lean-package arrangement:
+Lean owns abstract syntax, validity and meaning; protobuf owns encoding;
+Python and a separate user-facing Lean package supply eDSL/interpreter APIs.
+Proof coverage remains scoped as recorded in [status.md](status.md).
+
 That first sentence is the project. p4blo is a personal, educational
 prototype whose purpose is to make the sentence concrete enough to
 argue about, so that a serious version can later be proposed to the P4

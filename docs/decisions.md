@@ -401,3 +401,56 @@ one that says so.
   before projection. Retain these mutants as tests. Always clean up owned
   subprocess groups, including after a successful leader exits, and reject
   duplicate JSON response keys rather than silently choosing one verdict.
+- **Lean owns the abstract IR; protobuf owns its encoding (direction
+  agreed, migration pending).** Bili agreed that Lean should define
+  abstract syntax, validity, and meaning, with an explicit verified
+  conversion to the versioned protobuf representation. This revises the
+  earlier normative-syntax split as a target, not an implemented guarantee.
+  Generation is optional; stable wire metadata and conversion obligations
+  matter more than which file generates which. The rationale, proposed
+  obligations, organization context, and unresolved plan are in
+  [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). Bili requested
+  documentation only, no commit yet, while continuing to adjust the plan.
+- **A separate user-facing Lean package (design agreed, not built).**
+  Bili accepted the prior-art-informed design in
+  [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md): a Lean library
+  imports the authoritative IR package and provides an ergonomic typed
+  eDSL, verified lowering, and an interpreter API. Use selective
+  proof-producing elaboration, not a general compiler from arbitrary Lean.
+  Reuse reference execution initially; introduce distinct execution
+  representations only for concrete benefits, with refinement proofs.
+  Validity, meaning preservation, serialization, and application properties
+  remain separate obligations. A small stateful end-to-end example is the
+  proposed first milestone; exact syntax, proof interfaces, and sequencing
+  remain open. Documentation only for now; leave changes uncommitted while
+  Bili continues the design discussion.
+- **Use progressively demanding examples toward the broader north star.**
+  Bili agreed that full architecture-independent P4 expressiveness with a
+  minimal semantic core is a north star, not the next deliverable. The
+  intermediate roadmap consolidates the existing corpus, then supports
+  the tutorial stateful firewall, `xdp-filter`, conditional flowlet switching,
+  and a bounded Katran configuration. Each stage requires precise scope,
+  readable Python/Lean authoring, original-program comparison, scoped
+  proofs, adversarial checks, and justification of IR additions. Preserve
+  the firewall's Bloom-filter limitations. Use P4-SpecTec for P4 and original
+  Linux BPF execution for XDP; do not imply a general eBPF translator or
+  Linux model. Flowlet switching depends on a feasible time/randomness
+  oracle; Katran's exact profile requires an audit. Details and sources are
+  in [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). This records
+  direction only; implementation remains deferred and changes uncommitted
+  while the design discussion continues.
+- **Implement the accepted plan autonomously, Python and Lean only.**
+  Bili removed Rust from scope, then explicitly authorized implementation
+  and resumed small tested commits and pushes. This supersedes the earlier
+  discussion-only/no-commit instructions. `implementation.md` tracks the
+  finite example-driven roadmap; full P4 expressiveness remains a north
+  star. Record uncertain decisions and revisit triggers instead of waiting
+  for feedback. Confidence: high on scope, medium on sequencing; revisit
+  sequencing when source audits expose infrastructure or semantic gaps.
+- **Migrate ownership before adding language features.** Preserve the
+  existing `P4blo` spec module names and executable protocol when moving
+  them to `ir/`; the new user library will use `P4bloLean` modules to avoid
+  import collisions. Keep the schema alongside the spec, not in a separate
+  top-level `proto/`. Confidence: medium; revisit naming if public API use
+  exposes avoidable friction. This is a structural boundary, not a claim
+  that whole-program validity or all codec proofs already exist.

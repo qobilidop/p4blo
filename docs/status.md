@@ -5,10 +5,10 @@ Where the work stands, by build-order step from
 checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
-Last updated: 2026-09-23, during the verification program accepted after
-the Cedar comparison. The original prototype's steps are complete. The
-stronger assurance work is in progress; its acceptance criteria and trust
-boundaries are in [verification.md](verification.md).
+Last updated: 2026-09-23, starting the accepted Python/Lean architecture
+implementation following the verification work. The original prototype's
+steps are complete. The stronger assurance work is in progress; its
+acceptance criteria and trust boundaries are in [verification.md](verification.md).
 
 ## Claim matrix
 
@@ -49,6 +49,27 @@ boundaries are in [verification.md](verification.md).
 ## Open threads
 
 Things a resuming agent should know are in motion or deliberately left.
+
+- **Architecture implementation: authorized and active.**
+  Read [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md) before starting
+  the next implementation step. Lean is to own abstract syntax, validity,
+  and meaning; protobuf owns encoding, connected by explicitly specified
+  conversion. The updated note also records the agreed separate Lean
+  eDSL/interpreter package, typed core with verified lowering and selective
+  proof-producing elaboration, reference-execution reuse before proved
+  refinements, and prior-art lessons. It now includes the P4 expressiveness
+  north star and agreed example progression: consolidate the existing
+  corpus, then tutorial firewall, `xdp-filter`, conditional flowlet switching,
+  and a bounded Katran configuration, with a common acceptance bar. Upstream
+  pins, precise profiles, and oracle preflight remain open; no new candidate
+  has been ported or run during this discussion. No migration or new proofs
+  have been implemented at this checkpoint. Rust is excluded. Bili has now
+  authorized autonomous implementation and explicitly resumed small commits
+  and pushes. Follow [implementation.md](implementation.md), recording low-
+  confidence choices and revisit triggers rather than waiting for feedback.
+  Next step: preserve the baseline gates while splitting the IR specification
+  from the user-facing Lean package. Checkpoint verification: `git diff --check`;
+  code/test gates not rerun for this documentation-only change.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern
