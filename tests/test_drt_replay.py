@@ -12,7 +12,14 @@ from p4blo import arch, ir
 from p4blo.drt import __main__ as cli
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, replay, save
-from p4blo.drt.run import Outcome, ProtocolError, compare, compare_cases, python_outcome
+from p4blo.drt.run import (
+    Outcome,
+    ProtocolError,
+    compare,
+    compare_cases,
+    compare_program,
+    python_outcome,
+)
 from p4blo.drt.state import snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -139,3 +146,20 @@ def test_startup_failure_still_saves_concrete_inputs(tmp_path: Path) -> None:
     [bundle] = list(tmp_path.glob("*.json"))
     assert len(load(bundle)[1]) == 2
     assert replay(bundle, FAKE).passed
+
+
+def test_shutdown_failure_retains_completed_report(tmp_path: Path) -> None:
+    peer = (
+        "import sys; sys.stdin.readline(); "
+        'print(\'{"outputs":[],"state":{}}\', flush=True); '
+        "sys.stdin.read(); sys.exit(3)"
+    )
+    with pytest.raises(ProtocolError, match="exit 3") as error:
+        compare_program(
+            register_program(), [Case(pb.Entries(), 0, b"x")], 4, [sys.executable, "-c", peer]
+        )
+    report = error.value.report
+    assert report is not None and report.cases == 1 and not report.passed
+    assert len(report.divergences) == 1
+    save(report, tmp_path / "shutdown.json")
+    assert replay(tmp_path / "shutdown.json", FAKE).passed

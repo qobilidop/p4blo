@@ -64,6 +64,7 @@ __all__ = [
     "Report",
     "compare",
     "compare_cases",
+    "compare_program",
     "normalize_error",
     "run_python",
 ]
@@ -265,12 +266,19 @@ class LeanRunner:
         never reads a large request or never finishes its line times out."""
         process = self.process
         assert process is not None and process.stdin is not None and process.stdout is not None
-        while (request := self.requests.get()) is not None:
+        while True:
+            request = self.requests.get()
             try:
+                if request is None:
+                    process.stdin.close()
+                    trailing = process.stdout.read()
+                    process.wait()
+                    self.replies.put(trailing)
+                    return
                 process.stdin.write(request + "\n")
                 process.stdin.flush()
                 self.replies.put(process.stdout.readline())
-            except (OSError, ValueError) as e:
+            except (OSError, ValueError, UnicodeError) as e:
                 self.replies.put(e)
                 return
 
@@ -280,7 +288,31 @@ class LeanRunner:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
-        self.close()
+        try:
+            if exc_type is None:
+                self.finish()
+        finally:
+            self.close()
+
+    def finish(self) -> None:
+        """Require clean EOF, no extra replies, and a successful exit.
+
+        A valid last response must not hide a subsequent crash. The same
+        worker bounds draining and waiting, including inherited pipes.
+        """
+        if self.process is None:
+            return
+        self.requests.put(None)
+        try:
+            trailing = self.replies.get(timeout=self.timeout)
+        except Empty:
+            raise ProtocolError(f"Lean shutdown timed out after {self.timeout:g}s") from None
+        if isinstance(trailing, Exception):
+            raise ProtocolError(f"Lean shutdown failed: {trailing}") from trailing
+        if self.process.returncode != 0:
+            raise ProtocolError(f"Lean shutdown failed: {self._death()}")
+        if trailing:
+            raise ProtocolError(f"unsolicited output after the final reply: {trailing!r}")
 
     def close(self) -> None:
         if self.process is not None:
@@ -341,19 +373,16 @@ class LeanRunner:
         return f"exit {code}" + (f": {err}" if err else "")
 
     @staticmethod
-    def probe(command: Sequence[str | Path], program_json: Path, ports: int = 4) -> str | None:
+    def probe(
+        command: Sequence[str | Path], program_json: Path, ports: int = 4, *, timeout: float = 10
+    ) -> str | None:
         """None when `command` accepts `run` on the program and exits cleanly
-        at end of input; otherwise why not, for a skip message."""
-        argv = [str(c) for c in command] + ["run", "--ports", str(ports), str(program_json)]
+        at end of input; otherwise why not, for the executable gate."""
         try:
-            done = subprocess.run(
-                argv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60
-            )
-        except (OSError, subprocess.TimeoutExpired) as e:
-            return f"{argv[0]}: {e}"
-        if done.returncode != 0:
-            err = (done.stderr or done.stdout).strip().splitlines()
-            return f"{argv[0]} run exited {done.returncode}" + (f": {err[0]}" if err else "")
+            with LeanRunner(command, program_json, ports, timeout=timeout):
+                pass
+        except ProtocolError as e:
+            return str(e)
         return None
 
 
@@ -401,23 +430,38 @@ def compare(
     program = ir.load_text(program_dir / f"{program_dir.name}.txtpb")
     loaded = arch.load(program)
     cases = generate(loaded.index, seed, count, ports)
+    return compare_program(program, cases, ports, lean, seed)
+
+
+def compare_program(
+    program: pb.Program,
+    cases: Sequence[Case],
+    ports: int,
+    lean: Sequence[str | Path],
+    seed: int = 0,
+) -> Report:
+    """Compare concrete inputs from fresh state, retaining every peer failure."""
+    loaded = arch.load(program)
     with tempfile.TemporaryDirectory() as tmp:
-        program_json = Path(tmp) / f"{program_dir.name}.json"
+        program_json = Path(tmp) / "program.json"
         program_json.write_text(ir.dump_json(program))
+        report: Report | None = None
         try:
             with LeanRunner(lean, program_json, ports) as runner:
-                return compare_cases(program_dir.name, loaded, cases, ports, runner.run, seed)
+                report = compare_cases(program.name, loaded, cases, ports, runner.run, seed)
         except ProtocolError as e:
             if e.report is None:
-                e.report = Report(
-                    program_dir.name,
+                e.report = report or Report(
+                    program.name,
                     seed,
                     ports,
                     inputs=tuple(cases),
                     program_ir=program,
                     protocol_error=str(e),
                 )
+                e.report.protocol_error = str(e)
             raise
+        return report
 
 
 def default_lean_binary() -> Path:

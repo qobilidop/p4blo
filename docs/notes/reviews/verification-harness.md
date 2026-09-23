@@ -33,3 +33,13 @@ tests passed; required-Lean missing-binary injection failed rather than
 skipping. `git diff --check` passed and tracked review files were unchanged.
 The reviewer did not run Lean or oracle gates in this harness-only review.
 Root ran the expanded regression tests after implementing the fixes.
+
+## Follow-up adversarial checks
+
+Root found and fixed a further false-green boundary: a peer could return
+its last valid reply then exit nonzero, print unsolicited output or hang
+at EOF. Normal context exit now requires bounded clean shutdown and
+checks all three cases. Concrete-program comparisons, replay and generated
+tests share this path, retaining the completed report on shutdown failure.
+The initial executable probe uses the same process-group cleanup, rather
+than a separate subprocess timeout vulnerable to inherited pipes.

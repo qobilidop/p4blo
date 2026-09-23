@@ -64,3 +64,38 @@ def test_timeout_reaps_descendants_that_inherit_protocol_pipes(tmp_path: Path) -
             runner.run(Case(pb.Entries(), 0, b"x"))
         assert runner.worker is not None and not runner.worker.is_alive()
     assert time.monotonic() - start < 5
+
+
+@pytest.mark.parametrize(
+    ("ending", "message"),
+    [
+        ("sys.exit(3)", "exit 3"),
+        ("print('extra', flush=True)", "unsolicited output"),
+        ("import time; time.sleep(60)", "shutdown timed out"),
+    ],
+)
+def test_valid_final_reply_does_not_hide_broken_shutdown(
+    tmp_path: Path, ending: str, message: str
+) -> None:
+    peer = (
+        "import sys; sys.stdin.readline(); "
+        'print(\'{"outputs":[],"state":{}}\', flush=True); '
+        "sys.stdin.read(); " + ending
+    )
+    with pytest.raises(ProtocolError, match=message):
+        with LeanRunner(
+            [sys.executable, "-c", peer], tmp_path / "unused.json", 4, timeout=0.2
+        ) as runner:
+            runner.run(Case(pb.Entries(), 0, b"x"))
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX process-group cleanup")
+def test_executable_probe_uses_bounded_process_group_cleanup(tmp_path: Path) -> None:
+    start = time.monotonic()
+    reason = LeanRunner.probe(
+        [sys.executable, "-c", "import os,time; os.fork(); time.sleep(60)"],
+        tmp_path / "unused.json",
+        timeout=0.2,
+    )
+    assert reason is not None and "timed out" in reason
+    assert time.monotonic() - start < 5

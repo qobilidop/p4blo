@@ -10,18 +10,16 @@ from __future__ import annotations
 
 import hashlib
 import os
-import tempfile
 from pathlib import Path
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch, ir
 from p4blo.drt.case import Case
 from p4blo.drt.programs import binary, bits, boolean, scalar_program
 from p4blo.drt.replay import save
-from p4blo.drt.run import LeanRunner, ProtocolError, compare_cases
+from p4blo.drt.run import ProtocolError, compare_program
 from p4blo.v0 import p4blo_pb2 as pb
 
 WIDTHS = st.sampled_from([1, 7, 8, 9, 16, 31, 32, 64, 65, 127])
@@ -115,18 +113,14 @@ def scalar(draw: st.DrawFn, width: int | None, depth: int = 3) -> pb.Expr:
 
 def check_expression(expression: pb.Expr, width: int | None, lean_binary: Path) -> None:
     program = scalar_program(expression, width)
-    loaded = arch.load(program)  # Generator mistakes fail; never filter them out.
+    # compare_program validates; generator mistakes fail, never get filtered.
     cases = [Case(pb.Entries(), 0, b"")]
-    with tempfile.TemporaryDirectory() as directory:
-        path = Path(directory) / "program.json"
-        path.write_text(ir.dump_json(program))
-        try:
-            with LeanRunner([lean_binary], path, 4) as runner:
-                report = compare_cases("scalar", loaded, cases, 4, runner.run)
-        except ProtocolError as error:
-            if error.report is None:
-                raise
-            report = error.report
+    try:
+        report = compare_program(program, cases, 4, [lean_binary])
+    except ProtocolError as error:
+        if error.report is None:
+            raise
+        report = error.report
     if not report.passed:
         target = Path(os.environ.get("P4BLO_DRT_FAILURE_DIR", ".artifacts/drt"))
         target.mkdir(parents=True, exist_ok=True)

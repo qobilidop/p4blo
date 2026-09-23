@@ -12,19 +12,16 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import arch, ir
 from p4blo.drt.case import Case
 from p4blo.drt.run import (
-    LeanRunner,
     ProtocolError,
     Report,
-    compare_cases,
+    compare_program,
     default_lean_binary,
     request_json,
 )
@@ -82,12 +79,7 @@ def load(path: Path) -> tuple[pb.Program, list[Case], int, int]:
 
 def replay(path: Path, command: Sequence[str | Path]) -> Report:
     program, cases, ports, seed = load(path)
-    loaded = arch.load(program)
-    with tempfile.TemporaryDirectory() as directory:
-        program_json = Path(directory) / "program.json"
-        program_json.write_text(ir.dump_json(program))
-        with LeanRunner(command, program_json, ports) as runner:
-            return compare_cases(program.name, loaded, cases, ports, runner.run, seed)
+    return compare_program(program, cases, ports, command, seed)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
