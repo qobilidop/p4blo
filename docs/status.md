@@ -12,23 +12,25 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `8c09a48`, including typed field expressions, actual
-leaf codec laws and aggregate-copy conformance: both Lean package gates and
-default audits pass, with **428 spec checks**, all existing scalar/context/
+Combined integration at `ba274f3`, including shared command factoring, actual
+KeyValue codec laws and call-copy conformance: both Lean package gates and
+default audits pass, with **444 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional kernel rejection examples. Required real-Lean DRT:
-**321 passed**, no skips. Full gate:
-**1629 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+**393 passed**, no skips. Full gate:
+**1724 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
-required native XDP CI passes at `7a58ef2`, including lifecycle regressions.
-Latest reviews under `notes/reviews/`: `field-expressions.md`,
-`codec-leaves.md`, `aggregate-copy.md` and `xdp-cleanup.md`.
+required native XDP CI passes at `8829000`, including lifecycle regressions.
+Latest reviews under `notes/reviews/`: `field-permissions.md`,
+`command-seam.md`, `keyvalue-codec.md` and `call-copy.md`.
 
-All five remote workflows pass for `7a58ef2`; newer CI must be checked
-separately. Ten retained execution-fault bundles and three raw leaf-codec
+All five remote workflows pass for `8829000`; newer CI must be checked
+separately. Twelve retained execution-fault bundles and nine raw leaf-codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
+All twelve execution bundles replay successfully on the integrated binaries
+(nineteen requests), as do all nine raw codec inputs after fault restoration.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -39,7 +41,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 428 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and scalar command lowering, aggregate path correspondence, representable leaf codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 444 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and scalar command lowering, aggregate path correspondence, representable leaf codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -148,7 +150,14 @@ Things a resuming agent should know are in motion or deliberately left.
   cover readonly/missing/empty roots, wrong nominal kind and width mismatch.
   Both Lean gates/default audits pass after integration. This adds no runtime
   behavior or total checker. Review: `notes/reviews/field-permissions.md`.
-  Generic command factoring and concrete user-package instantiation follow.
+  Generic command factoring `cd34e83` is integrated: `CmdWith` now owns the
+  sole command AST, independent denotation, lowering and exact-prefix proof.
+  The scalar API/theorems are preserved through concrete adapters, with all
+  prior authored fixtures unchanged. Both Lean gates and 62 authored/call
+  focused checks pass. Review: `notes/reviews/command-seam.md`.
+  Concrete field modes/places and the actual aggregate command theorem are
+  next in `work/field-commands`; the generic leaf-law theorem alone does not
+  establish that instance.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
@@ -216,11 +225,16 @@ Things a resuming agent should know are in motion or deliberately left.
   expected bytes remain a separate gate. It does not establish stack or call
   copyback correctness. Scope, recipes and review: `notes/aggregate-copy.md`,
   `notes/reviews/aggregate-copy.md`.
-  A bounded action/sub-control copy-in/out profile is now being checked in
-  isolated `work/call-copy` from `480eef4`: permitted overlapping input versus
-  inout snapshots, out-zero initialization and complete post-call observations.
-  Overlapping writable arguments and action/local name collisions are already
-  validator errors, not valid generation cases; no call proof is claimed.
+  Bounded action/sub-control copy-in/out profile `2aa8864` is integrated:
+  twelve boundaries and forty shrinking examples expose permitted overlapping
+  input/inout snapshots, out-zero initialization and complete post-call values,
+  validity, unrelated storage and untouched payload. Six real Python faults
+  exercise argument aliasing, bad out defaults and skipped copyback, save the
+  exact inputs and replay divergent/live then agreeing/restored. They yield
+  two distinct retained input bundles. Overlapping writable arguments and
+  action/local name collisions remain validator errors, not generated valid
+  cases; no call proof follows. Scope and review: `notes/call-copy.md`,
+  `notes/reviews/call-copy.md`.
 
 - **Interchange has scoped leaf proofs, not a verified program codec.**
   Real encoder/decoder defects were fixed without adapter normalization:
@@ -247,8 +261,18 @@ Things a resuming agent should know are in motion or deliberately left.
   a false/zero observer ambiguity with type-sensitive JSON comparisons.
   Three raw leaf artifacts and tracked recipes preserve this boundary:
   `notes/codec-proof.md`, `notes/reviews/codec-leaves.md`.
-  KeyValue leaves are next in isolated `work/keyvalue-codec` at `d8e2341`;
-  recursive decoders, text parsing and semantic-version policy remain open.
+  KeyValue increment `b2e5ef2` is integrated at `ba274f3`: every actual key
+  constructor has a JSON-value round-trip law, bounding only uint32 prefix
+  lengths. Arbitrary values/masks and semantically invalid keys remain in
+  scope. Six paired value/mask remappings preserve round trips and encoded
+  payloads but fail independent decoded-value answers; exact raw artifacts
+  all replay restored. The focused codec suite now has 170 checks and native
+  codec driver 52. Review: `notes/reviews/keyvalue-codec.md`; exact source
+  recipes and proof boundary: `notes/keyvalue-codec.md`.
+  Next investigate proof-visible recursion in the actual recursive decoder,
+  isolated `work/codec-recursion` at `ba274f3`; a parallel proof-only decoder
+  would not close the boundary. Text parsing and semantic-version policy
+  remain separate obligations.
 
 - **XDP and later examples: compile-only profile integrated.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter

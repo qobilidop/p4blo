@@ -4,7 +4,7 @@
 define execution, scoped validity/properties, and reference architecture and
 extern models. `proto/p4blo/v0/p4blo.proto` defines the versioned wire syntax.
 `Json.lean` is the actual handwritten adapter. `CodecLaws.lean` proves its
-literal/type round trips over JSON values under explicit v0 uint32
+literal/type/table-key round trips over JSON values under explicit v0 uint32
 representability. This does not verify text parsing, Python/protobuf or the
 recursive program codec; see [`../docs/notes/codec-proof.md`](../docs/notes/codec-proof.md).
 

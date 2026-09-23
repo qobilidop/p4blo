@@ -695,3 +695,25 @@ one that says so.
   copy-alias mutants. Confidence: high for selected aliasing faults, medium
   for generated shape diversity. Extend to stack and call/copyback order when
   those become verified authoring features; do not infer them from this profile.
+- **Factor command composition before claiming a writable field instance.**
+  `CmdWith` owns one source AST/denotation/lowerer and composes per-leaf laws
+  through the actual continuation machine. Preserve the scalar API with
+  concrete adapters; add actual root permission relations first, then prove
+  the field instance separately. Confidence: high in exact prefix/permission
+  obligations, medium in the dependent API. The route-selected forwarding
+  rewrite in `notes/field-commands-plan.md` is its ergonomics revisit trigger.
+- **Keep successful call profiles inside the validated alias policy.**
+  Read-only input may overlap an inout header, but writable overlap and
+  action/enclosing-name collisions are invalid. Generate only valid calls
+  and retain independent post-call snapshots, out-zero/invalid defaults and
+  untouched payload. Confidence: high for selected copy faults, medium for
+  shape diversity. Parser-error copyback and table-invoked actions need their
+  own observation contracts; normal control calls cannot establish them.
+- **Check decoded key meaning in addition to encoded round trips.**
+  Paired ternary value/mask wire swaps preserve both round trips while changing
+  the abstract key. Independent unequal-component decoded-value fixtures kill
+  the fault; representability deliberately does not imply semantic key validity.
+  Confidence: high. Keep raw leaf replays separate from execution DRT, select
+  named campaign inputs explicitly and require each to exist so campaigns
+  can coexist without an empty-input false pass. Investigate actual recursive
+  decoder termination next, not a duplicate decoder used only in proofs.

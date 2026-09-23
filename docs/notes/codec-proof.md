@@ -207,12 +207,13 @@ from pathlib import Path
 
 root = Path("/absolute/path/to/p4blo")
 divergences = 0
-paths = sorted((root / ".artifacts/codec").glob("leaf-*.json"))
-assert {path.name for path in paths} == {
+names = {
     "leaf-aaacaa5bb2d071c2a03340df.json",
     "leaf-20ed59fac41b5ec549d280dc.json",
     "leaf-4258345fb66680b79d8b2c8c.json",
-}, "expected exactly the three retained paired-mutation inputs"
+}
+paths = [root / ".artifacts/codec" / name for name in sorted(names)]
+assert len(paths) == 3 and all(path.is_file() for path in paths), "missing retained input"
 for path in paths:
     saved = json.loads(path.read_text())
     result = subprocess.run(

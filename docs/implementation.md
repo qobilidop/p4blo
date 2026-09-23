@@ -36,7 +36,7 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.
-  Actual decimal/uint32 and representable Literal/Ty JSON-value round trips
+  Actual decimal/uint32 and representable Literal/Ty/KeyValue JSON-value round trips
   are proved and default-audited; independent protobuf/native vectors catch
   paired wrong-wire mappings. Recursive codecs and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
