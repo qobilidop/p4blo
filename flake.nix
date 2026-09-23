@@ -18,6 +18,7 @@
             pkgs.protobuf # protoc, used by buf's protoc_builtin plugins
             pkgs.elan # Lean toolchain manager; lean/lean-toolchain pins the version
             pkgs.nodejs # runtime for the pyright wheel, so it never downloads its own
+            pkgs.actionlint # the workflows are a gate too: a broken one never runs
           ];
           env = {
             # uv uses the Nix-provided interpreter instead of downloading one.
