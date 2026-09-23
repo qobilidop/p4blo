@@ -8,6 +8,7 @@ import Tests.Execution
 import Tests.ExecutionCertificate
 import Tests.CertificateWire
 import Tests.CRC
+import Tests.CodecLaws
 import Tests.ExternFamilies
 
 /-!
@@ -201,6 +202,7 @@ def main (args : List String) : IO UInt32 := do
     ExecutionTests.tests
     ExecutionCertificateTests.tests
     CRCTests.tests
+    CodecLawTests.tests
     ExternFamiliesTests.tests
     certificateWireTests).run []
   if failures.isEmpty then

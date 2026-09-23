@@ -32,7 +32,11 @@ def test_lean_package_dependency_is_one_way() -> None:
     assert (ROOT / "lean/P4blo/Scalar.lean").is_file()
     for old in ("ir/P4blo", "ir/P4blo.lean", "lean/P4bloLean", "lean/P4bloLean.lean"):
         assert not (ROOT / old).exists()
-    assert "ProofAudit" in spec["defaultTargets"]
+    assert {"ProofAudit", "CodecProofAudit", "codec-leaves"} <= set(spec["defaultTargets"])
+    assert "CodecProofAudit" in {lib["name"] for lib in spec["lean_lib"]}
+    assert {exe["name"]: exe["root"] for exe in spec["lean_exe"]}["codec-leaves"] == (
+        "Tests.CodecLeaves"
+    )
     assert spec["testDriver"]
     assert library["testDriver"]
     assert (ROOT / "ir/lean-toolchain").read_bytes() == (ROOT / "lean/lean-toolchain").read_bytes()

@@ -2,7 +2,7 @@
 # Independent of the user-facing Lean package. Lean core only; no Mathlib.
 name = "p4blo-ir"
 version = "0.1.0"
-defaultTargets = ["P4bloIR", "p4blo-lean", "ProofAudit"]
+defaultTargets = ["P4bloIR", "p4blo-lean", "ProofAudit", "CodecProofAudit", "codec-leaves"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "tests"
 
@@ -11,6 +11,14 @@ name = "P4bloIR"
 
 [[lean_lib]]
 name = "ProofAudit"
+
+[[lean_lib]]
+name = "CodecProofAudit"
+
+# Test-only access to production leaf codecs without whole-program validation.
+[[lean_exe]]
+name = "codec-leaves"
+root = "Tests.CodecLeaves"
 
 # The pipe endpoint for differential testing: reads a JSON program, decodes
 # it, builds the index and prints a summary.

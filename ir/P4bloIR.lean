@@ -1,5 +1,6 @@
 import P4bloIR.IR
 import P4bloIR.Json
+import P4bloIR.CodecLaws
 import P4bloIR.Index
 import P4bloIR.Value
 import P4bloIR.Widths
