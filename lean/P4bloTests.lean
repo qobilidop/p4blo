@@ -18,6 +18,7 @@ import P4blo.CallBodyEntryTests
 import P4blo.CallInitializerTests
 import P4blo.CallReturnTests
 import P4blo.GuardedCallPrefixTests
+import P4blo.GuardedControlCallTests
 
 def main : IO Unit := do
   P4blo.ScalarTests.run
@@ -38,6 +39,7 @@ def main : IO Unit := do
   P4blo.CallInitializerTests.run
   P4blo.CallReturnTests.run
   P4blo.GuardedCallPrefixTests.run
+  P4blo.GuardedControlCallTests.run
   let source ← IO.FS.readFile "../ir/Tests/forwarder.json"
   let program ← IO.ofExcept (P4bloIR.Program.fromJsonString source)
   let (sw, externs) ← IO.ofExcept (P4blo.prepareSwitch program)
