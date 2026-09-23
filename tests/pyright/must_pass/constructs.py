@@ -20,6 +20,7 @@ from p4blo.edsl import (
     Deparser,
     Header,
     L,
+    InOut,
     Out,
     Parser,
     Program,
@@ -89,6 +90,7 @@ class Op(IntEnum):
 class SubParser(Parser[headers, metadata]):
     """One h2 header into the stack's next slot, its next_hdr_type out."""
 
+    hdr: InOut[headers]
     ret_next_hdr_type: Out[bit8]
 
     @state(start=True)
