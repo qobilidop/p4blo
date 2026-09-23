@@ -584,6 +584,21 @@ def test_extern_results_must_be_assigned_and_instances_listed() -> None:
         build(control=Unlisted)
 
 
+def test_an_extern_result_assigned_twice_is_refused() -> None:
+    """The second assignment used to reach `list.remove` and escape as a
+    `ValueError` the surface's own `except EdslError` does not catch."""
+
+    class Twice(Control[headers, metadata]):
+        def apply(self) -> None:
+            data = concat(self.hdr.h.f, self.hdr.h.g).as_(Bits[L[24]])
+            result = csum.compute(data)
+            self.assign(self.hdr.h.g, result)
+            self.assign(self.hdr.h.g, result)
+
+    with pytest.raises(EdslError, match="is already assigned"):
+        build(control=Twice, externs=[csum])
+
+
 # -- program assembly: errors, enums, exports --------------------------------------
 
 
@@ -643,3 +658,40 @@ def test_errors_carry_the_users_location() -> None:
 
         class bad(Struct):
             x: int
+
+
+def test_a_duplicate_block_name_is_an_edsl_error_with_a_location() -> None:
+    """Placing a block was the one core call in `_assemble` outside
+    `provenance()`, so the clash escaped as the core's own `EdslError`,
+    which `except EdslError` against this surface does not catch."""
+
+    class Clash(Parser[headers, metadata], name="Same"):
+        @state
+        def start(self) -> Transition:
+            return self.accept
+
+    class C(Control[headers, metadata], name="Same"):
+        pass
+
+    with pytest.raises(EdslError, match=rf"reuses the name of a block.*\(defined at {__file__}"):
+        build(parser=Clash, control=C)
+
+
+def test_a_state_is_named_not_called() -> None:
+    """`return self.parse_ipv4()` is the natural slip; pyright refuses it,
+    and a program that is not type-checked gets an `EdslError` naming the
+    fix instead of `TypeError: 'StateRef' object is not callable`."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            return self.other()  # pyright: ignore[reportCallIssue]
+
+        @state
+        def other(self) -> Transition:
+            return self.accept
+
+    with pytest.raises(
+        EdslError, match=r"a state is named, not called: write self.goto\(self.other\)"
+    ):
+        build(parser=P)

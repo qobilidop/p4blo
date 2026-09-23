@@ -65,6 +65,7 @@ from typing import (
     Any,
     ClassVar,
     Concatenate,
+    Never,
     Self,
     cast,
     get_args,
@@ -166,6 +167,14 @@ class StateRef:
 
     def __repr__(self) -> str:
         return f"{self.owner.__name__}.{self.name}"
+
+    if not TYPE_CHECKING:
+        # Hidden from the checker on purpose: pyright already refuses
+        # `self.parse_ipv4()` as "not callable", which is the better
+        # diagnostic, and this only names the fix for a program that is
+        # not type-checked.
+        def __call__(self, *args: object, **kwargs: object) -> Never:
+            raise EdslError(f"a state is named, not called: write self.goto(self.{self.name})")
 
 
 type Target = StateRef | Accept | Reject
@@ -626,7 +635,8 @@ class Block:
     def _assemble(cls, build: Build, before: CoreBlock | None) -> CoreBlock:
         """Build this block into `build`, placed before `before` when given."""
         core = cls._make_core(build)
-        build.core.add_block(core, before=before)
+        with provenance():
+            build.core.add_block(core, before=before)
         build.blocks[cls] = core
         inst = cls(build, core)
         _ACTIVE.append(inst)
@@ -760,7 +770,15 @@ class Block:
 
     def _call_extern_stmt(self, result: ExternResult, stmts: Stmts, target: Value) -> None:
         core_instance = self._build.extern_core(result.instance)
-        self._build.pending.remove(result)
+        # By identity: `list.remove` would compare with `==`, which on an
+        # eDSL value builds a comparison expression rather than deciding.
+        pending = self._build.pending
+        for i, p in enumerate(pending):
+            if p is result:
+                del pending[i]
+                break
+        else:
+            raise EdslError(f"the result of {result.method}(...) is already assigned")
         with provenance():
             stmts.call(
                 core_instance,
