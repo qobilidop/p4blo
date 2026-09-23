@@ -201,7 +201,7 @@ def shapeOf : String → Option Shape
 /-- The initial state of an instance of `decl` with constructor `args`. -/
 private def make (decl : ExternType) (bindings : Bindings) (args : List Value) :
     Except String ExternState :=
-  match decl.name, args with
+  match (decl.name.splitOn ".").head!, args with
   | "register", [.bits size] => do
     let some width := bindings["T"]? | throw "register: T is unbound"
     pure (.register width (Array.replicate size.value 0))
@@ -216,7 +216,8 @@ def bind (index : Index) : Except String Externs := do
   let mut instances : HashMap String ExternState := {}
   for inst in index.program.externInstances do
     let some decl := index.externTypes[inst.externType]? | throw s!"unknown extern type '{inst.externType}'"
-    let some shape := shapeOf decl.name | throw s!"no implementation for extern type '{decl.name}'"
+    let some shape := shapeOf (decl.name.splitOn ".").head!
+      | throw s!"no implementation for extern type '{decl.name}'"
     let bindings ← matchShape decl shape
     let args := inst.args.map Literal.toValue
     if args.length != decl.constructorParams.length then
