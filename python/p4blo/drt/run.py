@@ -51,6 +51,7 @@ from typing import IO
 from google.protobuf import json_format
 
 from p4blo import arch, ir
+from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
 from p4blo.drt.state import Snapshot, decode, encode, snapshot
@@ -203,15 +204,18 @@ def request_json(case: Case) -> str:
 def parse_reply(line: str) -> Outcome:
     """A reply line as an outcome; raises `ProtocolError` on anything else."""
     try:
-        reply = json.loads(line)
-    except json.JSONDecodeError as e:
-        raise ProtocolError(f"reply is not JSON: {line!r}") from e
+        reply = strict_json_loads(line)
+    except ValueError as e:
+        raise ProtocolError(f"reply is not JSON: {e}: {line!r}") from e
     if not isinstance(reply, dict):
         raise ProtocolError(f"reply is not an object: {line!r}")
     try:
         state = decode(reply.get("state"))
     except ValueError as e:
         raise ProtocolError(f"bad extern state: {e}") from e
+    diagnostic = reply.get("diagnostic")
+    if diagnostic is not None and not isinstance(diagnostic, str):
+        raise ProtocolError(f"bad diagnostic {diagnostic!r} in {line!r}")
     if "error" in reply:
         if not isinstance(reply["error"], str) or "outputs" in reply:
             raise ProtocolError(f"bad error reply: {line!r}")
@@ -229,9 +233,6 @@ def parse_reply(line: str) -> Outcome:
             outputs.append((port, bytes.fromhex(data)))
         except (TypeError, ValueError) as e:
             raise ProtocolError(f"bad output {item!r} in {line!r}") from e
-    diagnostic = reply.get("diagnostic")
-    if diagnostic is not None and not isinstance(diagnostic, str):
-        raise ProtocolError(f"bad diagnostic {diagnostic!r} in {line!r}")
     return Outcome(outputs=tuple(outputs), diagnostic=diagnostic, state=state)
 
 
