@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import signal
@@ -337,6 +338,100 @@ def test_checker_rejects_missing_malformed_or_exit_mismatched_verdict(
 def test_unencodable_request_fails_before_starting_peer(tmp_path: Path) -> None:
     with pytest.raises(certificate.CertificateError, match="not UTF-8"):
         certificate.verify_example_certificate('"\ud800"', lean_binary=tmp_path / "missing")
+
+
+class _CleanupPeer:
+    def __init__(self, outcome: str) -> None:
+        self.pid = 12345
+        self.returncode: int | None = None
+        self.stdin = io.BytesIO()
+        self.stdout = io.BytesIO()
+        self.stderr = io.BytesIO()
+        self.outcome = outcome
+        self.communicate_timeouts: list[float] = []
+        self.wait_timeouts: list[float] = []
+
+    def communicate(
+        self, input: bytes | None = None, timeout: float | None = None
+    ) -> tuple[bytes, bytes]:
+        assert timeout is not None
+        self.communicate_timeouts.append(timeout)
+        if self.outcome.startswith("timeout"):
+            if len(self.communicate_timeouts) == 1 or self.outcome == "timeout_stubborn":
+                raise subprocess.TimeoutExpired("peer", timeout)
+            self.returncode = -9
+            return b"", b""
+        if self.outcome.startswith("exchange"):
+            raise BrokenPipeError("broken pipe")
+        self.returncode = 0
+        return b'{"verdict":"accepted"}', b""
+
+    def wait(self, timeout: float | None = None) -> int:
+        assert timeout is not None
+        self.wait_timeouts.append(timeout)
+        if self.outcome in {"timeout_stubborn", "exchange_stubborn"}:
+            raise subprocess.TimeoutExpired("peer", timeout)
+        self.returncode = -9
+        return -9
+
+
+@pytest.mark.parametrize("outcome", ["timeout", "timeout_stubborn"])
+def test_certificate_does_not_repeat_successful_group_cleanup(
+    monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    peer = _CleanupPeer(outcome)
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: peer)
+    kills = 0
+
+    def kill_once(process: object) -> None:
+        nonlocal kills
+        assert process is peer
+        kills += 1
+        if kills > 1:
+            raise PermissionError(1, "redundant kill denied")
+
+    monkeypatch.setattr(certificate, "_kill_owned_process_group", kill_once)
+    with pytest.raises(certificate.CertificateError, match="timed out after 0.2s"):
+        certificate.verify_example_certificate("{}", lean_binary="peer", timeout=0.2)
+    assert kills == 1
+    assert peer.communicate_timeouts == [0.2, 1]
+    if outcome == "timeout_stubborn":
+        assert peer.wait_timeouts == [1]
+        assert peer.stdin.closed and peer.stdout.closed and peer.stderr.closed
+
+
+@pytest.mark.parametrize(
+    "outcome", ["timeout_stubborn", "exchange", "exchange_stubborn", "success"]
+)
+def test_certificate_reports_first_group_cleanup_denial(
+    monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    peer = _CleanupPeer(outcome)
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: peer)
+    kills = 0
+
+    def deny_kill(process: object) -> None:
+        nonlocal kills
+        assert process is peer
+        kills += 1
+        raise PermissionError(1, "first kill denied")
+
+    monkeypatch.setattr(certificate, "_kill_owned_process_group", deny_kill)
+    with pytest.raises(
+        certificate.CertificateError, match="process-group cleanup failed"
+    ) as caught:
+        certificate.verify_example_certificate("{}", lean_binary="peer", timeout=0.2)
+    assert kills == 1
+    assert isinstance(caught.value.__cause__, PermissionError)
+    if outcome == "timeout_stubborn":
+        assert "timed out after 0.2s" in str(caught.value)
+        assert peer.communicate_timeouts == [0.2, 1]
+        assert peer.wait_timeouts == [1]
+    elif outcome.startswith("exchange"):
+        assert "exchange failed: broken pipe" in str(caught.value)
+        assert peer.wait_timeouts == [1]
+    else:
+        assert peer.communicate_timeouts == [0.2]
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX process-group cleanup")
