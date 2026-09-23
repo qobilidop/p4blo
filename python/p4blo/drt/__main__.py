@@ -78,6 +78,7 @@ def show(report: Report, program_dir: Path, limit: int, save: Path | None) -> No
             text = header + "# Single-case excerpt; replay the JSON bundle for prior state.\n"
             text += case_to_stf(index, d.case, comments=comments)
         except ValueError as e:
+            print(header, end="")
             print(f"# case {d.number} cannot be represented in STF: {e}")
             continue
         print()

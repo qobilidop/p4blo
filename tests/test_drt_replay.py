@@ -30,10 +30,11 @@ ROOT = Path(__file__).resolve().parents[1]
 FAKE = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 
 
+@pytest.mark.parametrize("packet", [b"\x00\x01\x00", b""])
 def test_both_clis_describe_state_only_divergences(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], packet: bytes
 ) -> None:
-    case = Case(pb.Entries(), 0, b"\x00\x01\x00")
+    case = Case(pb.Entries(), 0, packet)
     left = Outcome(outputs=(), state=(Observation("counter", "counter", values=(3,)),))
     right = Outcome(outputs=(), state=(Observation("counter", "counter", values=(2,)),))
     report = Report("register_bounds", 0, 4, cases=1)
@@ -43,6 +44,8 @@ def test_both_clis_describe_state_only_divergences(
     replay_output = capsys.readouterr().out
     cli.show(report, ROOT / "corpus/register_bounds", 1, None)
     excerpt_output = capsys.readouterr().out
+    if not packet:
+        assert "cannot be represented in STF" in excerpt_output
     for output in (replay_output, excerpt_output):
         assert "state counter: Python" in output
         assert '"0x3"' in output and '"0x2"' in output
