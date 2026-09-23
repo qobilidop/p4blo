@@ -849,7 +849,9 @@ def check_golden(name: str, text: str) -> Path:
 # p4test through Docker
 # ---------------------------------------------------------------------------
 
-P4C_IMAGE = "p4lang/p4c"
+# Pinned by digest so every machine typechecks with the same p4c (1.2.5.17).
+# Update: `docker pull p4lang/p4c && docker inspect --format '{{index .RepoDigests 0}}' p4lang/p4c`.
+P4C_IMAGE = "p4lang/p4c@sha256:40e536fb6034ad54ff527d50a03892a68112bf1ab116658dd3e2eb556b20c50e"
 _DOCKER_EXIT_CODES = {125, 126, 127}
 
 
