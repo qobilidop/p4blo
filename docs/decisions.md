@@ -319,3 +319,18 @@ one that says so.
   Build failures do not count as detected semantic inconsistencies.
   Scoped decisions and commits proceed autonomously and remain recorded
   for later user review.
+- **A first sound validity boundary is the closed scalar fragment.**
+  `ScalarTyping.check` produces syntax-directed evidence, and
+  `check_sound` proves the existing evaluator succeeds with exactly that
+  type and preserves every initial Run. It does not copy the evaluator
+  or require statement execution to become transparent first. Variables,
+  lookahead, aggregates and statements remain outside the theorem; the
+  checker is not a replacement for whole-program validation.
+- **Mutation survivors drive generated-program coverage.** The first
+  campaign killed four state/register mutants but missed wrapping
+  saturating-add in Python and a wrong oversized shift in Lean. Add
+  systematic scalar boundaries plus recursively typed Hypothesis
+  expressions embedded in validated packet-observable IR programs.
+  Shrinking preserves types; invalid generated programs fail rather than
+  being filtered away. Retain concrete failed programs under
+  `.artifacts/drt/`, independent of Hypothesis's local example cache.

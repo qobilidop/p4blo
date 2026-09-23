@@ -42,4 +42,4 @@ jobs:
           P4BLO_REQUIRE_LEAN: "1"
         run: |
           nix develop -c uv sync --locked
-          nix develop -c uv run pytest tests/test_drt.py -k lean_agrees -v
+          nix develop -c uv run pytest tests/test_drt.py tests/test_drt_state.py tests/test_drt_programs.py -k lean_agrees -v
