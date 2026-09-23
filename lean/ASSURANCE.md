@@ -515,3 +515,82 @@ On the unmutated candidate:
 No proof/build rejection above is represented as an executable semantic
 kill. These are selected adversarial experiments, not exhaustive mutation
 adequacy or proof of universal Python correctness.
+
+## Field foundation: exact primitive reconstruction
+
+The first field increment is `P4bloIR.FieldLaws`, not yet an aggregate
+authoring language. `Declared` requires the actual nominal declaration of
+the expected header/struct kind, no opposite-kind declaration at that name,
+an exactly ordered field list and nonempty unique names. It does not assert
+global index consistency, field-value typing or program validity. Exact
+runtime list length is a separate premise. This matters because `setField`
+uses `List.set`, which silently leaves a short list unchanged.
+
+`fieldOf_pack` and `setField_pack` expose the actual primitives. The public
+`read_declared` and `update_declared` combine declaration agreement with
+exact shape to prove successful selection/update, exact reconstructed
+container (including nominal name and header validity), selected-value
+readback, unchanged length and every other position unchanged. Each
+computation leaves the entire arbitrary `Run` unchanged. The setter
+**returns a rebuilt container**: these are not yet persistence proofs for
+`writeLValue`, nested paths or commands. Invalid headers retain their stored
+fields and their false validity bit, as the existing p4blo contract requires;
+this is not a portability claim for undefined P4 observations.
+
+The default spec audit checks all six public bridge roots with precisely
+`[propext, Classical.choice, Quot.sound]`. Kernel examples construct header
+and struct agreement witnesses and an exact invalid-header write. Runtime
+tests independently expect unequal-width/unequal-value siblings, both header
+validity states, metadata writes, actual `Index.build` declarations, missing
+and wrong-kind declarations, cross-kind shadowing, key/name disagreement,
+reordered fields, wrong widths, duplicate/empty names and short lists. Raw
+short-list reads fail, while raw short-list setters remain no-ops; neither
+is disguised as an admissible typed update.
+
+### Primitive adversarial experiments
+
+In an isolated worktree, apply each edit separately to `setField` in
+`ir/P4bloIR/Eval.lean` and run, from its `ir/` directory:
+
+```sh
+nix develop -c lake +leanprover/lean4:v4.34.0 build P4bloIR.FieldLaws
+```
+
+1. Replace the header arm
+   `.header t valid fields => pure (t, fields, fun fs => Value.header t valid fs)`
+   with `.header t _valid fields => pure (t, fields, fun fs => Value.header t true fs)`.
+   Build exits 1 at `setField_pack`, leaving the impossible generic goal
+   `valid = true`.
+2. Replace `fields.set i value` with `fields.set (i + 1) value`.
+   Build exits 1 at both container-kind cases of `setField_pack`, requiring
+   equality of the wrong-position and correct-position lists.
+3. Replace `fields.set i value` with `List.replicate fields.length value`
+   and rename the now-unused binder `i` to `_i` only inside `setField`.
+   Build exits 1 at both cases of `setField_pack`, requiring the clobbered
+   sibling list to equal the one-cell update. The failure is not an
+   unused-variable warning.
+
+All three are **proof/build rejection**, not executable semantic detection.
+After each experiment the exact edit was reversed; the final restored module
+build exits 0 and the production evaluator has no diff. Runtime Python
+field mutations and full aggregate-state replay belong to the later concrete
+authoring increment, not this foundation checkpoint.
+
+### Primitive gates and next representation choice
+
+Both Lean packages, default audits and tests pass `scripts/check-lean.sh`.
+The required real-Lean `pytest tests -k lean_agrees -q` passes **242 tests**,
+1196 deselected, no skips. No Python/schema source changes were made; Docker
+builds/oracle runs were not repeated because the shared VM was capacity
+constrained. Integration retains its own full gate. Independent review:
+`docs/notes/reviews/field-primitives.md` (copied by the integrator).
+
+Next, define independent finite aggregate schemas/values with stored header
+validity and typed scalar-leaf paths, then factor only the existing
+expression/command read/write seam. Keep one operator AST/denotation and one
+command sequencing implementation, with old scalar APIs as specializations.
+Confidence is high in the primitive obligations and medium in this planned
+API factoring. Revisit if a realistic nested forwarding body requires
+pervasive Lean inference annotations; do not replace concrete aggregate
+correspondence with an unconstrained callback premise. Parser, tables,
+checksum, deparser and whole-forwarder correctness remain separate.
