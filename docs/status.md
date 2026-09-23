@@ -141,6 +141,14 @@ Things a resuming agent should know are in motion or deliberately left.
   Next: command write factoring and actual root permissions, active in
   isolated `work/field-commands`, based on committed `d8e2341`, following
   `notes/field-commands-plan.md` (committed `480eef4`).
+  First specification increment `8b39c06` is integrated: writable member
+  paths inherit actual root declaration permission, and scalar assignment/
+  conditional/body relations reuse the field-expression typing boundary.
+  Constructive local/out/inout witnesses and six kernel rejection examples
+  cover readonly/missing/empty roots, wrong nominal kind and width mismatch.
+  Both Lean gates/default audits pass after integration. This adds no runtime
+  behavior or total checker. Review: `notes/reviews/field-permissions.md`.
+  Generic command factoring and concrete user-package instantiation follow.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
