@@ -796,3 +796,21 @@ one that says so.
   Confidence: high in this boundary, supported by exact original transcripts,
   independent decoded constructors and paired mapping faults. Revisit helper
   equivalence separately for statement arrays and their first-error order.
+- **State frame initialization over actual map entries, not only a model.**
+  The existing forIn loop admits exact lookup/scope/no-action proofs without
+  a runtime refactor. Require actual zero success for every scope entry;
+  preserve map keys even when stored declaration names disagree, and preserve
+  the looked-up scope even when its block differs from the requested block.
+  Confidence: high after constructive witnesses and compiling loop faults.
+  The generic proof-cost uncertainty is resolved for this checkpoint. Revisit
+  premise discharge in the source adapter, including extra observer variables
+  and a real-built forwarding scope; do not infer global validation.
+- **Distinguish the operation under test from its observer in fault controls.**
+  The first scoped validity fault also matched observer reads, making a weak
+  pre-read snapshot fail for the wrong reason. Test-only identity-mux operands
+  isolate observer validity reads from the authored member read. The same
+  single-hit side effect now survives the weak observer and fails the complete
+  post-read observer, with exact independent packet answers and retained input.
+  Confidence: high for this demonstrated gap, not universal observer immunity.
+  Revisit observer independence for every new stateful operation and preserve
+  the original scalar write/forwarding contracts when extending read syntax.

@@ -12,10 +12,11 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `b868100`, including total Expr/LValue codec proofs,
-Arg wire laws, read-only header primitives, independent source-zero values,
-readable command lists and forwarding-policy proofs: both Lean package gates
-and default audits pass, with **460 spec checks**, all existing scalar/context/
+Combined integration at `2713999`, including total Expr/LValue codec proofs,
+Arg wire laws, unified read-only header expressions, independent source zero,
+actual frame-initialization proofs, readable command lists and forwarding
+policy proofs: both Lean package gates and default audits pass, with
+**481 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -25,8 +26,10 @@ Command lists retain exact previous ASTs/exports and independent order checks;
 codec tests retain independent constructor observations and malformed errors.
 Header primitives add opposite-validity/direct/empty-header answers; source
 zero pins independent values, exact fuel limits and nominal boundaries.
-Required real-Lean DRT: **538 passed**, no skips. Full gate:
-**1955 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Unified reads add 20 expressions and four commands with full post-read
+observations; frame tests cover all entries, map keys and action absence.
+Required real-Lean DRT: **564 passed**, no skips. Full gate:
+**1982 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -34,14 +37,16 @@ Latest reviews under `notes/reviews/`: `field-permissions.md`,
 `command-seam.md`, `field-commands.md`, `keyvalue-codec.md` and `call-copy.md`.
 Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `command-blocks.md`, `expr-codec.md`, `header-validity-primitives.md`,
-`source-zero.md` and `lvalue-codec.md`.
+`source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
+`header-validity-expressions.md`.
 
-All five remote workflows pass for `c550a6f`; newer CI must be checked
-separately. Fourteen retained execution-fault bundles and twenty-four raw codec
+All five remote workflows pass for `ac23e52`; newer CI must be checked
+separately. Fifteen retained execution-fault bundles and twenty-four raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All fourteen execution bundles replay successfully on this integration
-(twenty-one requests), as do all twenty-four raw codec inputs. All fifteen
+All fifteen execution bundles replay successfully on this integration
+(twenty-two requests), as do all twenty-four raw codec inputs. The header-read
+bundle matches the current exporter/wrapper and exact request. All fifteen
 Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
 69 LValue/Arg source-matched pre-refactor transcripts retain byte-identical
 stdout/stderr and exit status. Artifact
@@ -57,7 +62,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 460 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, representable leaf/Expr/LValue/Arg codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 481 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization, representable leaf/Expr/LValue/Arg codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -210,11 +215,18 @@ Things a resuming agent should know are in motion or deliberately left.
   Source constant/inversion faults fail the proof; a well-typed wrong sibling
   passes generic correctness but fails independent opposite-validity answers.
   Scope: `notes/header-validity-primitives.md` and its matching review.
-  Checkpoint 2 is active in isolated `work/validity-expressions`, based on
-  committed `5d12252`: a single shared read-family adapter, legacy exporter
-  byte compatibility, new independent post-read observations and actual Python
-  fault replays. Preserve scalar write laws; the separately named guarded
-  policy is not implemented. Do not change the old invalid-header contract.
+  Checkpoint 2 (`edc12bd`/`078a9de`) is integrated at `2713999`: one shared
+  read-family adapter preserves scalar writes and all four legacy exporter
+  byte streams. Twenty expressions and four commands have independent full
+  post-read observations. A weak pre-read snapshot misses a demonstrated
+  correct-return side effect; the strengthened observer catches it. Actual
+  Python wrong-return/side-effect faults save and replay the same complete
+  witness, with restored agreement. Independent review is clear; scope and
+  recipes: `notes/header-validity-expressions.md` and its matching review.
+  Checkpoint 3 is active in isolated `work/guarded-forwarding`, based on
+  committed `2713999`: a separately named both-valid-header policy, arbitrary
+  source-store proof and concrete execution lift. Preserve the old body's
+  invalid-header contract and do not infer parsing or complete routing.
   An independent initialization review recommends the next premise-discharge
   bridge in `notes/initialization-bridge-plan.md` (committed `6ff0449`).
   Independent structural source zero and actual fuel-bounded Value.zero
@@ -227,13 +239,20 @@ Things a resuming agent should know are in motion or deliberately left.
   gates pass, including a fresh two-package build and 469 fresh-binary DRT
   checks after removing stale caches from the build search path. Scope:
   `notes/source-zero.md`, `notes/reviews/source-zero.md`.
-  The next actual Frame.forBlock proof is active in isolated
-  `work/frame-initialization`, based on committed `c2bb0c8`. It must cover all
-  scope variables, exact lookups/absence and no action layer. Its generic IR
-  implementation has cleared independent review; committed integration and
-  combined gates are next. Source-zero
-  adapters, call entry/copyback and global initialization validity remain
-  separate obligations, not established by the current body theorem.
+  The actual Frame.forBlock theorem (`f00ca87`/`f1737b7`) is integrated at
+  `db99dc2`. It accounts for every scope declaration, exact lookups/absence,
+  the actual selected scope and no action overlay, without assuming scope
+  block or stored declaration names match their lookup keys. Three compiling
+  drop/name/overlay faults fail the exact theorem. Independent review is clear;
+  both integrated Lean gates pass with 481 spec checks. Combined Python/DRT
+  gates pass at the latest checkpoint above. Scope: `notes/frame-initialization.md`
+  and its matching review.
+  The next source-zero/FrameMatches adapter is active in isolated
+  `work/initial-source-frames`, based on committed `db99dc2`, including an
+  investigation of a kernel-checked actual Index.build forwarding witness.
+  It must account for successful and failing extra declarations, not assume
+  the source model covers all scope variables. Call entry/copyback and global
+  initialization validity remain separate obligations.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete

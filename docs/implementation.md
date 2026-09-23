@@ -40,8 +40,10 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   independent diagnostics. List sequencing now preserves the previous ASTs
   and exports, with independent order/branch answers and default-audited laws.
   Read-only header-validity primitives now have concrete typing/evaluation
-  laws and independent answers. A unified read adapter is active; a separately
-  specified guarded policy follows without changing the existing body.
+  laws and independent answers. A unified read adapter preserves scalar writes
+  and legacy exports; full post-read observations catch actual Python return
+  and state-only faults. A separately specified guarded policy is active,
+  without changing the existing body's invalid-header contract.
 - [ ] Define a versioned restricted interchange profile and representability
   predicate. Prove codec properties incrementally; test real Python/Lean
   conversions, missing variants, limits, unknown fields and semantic versioning.
@@ -63,8 +65,9 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   Independent aggregate source zero now corresponds to the actual initializer
   under exact nominal agreement and explicit sufficient fuel. The forwarding
   roots supply a constructive instance. Actual complete-scope frame creation
-  is the next proof bridge; call entry/return and complete applications remain
-  unproved.
+  now has exact lookup/scope/no-action laws under all-entry zero success.
+  The source-frame adapter and actual built-index witness are next; call
+  entry/return and complete applications remain unproved.
 
 ## Application milestones
 
