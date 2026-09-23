@@ -4,6 +4,7 @@ import Tests.Forwarder
 import Tests.ScalarTyping
 import Tests.ScalarStatements
 import Tests.FieldLaws
+import Tests.FieldTyping
 import Tests.Execution
 import Tests.ExecutionCertificate
 import Tests.CertificateWire

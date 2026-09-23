@@ -1,6 +1,23 @@
 import P4blo.Scalar
 import P4blo.ScalarCommands
 import P4blo.Fields
+import P4blo.FieldExpressions
+
+/-- info: 'P4blo.Scalar.evaluate_lower_with' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Scalar.evaluate_lower_with
+
+/-- info: 'P4blo.Fields.Ref.typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Ref.typed
+
+/-- info: 'P4blo.Fields.lower_typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.lower_typed
+
+/-- info: 'P4blo.Fields.evaluate_lower' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.evaluate_lower
 
 /-- info: 'P4blo.Fields.nominal_fields_unique' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

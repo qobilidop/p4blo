@@ -70,8 +70,8 @@ These are **expression** correctness claims, not verified whole-program
 lowering, serialization correctness, or universal Python equivalence.
 `Declares` separately describes declaration/type agreement; a value-matching
 frame by itself does not certify declarations, writable directions, or a
-valid block. Aggregate path primitives are described below; integrating them
-into expressions/commands and complete programs remains work in progress.
+valid block. Aggregate path expressions are described below; writable field
+commands and complete programs remain work in progress.
 The Lean compiler/runtime and notation implementation are not
 verified by the lowering theorem; independent known answers exercise the
 authored syntax, JSON boundary and both production interpreters.
@@ -133,6 +133,15 @@ their validity bit; structs do not. `Path.get`/`Path.set` operate only on
 source data. Proved readback and preservation of **every** header-validity
 bit accompany conversion to IR values.
 
+`Fields.Expr roots` is a specialization of the **same** `Scalar.ExprWith`
+operator AST used by `Scalar.ExprIn` and closed `Scalar.Expr`. It supports
+the same bits/bools/addition/equality/mux and `bits[width, value]` notation.
+`Fields.evaluate_lower` proves exact source result and unchanged entire Run
+from concrete index/frame agreement. `Fields.lower_typed` independently
+uses root well-formedness, index agreement and actual declaration agreement
+to derive the spec's new `FieldTyping.Typed` relation. That relation is not
+a total aggregate checker or a complete validator.
+
 `Ref` adds a root variable to a path. Exact `FrameMatches` and recursive
 `IndexAgrees` premises connect reads to actual `evaluate` and nested writes
 to actual `writeLValue`. `Ref.write_matches` gives the exact updated source
@@ -143,7 +152,16 @@ are primitive operations, not a second expression or command AST.
 it does not establish coherence of repeated nominal names. `IndexAgrees`
 requires one actual index to agree with every reachable declaration;
 it does not by itself check scalar widths or root declarations. Distinct
-root names are a separate write-preservation premise. Concrete witnesses
-and positive/negative nominal-reuse examples are tested. Permissions,
-nonempty root names, expression/command integration and whole-program
-initialization remain obligations for the next authoring layer.
+root names are a separate write-preservation premise. `RootWellFormed` adds
+nonempty/distinct root names for expression typing; `RootDeclares` supplies
+actual variable declarations. Concrete witnesses and positive/negative
+nominal-reuse examples are tested. Permissions, command integration and
+whole-program initialization remain obligations for the next layer.
+
+After building, `pytest tests/test_lean_edsl_fields.py` compares seven field
+expressions and an independently specified complete stored-state observer.
+It evaluates the expression once **before** observing every source field and
+validity bit, including invalid-header fields. A regression demonstrates
+that a pre-expression observer misses a read-side-effect fault while the
+corrected observer saves and replays it. This unverified fixture wrapper is
+not a whole-program compiler or a packet-processing application proof.
