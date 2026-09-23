@@ -833,3 +833,11 @@ one that says so.
   operations need them. Independent expected packets must also check exporter
   selection: choosing the old body passes its proofs and engine agreement but
   is not the intended guarded program. Metadata drop is not network fate.
+- **Prove prefixes of the real flat body rather than reshaping the wrapper.**
+  Strengthen the existing command induction with an arbitrary unexecuted
+  statement suffix and derive the former whole-body APIs as empty-suffix
+  instances. Keep the real branch empty-list transition explicit. Confidence:
+  high after independent queue/step answers and a compiled statement-tail
+  fault caught both logically and by Lean/Python replay. Revisit a general
+  list-composition relation only if another non-command prefix needs one.
+  No typing, execution or termination claim applies to the pending suffix.

@@ -12,11 +12,11 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `cffad0d`, including total Expr/LValue codec proofs,
+Combined local integration at `45fe743`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
-policy proofs and the separately named validity-guarded policy: both Lean
-package gates and default audits pass, with
+policy proofs, the separately named validity-guarded policy and exact flat-body
+prefixes: both Lean package gates and default audits pass, with
 **481 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
@@ -31,6 +31,8 @@ Unified reads add 20 expressions and four commands with full post-read
 observations; frame tests cover all entries, map keys and action absence.
 The source-frame adapter adds kernel-checked actual-built forwarding
 initialization, independent expected values and explicit extra declarations.
+Flat-prefix proofs add four audited roots and 16 actual queue-boundary cases,
+without changing runtime semantics or the former whole-body theorem APIs.
 Guarded forwarding adds 64 independent Lean state answers and 32 exported
 Python/Lean cases, including invalid headers and boundary TTLs.
 Required real-Lean DRT: **597 passed**, no skips. Full gate:
@@ -44,10 +46,17 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `command-blocks.md`, `expr-codec.md`, `header-validity-primitives.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
 `header-validity-expressions.md`, `initial-source-frames.md` and
-`guarded-forwarding.md`.
+`guarded-forwarding.md` and `command-prefix.md`.
 
 All five remote workflows pass for `6ee07c3`; newer CI must be checked
-separately. Sixteen retained execution-fault bundles and twenty-four raw codec
+separately. At `2bd65b8`, macOS CI run `35922311964` fails the certificate
+descendant-timeout test: a redundant final process-group kill raises
+PermissionError after timeout cleanup, masking the timeout diagnostic. Lean,
+XDP and SpecTec pass; other workflow results must be checked separately.
+This is not a green remote checkpoint. A scoped fix is active in isolated
+`work/certificate-cleanup` at committed `45fe743`, with deterministic cleanup
+regressions required; do not bypass or hide the failure by retrying alone.
+Sixteen retained execution-fault bundles and twenty-four raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
 All sixteen execution bundles replay successfully on this integration
@@ -275,11 +284,17 @@ Things a resuming agent should know are in motion or deliberately left.
   boundary, not rename the earlier declaration-only witness. Flat-body suffix
   composition is a subsequent proof; do not reshape the test wrapper to avoid
   it. Call copyback and global validity remain separate.
-  Its proof-only flat-suffix prerequisite is active in isolated
-  `work/command-prefix`, based on `ad746c5`: strengthen the existing single
-  command induction, derive unchanged whole-body theorem signatures, and
-  retain exact pending suffix/continuation with source/noninterference facts.
-  No new AST, executable semantics or actual wrapper change is intended.
+  Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
+  at `45fe743`: the same command induction now retains the exact pending
+  suffix/continuation and full source/noninterference facts. Old whole-body
+  signatures are derived unchanged; no AST, runtime or wrapper changes.
+  Independent review is clear, four audit roots have only standard axioms,
+  16 native boundaries and isolated 564 required checks pass. False consumed-
+  suffix/admin-step proofs are rejected; an actual compiled executor fault
+  also produces a clean live/restored mismatch on the existing dependent-next
+  bundle (not an extra distinct witness). Combined local gates pass above;
+  the unrelated remote certificate-cleanup failure is tracked separately. Scope:
+  `notes/command-prefix.md`, `notes/reviews/command-prefix.md`.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete

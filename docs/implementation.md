@@ -71,6 +71,8 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   extras; kernel-checked actual built-index/frame witnesses anchor the concrete
   forwarding declarations. Call entry/body-prefix composition is next; call
   return and complete applications remain unproved.
+  The flat-body command-prefix prerequisite is now proved over the actual
+  queue, retaining pending observer/return work and existing whole-body APIs.
 
 ## Application milestones
 
