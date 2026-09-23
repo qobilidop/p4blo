@@ -13,6 +13,9 @@ their default (`""`, `0`, `false`) and empty repeated fields are omitted,
 so a decoder supplies the default when a key is missing; a message-typed
 field that is missing decodes as `{}`, which for a oneof message is the
 "no kind set" error.
+Decimal-string values are not numeric protobuf fields: their missing/null
+default is the empty string, which is invalid, not a numeric zero. A zero
+bits value or LPM/ternary component must have an explicit decimal spelling.
 
 Decoding is total. Each decoder takes the path to the value it decodes so
 that every error names where it happened (`blocks[2].states[0].transition:
@@ -104,6 +107,11 @@ def strField (path : String) (j : Json) (key : String) : Dec String := do
   match ← get? path j key with
   | none => pure ""
   | some v => str (sub path key) v
+
+/-- Protobuf defaults an absent/null string to `""`, not the decimal `"0"`.
+Reject that invalid spelling before constructing the Nat-based abstract IR. -/
+def decimalField (path : String) (j : Json) (key : String) : Dec Nat := do
+  decimal (sub path key) (← strField path j key)
 
 /-- A boolean field, `false` when absent. -/
 def boolField (path : String) (j : Json) (key : String) : Dec Bool := do
@@ -246,9 +254,7 @@ def Literal.decode (path : String) (j : Json) : Dec Literal :=
   oneof path j
     [("bits", fun p v => do
        let width ← uint32Field p v "width"
-       let value ← match ← get? p v "value" with
-         | none => pure 0
-         | some s => decimalStr (sub p "value") s
+       let value ← decimalField p v "value"
        pure (Literal.bits width value)),
      ("boolean", fun p v => Literal.boolean <$> bool p v),
      ("enum_member", fun p v => do
@@ -393,13 +399,6 @@ open Decode in
 /-- Decode an `ActionCall` message. -/
 def ActionCall.decode (path : String) (j : Json) : Dec ActionCall := do
   pure { action := ← strField path j "action", args := ← listField path j "args" Literal.decode }
-
-open Decode in
-/-- A decimal-string field, `0` when absent. -/
-private def decimalField (path : String) (j : Json) (key : String) : Dec Nat := do
-  match ← get? path j key with
-  | none => pure 0
-  | some v => decimalStr (sub path key) v
 
 open Decode in
 /-- Decode a `KeyValue` message. -/

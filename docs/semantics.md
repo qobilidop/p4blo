@@ -291,3 +291,22 @@ arguments and its call sites.
   Calls must match the bound width. Non-byte inputs are rejected, not padded.
   The exact contract, known answers and pinned SpecTec padding discrepancy
   are in `notes/crc-contract.md`; this profile does not adopt that discrepancy.
+
+## Decimal values at the JSON boundary
+
+The handwritten Lean adapter accepts the decimal strings used by the
+protobuf encoding for bits literals and exact/LPM/ternary key components.
+An explicit nonempty ASCII digit string denotes a natural number; leading
+zeros are allowed and re-encoding may canonicalize them. Numeric zero is
+`"0"`, not an omitted string. Missing or null string fields have protobuf's
+empty-string default and are rejected before constructing Lean's Nat value.
+JSON numbers, signs, hexadecimal spellings and empty strings are not decimal
+strings. Native numeric protobuf fields retain their own default rules.
+
+Python may parse a malformed protobuf string field before its validator or
+entry installer rejects it; Lean rejects the unrepresentable spelling during
+decoding. This is agreement on rejection, not identical pipeline staging or
+full ProtoJSON conformance. An invalid host-entry request must not execute a
+packet or change persistent extern state; subsequent valid requests continue
+from the previous state. General unknown-field/version policy and verified
+codec roundtrips remain separate open obligations.

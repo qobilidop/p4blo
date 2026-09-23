@@ -124,6 +124,23 @@ def indexTests (p : Program) : T Unit := do
   checkError "duplicate error" (Index.build dupError) "error 'NoError' at 7"
 
 def negativeTests : T Unit := do
+  for (label, value) in ([
+      ("missing", none), ("null", some Lean.Json.null),
+      ("empty", some (Lean.Json.str ""))] : List (String × Option Lean.Json)) do
+    let fields := (value.map fun v => ("value", v)).toList
+    checkError s!"{label} bits decimal is not zero"
+      (Literal.decode "" (Lean.Json.mkObj [("bits", Lean.Json.mkObj (("width", Lean.toJson (8 : Nat)) :: fields))]))
+      "bits.value: expected a decimal number, got an empty string"
+    checkError s!"{label} LPM decimal is not zero"
+      (KeyValue.decode "" (Lean.Json.mkObj [("lpm", Lean.Json.mkObj fields)]))
+      "lpm.value: expected a decimal number, got an empty string"
+    checkError s!"{label} ternary value is not zero"
+      (KeyValue.decode "" (Lean.Json.mkObj [("ternary", Lean.Json.mkObj (("mask", Lean.Json.str "0") :: fields))]))
+      "ternary.value: expected a decimal number, got an empty string"
+    let masks := (value.map fun v => ("mask", v)).toList
+    checkError s!"{label} ternary mask is not zero"
+      (KeyValue.decode "" (Lean.Json.mkObj [("ternary", Lean.Json.mkObj (("value", Lean.Json.str "0") :: masks))]))
+      "ternary.mask: expected a decimal number, got an empty string"
   checkError "unset oneof"
     (Program.fromJsonString
       "{\"name\": \"x\", \"blocks\": [{\"name\": \"b\", \"kind\": \"BLOCK_KIND_PARSER\", \

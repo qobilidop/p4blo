@@ -535,3 +535,12 @@ one that says so.
   revisit when typed packet fields expose ergonomic or transport overhead.
   Prove related frames exist rather than hiding an impossible precondition.
   This is a scoped body fragment, not a whole-program validity claim.
+- **Reject missing decimal strings instead of manufacturing numeric zero.**
+  Lean's Nat-based IR cannot preserve protobuf's invalid empty-string value.
+  Use the protobuf string default first, then decimal decoding, for bits
+  literals and LPM/ternary value/mask fields. Confidence: high; eight executable
+  cross-language regressions reproduced the prior mismatch. Preserve explicit
+  `"0"` and leading zeros; do not change native numeric-field defaults or claim
+  full ProtoJSON parity. Invalid request decoding must preserve extern state
+  and leave the service usable for later valid requests. The complete codec
+  representability and semantic-version contract still needs formalization.

@@ -17,7 +17,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 336 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, scalar soundness/value laws, exact closed eDSL lowering, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 348 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, scalar soundness/value laws, exact closed eDSL lowering, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -149,6 +149,16 @@ Things a resuming agent should know are in motion or deliberately left.
   followed by writable statements proved against the existing step machine.
   The plan is investigated, not implemented; packet field paths follow promptly
   so proofs serve readable examples instead of delaying them for all operators.
+  Decimal-string decoding no longer turns missing/null bits or LPM/ternary
+  fields into zero. Eight test-first failures reproduced the original compiled
+  defect; independent review reproduced them too. Forty-two cross-language
+  cases now pass, including stateful valid/malformed/valid requests with
+  counters exactly 1/1/2. Review: `notes/reviews/decimal-wire-defaults.md`.
+  Gates: both Lean packages/audits (348 spec checks), 156 required DRT,
+  **1112 full tests passed, 3 exact expected discrepancies, no skips**;
+  lint/typecheck/schema/workflow gates pass. This is not a verified codec:
+  representability, resource limits, unknown keys and semantic version policy
+  remain open. All four remote workflows passed at naming checkpoint `e8c8bb9`.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern
