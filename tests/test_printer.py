@@ -874,7 +874,7 @@ def p4test_available() -> str | None:
     return None
 
 
-def p4test(path: Path) -> None:
+def p4test(path: Path, attempt: int = 0) -> None:
     """Typecheck `path` with p4test; skip on a Docker problem, fail on a
     p4test error."""
     reason = p4test_available()
@@ -899,6 +899,12 @@ def p4test(path: Path) -> None:
         return
     if result.returncode in _DOCKER_EXIT_CODES or "No such file or directory" in result.stderr:
         pytest.skip(f"docker could not run p4test on {path}: {result.stderr.strip()}")
+    if "internal compiler error" in result.stderr:
+        # The image is amd64 only; under emulation on an ARM host its C
+        # preprocessor crashes now and then. That is the emulator, not p4test.
+        if attempt < 2:
+            return p4test(path, attempt=attempt + 1)
+        pytest.skip(f"p4c crashed under emulation on {path}: {result.stderr.strip()[:200]}")
     pytest.fail(f"p4test rejected {path}:\n{result.stderr}")
 
 
