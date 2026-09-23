@@ -18,7 +18,7 @@ from google.protobuf import json_format
 
 from p4blo import arch
 from p4blo.drt.case import Case
-from p4blo.drt.programs import scalar_program
+from p4blo.drt.programs import bits, boolean, scalar_program
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
 from p4blo.v0 import p4blo_pb2 as pb
@@ -38,6 +38,27 @@ EXPECTED: dict[str, tuple[int | None, bytes]] = {
     "bool-yes": (None, b"\x00"),
     "bool-no": (None, b"\x80"),
     "nested": (8, b"\x2e"),
+    "read-x": (8, b"\x13"),
+    "read-y": (8, b"\x07"),
+    "read-add": (8, b"\x1a"),
+    "read-wrap": (8, b"\x01"),
+    "read-yes": (8, b"\x13"),
+    "read-no": (8, b"\x07"),
+    "read-equal": (None, b"\x80"),
+    "read-unequal": (None, b"\x00"),
+}
+
+# Inputs are independently checked too: a corrupted exporter must not silently
+# change the case being tested while retaining its ID and expected answer.
+INPUTS = {
+    "read-x": (19, 7, True),
+    "read-y": (19, 7, True),
+    "read-add": (19, 7, True),
+    "read-wrap": (255, 2, False),
+    "read-yes": (19, 7, True),
+    "read-no": (19, 7, False),
+    "read-equal": (7, 7, False),
+    "read-unequal": (19, 7, True),
 }
 
 
@@ -48,7 +69,7 @@ def test_user_proof_audit_and_exporter_are_default_targets() -> None:
 
 
 @pytest.fixture(scope="module")
-def authored_expressions(lean_binary: Path) -> dict[str, pb.Expr]:
+def authored_expressions(lean_binary: Path) -> dict[str, pb.Program]:
     # lean_binary enforces the shared absent-vs-broken/required gate policy.
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
@@ -57,24 +78,50 @@ def authored_expressions(lean_binary: Path) -> dict[str, pb.Expr]:
     completed = subprocess.run(
         [str(exporter)], capture_output=True, text=True, check=True, timeout=30
     )
-    result: dict[str, pb.Expr] = {}
+    result: dict[str, pb.Program] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
         name = record["name"]
         assert name not in result, f"duplicate exported example: {name}"
         assert name in EXPECTED, f"unexpected exported example: {name}"
         assert record["width"] == EXPECTED[name][0]
-        result[name] = json_format.ParseDict(record["expression"], pb.Expr())
+        expression = json_format.ParseDict(record["expression"], pb.Expr())
+        program = scalar_program(expression, EXPECTED[name][0])
+        expected_inputs = (
+            {
+                "x": bits(8, INPUTS[name][0]),
+                "y": bits(8, INPUTS[name][1]),
+                "choose": boolean(INPUTS[name][2]),
+            }
+            if name in INPUTS
+            else {}
+        )
+        bindings = record["bindings"]
+        assert len(bindings) == len(expected_inputs), name
+        actual_inputs = {
+            item["name"]: json_format.ParseDict(item["value"], pb.Expr()) for item in bindings
+        }
+        assert actual_inputs == expected_inputs, f"unexpected initial bindings: {name}"
+        control = program.blocks[1]
+        initializers: list[pb.Stmt] = []
+        for key, value in actual_inputs.items():
+            ty = pb.Type(boolean=pb.BoolType()) if key == "choose" else pb.Type(bits=8)
+            control.locals.add(name=key, type=ty)
+            initializers.append(pb.Stmt(assign=pb.Assign(target=pb.LValue(var=key), value=value)))
+        body = [*initializers, *control.body]
+        del control.body[:]
+        control.body.extend(body)
+        result[name] = program
     assert result.keys() == EXPECTED.keys(), "export must include every authored example"
     return result
 
 
 @pytest.mark.parametrize("name", EXPECTED)
 def test_lean_agrees_on_authored_scalar_known_answers(
-    name: str, authored_expressions: dict[str, pb.Expr], lean_binary: Path
+    name: str, authored_expressions: dict[str, pb.Program], lean_binary: Path
 ) -> None:
-    width, expected = EXPECTED[name]
-    program = scalar_program(authored_expressions[name], width)
+    _, expected = EXPECTED[name]
+    program = authored_expressions[name]
     case = Case(pb.Entries(), 0, b"")
     # Known-answer check independently catches shared mistakes, including a
     # source macro that builds a valid but unintended expression.

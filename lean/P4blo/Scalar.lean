@@ -1,108 +1,132 @@
-import P4bloIR.ScalarTyping
+import P4blo.ScalarContext
 
 /-!
-# Typed closed scalar construction
+# Typed scalar construction
 
-This is a deliberately small source language, not a wrapper declaring raw IR
-well formed. Its compositional meaning uses finite naturals and booleans and
-does not call the IR evaluator. Lowering preserves that exact value and every
-component of any initial interpreter run. Variables and programs are outside
-this theorem; they require a typed-frame relation and additional obligations.
+One context-indexed source AST with independent Fin/Bool environments.
+`Expr` and `denote` retain the closed interface as specializations. Open
+lowering preserves exact source meaning under explicit value agreement;
+neither value agreement nor scalar typing certifies an entire program.
 -/
 
 namespace P4blo.Scalar
 
-abbrev Ty := P4bloIR.ScalarTyping.ScalarTy
-
-/-- Width positivity and literal bounds are checked at construction. -/
-inductive Expr : Ty → Type
+inductive ExprIn (ctx : Context) : Ty → Type
   | bits {width : Nat} (positive : 0 < width) (value : Fin (2 ^ width)) :
-      Expr (.bits width)
-  | boolean (value : Bool) : Expr .boolean
-  | add {width : Nat} : Expr (.bits width) → Expr (.bits width) → Expr (.bits width)
-  | eqBits {width : Nat} : Expr (.bits width) → Expr (.bits width) → Expr .boolean
-  | mux {t : Ty} : Expr .boolean → Expr t → Expr t → Expr t
+      ExprIn ctx (.bits width)
+  | boolean (value : Bool) : ExprIn ctx .boolean
+  | read : Ref ctx t → ExprIn ctx t
+  | add {width : Nat} : ExprIn ctx (.bits width) → ExprIn ctx (.bits width) → ExprIn ctx (.bits width)
+  | eqBits {width : Nat} : ExprIn ctx (.bits width) → ExprIn ctx (.bits width) → ExprIn ctx .boolean
+  | mux {t : Ty} : ExprIn ctx .boolean → ExprIn ctx t → ExprIn ctx t → ExprIn ctx t
 
-/-- Source values are independent of `P4bloIR.Value` and the evaluator. -/
-abbrev Meaning : Ty → Type
-  | .bits width => Fin (2 ^ width)
-  | .boolean => Bool
+abbrev Expr := ExprIn []
 
-def denote : Expr t → Meaning t
+namespace Expr
+abbrev bits := @ExprIn.bits []
+abbrev boolean := @ExprIn.boolean []
+abbrev add := @ExprIn.add []
+abbrev eqBits := @ExprIn.eqBits []
+abbrev mux := @ExprIn.mux []
+end Expr
+
+def denoteIn (env : Env ctx) : ExprIn ctx t → Meaning t
   | .bits _ value => value
   | .boolean value => value
+  | .read ref => env.get ref
   | .add left right =>
-    ⟨((denote left).val + (denote right).val) % 2 ^ _, Nat.mod_lt _ (Nat.two_pow_pos _)⟩
-  | .eqBits left right => (denote left).val == (denote right).val
-  | .mux condition yes no => if denote condition = true then denote yes else denote no
+    ⟨((denoteIn env left).val + (denoteIn env right).val) % 2 ^ _,
+      Nat.mod_lt _ (Nat.two_pow_pos _)⟩
+  | .eqBits left right => (denoteIn env left).val == (denoteIn env right).val
+  | .mux condition yes no => if denoteIn env condition = true then denoteIn env yes else denoteIn env no
 
-/-- The value correspondence, not an implementation of source evaluation. -/
-def toValue : {t : Ty} → Meaning t → P4bloIR.Value
-  | .bits width, value => .bits ⟨width, value.val, value.isLt⟩
-  | .boolean, value => .bool value
+def denote (e : Expr t) : Meaning t := denoteIn .nil e
 
-def lower : Expr t → P4bloIR.Expr
+def lower : ExprIn ctx t → P4bloIR.Expr
   | .bits (width := width) _ value => .literal (.bits width value.val)
   | .boolean value => .literal (.boolean value)
+  | .read ref => .var ref.name
   | .add left right => .binary .add (lower left) (lower right)
   | .eqBits left right => .binary .eq (lower left) (lower right)
   | .mux condition yes no => .mux (lower condition) (lower yes) (lower no)
 
-/-- Every lowered term belongs to the specification's typed scalar fragment. -/
-theorem lower_typed (e : Expr t) : P4bloIR.ScalarTyping.Typed (lower e) t := by
+theorem lower_typed_in (e : ExprIn ctx t)
+    (hw : P4bloIR.ScalarTyping.Context.WellFormed ctx) :
+    P4bloIR.ScalarTyping.TypedIn ctx (lower e) t := by
   induction e with
   | bits positive value => exact .bits _ _ positive value.isLt
   | boolean value => exact .boolean value
+  | read ref => exact .var (ref.lookup hw)
   | add _ _ hl hr => exact .binary .add hl hr (by simp [P4bloIR.ScalarTyping.binaryType])
   | eqBits _ _ hl hr => exact .binary .eq hl hr (by simp [P4bloIR.ScalarTyping.binaryType])
   | mux _ _ _ hc hl hr => exact .mux hc hl hr
 
-/-- Exact meaning preservation, stronger than just the type of the result. -/
-theorem evaluate_lower (e : Expr t) :
-    P4bloIR.evaluate (lower e) = pure (toValue (denote e)) := by
+theorem lower_typed (e : Expr t) : P4bloIR.ScalarTyping.Typed (lower e) t :=
+  lower_typed_in e (by simp [P4bloIR.ScalarTyping.Context.WellFormed])
+
+/-- Exact source value and the entire Run, not merely result typing. The
+frame relation uses real action-layer precedence and does not assume zero
+for a missing variable. Declarations/whole-program validity are separate. -/
+theorem evaluate_lower_in (e : ExprIn ctx t) (env : Env ctx) (run : P4bloIR.Run)
+    (hf : FrameMatches env run.frame) :
+    (P4bloIR.evaluate (lower e)).run run = (.ok (toValue (denoteIn env e)), run) := by
+  have hb (b : P4bloIR.Bits) : P4bloIR.expectBits (.bits b) = pure b := rfl
+  have hbool (b : Bool) : P4bloIR.expectBool (.bool b) = pure b := rfl
   induction e with
   | bits positive value =>
     simp [lower, P4bloIR.evaluate, P4bloIR.literalValue, P4bloIR.Literal.toValue,
-      P4bloIR.Bits.wrap, denote, toValue, Nat.mod_eq_of_lt value.isLt]
+      P4bloIR.ScalarTyping.run_pure, P4bloIR.Bits.wrap, denoteIn, toValue,
+      Nat.mod_eq_of_lt value.isLt]
   | boolean value => rfl
+  | read ref =>
+    simp [lower, P4bloIR.evaluate, P4bloIR.readVar, P4bloIR.ScalarTyping.run_bind,
+      hf ref, denoteIn]
   | add left right hl hr =>
-    have hb (b : P4bloIR.Bits) : P4bloIR.expectBits (.bits b) = pure b := rfl
-    simp [lower, P4bloIR.evaluate, hl, hr, toValue, hb, P4bloIR.bitsBinary,
-      denote, P4bloIR.Bits.wrap]
-  | @eqBits width left right hl hr =>
-    simp only [lower, P4bloIR.evaluate, hl, hr, pure_bind]
-    change (pure (P4bloIR.Value.bool
-      ((width == width) && ((denote left).val == (denote right).val))) : P4bloIR.M _) = _
-    simp [denote, toValue]
+    simp [lower, P4bloIR.evaluate, P4bloIR.ScalarTyping.run_bind,
+      hl, hr, toValue, hb, P4bloIR.bitsBinary,
+      denoteIn, P4bloIR.Bits.wrap]
+  | eqBits left right hl hr =>
+    simp [lower, P4bloIR.evaluate, P4bloIR.ScalarTyping.run_bind,
+      P4bloIR.ScalarTyping.run_map, hl, hr,
+      denoteIn, toValue]
   | mux condition yes no hc hl hr =>
-    have hb (b : Bool) : P4bloIR.expectBool (.bool b) = pure b := rfl
-    cases h : denote condition <;>
-      simp [lower, P4bloIR.evaluate, hc, hl, hr, hb, denote, toValue, h]
+    cases h : denoteIn env condition <;>
+      simp [lower, P4bloIR.evaluate, P4bloIR.ScalarTyping.run_bind, hc,
+        hl, hr, hbool, denoteIn, toValue, h]
 
-/-- All state, not only selected observations, is unchanged. -/
+/-- The original closed computation equality follows from the same open
+theorem; there is no second closed evaluator or parallel source AST. -/
+theorem evaluate_lower (e : Expr t) :
+    P4bloIR.evaluate (lower e) = pure (toValue (denote e)) := by
+  funext run
+  have h := evaluate_lower_in e .nil run (by intro t ref; cases ref)
+  simpa [P4bloIR.M.run, ExceptT.run, StateT.run, Id.run, denote,
+    pure, ExceptT.pure, ExceptT.mk, StateT.pure] using h
+
 theorem evaluate_lower_run (e : Expr t) (run : P4bloIR.Run) :
     (P4bloIR.evaluate (lower e)).run run = (.ok (toValue (denote e)), run) := by
   rw [evaluate_lower]
   rfl
 
-/-- Explicit proofs support symbolic widths and values. Concrete authors may
-use `bits[width, value]`, which discharges these obligations by decision. -/
-def bits (width value : Nat) (positive : 0 < width := by decide)
-    (fits : value < 2 ^ width := by decide) : Expr (.bits width) :=
+def bitsIn {ctx : Context} (width value : Nat) (positive : 0 < width := by decide)
+    (fits : value < 2 ^ width := by decide) : ExprIn ctx (.bits width) :=
   .bits positive ⟨value, fits⟩
 
-/-- Dynamic inputs fail explicitly; invalid literals are never silently wrapped. -/
+def bits (width value : Nat) (positive : 0 < width := by decide)
+    (fits : value < 2 ^ width := by decide) : Expr (.bits width) :=
+  bitsIn width value positive fits
+
 def bits? (width value : Nat) : Option (Expr (.bits width)) :=
   if hp : 0 < width then
     if hv : value < 2 ^ width then some (.bits hp ⟨value, hv⟩) else none
   else none
 
-instance : Add (Expr (.bits width)) := ⟨Expr.add⟩
+instance : Add (ExprIn ctx (.bits width)) := ⟨ExprIn.add⟩
 
 scoped syntax "bits[" term "," term "]" : term
 scoped macro_rules
-  | `(bits[$width, $value]) => `(P4blo.Scalar.bits $width $value)
+  | `(bits[$width, $value]) => `(P4blo.Scalar.bitsIn $width $value)
 
-scoped infix:50 " === " => Expr.eqBits
+scoped infix:50 " === " => ExprIn.eqBits
 
 end P4blo.Scalar

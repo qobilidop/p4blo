@@ -1,6 +1,6 @@
 import Tests.Check
 
-/-! Acceptance and rejection boundaries of the proved closed-scalar checker. -/
+/-! Acceptance and rejection boundaries of the proved scalar checkers. -/
 
 open P4bloIR
 
@@ -23,6 +23,21 @@ example (run : Run) : ∃ v,
 
 def tests : T Unit := do
   let infer := ScalarTyping.infer
+  let ctx : ScalarTyping.Context := [("x", .bits 8), ("y", .bits 8), ("b", .boolean)]
+  let inferIn := ScalarTyping.inferIn ctx
+  check "context checker accepts variable" (inferIn (.var "x") == some (.bits 8))
+  check "context checker accepts variable composition"
+    (inferIn (.mux (.var "b") (.binary .add (.var "x") (.var "y")) (bit 8 0)) ==
+      some (.bits 8))
+  check "context checker rejects missing variable" (inferIn (.var "missing") == none)
+  check "context checker rejects variable width mismatch"
+    (inferIn (.binary .add (.var "x") (bit 7 1)) == none)
+  check "context checker rejects variable kind mismatch"
+    (inferIn (.binary .eq (.var "x") (.var "b")) == none)
+  for bad in [[("", ScalarTyping.ScalarTy.boolean)], [("x", .bits 0)],
+      [("x", .bits 8), ("x", .bits 8)], [("x", .bits 8), ("x", .boolean)]] do
+    check "context checker rejects invalid unused context"
+      (ScalarTyping.inferIn bad (bool true) == none)
   check "scalar checker accepts nested composition" (infer nested == some (.bits 8))
   check "checked nested expression runs in the actual evaluator"
     (match ((evaluate nested).run default).1 with
