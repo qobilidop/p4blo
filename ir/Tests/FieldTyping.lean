@@ -152,4 +152,63 @@ example (fieldName : String) : ¬StatementTyped headerIndex (parameterScope .out
     | read path _ => cases path
     | bits _ _ _ _ => have impossible := member_width _ _ target; contradiction
 
+-- Header validity is a read, including through input/directionless roots.
+-- Its endpoint declaration is checked even when there are no member steps.
+example (direction : Direction) : Typed headerIndex (parameterScope direction)
+    (.isValid (.var "hdr")) .boolean := by
+  apply Typed.isValid (fields := [⟨"byte", .bits 8⟩])
+  · exact .var "hdr" (.param ⟨"hdr", .header "Header", direction⟩) (by decide)
+      (by simp [parameterScope, BlockScope.var?]) rfl
+  · simp [FieldLaws.Declared, FieldLaws.NamesWellFormed, headerIndex]
+
+example (direction : Direction) :
+    ¬Typed emptyIndex (parameterScope direction) (.isValid (.var "hdr")) .boolean := by
+  intro h
+  cases h with
+  | read path _ => cases path
+  | isValid _ declared => simp [FieldLaws.Declared, emptyIndex] at declared
+
+private def rootScope (ty : Ty) : BlockScope :=
+  { block := default, vars := ({} : Std.HashMap String VarDecl).insert "root" (.var ⟨"root", ty⟩) }
+
+private theorem rootType (h : Path index (rootScope actual) (.var "root") ty) : ty = actual := by
+  cases h with
+  | var _ decl _ found _ =>
+    have hd : decl = .var ⟨"root", actual⟩ := by
+      simpa [rootScope, BlockScope.var?] using found.symm
+    subst decl
+    rfl
+
+example (index : Index) (name : String) :
+    ¬Typed index (rootScope (.struct name)) (.isValid (.var "root")) .boolean := by
+  intro h
+  cases h with
+  | read path _ => cases path
+  | isValid path _ => have bad := rootType path; contradiction
+
+example (index : Index) (width : Nat) :
+    ¬Typed index (rootScope (.bits width)) (.isValid (.var "root")) .boolean := by
+  intro h
+  cases h with
+  | read path _ => cases path
+  | isValid path _ => have bad := rootType path; contradiction
+
+example (index : Index) :
+    ¬Typed index (rootScope .boolean) (.isValid (.var "root")) .boolean := by
+  intro h
+  cases h with
+  | read path _ => cases path
+  | isValid path _ => have bad := rootType path; contradiction
+
+private def wrongKindIndex : Index :=
+  { program := default, structTypes := ({} : Std.HashMap String StructType).insert
+      "Header" ⟨"Header", [⟨"byte", .bits 8⟩]⟩ }
+
+example (direction : Direction) :
+    ¬Typed wrongKindIndex (parameterScope direction) (.isValid (.var "hdr")) .boolean := by
+  intro h
+  cases h with
+  | read path _ => cases path
+  | isValid _ declared => simp [FieldLaws.Declared, wrongKindIndex] at declared
+
 end FieldTypingTests

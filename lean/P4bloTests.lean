@@ -7,6 +7,7 @@ import P4blo.FieldCommandTests
 import P4blo.NamedFieldsTests
 import P4blo.ForwardPolicyTests
 import P4blo.CommandBlockTests
+import P4blo.HeaderFieldTests
 
 def main : IO Unit := do
   P4blo.ScalarTests.run
@@ -16,6 +17,7 @@ def main : IO Unit := do
   P4blo.NamedFieldsTests.run
   P4blo.ForwardPolicyTests.run
   P4blo.CommandBlockTests.run
+  P4blo.HeaderFieldTests.run
   let source ← IO.FS.readFile "../ir/Tests/forwarder.json"
   let program ← IO.ofExcept (P4bloIR.Program.fromJsonString source)
   let (sw, externs) ← IO.ofExcept (P4blo.prepareSwitch program)

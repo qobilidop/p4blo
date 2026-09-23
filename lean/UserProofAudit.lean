@@ -1,10 +1,27 @@
 import P4blo.Scalar
+import P4blo.HeaderFields
 import P4blo.ScalarCommands
 import P4blo.Fields
 import P4blo.FieldExpressions
 import P4blo.FieldCommandExamples
 import P4blo.NamedFields
 import P4blo.ForwardPolicy
+
+/-- info: 'P4blo.Fields.HeaderPath.evaluate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.HeaderPath.evaluate
+
+/-- info: 'P4blo.Fields.HeaderPath.typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.HeaderPath.typed
+
+/-- info: 'P4blo.Fields.HeaderRef.evaluate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.HeaderRef.evaluate
+
+/-- info: 'P4blo.Fields.HeaderRef.typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.HeaderRef.typed
 
 /-- info: 'P4blo.Fields.Ref.resolve_sound' depends on axioms: [propext] -/
 #guard_msgs in
