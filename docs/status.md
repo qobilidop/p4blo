@@ -17,7 +17,7 @@ boundaries are in [verification.md](verification.md).
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 283 Lean checks; corpus plus typed generated-program DRT with extern-state comparison; packing, closed scalar soundness/value laws, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 287 Lean checks; corpus plus typed generated-program DRT with extern-state comparison; packing, closed scalar soundness/value laws, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -62,9 +62,10 @@ Things a resuming agent should know are in motion or deliberately left.
   200 shrinking examples and faulting unselected parser branches. CI retains
   failure bundles for 14 days. Latest full gate: **915 passed, 1 expected
   BMv2 divergence, no skips**, with the pinned SpecTec oracle built locally;
-  At that checkpoint Lean build/audit and 259 Lean checks passed; required
-  DRT: 26 passed. All four remote workflows passed for `a3de320`.
-  Subsequent bounded checker/wire work passes build/audit and 283 Lean checks.
+  The gate was rerun at `33d5cf1` with the same full result; build/audit and
+  287 Lean checks pass. Required DRT now includes 27 tests after independent
+  review found an old error-reason test excluded by its name. All four
+  remote workflows passed for the earlier checkpoint `a3de320`.
   The statement interpreter now uses a total continuation step and an
   unfoldable actual runner, with a finite-trace soundness theorem. It was
   independently compared with the old executor on fault/copyback cases.
@@ -77,6 +78,10 @@ Things a resuming agent should know are in motion or deliberately left.
   is integrated; its fixed-program JSON bridge passed independent review,
   including 58 CLI tamper probes (`notes/reviews/certificate-wire.md`). See
   `certificates.md` for its exact trust boundary.
+  Building the Python producer exposed a real zero-literal serialization
+  defect: Lean omitted numeric zero in protobuf string fields. The encoder
+  now emits `"0"`; explicit tests and independent cross-language review pass
+  (`notes/reviews/zero-encoding.md`). No adapter normalization hides the bug.
   Next: integrate/review the Python certificate producer (isolated
   `verification/mutation-campaign` branch) and generated stateful programs
   (`verification/scalar-soundness`). Those two extensions are in progress,
