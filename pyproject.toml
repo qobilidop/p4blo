@@ -30,7 +30,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["python/p4blo/v0", ".claude"]  # generated code; agent worktrees
+extend-exclude = ["python/p4blo/v0", ".claude", "docs/notes"]  # generated code; worktrees; notes with code samples
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
