@@ -194,6 +194,32 @@ def argValue : Arg → Json
   | .expr value => Json.mkObj [("tag", .str "expr"), ("value", exprValue value)]
   | .lvalue value => Json.mkObj [("tag", .str "lvalue"), ("value", lvalueValue value)]
 
+/-- Independent constructor observation; never derives tags/order from toJson. -/
+def stmtValue : Stmt → Json
+  | .assign target value => Json.mkObj [("tag", .str "assign"),
+      ("target", lvalueValue target), ("value", exprValue value)]
+  | .conditional condition thenBranch otherwise => Json.mkObj [("tag", .str "conditional"),
+      ("condition", exprValue condition), ("then", toJson (thenBranch.map stmtValue)),
+      ("otherwise", toJson (otherwise.map stmtValue))]
+  | .apply table hit => Json.mkObj [("tag", .str "apply"), ("table", .str table),
+      ("hit", hit.map lvalueValue |>.getD .null)]
+  | .callAction action args => Json.mkObj [("tag", .str "call_action"),
+      ("action", .str action), ("args", toJson (args.map argValue))]
+  | .callBlock block args => Json.mkObj [("tag", .str "call_block"),
+      ("block", .str block), ("args", toJson (args.map argValue))]
+  | .callExtern inst method args result => Json.mkObj [("tag", .str "call_extern"),
+      ("instance", .str inst), ("method", .str method), ("args", toJson (args.map argValue)),
+      ("result", result.map lvalueValue |>.getD .null)]
+  | .setValid header => Json.mkObj [("tag", .str "set_valid"), ("header", lvalueValue header)]
+  | .setInvalid header => Json.mkObj [("tag", .str "set_invalid"), ("header", lvalueValue header)]
+  | .push stack count => Json.mkObj [("tag", .str "push"), ("stack", lvalueValue stack), ("count", toJson count)]
+  | .pop stack count => Json.mkObj [("tag", .str "pop"), ("stack", lvalueValue stack), ("count", toJson count)]
+  | .extract target => Json.mkObj [("tag", .str "extract"), ("target", lvalueValue target)]
+  | .advance bits => Json.mkObj [("tag", .str "advance"), ("bits", exprValue bits)]
+  | .verify condition error => Json.mkObj [("tag", .str "verify"),
+      ("condition", exprValue condition), ("error", .str error)]
+  | .emit value => Json.mkObj [("tag", .str "emit"), ("value", exprValue value)]
+
 /-- Test-only access to actual syntax decoding/encoding, without validation. -/
 def reply (request : Json) : Except String Json := do
   let kind ← (← request.getObjVal? "kind").getStr?
@@ -217,6 +243,9 @@ def reply (request : Json) : Except String Json := do
   | "arg" =>
     let value ← Arg.decode "leaf" wire
     pure (Json.mkObj [("value", argValue value), ("encoded", value.toJson)])
+  | "stmt" =>
+    let value ← Stmt.decode "leaf" wire
+    pure (Json.mkObj [("value", stmtValue value), ("encoded", value.toJson)])
   | _ => throw "unsupported test leaf kind"
 
 def tests : T Unit := do
@@ -319,5 +348,25 @@ def tests : T Unit := do
       ("lvalue", Json.mkObj [])]) with
      | .error message => message == "test: more than one kind set: [expr, lvalue]"
      | .ok _ => false)
+  let c := Json.mkObj [("var", .str "condition")]
+  let emit := Json.mkObj [("emit", Json.mkObj [("value", Json.mkObj [("var", .str "first")])])]
+  let invalid := Json.mkObj [("set_invalid", Json.mkObj [("header", Json.mkObj [("var", .str "last")])])]
+  let conditional := Json.mkObj [("conditional", Json.mkObj [("condition", c),
+    ("then", .arr #[emit, invalid]), ("otherwise", .arr #[invalid])])]
+  checkOk "codec stmt unequal branches retain constructor and order" (Stmt.decode "test" conditional)
+    (· == .conditional (.var "condition") [.emit (.var "first"), .setInvalid (.var "last")]
+      [.setInvalid (.var "last")])
+  checkOk "codec stmt set-valid is independently anchored"
+    (Stmt.decode "test" (Json.mkObj [("set_valid", Json.mkObj [("header", Json.mkObj [("var", .str "h")])])]))
+    (· == .setValid (.var "h"))
+  check "codec stmt recursive array reports first failing index"
+    (match Stmt.decode "test" (Json.mkObj [("conditional", Json.mkObj [("condition", c),
+      ("then", .arr #[emit, Json.mkObj []]), ("otherwise", .bool false)])]) with
+     | .error message => message == "test.conditional.then[1]: no kind set"
+     | .ok _ => false)
+  checkOk "codec stmt null arrays retain empty default"
+    (Stmt.decode "test" (Json.mkObj [("conditional", Json.mkObj [("condition", c),
+      ("then", .null), ("otherwise", .null)])]))
+    (· == .conditional (.var "condition") [] [])
 
 end CodecLawTests
