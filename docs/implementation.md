@@ -69,10 +69,18 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   now has exact lookup/scope/no-action laws under all-entry zero success.
   The source-frame adapter now discharges modeled values and explicitly handles
   extras; kernel-checked actual built-index/frame witnesses anchor the concrete
-  forwarding declarations. Call entry/body-prefix composition is next; call
-  return and complete applications remain unproved.
+  forwarding declarations. Actual four-root call entry now preserves the
+  whole Run outside the installed callee and captures the exact original
+  caller/continuation. Its user theorem discharges actual initialization for
+  the selected empty-body declaration program; this is not yet the full
+  body-bearing wrapper. Independently frozen/type-sensitive state observers
+  and permanent adversarial controls accompany the proof.
   The flat-body command-prefix prerequisite is now proved over the actual
   queue, retaining pending observer/return work and existing whole-body APIs.
+  Next: actual-built body-parametric entry, then real local assignments plus
+  guarded forwarding up to the unexecuted observer suffix, following
+  `notes/call-body-prefix-plan.md`. Call return, copyback and complete
+  applications remain unproved.
 
 ## Application milestones
 

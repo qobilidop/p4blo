@@ -851,3 +851,30 @@ one that says so.
   if the first signal is denied or a descendant survives the live test;
   retries alone do not close a failing CI checkpoint. Evidence and review:
   `notes/certificate-cleanup.md`, `notes/reviews/certificate-cleanup.md`.
+- **Prove actual call entry before body execution and copyback.** The fixed
+  four-root wrapper admits exact actual dispatch, ordered argument binding,
+  whole-Run frame replacement and captured caller/continuation laws. Its
+  source bridge discharges real initialization using a kernel-checked built
+  declaration index. Confidence: high for this bounded operational result;
+  an arbitrary preserved observer value is not implicitly well typed. Keep
+  the empty-body witness explicit and revisit the fixed arity on a second
+  real call shape. Scope and review: `notes/plain-call-entry.md` and its
+  independent review.
+- **Freeze full state and compare JSON types at proof/test boundaries.**
+  Identity checks missed mutations of aliased caller/shared state; program
+  bytes alone missed index lookup-table changes; ordinary Python equality
+  accepted integer zero in place of Boolean false. Detached index/scope
+  snapshots, immutable contents, type-sensitive complete JSON comparisons
+  and exact case-set checks now have permanent survivor/rejection controls.
+  Confidence: high for the demonstrated gaps, not universal observer
+  correctness. Apply this discipline to the next internal-prefix observer;
+  an exception after observation still invokes Python call copyback.
+- **Parameterize the actual built body before composing the guarded call.**
+  Keep the old empty-body entry API as an instance, but prove actual lookup
+  and scope identity for the body-bearing program. Then compose actual
+  local assignments and the existing flat-prefix theorem, leaving observer
+  and return work pending. Confidence: high in the semantic composition,
+  medium in symbolic Index.build proof reuse. Prefer small map-transport
+  laws over copying initialization proofs if reduction is costly. Revisit
+  after a second signature needs a more general API. The staged contract,
+  exact identity checks and exclusions are in `notes/call-body-prefix-plan.md`.

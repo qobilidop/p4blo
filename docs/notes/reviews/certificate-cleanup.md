@@ -41,3 +41,7 @@ real-Lean conformance also passes: 597 cases, no skips, exit 0. No Lean
 source changed in this correction; its binaries were not rebuilt while
 these consumers ran. The full integration gate and new remote run remain
 separate checks recorded in the checkpoint status.
+
+Remote closure: fresh macOS CI run `35924868471` passes at pushed `c59878f`.
+All five workflows at that commit pass, including Lean and both P4 oracles.
+The earlier failing run remains recorded; it was not hidden by retrying it.

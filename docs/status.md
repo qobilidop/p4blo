@@ -12,12 +12,12 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `5871da8`, including total Expr/LValue codec proofs,
+Combined local integration at `901c994`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
-prefixes: both Lean package gates and default audits pass, with
-**481 spec checks**, all existing scalar/context/
+prefixes and actual plain-root call entry: both Lean package gates and default audits pass, with
+**488 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -35,8 +35,10 @@ Flat-prefix proofs add four audited roots and 16 actual queue-boundary cases,
 without changing runtime semantics or the former whole-body theorem APIs.
 Guarded forwarding adds 64 independent Lean state answers and 32 exported
 Python/Lean cases, including invalid headers and boundary TTLs.
-Required real-Lean DRT: **597 passed**, no skips. Full gate:
-**2022 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Call entry adds seven spec checks, twelve default-audited roots and 23
+focused Python checks, including independent full-state and strict JSON
+observer regressions. Required real-Lean DRT: **602 passed**, no skips. Full gate:
+**2045 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -46,20 +48,18 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `command-blocks.md`, `expr-codec.md`, `header-validity-primitives.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
 `header-validity-expressions.md`, `initial-source-frames.md` and
-`guarded-forwarding.md`, `command-prefix.md` and `certificate-cleanup.md`.
+`guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
+`plain-call-entry.md`.
 
-All five remote workflows pass for `6ee07c3`; newer CI must be checked
-separately. At `2bd65b8`, macOS CI run `35922311964` fails the certificate
-descendant-timeout test: a redundant final process-group kill raises
-PermissionError after timeout cleanup, masking the timeout diagnostic. Lean,
-XDP, SpecTec and BMv2 pass. This is not a green remote checkpoint. The reviewed
-fix `8438cbd` is integrated at `5871da8`: cleanup is attempted once, bounded
-reaping is retained, and cleanup denial fails closed. Six deterministic
-regressions and both live descendant tests pass. The complete integrated
-certificate module passes all 61 cases against the real Lean checker, with
-no skips; the required and full gates pass as recorded above. Lean sources
-are unchanged from the previously checked two-package build. New remote CI
-must still confirm the fix; do not hide the original failure by retrying alone.
+All five remote workflows pass for `c59878f`; newer CI must be checked
+separately. This closes the earlier macOS CI run `35922311964` failure at
+`2bd65b8`: a redundant final process-group kill raised PermissionError after
+timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
+at `5871da8`, attempts cleanup once, retains bounded reaping and fails closed
+on cleanup denial. Six deterministic regressions and both live descendant
+tests pass. The complete integrated certificate module passes all 61 cases
+against the real Lean checker, without skips. Fresh remote CI run
+`35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
 Sixteen retained execution-fault bundles and twenty-four raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
@@ -82,7 +82,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 481 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization, representable leaf/Expr/LValue/Arg codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 488 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry, representable leaf/Expr/LValue/Arg codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -282,13 +282,32 @@ Things a resuming agent should know are in motion or deliberately left.
   review is clear; isolated fresh-cache Lean and 538 required DRT checks pass.
   Combined integration gates pass at the latest checkpoint above.
   Scope: `notes/initial-source-frames.md`
-  and its matching review. Actual plain-root sub-control entry is active in
-  isolated `work/plain-call-entry`, based on committed `c269994`; reviewed
-  scope is `notes/call-entry-plan.md` (committed `ad746c5`). It must establish
-  the actual wrapper declarations, caller bindings and complete Run/queue
-  boundary, not rename the earlier declaration-only witness. Flat-body suffix
-  composition is a subsequent proof; do not reshape the test wrapper to avoid
-  it. Call copyback and global validity remain separate.
+  and its matching review. Actual plain-root sub-control entry
+  (`258ec14`/`0559c70`/`f8a0f61`) is integrated at `901c994`: actual four-root
+  binding, complete Run frame replacement and exact captured caller/queue.
+  The source bridge derives actual initialization for a kernel-built selected
+  declaration program, including the real H/Result observer layout and extras.
+  Its empty body and manually supplied caller remain explicit boundaries.
+  Independent review is clear; twelve audit roots have only standard axioms,
+  seven new spec checks and 23 focused Python checks pass. Five compiling
+  actual-Exec faults are rejected by proofs; paired declaration corruption
+  fails an independent syntax anchor. Actual Python cursor corruption fails
+  entry-state answers. Eight state-survivor controls and eight JSON/type/case
+  controls permanently reject demonstrated observer gaps. These internal
+  snapshots are not packet-program replay bundles. Scope/review:
+  `notes/plain-call-entry.md`, `notes/reviews/plain-call-entry.md`.
+  Next, isolated `work/body-parametric-entry` builds against committed
+  `ac69759`: preserve the old API while proving actual built lookup/scope and
+  initialization for a body-bearing block. Then compose real local assignments
+  and guarded forwarding to the exact pending observer suffix and return.
+  Staged contract: `notes/call-body-prefix-plan.md`. Do not substitute the
+  empty declaration witness, reshape the wrapper or claim copyback/global
+  validity from a successful finite prefix.
+  A disjoint local-assignment prerequisite is active in
+  `work/call-initializers` against the same committed interfaces; it will
+  prove the exact scratch19/unrelated165 prefix without assuming an actual
+  body-bearing call. A read-only normal-return feasibility probe in
+  `work/plain-call-return` is separate; no return implementation is claimed.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
   at `45fe743`: the same command induction now retains the exact pending
   suffix/continuation and full source/noninterference facts. Old whole-body
@@ -298,7 +317,7 @@ Things a resuming agent should know are in motion or deliberately left.
   suffix/admin-step proofs are rejected; an actual compiled executor fault
   also produces a clean live/restored mismatch on the existing dependent-next
   bundle (not an extra distinct witness). Combined local gates pass above;
-  the unrelated remote certificate-cleanup failure is tracked separately. Scope:
+  the separately corrected certificate-cleanup failure is recorded above. Scope:
   `notes/command-prefix.md`, `notes/reviews/command-prefix.md`.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
