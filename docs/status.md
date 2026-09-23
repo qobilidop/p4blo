@@ -97,6 +97,16 @@ Things a resuming agent should know are in motion or deliberately left.
   cases. Review: `notes/reviews/scalar-equality.md`. Both package gates (288
   spec checks), 95 required DRT, and full **1005 passed/1 expected divergence**
   pass. No universal equality/production equivalence proof is claimed.
+  Original firewall preflight is now a permanent independent oracle input,
+  not printer output: pinned source, distinct per-request TCP sequence IDs,
+  exact packet/checksum expectations and negative observer/configuration tests.
+  Both original-program oracle tests pass. Full gate before final profile
+  hardening: **1010 passed/1 expected divergence/no skips**; afterward all
+  six focused tests and lint/typecheck pass. Reviews and reproducible profile:
+  `notes/reviews/original-firewall.md`, `notes/firewall-preflight.md`.
+  CRC work exposed a SpecTec odd-byte CRC32 disagreement hidden by this simple
+  stateful sequence; CRC known answers/state observations must not be replaced
+  by packet-only connection tests. No p4blo firewall port is claimed yet.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

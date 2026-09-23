@@ -11,6 +11,7 @@ disagreement, but it leaves the claim unchecked.
 from __future__ import annotations
 
 import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from p4blo import ir, stf
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tests.oracle import firewall  # noqa: E402
 from tests.oracle import run as oracle_run  # noqa: E402
 
 CORPUS = ROOT / "tests" / "corpus"
@@ -117,6 +119,62 @@ def test_every_corpus_vector_translates() -> None:
     for vector in VECTORS:
         index = ir.Index.build(ir.load_text(program_of(vector)))
         oracle_run.translate(vector.read_text(), index)
+
+
+def test_original_firewall_source_is_pinned() -> None:
+    assert "V1Switch(" in firewall.source()
+
+
+def test_original_firewall_vectors_distinguish_requests() -> None:
+    phase = firewall.plan().phases[0]
+    assert len(phase.packets) == 4 and len(phase.expects) == 2
+    assert all(len(p.data) == 54 for p in phase.packets)
+    assert [int.from_bytes(p.data[38:42], "big") for p in phase.packets] == [1, 2, 3, 4]
+    # Same inbound five-tuple before and after SYN, distinct observable bytes.
+    assert phase.packets[0].data[26:38] == phase.packets[2].data[26:38]
+    assert phase.packets[0].data != phase.packets[2].data
+    for expected in phase.expects:
+        assert expected.exact and len(expected.data) == 54
+        header = expected.data[14:34]
+        total = sum(int.from_bytes(header[i : i + 2], "big") for i in range(0, 20, 2))
+        while total >> 16:
+            total = (total & 0xFFFF) + (total >> 16)
+        assert total == 0xFFFF
+
+
+def test_original_firewall_adapter_rejects_configuration_drift() -> None:
+    with pytest.raises(ValueError, match="configuration changed"):
+        firewall.plan(firewall.VECTOR.replace("dir:0", "dir:1", 1))
+    with pytest.raises(ValueError, match="only packets/expectations"):
+        firewall.plan(firewall.VECTOR + firewall.CONFIGURATION[0] + "\n")
+
+
+def test_original_firewall_on_spectec(oracle: oracle_run.Oracle, tmp_path: Path) -> None:
+    firewall.source()  # Verify unchanged upstream source; do not print our IR.
+    firewall.plan()  # Both oracle encodings must still describe this fixed profile.
+    vector = tmp_path / "firewall.stf"
+    vector.write_text(firewall.VECTOR)
+    result = subprocess.run(
+        [
+            str(oracle.binary),
+            "sim",
+            str(oracle.spec),
+            "-arch",
+            "v1model",
+            "-i",
+            str(oracle.include),
+            "-p",
+            str(firewall.SOURCE),
+            "-stf",
+            str(vector),
+        ],
+        cwd=oracle.root,
+        capture_output=True,
+        text=True,
+        timeout=oracle_run.TIMEOUT_SECONDS,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip().splitlines()[-1:] == ["passed"], result.stdout + result.stderr
 
 
 # ---------------------------------------------------------------------------

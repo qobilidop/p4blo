@@ -81,6 +81,7 @@ and promote confirmed minimal regressions into tracked tests or corpus data.
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
 | p4c test-suite sources | copies under `tests/corpus/*/` with SPDX headers | not updated; they are the vectors |
+| Original tutorial firewall | `tests/oracle/firewall.py` commit/path/SHA-256; vendored `firewall.p4` | review source/profile and update pin together; both oracle jobs run it directly |
 
 Nothing else is downloaded at build or test time. The `uv sync` path
 without Nix gets the same Python packages but not the same interpreter,

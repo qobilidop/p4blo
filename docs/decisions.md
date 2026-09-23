@@ -476,3 +476,12 @@ one that says so.
   definitional equations and tests against the prior derived comparison.
   Confidence: high; this exposes existing meaning rather than introducing
   a separate evaluator or adding an axiom. Compound equality is unchanged.
+- **Preserve the original firewall as an independent oracle input.**
+  Pin and vendor the unchanged tutorial solution with its Apache-2.0
+  notices, separately from p4blo-printer output. Run the stateful sequence
+  directly on SpecTec and BMv2 in their existing CI jobs. Distinct TCP
+  sequence numbers preserve identical flow hashes but prevent aggregate
+  queues from confusing rejected and accepted requests. Confidence: high
+  for oracle feasibility; packet-only observations remain insufficient for
+  full state/CRC assurance. Revisit the adapter when register observation
+  and collision witnesses are added for the actual port.

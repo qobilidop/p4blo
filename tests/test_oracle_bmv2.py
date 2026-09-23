@@ -14,6 +14,7 @@ One vector is a known, analysed divergence and is marked `xfail`: see
 
 from __future__ import annotations
 
+import json
 import shlex
 import sys
 from pathlib import Path
@@ -23,6 +24,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tests.oracle import firewall  # noqa: E402
 from tests.oracle.bmv2 import run as bmv2_run  # noqa: E402
 
 CORPUS = ROOT / "tests" / "corpus"
@@ -108,6 +110,28 @@ def test_every_corpus_vector_parses_and_has_one_program() -> None:
     assert VECTORS, "no corpus vectors found"
     for vector in VECTORS:
         assert program_of(vector).is_file()
+
+
+def test_original_firewall_on_bmv2(image: str) -> None:
+    compiled = bmv2_run.compile_program(image, firewall.source())
+    plan = firewall.plan()
+    reply = bmv2_run._driver(image, "replay", json.dumps(plan.request(compiled)))
+    assert len(reply["phases"]) == 1, reply
+    assert not reply["phases"][0]["error"], reply
+    assert "error" not in reply["phases"][0]["cli"].lower(), reply
+    assert bmv2_run.judge(plan, reply) == ("pass", "")
+
+
+def test_original_firewall_observer_rejects_premature_ack() -> None:
+    plan = firewall.plan()
+    expected = {str(e.port): [e.data.hex()] for e in plan.phases[0].expects}
+    assert bmv2_run.judge(plan, {"phases": [{"outputs": expected}]}) == ("pass", "")
+    # An ACK admitted before SYN must not stand in for the later allowed ACK.
+    premature = bytearray.fromhex(expected["1"][0])
+    premature[38:42] = (1).to_bytes(4, "big")
+    expected["1"] = [premature.hex()]
+    verdict, _ = bmv2_run.judge(plan, {"phases": [{"outputs": expected}]})
+    assert verdict == "fail"
 
 
 # ---------------------------------------------------------------------------
