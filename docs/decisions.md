@@ -814,3 +814,13 @@ one that says so.
   Confidence: high for this demonstrated gap, not universal observer immunity.
   Revisit observer independence for every new stateful operation and preserve
   the original scalar write/forwarding contracts when extending read syntax.
+- **Discharge modeled frame values, but require explicit extra zeroability.**
+  The source-frame adapter uses independent source zero for modeled roots;
+  only unmodeled actual entries need additional zero-success evidence. Full
+  coverage is a separate predicate, never inferred from root declarations.
+  Concrete actual Index.build/lookup witnesses use kernel-checked cbv and are
+  default-audited alongside the application theorem. Confidence: high after
+  constructive positive and false-premise witnesses; the finite builder proof
+  needed no production refactor. Revisit the extras API when real call entry
+  needs scope-extension lemmas. Hand-extended observer fixtures do not stand
+  in for the packet wrapper or prove argument binding.

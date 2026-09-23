@@ -66,8 +66,10 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   under exact nominal agreement and explicit sufficient fuel. The forwarding
   roots supply a constructive instance. Actual complete-scope frame creation
   now has exact lookup/scope/no-action laws under all-entry zero success.
-  The source-frame adapter and actual built-index witness are next; call
-  entry/return and complete applications remain unproved.
+  The source-frame adapter now discharges modeled values and explicitly handles
+  extras; kernel-checked actual built-index/frame witnesses anchor the concrete
+  forwarding declarations. Call entry/body-prefix composition is next; call
+  return and complete applications remain unproved.
 
 ## Application milestones
 

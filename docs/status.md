@@ -12,9 +12,9 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined integration at `2713999`, including total Expr/LValue codec proofs,
+Combined integration at `c269994`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
-actual frame-initialization proofs, readable command lists and forwarding
+actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs: both Lean package gates and default audits pass, with
 **481 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
@@ -28,6 +28,8 @@ Header primitives add opposite-validity/direct/empty-header answers; source
 zero pins independent values, exact fuel limits and nominal boundaries.
 Unified reads add 20 expressions and four commands with full post-read
 observations; frame tests cover all entries, map keys and action absence.
+The source-frame adapter adds kernel-checked actual-built forwarding
+initialization, independent expected values and explicit extra declarations.
 Required real-Lean DRT: **564 passed**, no skips. Full gate:
 **1982 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
@@ -38,7 +40,7 @@ Latest reviews under `notes/reviews/`: `field-permissions.md`,
 Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `command-blocks.md`, `expr-codec.md`, `header-validity-primitives.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
-`header-validity-expressions.md`.
+`header-validity-expressions.md` and `initial-source-frames.md`.
 
 All five remote workflows pass for `ac23e52`; newer CI must be checked
 separately. Fifteen retained execution-fault bundles and twenty-four raw codec
@@ -247,12 +249,28 @@ Things a resuming agent should know are in motion or deliberately left.
   both integrated Lean gates pass with 481 spec checks. Combined Python/DRT
   gates pass at the latest checkpoint above. Scope: `notes/frame-initialization.md`
   and its matching review.
-  The next source-zero/FrameMatches adapter is active in isolated
-  `work/initial-source-frames`, based on committed `db99dc2`, including an
-  investigation of a kernel-checked actual Index.build forwarding witness.
-  It must account for successful and failing extra declarations, not assume
-  the source model covers all scope variables. Call entry/copyback and global
-  initialization validity remain separate obligations.
+  Source-zero/FrameMatches adapter `139e478`/`6c99835` is integrated at
+  `c269994`: modeled zero values are discharged from independent source zero;
+  unmodeled declarations retain explicit success obligations. A separate
+  coverage condition justifies absent extras. Kernel-checked actual Index.build
+  and forwarding-frame witnesses have only the standard three axioms, including
+  independent expected values. Successful/failing extras are explicit local
+  scope extensions, not the packet wrapper's actual observer layout. Independent
+  review is clear; isolated fresh-cache Lean and 538 required DRT checks pass.
+  Combined integration gates pass at the latest checkpoint above.
+  Scope: `notes/initial-source-frames.md`
+  and its matching review. Actual plain-root sub-control entry is active in
+  isolated `work/plain-call-entry`, based on committed `c269994`; reviewed
+  scope is `notes/call-entry-plan.md` (committed `ad746c5`). It must establish
+  the actual wrapper declarations, caller bindings and complete Run/queue
+  boundary, not rename the earlier declaration-only witness. Flat-body suffix
+  composition is a subsequent proof; do not reshape the test wrapper to avoid
+  it. Call copyback and global validity remain separate.
+  Its proof-only flat-suffix prerequisite is active in isolated
+  `work/command-prefix`, based on `ad746c5`: strengthen the existing single
+  command induction, derive unchanged whole-body theorem signatures, and
+  retain exact pending suffix/continuation with source/noninterference facts.
+  No new AST, executable semantics or actual wrapper change is intended.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
