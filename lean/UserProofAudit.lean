@@ -14,6 +14,7 @@ import P4blo.CommandPrefixTests
 import P4blo.CallEntryTests
 import P4blo.CallBodyEntryTests
 import P4blo.CallInitializerTests
+import P4blo.CallReturnTests
 
 /-- info: 'P4blo.CallEntry.WithBody.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -58,6 +59,9 @@ import P4blo.CallInitializerTests
 /-- info: 'P4blo.CallInitializerTests.concrete_typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.CallInitializerTests.concrete_typed
+/-- info: 'P4blo.CallReturnTests.concrete_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallReturnTests.concrete_return
 
 /-- info: 'P4blo.GuardedForwardPolicy.authored_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

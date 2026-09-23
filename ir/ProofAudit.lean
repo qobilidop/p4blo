@@ -1,6 +1,39 @@
 import P4bloIR
 import P4bloIR.ScalarStatements
 
+/-- info: 'P4bloIR.PlainCallReturn.copyBack_three' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.copyBack_three
+
+/-- info: 'P4bloIR.PlainCallReturn.dispatch_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.dispatch_return
+
+/-- info: 'P4bloIR.PlainCallReturn.return_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.return_steps
+
+/-- info: 'P4bloIR.PlainCallReturn.return_step' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.return_step
+
+/-- info: 'P4bloIR.PlainCallReturn.returned_lookup' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.returned_lookup
+
+/-- info: 'P4bloIR.PlainCallReturn.returned_preserves' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.returned_preserves
+
+/-- info: 'P4bloIR.PlainCallReturn.returned_scope' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.returned_scope
+
+/-- info: 'P4bloIR.PlainCallReturn.returned_blockFrame' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallReturn.returned_blockFrame
+
+
 /-- info: 'P4bloIR.PlainCallEntry.dispatch_entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.PlainCallEntry.dispatch_entry
