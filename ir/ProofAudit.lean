@@ -154,3 +154,15 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.ExecutionCertificate.check_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.ExecutionCertificate.check_sound
+
+/-- info: 'P4bloIR.Frame.forBlock_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Frame.forBlock_correct
+
+/-- info: 'P4bloIR.Frame.forBlock_initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Frame.forBlock_initialized
+
+/-- info: 'P4bloIR.Frame.forBlock_missing' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Frame.forBlock_missing
