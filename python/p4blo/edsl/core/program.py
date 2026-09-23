@@ -60,7 +60,7 @@ class Program:
 
     # -- types -------------------------------------------------------------
 
-    def header(self, name: str, **fields: TypeLike) -> HeaderType:
+    def header(self, name: str, /, **fields: TypeLike) -> HeaderType:
         """Declare a header type; keyword fields are bit<N> or bool, in order."""
         self._declare(name, "header")
         h = HeaderType(name, fields)
@@ -68,7 +68,7 @@ class Program:
         self.types.headers[name] = h
         return h
 
-    def struct(self, name: str, **fields: TypeLike) -> StructType:
+    def struct(self, name: str, /, **fields: TypeLike) -> StructType:
         """Declare a struct type; keyword fields may be any type, in order."""
         self._declare(name, "struct")
         s = StructType(name, fields)
@@ -196,8 +196,16 @@ class Program:
         return self._add_block(Deparser(self, name, params))
 
     def _add_block[B: Block](self, block: B) -> B:
+        return self.add_block(block)
+
+    def add_block[B: Block](self, block: B, *, before: Block | None = None) -> B:
+        """Declare a block constructed directly; `before` places it ahead of
+        a declared block, for a callee discovered while building its caller."""
         self._declare(block.name, "block")
-        self._blocks.append(block)
+        if before is None:
+            self._blocks.append(block)
+        else:
+            self._blocks.insert(self._blocks.index(before), block)
         return block
 
     def block(self, name: str) -> Block:

@@ -1,7 +1,271 @@
-"""The Python eDSL for p4blo programs.
+# pyright: strict
+"""The Python eDSL for p4blo programs: type-safe by construction.
 
-This package is the typed surface (eDSL v2, `docs/notes/edsl-v2-design.md`),
-built here module by module on top of `p4blo.edsl.core`, the v1 builder.
-`p4blo.edsl.core` remains the documented dynamic API for generated
-programs: plain constructors, strings for names, widths as `bit(n)`.
+Headers and structs are classes with annotated fields; parsers, controls
+and deparsers are classes whose states and actions are methods; widths are
+type parameters, `Bits[L[8]]`, spelled through the aliases `bit8`,
+`bit48`, ...; every reference is a Python object that pyright resolves.
+The design and its arguments are in `docs/notes/edsl-v2-design.md`; each
+module's docstring states the static rules it provides:
+
+- `values`: `Bits`, `Var`, `Bool`, `Enum`, `Error`, the aliases, `concat`, `mux`.
+- `views`: `Header`, `Struct`, `Stack`.
+- `blocks`: `Parser`, `Control`, `Deparser`, `state`, `action`, `Table`.
+- `externs`: `Extern` and the families `Register`, `Counter`, `Checksum16`.
+- `program`: `Program`, whose `build()` returns the `pb.Program`.
+- `errors`: `EdslError`, with `(defined at file:line)`.
+
+The two clocks
+--------------
+
+A program written here runs on two clocks, and it helps to keep them apart.
+
+**Build time** is when Python runs: a class body declares a header, a
+`@state` method runs *once*, with a recording `self`, when `Program.build()`
+assembles the block, and each `self.assign(...)`, `self.extract(...)` or
+`with self.if_(...)` appends a statement to the IR. Python's own control
+flow at build time is ordinary metaprogramming: a `for` loop emitting five
+`if_` blocks emits five, and an `if` on a Python value decides what to
+emit. Values of the eDSL have no truth value at build time, because their
+value is unknown until run time: `if hdr.ttl == 1:` raises and names the
+cause.
+
+**Run time** is when a packet goes through the IR, in an interpreter or a
+target. `with self.if_(cond)` is a run-time branch; `mux(cond, a, b)` a
+run-time choice; a `select` a run-time dispatch. Nothing written here
+reads Python source: the IR is exactly what the build-time calls recorded.
+
+The dynamic API of the same builder, `p4blo.edsl.core`, is documented for
+generated programs: plain constructors, strings for names, `bit(n)` for
+widths. This package is a typed front over it, and the core's run-time
+checks remain authoritative.
 """
+
+from p4blo.edsl.blocks import (
+    Accept,
+    Action,
+    ActionCall,
+    Block,
+    Control,
+    Deparser,
+    Entry,
+    Key,
+    Parser,
+    Reject,
+    State,
+    StateRef,
+    Table,
+    Transition,
+    action,
+    dont_care,
+    entry,
+    exact,
+    lpm,
+    masked,
+    prefix,
+    range_,
+    state,
+    ternary,
+)
+from p4blo.edsl.errors import EdslError
+from p4blo.edsl.externs import Extern
+from p4blo.edsl.program import Program
+from p4blo.edsl.values import (
+    Bits,
+    Bool,
+    Const,
+    CoreErrors,
+    Enum,
+    Error,
+    Errors,
+    In,
+    InOut,
+    L,
+    Out,
+    Val,
+    Value,
+    Var,
+    bit,
+    bit1,
+    bit2,
+    bit3,
+    bit4,
+    bit5,
+    bit6,
+    bit7,
+    bit8,
+    bit9,
+    bit10,
+    bit11,
+    bit12,
+    bit13,
+    bit14,
+    bit15,
+    bit16,
+    bit17,
+    bit18,
+    bit19,
+    bit20,
+    bit21,
+    bit22,
+    bit23,
+    bit24,
+    bit25,
+    bit26,
+    bit27,
+    bit28,
+    bit29,
+    bit30,
+    bit31,
+    bit32,
+    bit33,
+    bit34,
+    bit35,
+    bit36,
+    bit37,
+    bit38,
+    bit39,
+    bit40,
+    bit41,
+    bit42,
+    bit43,
+    bit44,
+    bit45,
+    bit46,
+    bit47,
+    bit48,
+    bit49,
+    bit50,
+    bit51,
+    bit52,
+    bit53,
+    bit54,
+    bit55,
+    bit56,
+    bit57,
+    bit58,
+    bit59,
+    bit60,
+    bit61,
+    bit62,
+    bit63,
+    bit64,
+    concat,
+    mux,
+)
+from p4blo.edsl.views import Header, Stack, Struct, View
+
+__all__ = [
+    "Accept",
+    "Action",
+    "ActionCall",
+    "Bits",
+    "Block",
+    "Bool",
+    "Const",
+    "Control",
+    "CoreErrors",
+    "Deparser",
+    "EdslError",
+    "Entry",
+    "Enum",
+    "Error",
+    "Errors",
+    "Extern",
+    "Header",
+    "In",
+    "InOut",
+    "Key",
+    "L",
+    "Out",
+    "Parser",
+    "Program",
+    "Reject",
+    "Stack",
+    "State",
+    "StateRef",
+    "Struct",
+    "Table",
+    "Transition",
+    "Val",
+    "Value",
+    "Var",
+    "View",
+    "action",
+    "bit",
+    "bit1",
+    "bit2",
+    "bit3",
+    "bit4",
+    "bit5",
+    "bit6",
+    "bit7",
+    "bit8",
+    "bit9",
+    "bit10",
+    "bit11",
+    "bit12",
+    "bit13",
+    "bit14",
+    "bit15",
+    "bit16",
+    "bit17",
+    "bit18",
+    "bit19",
+    "bit20",
+    "bit21",
+    "bit22",
+    "bit23",
+    "bit24",
+    "bit25",
+    "bit26",
+    "bit27",
+    "bit28",
+    "bit29",
+    "bit30",
+    "bit31",
+    "bit32",
+    "bit33",
+    "bit34",
+    "bit35",
+    "bit36",
+    "bit37",
+    "bit38",
+    "bit39",
+    "bit40",
+    "bit41",
+    "bit42",
+    "bit43",
+    "bit44",
+    "bit45",
+    "bit46",
+    "bit47",
+    "bit48",
+    "bit49",
+    "bit50",
+    "bit51",
+    "bit52",
+    "bit53",
+    "bit54",
+    "bit55",
+    "bit56",
+    "bit57",
+    "bit58",
+    "bit59",
+    "bit60",
+    "bit61",
+    "bit62",
+    "bit63",
+    "bit64",
+    "concat",
+    "dont_care",
+    "entry",
+    "exact",
+    "lpm",
+    "masked",
+    "mux",
+    "prefix",
+    "range_",
+    "state",
+    "ternary",
+]

@@ -1,4 +1,5 @@
-# expect: reportArgumentType line 28
+# expect: reportArgumentType line 29
+# expect: reportCallIssue line 29
 """A 16-bit value assigned to an 8-bit field: `assign(Var[W], Bits[W] | int)`."""
 
 from __future__ import annotations

@@ -1,4 +1,5 @@
-# expect: reportArgumentType line 31
+# expect: reportArgumentType line 32
+# expect: reportCallIssue line 32
 """A `concat` result assigned to a typed field without `as_`: the type
 system has no width arithmetic, so `concat` cannot type as `Bits[L[16]]`
 and the assignment needs `.as_(bit16)` to assert the width."""

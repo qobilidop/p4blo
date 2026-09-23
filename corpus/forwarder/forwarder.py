@@ -7,104 +7,161 @@ format.
 
 from __future__ import annotations
 
-from functools import reduce
+from enum import IntEnum
 
-from p4blo.edsl.core import Program, bit, boolean, concat, lpm
-from p4blo.edsl.core.externs import checksum16
+from p4blo.edsl import (
+    Bits,
+    Bool,
+    Control,
+    Deparser,
+    Header,
+    L,
+    Parser,
+    Program,
+    Struct,
+    Table,
+    Transition,
+    action,
+    bit8,
+    bit9,
+    bit16,
+    bit32,
+    bit48,
+    concat,
+    lpm,
+    state,
+)
+from p4blo.edsl.externs import Checksum16
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def build() -> pb.Program:
-    p = Program("forwarder")
+class ethernet_t(Header):
+    dstAddr: bit48
+    srcAddr: bit48
+    etherType: bit16
 
-    ethernet_t = p.header("ethernet_t", dstAddr=bit(48), srcAddr=bit(48), etherType=bit(16))
-    ipv4_t = p.header(
-        "ipv4_t",
-        version=bit(4),
-        ihl=bit(4),
-        diffserv=bit(8),
-        totalLen=bit(16),
-        identification=bit(16),
-        flags=bit(3),
-        fragOffset=bit(13),
-        ttl=bit(8),
-        protocol=bit(8),
-        hdrChecksum=bit(16),
-        srcAddr=bit(32),
-        dstAddr=bit(32),
-    )
-    headers = p.struct("headers", ethernet=ethernet_t, ipv4=ipv4_t)
-    # The metadata contract of the step-1 architecture: ingress_port is
-    # provided, egress_port and drop are consumed.
-    metadata = p.struct("metadata", ingress_port=bit(9), egress_port=bit(9), drop=boolean)
-    p.headers = headers
-    p.metadata = metadata
 
-    # MyComputeChecksum's update_checksum over the eleven non-checksum
-    # fields of ipv4_t, 144 bits concatenated in header order.
-    csum = p.extern_instance("csum", checksum16(p, bit(144)))
+class ipv4_t(Header):
+    version: Bits[L[4]]
+    ihl: Bits[L[4]]
+    diffserv: bit8
+    totalLen: bit16
+    identification: bit16
+    flags: Bits[L[3]]
+    fragOffset: Bits[L[13]]
+    ttl: bit8
+    protocol: bit8
+    hdrChecksum: bit16
+    srcAddr: bit32
+    dstAddr: bit32
 
-    TYPE_IPV4 = 0x800
 
-    with p.parser("MyParser") as ps:
-        hdr = ps.hdr
-        with ps.state("start") as s:
-            s.transition("parse_ethernet")
-        with ps.state("parse_ethernet") as s:
-            s.extract(hdr.ethernet)
-            s.select(hdr.ethernet.etherType, {TYPE_IPV4: "parse_ipv4"}, default=ps.accept)
-        with ps.state("parse_ipv4") as s:
-            s.extract(hdr.ipv4)
-            s.accept()
+class headers(Struct):
+    ethernet: ethernet_t
+    ipv4: ipv4_t
 
-    with p.control("MyIngress") as c:
-        hdr, meta = c.hdr, c.meta
-        c.action("NoAction")
-        with c.action("drop") as a:
-            a.assign(meta.drop, True)
-        with c.action("ipv4_forward", dstAddr=bit(48), port=bit(9)) as a:
-            a.assign(meta.egress_port, a.port)
-            a.assign(hdr.ethernet.srcAddr, hdr.ethernet.dstAddr)
-            a.assign(hdr.ethernet.dstAddr, a.dstAddr)
-            a.assign(hdr.ipv4.ttl, hdr.ipv4.ttl - 1)
-        ipv4_lpm = c.table(
-            "ipv4_lpm",
-            keys=[lpm(hdr.ipv4.dstAddr)],
-            actions=["ipv4_forward", "drop", "NoAction"],
-            default="drop",
-            size=1024,
+
+class metadata(Struct):
+    """The metadata contract of the step-1 architecture: ingress_port is
+    provided, egress_port and drop are consumed."""
+
+    ingress_port: bit9
+    egress_port: bit9
+    drop: Bool
+
+
+class EtherType(IntEnum):
+    IPV4 = 0x800
+
+
+class MyParser(Parser[headers, metadata]):
+    @state(start=True)
+    def start(self) -> Transition:
+        return self.goto(self.parse_ethernet)
+
+    @state
+    def parse_ethernet(self) -> Transition:
+        self.extract(self.hdr.ethernet)
+        return self.select(
+            self.hdr.ethernet.etherType, {EtherType.IPV4: self.parse_ipv4}, default=self.accept
         )
-        with c.body() as b:
-            with b.if_(hdr.ipv4.is_valid()):
-                b.apply(ipv4_lpm)
-            # MyComputeChecksum runs after ingress (and the empty egress),
-            # guarded as the tutorial guards it.
-            with b.if_(hdr.ipv4.is_valid()):
-                ipv4 = hdr.ipv4
-                fields = [
-                    ipv4.version,
-                    ipv4.ihl,
-                    ipv4.diffserv,
-                    ipv4.totalLen,
-                    ipv4.identification,
-                    ipv4.flags,
-                    ipv4.fragOffset,
-                    ipv4.ttl,
-                    ipv4.protocol,
-                    ipv4.srcAddr,
-                    ipv4.dstAddr,
-                ]
-                b.call(csum, "compute", reduce(concat, fields), result=ipv4.hdrChecksum)
 
-    with p.deparser("MyDeparser") as d:
-        with d.body() as b:
-            b.emit(d.hdr.ethernet)
-            b.emit(d.hdr.ipv4)
+    @state
+    def parse_ipv4(self) -> Transition:
+        self.extract(self.hdr.ipv4)
+        return self.accept
 
-    p.export("parser", "MyParser")
-    p.export("control", "MyIngress")
-    p.export("deparser", "MyDeparser")
-    return p.build()
+
+# MyComputeChecksum's update_checksum over the eleven non-checksum fields
+# of ipv4_t, 144 bits concatenated in header order.
+csum = Checksum16[Bits[L[144]]]("csum")
+
+
+class MyIngress(Control[headers, metadata]):
+    @action
+    def NoAction(self) -> None:
+        pass
+
+    @action
+    def drop(self) -> None:
+        self.assign(self.meta.drop, True)
+
+    @action
+    def ipv4_forward(self, dstAddr: bit48, port: bit9) -> None:
+        self.assign(self.meta.egress_port, port)
+        self.assign(self.hdr.ethernet.srcAddr, self.hdr.ethernet.dstAddr)
+        self.assign(self.hdr.ethernet.dstAddr, dstAddr)
+        self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
+
+    ipv4_lpm = Table(
+        keys=[lpm(headers.ipv4.dstAddr)],
+        actions=[ipv4_forward, drop, NoAction],
+        default=drop(),
+        size=1024,
+    )
+
+    def apply(self) -> None:
+        with self.if_(self.hdr.ipv4.is_valid()):
+            self.apply_table(self.ipv4_lpm)
+        # MyComputeChecksum runs after ingress (and the empty egress),
+        # guarded as the tutorial guards it.
+        with self.if_(self.hdr.ipv4.is_valid()):
+            ipv4 = self.hdr.ipv4
+            data = concat(
+                ipv4.version,
+                ipv4.ihl,
+                ipv4.diffserv,
+                ipv4.totalLen,
+                ipv4.identification,
+                ipv4.flags,
+                ipv4.fragOffset,
+                ipv4.ttl,
+                ipv4.protocol,
+                ipv4.srcAddr,
+                ipv4.dstAddr,
+            )
+            self.assign(ipv4.hdrChecksum, csum.compute(data.as_(Bits[L[144]])))
+
+
+class MyDeparser(Deparser[headers]):
+    def apply(self) -> None:
+        self.emit(self.hdr.ethernet)
+        self.emit(self.hdr.ipv4)
+
+
+program = Program(
+    "forwarder",
+    headers=headers,
+    metadata=metadata,
+    parser=MyParser,
+    control=MyIngress,
+    deparser=MyDeparser,
+    externs=[csum],
+)
+
+
+def build() -> pb.Program:
+    return program.build()
 
 
 if __name__ == "__main__":

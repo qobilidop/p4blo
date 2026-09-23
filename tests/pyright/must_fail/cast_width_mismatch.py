@@ -1,4 +1,5 @@
-# expect: reportArgumentType line 29
+# expect: reportArgumentType line 30
+# expect: reportCallIssue line 30
 """A cast to the wrong width: `cast(Bits[L[16]])` types as `Bits[L[16]]`,
 which no 8-bit target accepts."""
 
