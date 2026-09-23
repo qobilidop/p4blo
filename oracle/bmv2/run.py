@@ -31,6 +31,7 @@ import argparse
 import functools
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -61,6 +62,7 @@ __all__ = [
     "run",
     "translate",
     "unavailable",
+    "use_last",
     "uses_flood",
 ]
 
@@ -314,6 +316,40 @@ def render(index: ir.Index, compiled: Compiled, statement: stf.Add | stf.SetDefa
     return command
 
 
+# `stack[stack.lastIndex]`, the printed form of the IR's
+# `index(stack, last_index(stack))`. The backreference makes the base of the
+# index and the stack of the `lastIndex` the same text, which is the only
+# shape the printer can produce for a `.last`.
+_LAST_INDEX_RE = re.compile(r"(?<![\w.])([A-Za-z_][A-Za-z0-9_.]*)\[\1\.lastIndex\]")
+
+
+def use_last(p4: str) -> tuple[str, list[str]]:
+    """Rewrite `stack[stack.lastIndex]` in the printed program as `stack.last`.
+
+    The two are the same expression in P4, but not to p4c's BMv2 backend. A
+    parser's `select(stack.last.f)` compiles to BMv2's `stack_field` key,
+    which reads the field of the most recently extracted element and is what
+    simple_switch supports; `select(stack[stack.lastIndex].f)` compiles to a
+    dynamic index expression (`last_stack_index` under
+    `dereference_header_stack`), which simple_switch refuses to load at all
+    ("Invalid entry in parse state key ... bad json"). The IR has no `.last`
+    node -- `docs/coverage.md` elaborates it into an index by `lastIndex` --
+    so the printed text is where the two forms can still be told apart, and
+    the rewrite happens here rather than in the printer, whose output is a
+    golden shared with the other oracle.
+
+    Returns the program and a note per rewritten line.
+    """
+    notes: list[str] = []
+    lines = p4.splitlines(keepends=True)
+    for number, line in enumerate(lines, start=1):
+        rewritten = _LAST_INDEX_RE.sub(r"\1.last", line)
+        if rewritten != line:
+            lines[number - 1] = rewritten
+            notes.append(f"printed line {number}: `{line.strip()}` as `{rewritten.strip()}`")
+    return "".join(lines), notes
+
+
 def uses_flood(index: ir.Index) -> bool:
     """Whether the program's metadata contract has `flood`, which the v1model
     shim leaves unmapped (printer.standard_metadata_binding), so BMv2 would
@@ -452,16 +488,23 @@ def _indent(text: str) -> str:
     return "\n".join(f"    {line}" for line in text.strip().splitlines())
 
 
-def run_vector(image: str, index: ir.Index, compiled: Compiled, vector: Path) -> Verdict:
+def run_vector(
+    image: str,
+    index: ir.Index,
+    compiled: Compiled,
+    vector: Path,
+    program_notes: Sequence[str] = (),
+) -> Verdict:
     command = _docker_command(image, "replay")
+    head = tuple(program_notes)
     try:
         statements = stf.parse(vector.read_text())
         plan = translate(index, statements, compiled)
     except stf.StfError as e:
-        return Verdict(vector, "error", f"p4blo cannot resolve the vector: {e}", command)
+        return Verdict(vector, "error", f"p4blo cannot resolve the vector: {e}", command, head)
     except OracleError as e:
-        return Verdict(vector, "error", str(e), command)
-    notes = tuple(plan.notes)
+        return Verdict(vector, "error", str(e), command, head)
+    notes = head + tuple(plan.notes)
     try:
         reply = _driver(image, "replay", json.dumps(plan.request(compiled)))
     except OracleError as e:
@@ -478,13 +521,13 @@ def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
     if uses_flood(index):
         detail = "the program uses flood, which the v1model shim cannot express for BMv2"
         return [Verdict(vector, "skip", detail, ()) for vector in vectors]
-    p4 = printer.print_program(index.program, index=index)
+    p4, notes = use_last(printer.print_program(index.program, index=index))
     command = _docker_command(image, "compile")
     try:
         compiled = compile_program(image, p4)
     except OracleError as e:
-        return [Verdict(vector, "error", str(e), command) for vector in vectors]
-    return [run_vector(image, index, compiled, vector) for vector in vectors]
+        return [Verdict(vector, "error", str(e), command, tuple(notes)) for vector in vectors]
+    return [run_vector(image, index, compiled, vector, notes) for vector in vectors]
 
 
 # ---------------------------------------------------------------------------
