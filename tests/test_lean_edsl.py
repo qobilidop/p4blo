@@ -17,10 +17,13 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean, scalar_program
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
+from p4blo.interp.env import Env
+from p4blo.interp.values import Value
 from p4blo.v0 import p4blo_pb2 as pb
 
 # Width is independently specified, including bool (None) and non-byte bits.
@@ -123,9 +126,8 @@ def test_lean_agrees_on_authored_scalar_known_answers(
     _, expected = EXPECTED[name]
     program = authored_expressions[name]
     case = Case(pb.Entries(), 0, b"")
-    # Known-answer check independently catches shared mistakes, including a
-    # source macro that builds a valid but unintended expression.
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    # Retain concrete differential failures before a Python-only assertion can
+    # exit early. Independent known answers still judge agreement below.
     try:
         report = compare_program(program, [case], 4, [lean_binary])
     except ProtocolError as error:
@@ -140,3 +142,57 @@ def test_lean_agrees_on_authored_scalar_known_answers(
         pytest.fail(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
+    # Catch shared mistakes, including valid but unintended source expressions.
+    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+
+
+def test_lean_agrees_after_retained_authoring_mutant(
+    authored_expressions: dict[str, pb.Program],
+    lean_binary: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A real Python read fault must save its inputs before any assertion exits."""
+    monkeypatch.setenv("P4BLO_DRT_FAILURE_DIR", str(tmp_path))
+    original_read = Env.read
+
+    def wrong_read(self: Env, name: str) -> Value:
+        return original_read(self, "y" if name == "x" else name)
+
+    bundle = tmp_path / "lean-edsl-read-x.json"
+    with monkeypatch.context() as fault:
+        fault.setattr(Env, "read", wrong_read)
+        with pytest.raises(pytest.fail.Exception, match="replay"):
+            test_lean_agrees_on_authored_scalar_known_answers(
+                "read-x", authored_expressions, lean_binary
+            )
+        program, cases, ports, seed = replay.load(bundle)
+        assert program == authored_expressions["read-x"]
+        assert cases == [Case(pb.Entries(), 0, b"")]
+        assert (ports, seed) == (4, 0)
+        report = replay.replay(bundle, [lean_binary])
+        assert report.protocol_error is None and report.both_errored == 0
+        assert report.agreed == 0 and len(report.divergences) == 1
+        mismatch = report.divergences[0]
+        assert mismatch.python.outputs == ((0, b"\x07"),)
+        assert mismatch.lean.outputs == ((0, b"\x13"),)
+    restored = replay.replay(bundle, [lean_binary])
+    assert restored.passed and restored.agreed == 1
+
+
+def test_lean_agrees_but_wrong_authored_answer_fails(
+    authored_expressions: dict[str, pb.Program],
+    lean_binary: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Interpreter agreement must not excuse a valid but unintended source term."""
+    monkeypatch.setenv("P4BLO_DRT_FAILURE_DIR", str(tmp_path))
+    wrong_source = {**authored_expressions, "read-x": authored_expressions["read-y"]}
+    agreement = compare_program(
+        wrong_source["read-x"], [Case(pb.Entries(), 0, b"")], 4, [lean_binary]
+    )
+    assert agreement.passed and agreement.agreed == 1
+    with pytest.raises(AssertionError):
+        test_lean_agrees_on_authored_scalar_known_answers("read-x", wrong_source, lean_binary)
+    assert list(tmp_path.iterdir()) == []  # This fault is not a differential mismatch.

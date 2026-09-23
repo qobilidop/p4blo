@@ -40,6 +40,9 @@ Build Lean first, then run the Python gate: rebuilding and testing in the
 same worktree concurrently can remove the executable while a test needs it.
 New real-Lean tests use the shared `lean_binary` fixture and names beginning
 with `test_lean_agrees`; CI discovers them across the complete test tree.
+In authored-program gates, retain differential failure bundles before a
+Python-only known-answer assertion can exit. Keep independent known answers
+after comparison: agreement alone misses valid-but-unintended source terms.
 New external-oracle tests must also be selected by the job that builds that
 oracle; ordinary Python CI can skip unavailable tools. Rebuild the BMv2 image
 after driver changes. In concurrent worktrees use distinct image tags and

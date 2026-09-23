@@ -587,3 +587,10 @@ one that says so.
   because a valid-but-unintended source term can satisfy every lowering
   theorem. Confidence: medium on positional-reference ergonomics; revisit
   when writable places and packet fields are authored.
+- **Save differential evidence before judging independent expected answers.**
+  A genuine Python-read mutation exposed an assertion ordering gap: the
+  authoring test failed before retaining its concrete program/request.
+  Compare and save first, then judge agreement against known answers.
+  Confidence: high; regressions replay an actual live/restored read fault
+  and independently reject a shared wrong source program. This does not
+  weaken known-answer checks or equate agreement with intended semantics.

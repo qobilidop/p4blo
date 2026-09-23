@@ -19,8 +19,15 @@ oracle gate: **1180 passed, 5 precise expected discrepancies, no skips**;
 formatting, lint, typechecking, schema generation and workflow checks pass.
 The saved typed-read mutant bundle replays successfully after restoration.
 Independent review: [notes/reviews/typed-frames.md](notes/reviews/typed-frames.md).
-All four remote workflows passed for the earlier firewall checkpoint
-`2010876`; newer CI must be checked separately. Earlier checkpoint evidence
+The authoring replay-retention follow-up passes **24 focused checks**,
+**177 required DRT** and the full **1182 passed / 5 expected / no skips**
+gate. A scoped actual Python-read fault now requires automatic replay
+creation before the expected-output assertion, live replay divergence and
+restored replay agreement. Shared wrong answers still fail independently.
+Review: `notes/reviews/authoring-replay.md`. No Lean or production code changed.
+All four remote workflows passed for checkpoint `50322dd`; the pushed
+typed-frame checkpoint `0ad1b5b` was still running when last checked.
+Earlier checkpoint evidence
 remains in the named review/assurance reports and git history, not as competing
 current instructions below.
 
@@ -164,6 +171,9 @@ Things a resuming agent should know are in motion or deliberately left.
   execution and redistribution licensing need explicit handling.
   Do not treat Docker availability or skipped kernel tests as an oracle pass.
   Flowlet time/randomness and the bounded Katran profile still require audit.
+  Compile-only image implementation is active in isolated `work/xdp-build`
+  based on `0ad1b5b`; no successful compilation or kernel execution is yet
+  claimed. The main worktree does not depend on this pending infrastructure.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;
