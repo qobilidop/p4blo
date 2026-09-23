@@ -267,19 +267,86 @@ weaker. Static checking is a second, earlier line.
 5. Update `docs/design.md`'s eDSL section and the coverage table's
    elaboration names that mention eDSL forms.
 
-## Open questions for Bili
+## Recommendations
 
-- **Spelling of widths.** `Bits[L[8]]` everywhere, or the generated
-  aliases `bit8`, `bit16`, ... as the house style? The probes used both.
-- **Statements.** `self.assign(target, value)` as today, or operator
-  sugar such as `target @= value` (Magma) / `target <<= value` (PyRTL)?
-  Explicit reads better and types better; sugar reads shorter.
-- **Directional annotations.** `Out[Bits[W]]` as a typing alias that
-  pyright sees through (`Annotated`), or distinct wrapper types that
-  the checker enforces at call sites? The second is stricter and
-  noisier.
-- **Const entries.** `entry((masked(1, 0xFF), 2), ipv4_forward(3, 1))`
-  typed against the key types is possible with one more generic on
-  `Table`; worth it in v2, or later?
-- **Scope.** Do this before or after a p4c backend? It is orthogonal to
-  the four claims and touches only the eDSL and corpus sources.
+Each choice below is the one I recommend, with the prior art that
+decides it. Bili may overrule any of them in `decisions.md`.
+
+1. **Two static types for values: `Var[W]` for things that can be
+   assigned, `Bits[W]` for any value.** Fields, locals and `out`/`inout`
+   parameters are `Var[W]`, a subclass of `Bits[W]`; results of
+   operators are `Bits[W]`. `assign(target: Var[W], value: Bits[W] | int)`
+   then rejects assigning to an expression statically, and an `Out[...]`
+   extern parameter is just `Var[W]`, so passing an rvalue where an
+   lvalue is required is a static error too. Amaranth has exactly this
+   split (`Signal` is assignable, `Value` is not) and PyRTL has
+   `WireVector` versus `Const`; the IR already has `LValue` beside
+   `Expr`. This answers the directions question: no wrapper types,
+   `In[T]` is `T`, `Out[T]` and `InOut[T]` are `Var`.
+2. **Widths spelled as aliases, `bit1`..`bit64`, with `Bits[L[N]]` for
+   the rest.** The `Literal` machinery is what pyright needs (the probes
+   and the survey's experiments confirm `Bits[8]` cannot work and a
+   `__class_getitem__` version silently loses the width, as Magma's
+   does); the aliases hide it for every common width, the way Amaranth's
+   `unsigned(8)` and PyCDE's `Bits(8)` read. `bit(n)` stays for
+   generated programs, typed `Bits[Any]`.
+3. **Explicit `self.assign(target, value)`, no operator sugar.** Magma's
+   `@=` and PyRTL's `<<=` rebind the attribute through an in-place
+   operator, which is invisible to a type checker and subtle at run
+   time; Amaranth's `m.d.comb += x.eq(y)` is explicit for the same
+   reason. Explicit is the typed choice, and it is one line either way.
+4. **States as methods returning a `Transition`, not handle-first.**
+   pakeles tried the dict-of-states with string forward references and
+   replaced it with methods because typos became unknown-attribute
+   errors at edit time; PyCDE's handle-first FSM needs two statements per
+   state and gives the checker nothing to resolve. Methods give forward
+   references for free and let `self.parse_ipv4` be checked.
+5. **Actions as decorated methods with typed parameters.** The second
+   probe shows pyright checking argument count and widths at direct
+   calls, defaults and entries. MLIR's `from_py_func` and xDSL's
+   `implicit_region` are the precedent for calling a Python function
+   once with typed placeholders instead of reading it.
+6. **Typed const entries in v2, for up to four keys.** Entries are the
+   host-facing part of a table and a wrong width there is silent until
+   the validator; `Table` becomes generic in its key tuple with
+   overloads for arity one to four, beyond which keys are `Bits[Any]`.
+   The taoa.io shape-typing work shows this is the practical ceiling
+   for `Literal`-based checking.
+7. **Constants as `IntEnum`s**, pakeles's `LabeledEnum` if display
+   labels are wanted; never a bare `0x800`. They type as `int`, so the
+   width rule still applies, and select arms read as names.
+8. **Views without `__getattr__`; `view.field("name")` as the escape.**
+   The survey verified that a field typo is a static error only when the
+   view has no `__getattr__`; Amaranth's reserved-name rule and "did you
+   mean" message are adopted for collisions.
+9. **`with` builders for control flow, `__bool__` that names the cause,
+   no source reading, ever.** Every project that reads source (PyMTL3,
+   MyHDL, TVMScript, Taichi, Triton, Exo, Magma's `combinational2`) has
+   two semantics for one text and cannot run under `exec` or generated
+   code; PyRTG's frame hacking is the other thing to avoid. Amaranth,
+   Magma, PyRTL, MLIR and JAX all land on builders or tracing with
+   explicit constructs. Document the two clocks (build time versus run
+   time) once, as Taichi's `ti.static` and Triton's `constexpr` do.
+10. **Keep the literal rule.** An `int` takes the other operand's width
+    and must fit; no context means `bit8(1)`. Magma and hwtypes chose
+    the same rule; Amaranth's and PyRTL's minimal-width-then-extend and
+    Halide's `int` to `Int(32)` are the rules to avoid, and it is the
+    only rule a static `Bits[W] | int -> Bits[W]` signature describes
+    faithfully.
+11. **Select: keep `default=` optional (the IR rejects with `NoMatch`),
+    add pakeles's overlap check as an error and its exhaustiveness
+    check as an opt-in diagnostic.**
+12. **Provenance on every error** (`defined at file:line` from the
+    nearest frame outside the package), from pakeles.
+13. **Headers and structs are program-independent classes**, declared
+    once and reused across programs, registered on first use; pakeles
+    binds instances at module level and it is what a shared header
+    library needs.
+14. **Do it now, before a p4c backend.** It is orthogonal to the four
+    claims, the corpus goldens gate it exactly as they gated v1, and
+    rewriting the ten programs is the best test of the surface. A p4c
+    backend is the community version's first job and a larger project.
+15. **Test the static guarantees.** Beside the golden tests, a pyright
+    test suite: files that must type-check and files that must produce
+    specific diagnostics, checked through `pyright --outputjson`, so
+    the static layer is a tested property and not a claim.
