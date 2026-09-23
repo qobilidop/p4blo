@@ -26,6 +26,26 @@ This does not prove that the statements express the intended P4 semantics.
 #guard_msgs in
 #print axioms P4bloIR.ScalarTyping.check_sound
 
+/-- info: 'P4bloIR.ScalarTyping.checkIn_typed' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarTyping.checkIn_typed
+
+/-- info: 'P4bloIR.ScalarTyping.checkIn_complete' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarTyping.checkIn_complete
+
+/-- info: 'P4bloIR.ScalarTyping.check_complete' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarTyping.check_complete
+
+/-- info: 'P4bloIR.ScalarTyping.TypedIn.sound_run' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarTyping.TypedIn.sound_run
+
+/-- info: 'P4bloIR.ScalarTyping.checkIn_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.ScalarTyping.checkIn_sound
+
 /-- info: 'P4bloIR.extract_emit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.extract_emit
