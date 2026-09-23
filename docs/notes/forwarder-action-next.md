@@ -107,7 +107,9 @@ the action. Arbitrary Run shared components remain quantified.
 For the first public application theorem, require an action-free **outer
 control frame**, exact actual MyIngress scope, hdr/meta values matching the
 independent real shapes, and their nominal Index agreement. Initial block
-storage may contain unrelated bindings and the real checksum temporary. No
+storage may contain unrelated bindings. The actual forwarder has no control
+locals: the checksum extern writes hdr.ipv4.hdrChecksum directly, not through
+a checksum temporary. Do not introduce a synthetic local as a real declaration. No
 BlockFrame premise is applied to the installed action frame. A lower-level
 normal action-return equation may allow arbitrary outer layers, but do not
 turn that into a claim that nested action calls are valid programs.
