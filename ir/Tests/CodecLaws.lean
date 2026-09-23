@@ -54,6 +54,28 @@ example : KeyValue.decode "" (KeyValue.lpm 0 (2 ^ 32)).toJson =
   rw [CodecLaws.uint32_toJson_reject _ _ (by unfold CodecLaws.UInt32; decide)]
   rfl
 
+def nestedExpression : Expr := .mux (.literal (.boolean false))
+  (.binary .sub (.member (.var "x") "field")
+    (.index (.var "array") (.literal (.bits 0 (10 ^ 100)))))
+  (.slice (.var "fallback") 1 2)
+
+theorem nestedExpression_representable : CodecLaws.ExprRepresentable nestedExpression := by
+  simp [nestedExpression, CodecLaws.ExprRepresentable, CodecLaws.LiteralRepresentable,
+    CodecLaws.UInt32]
+
+example (path : String) : Expr.decode path nestedExpression.toJson = .ok nestedExpression :=
+  CodecLaws.expr_roundtrip path nestedExpression nestedExpression_representable
+
+example : ¬ CodecLaws.ExprRepresentable (.lookahead (.bits (2 ^ 32))) := by
+  simp [CodecLaws.ExprRepresentable, CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+
+example : Expr.decode "test" (Json.mkObj [("member", Json.mkObj [])]) =
+    .error "test.member.base: no kind set" := by
+  rw [Expr.decode_unfold]
+  change Expr.decode "test.member.base" (Json.mkObj []) >>= _ = _
+  rw [Expr.decode_unfold]
+  rfl
+
 /-- A separate semantic observation, not the production wire encoder. -/
 def literalValue : Literal → Json
   | .bits width value => Json.mkObj
@@ -80,7 +102,58 @@ def keyValue : KeyValue → Json
   | .ternary value mask => Json.mkObj
       [("tag", .str "ternary"), ("value", .str (toString value)), ("mask", .str (toString mask))]
 
-/-- Test-only access to actual leaf decoding/encoding, without validation. -/
+/-- Independent constructor observations: never consult the production wire
+enum table, which both encoder and decoder can get consistently wrong. -/
+def unaryOpValue : UnaryOp → String
+  | .not => "UNARY_OP_NOT"
+  | .complement => "UNARY_OP_COMPLEMENT"
+  | .negate => "UNARY_OP_NEGATE"
+
+def binaryOpValue : BinaryOp → String
+  | .add => "BINARY_OP_ADD"
+  | .sub => "BINARY_OP_SUB"
+  | .mul => "BINARY_OP_MUL"
+  | .addSat => "BINARY_OP_ADD_SAT"
+  | .subSat => "BINARY_OP_SUB_SAT"
+  | .bitAnd => "BINARY_OP_BIT_AND"
+  | .bitOr => "BINARY_OP_BIT_OR"
+  | .bitXor => "BINARY_OP_BIT_XOR"
+  | .shl => "BINARY_OP_SHL"
+  | .shr => "BINARY_OP_SHR"
+  | .concat => "BINARY_OP_CONCAT"
+  | .eq => "BINARY_OP_EQ"
+  | .ne => "BINARY_OP_NE"
+  | .lt => "BINARY_OP_LT"
+  | .le => "BINARY_OP_LE"
+  | .gt => "BINARY_OP_GT"
+  | .ge => "BINARY_OP_GE"
+  | .and => "BINARY_OP_AND"
+  | .or => "BINARY_OP_OR"
+
+def exprValue : Expr → Json
+  | .literal value => Json.mkObj [("tag", .str "literal"), ("value", literalValue value)]
+  | .var name => Json.mkObj [("tag", .str "var"), ("name", .str name)]
+  | .member base field => Json.mkObj
+      [("tag", .str "member"), ("base", exprValue base), ("field", .str field)]
+  | .index base index => Json.mkObj
+      [("tag", .str "index"), ("base", exprValue base), ("index", exprValue index)]
+  | .lastIndex stack => Json.mkObj [("tag", .str "last_index"), ("stack", exprValue stack)]
+  | .unary op operand => Json.mkObj
+      [("tag", .str "unary"), ("op", .str (unaryOpValue op)), ("operand", exprValue operand)]
+  | .binary op left right => Json.mkObj
+      [("tag", .str "binary"), ("op", .str (binaryOpValue op)),
+       ("left", exprValue left), ("right", exprValue right)]
+  | .cast to operand => Json.mkObj
+      [("tag", .str "cast"), ("to", typeValue to), ("operand", exprValue operand)]
+  | .slice operand hi lo => Json.mkObj
+      [("tag", .str "slice"), ("operand", exprValue operand), ("hi", toJson hi), ("lo", toJson lo)]
+  | .isValid header => Json.mkObj [("tag", .str "is_valid"), ("header", exprValue header)]
+  | .mux condition then_ otherwise => Json.mkObj
+      [("tag", .str "mux"), ("condition", exprValue condition),
+       ("then", exprValue then_), ("otherwise", exprValue otherwise)]
+  | .lookahead type => Json.mkObj [("tag", .str "lookahead"), ("type", typeValue type)]
+
+/-- Test-only access to actual syntax decoding/encoding, without validation. -/
 def reply (request : Json) : Except String Json := do
   let kind ← (← request.getObjVal? "kind").getStr?
   let wire ← request.getObjVal? "wire"
@@ -94,6 +167,9 @@ def reply (request : Json) : Except String Json := do
   | "key" =>
     let value ← KeyValue.decode "leaf" wire
     pure (Json.mkObj [("value", keyValue value), ("encoded", value.toJson)])
+  | "expr" =>
+    let value ← Expr.decode "leaf" wire
+    pure (Json.mkObj [("value", exprValue value), ("encoded", value.toJson)])
   | _ => throw "unsupported test leaf kind"
 
 def tests : T Unit := do
@@ -138,5 +214,33 @@ def tests : T Unit := do
   checkOk "codec ternary independently named payload"
     (KeyValue.decode "" (Json.mkObj [("ternary", Json.mkObj
       [("value", .str "3"), ("mask", .str "12")])])) (· == .ternary 3 12)
+  let left := Json.mkObj [("var", .str "left")]
+  let right := Json.mkObj [("var", .str "right")]
+  checkOk "codec unary constructor independent of production enum names"
+    (Expr.decode "" (Json.mkObj [("unary", Json.mkObj
+      [("op", .str "UNARY_OP_NOT"), ("operand", left)])]))
+    (· == .unary .not (.var "left"))
+  checkOk "codec recursive binary independently ordered operands"
+    (Expr.decode "" (Json.mkObj [("binary", Json.mkObj
+      [("op", .str "BINARY_OP_SUB"), ("left", left), ("right", right)])]))
+    (· == .binary .sub (.var "left") (.var "right"))
+  checkOk "codec recursive index independently ordered operands"
+    (Expr.decode "" (Json.mkObj [("index", Json.mkObj [("base", left), ("index", right)])]))
+    (· == .index (.var "left") (.var "right"))
+  checkOk "codec recursive mux independently ordered branches"
+    (Expr.decode "" (Json.mkObj [("mux", Json.mkObj
+      [("condition", Json.mkObj [("literal", Json.mkObj [("boolean", .bool false)])]),
+       ("then", left), ("otherwise", right)])]))
+    (· == .mux (.literal (.boolean false)) (.var "left") (.var "right"))
+  checkOk "codec nested invalid-but-representable expression"
+    (Expr.decode "" nestedExpression.toJson) (· == nestedExpression)
+  check "codec missing nested message retains exact path"
+    (match Expr.decode "test" (Json.mkObj [("member", Json.mkObj [])]) with
+     | .error message => message == "test.member.base: no kind set"
+     | .ok _ => false)
+  check "codec oneof diagnostics precede child decoding"
+    (match Expr.decode "test" (Json.mkObj [("var", .num 1), ("literal", .num 2)]) with
+     | .error message => message == "test: more than one kind set: [literal, var]"
+     | .ok _ => false)
 
 end CodecLawTests
