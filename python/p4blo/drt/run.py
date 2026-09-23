@@ -39,6 +39,8 @@ import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from queue import Empty, Queue
+from threading import Thread
 from types import TracebackType
 from typing import IO
 
@@ -172,14 +174,20 @@ def parse_reply(line: str) -> Outcome:
     if not isinstance(reply, dict):
         raise ProtocolError(f"reply is not an object: {line!r}")
     if "error" in reply:
-        return Outcome(error=str(reply["error"]))
+        if not isinstance(reply["error"], str) or "outputs" in reply:
+            raise ProtocolError(f"bad error reply: {line!r}")
+        return Outcome(error=reply["error"])
     if "outputs" not in reply or not isinstance(reply["outputs"], list):
         raise ProtocolError(f"reply has neither outputs nor error: {line!r}")
     outputs: list[tuple[int, bytes]] = []
     for item in reply["outputs"]:
         try:
+            if not isinstance(item, list) or len(item) != 2:
+                raise ValueError("expected [port, hex]")
             port, data = item
-            outputs.append((int(port), bytes.fromhex(data)))
+            if type(port) is not int or port < 0 or not isinstance(data, str):
+                raise ValueError("expected a nonnegative integer port and hex string")
+            outputs.append((port, bytes.fromhex(data)))
         except (TypeError, ValueError) as e:
             raise ProtocolError(f"bad output {item!r} in {line!r}") from e
     diagnostic = reply.get("diagnostic")
@@ -196,10 +204,18 @@ class LeanRunner:
     always reaped.
     """
 
-    def __init__(self, command: Sequence[str | Path], program_json: Path, ports: int) -> None:
+    def __init__(
+        self, command: Sequence[str | Path], program_json: Path, ports: int, *, timeout: float = 10
+    ) -> None:
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
         self.command = [str(c) for c in command] + ["run", "--ports", str(ports), str(program_json)]
+        self.timeout = timeout
         self.process: subprocess.Popen[str] | None = None
         self.stderr: IO[bytes] | None = None
+        self.requests: Queue[str | None] = Queue()
+        self.replies: Queue[str | Exception] = Queue()
+        self.worker: Thread | None = None
 
     def __enter__(self) -> LeanRunner:
         self.stderr = tempfile.TemporaryFile()
@@ -214,7 +230,23 @@ class LeanRunner:
         except OSError as e:
             self.close()
             raise ProtocolError(f"cannot start {self.command[0]}: {e}") from e
+        self.worker = Thread(target=self._exchange, daemon=True)
+        self.worker.start()
         return self
+
+    def _exchange(self) -> None:
+        """Bound both writes and reads from the caller; even a peer that
+        never reads a large request or never finishes its line times out."""
+        process = self.process
+        assert process is not None and process.stdin is not None and process.stdout is not None
+        while (request := self.requests.get()) is not None:
+            try:
+                process.stdin.write(request + "\n")
+                process.stdin.flush()
+                self.replies.put(process.stdout.readline())
+            except (OSError, ValueError) as e:
+                self.replies.put(e)
+                return
 
     def __exit__(
         self,
@@ -226,13 +258,18 @@ class LeanRunner:
 
     def close(self) -> None:
         if self.process is not None:
+            # Kill before closing stdin: another thread may be blocked writing
+            # it. Closing the text stream first would wait on its lock forever.
+            if self.process.poll() is None:
+                self.process.kill()
+            self.process.wait()
+            self.requests.put(None)
+            if self.worker is not None:
+                self.worker.join(timeout=self.timeout)
             if self.process.stdin is not None:
                 self.process.stdin.close()
-            try:
-                self.process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+            if self.process.stdout is not None:
+                self.process.stdout.close()
             self.process = None
         if self.stderr is not None:
             self.stderr.close()
@@ -242,12 +279,14 @@ class LeanRunner:
         process = self.process
         if process is None or process.stdin is None or process.stdout is None:
             raise ProtocolError("the Lean process is not running")
+        self.requests.put(request_json(case))
         try:
-            process.stdin.write(request_json(case) + "\n")
-            process.stdin.flush()
-        except (BrokenPipeError, OSError) as e:
-            raise ProtocolError(f"the Lean process went away: {self._death()}") from e
-        line = process.stdout.readline()
+            line = self.replies.get(timeout=self.timeout)
+        except Empty:
+            self.close()
+            raise ProtocolError(f"Lean request timed out after {self.timeout:g}s") from None
+        if isinstance(line, Exception):
+            raise ProtocolError(f"the Lean process went away: {self._death()}") from line
         if not line:
             raise ProtocolError(f"no reply: {self._death()}")
         return parse_reply(line.rstrip("\n"))
@@ -255,7 +294,12 @@ class LeanRunner:
     def _death(self) -> str:
         """Why the process stopped, from its exit status and stderr."""
         assert self.process is not None and self.stderr is not None
-        code = self.process.wait(timeout=10)
+        try:
+            code = self.process.wait(timeout=self.timeout)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait()
+            return "closed its protocol stream without exiting"
         self.stderr.seek(0)
         err = self.stderr.read().decode(errors="replace").strip()
         return f"exit {code}" + (f": {err}" if err else "")
