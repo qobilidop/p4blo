@@ -47,11 +47,11 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 
 Things a resuming agent should know are in motion or deliberately left.
 
-- **eDSL v2 (accepted, in implementation, 2026-09-22).** The design is
-  `notes/edsl-v2-design.md`. Order: typed surface (values, views,
-  blocks, tables, externs, program) gated by the forwarder golden;
-  then corpus rewrite of all ten programs and a pyright diagnostics
-  suite; then review. Goldens must not change.
+- **eDSL v2 (implemented 2026-09-22, under review).** The typed surface
+  is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`; all ten corpus
+  programs are authored in v2 with byte-identical goldens and pyright
+  clean sources; `tests/test_pyright.py` guards the static rules. An
+  independent review is in flight; its findings land like the others.
 - **BMv2 as a second oracle (in progress).** Bili's p4lang-builds images
   make it cheap; an agent is building `oracle/bmv2/`. It independently
   checks longest-prefix and `flood`, which P4-SpecTec cannot.
