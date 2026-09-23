@@ -7,50 +7,92 @@ format.
 
 from __future__ import annotations
 
-from p4blo.edsl.core import Program, bit, error_t
+from enum import IntEnum
+
+from p4blo.edsl import (
+    Control,
+    CoreErrors,
+    Deparser,
+    Error,
+    Errors,
+    Header,
+    Parser,
+    Program,
+    Struct,
+    Transition,
+    bit4,
+    bit48,
+    state,
+)
 from p4blo.v0 import p4blo_pb2 as pb
 
 
+class test_header(Header):
+    dstAddr: bit48
+    srcAddr: bit48
+
+
+class headers(Struct):
+    h1: test_header
+
+
+class mystruct1_t(Struct):
+    a: bit4
+    b: bit4
+
+
+# The source's metadata, plus parser_error from standard_metadata under
+# the contract's name. The program never sets egress_spec, so no
+# egress_port: the architecture sends to port 0.
+class metadata(Struct):
+    mystruct1: mystruct1_t
+    parser_error: Error
+
+
+# The program's own errors, declared after core.p4's seven.
+class errors(Errors):
+    IPv4OptionsNotSupported: Error
+    IPv4ChecksumError: Error
+    IPv4HeaderTooShort: Error
+    IPv4BadPacket: Error
+
+
+class DstAddr(IntEnum):
+    """The marker the control writes when the parser rejected."""
+
+    BAD = 0xBAD
+
+
+class MyParser(Parser[headers, metadata]):
+    @state(start=True)
+    def start(self) -> Transition:
+        self.extract(self.hdr.h1)
+        self.verify(False, errors.IPv4BadPacket)
+        self.verify(False, errors.IPv4HeaderTooShort)
+        return self.accept
+
+
+class MyIngress(Control[headers, metadata]):
+    def apply(self) -> None:
+        with self.if_(self.meta.parser_error != CoreErrors.NoError):
+            self.assign(self.hdr.h1.dstAddr, DstAddr.BAD)
+
+
+class MyDeparser(Deparser[headers]):
+    def apply(self) -> None:
+        self.emit(self.hdr.h1)
+
+
 def build() -> pb.Program:
-    p = Program("verify_error")
-
-    test_header = p.header("test_header", dstAddr=bit(48), srcAddr=bit(48))
-    headers = p.struct("headers", h1=test_header)
-    mystruct1_t = p.struct("mystruct1_t", a=bit(4), b=bit(4))
-    # The source's metadata, plus parser_error from standard_metadata under
-    # the contract's name. The program never sets egress_spec, so no
-    # egress_port: the architecture sends to port 0.
-    metadata = p.struct("metadata", mystruct1=mystruct1_t, parser_error=error_t)
-    p.headers = headers
-    p.metadata = metadata
-
-    # The program's own errors, declared after core.p4's seven.
-    p.error("IPv4OptionsNotSupported")
-    p.error("IPv4ChecksumError")
-    p.error("IPv4HeaderTooShort")
-    p.error("IPv4BadPacket")
-
-    with p.parser("MyParser") as ps:
-        with ps.state("start") as s:
-            s.extract(ps.hdr.h1)
-            s.verify(False, p.errors.IPv4BadPacket)
-            s.verify(False, p.errors.IPv4HeaderTooShort)
-            s.accept()
-
-    with p.control("MyIngress") as c:
-        hdr, meta = c.hdr, c.meta
-        with c.body() as b:
-            with b.if_(meta.parser_error != p.errors.NoError):
-                b.assign(hdr.h1.dstAddr, 0xBAD)
-
-    with p.deparser("MyDeparser") as d:
-        with d.body() as b:
-            b.emit(d.hdr.h1)
-
-    p.export("parser", "MyParser")
-    p.export("control", "MyIngress")
-    p.export("deparser", "MyDeparser")
-    return p.build()
+    return Program(
+        "verify_error",
+        headers=headers,
+        metadata=metadata,
+        errors=errors,
+        parser=MyParser,
+        control=MyIngress,
+        deparser=MyDeparser,
+    ).build()
 
 
 if __name__ == "__main__":
