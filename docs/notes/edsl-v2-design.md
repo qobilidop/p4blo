@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Proposed, 2026-09-22; awaiting Bili's review before any code |
+| Status | Implemented 2026-09-22; deviations recorded in decisions.md |
 | Inputs | [edsl-prior-art-own.md](edsl-prior-art-own.md) (pakeles, p4py), [edsl-prior-art-survey.md](edsl-prior-art-survey.md) (HDL and compiler eDSLs), the pyright probes under [probes/](probes/) |
 
 ## The problem
