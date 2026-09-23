@@ -49,7 +49,9 @@ The static rules:
   entries are checked at run time alone.
 - `self.assign(target: Var[W], value: Bits[W] | int)`: a place on the
   left, anything of that width on the right; `Bool`, `Enum` and `Error`
-  places have their own overloads. `self.call(Sub, args...)` calls a
+  places have their own overloads, and the enum one pins the target's own
+  enum type, so a `Shape` into a `Color` is a static error too.
+  `self.call(Sub, args...)` calls a
   sub-block, whose arguments are checked at run time against its
   parameters. `self.local(name, bit8)` declares a block local, a `Var`.
 - Control flow is explicit: `with self.if_(c):`, `elif_`, `else_`.
@@ -71,6 +73,7 @@ from typing import (
     ClassVar,
     Concatenate,
     Never,
+    Protocol,
     Self,
     cast,
     get_args,
@@ -555,6 +558,19 @@ type ParamDecl = tuple[str, str, object]
 """A block parameter: name, direction, the annotation inside the direction."""
 
 
+class _EnumPlace[E: Enum](Protocol):
+    """An enum value of exactly one enum type, for `assign`'s enum overload.
+
+    `assign[E: Enum](target: E, value: E)` lets pyright solve `E` to
+    `Color | Shape` and so accepts an assignment across two enum types.
+    Taking the target through this protocol puts `E` in a contravariant
+    position -- a `Color` satisfies `_EnumPlace[E]` only for `E` no wider
+    than `Color` -- so the value must be of the target's own enum type.
+    """
+
+    def _same(self, other: E) -> None: ...
+
+
 class Block:
     """The base of `Parser`, `Control` and `Deparser`: parameters, locals,
     the statements every kind may record, and the assembly machinery."""
@@ -681,17 +697,23 @@ class Block:
     @overload
     def assign(self, target: Bool, value: Bool | bool) -> None: ...
     @overload
-    def assign[E: Enum](self, target: E, value: E) -> None: ...
+    def assign[E: Enum](self, target: _EnumPlace[E], value: E) -> None: ...
     @overload
     def assign(self, target: Error, value: Error) -> None: ...
-    def assign(self, target: Value, value: object) -> None:
-        """`target = value`; an int value takes the target's width."""
+    def assign(self, target: Value | _EnumPlace[Any], value: object) -> None:
+        """`target = value`; an int value takes the target's width.
+
+        The overloads are the contract; the enum one takes its target
+        through a protocol, so the implementation widens to it and narrows
+        straight back -- every value the overloads admit is a `Value`.
+        """
+        place = cast("Value", target)
         stmts = self._record()
         if isinstance(value, ExternResult):
-            self._call_extern_stmt(value, stmts, target)
+            self._call_extern_stmt(value, stmts, place)
             return
         with provenance():
-            stmts.assign(target._expr, operand(value))  # pyright: ignore[reportPrivateUsage]
+            stmts.assign(place._expr, operand(value))  # pyright: ignore[reportPrivateUsage]
 
     def assign_slice(self, target: Var[Any], hi: int, lo: int, value: int) -> None:
         """`target[hi:lo] = value`, as the read-modify-write the IR has (see

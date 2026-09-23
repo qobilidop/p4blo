@@ -61,7 +61,9 @@ Checked statically:
 - extern method names, argument directions, and the width of an `out`
   argument;
 - that a place is required where the IR requires one: an rvalue assigned
-  to, or passed as an extern's `out` argument, is refused.
+  to, or passed as an extern's `out` argument, is refused;
+- that an enum value goes to a place of its own enum type, in an
+  assignment as well as in a comparison.
 
 Run time only:
 
@@ -75,9 +77,8 @@ Run time only:
   action parameter accepts `bit9(1)`, so a literal written as a target is
   caught by the core;
 - (*) that a `Bool`, `Enum` or `Error` target is a place: those three have
-  no static place split. An assignment between two different enum types is
-  run time only for the same reason, though a comparison between them is
-  a static error;
+  no static place split, so assigning to a member literal is caught by the
+  core rather than by the checker;
 - (*) the width of an extern's `in` arguments, typed `Val[T]`, since
   binding `T` to a place type would reject a cast rvalue;
 - (*) a sub-block call's arguments, `self.call(Sub, ...)`, since a
