@@ -12,6 +12,11 @@ import P4blo.InitialFrameTests
 import P4blo.GuardedForwardPolicy
 import P4blo.CommandPrefixTests
 import P4blo.CallEntryTests
+import P4blo.CallReturnTests
+
+/-- info: 'P4blo.CallReturnTests.concrete_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallReturnTests.concrete_return
 
 /-- info: 'P4blo.GuardedForwardPolicy.authored_policy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
