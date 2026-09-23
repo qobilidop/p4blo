@@ -1,6 +1,6 @@
 # Original xdp-filter compile profile
 
-Experimental compile-only infrastructure for `xdp-filter-ethernet-allow-v1`.
+Compile-only infrastructure for `xdp-filter-ethernet-allow-v1`.
 It does **not** execute a BPF program or validate a p4blo port. Kernel load,
 map creation, test-run, pinning and interface attachment are out of scope.
 
@@ -61,10 +61,22 @@ instruction-level correctness, Linux verifier acceptance or datapath behavior.
 
 ## Current evidence
 
-The earlier single-stage candidate compiled the unchanged object and ran
-the open-only native inspector locally. Current multi-stage/trace/negative
-checks await the isolated branch's clean-runner CI; local Docker disk
-capacity is insufficient for another build. Nine host tests and the
-recovered object's structural positive/negative checks pass. The local
-image-dependent test is explicitly skipped. Do not treat this draft as an
-accepted integrated oracle until native CI and independent review complete.
+Clean-runner CI [35900039992](https://github.com/qobilidop/p4blo/actions/runs/35900039992)
+at `63ec6d1` passes all **10 required tests**, without skips. This includes
+the four native object checks, both compilations, syscall tracing and
+negative BTF/map tests under the documented runtime restrictions. Compiler:
+Ubuntu Clang 18.1.3 (1ubuntu1), build platform `x86_64-linux-gnu`.
+Object SHA-256:
+`a86cd47b5da7289766dcaa2a7a729b5b963bf3be14c513409f5220e67d1b0421`.
+The downloaded repeat object is byte-identical and both accompanying source
+archives match their pinned hashes. This digest records that build, not an
+architecture-independent expected binary hash.
+
+The first branch run failed a test-fixture anchor shared by DWARF/BTF and
+non-root access to source archives. Fixes target the unique BTF string and
+make only the public archives readable; no runtime restriction was relaxed.
+CI retains object/provenance and corresponding sources for 14 days. Rebuild
+from the tracked pins after artifact expiry; no temporary archive is a
+required build input. Local Docker capacity still prevents rebuilding the
+final image here: nine host tests pass and the local native gate explicitly
+skips. Native acceptance comes from required CI, not that skip.

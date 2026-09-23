@@ -1,8 +1,10 @@
 # XDP compile-only draft review
 
 Independent structural/safety review on 2026-09-23 of `p4blo-xdp-build`.
-**Clear for an experimental branch commit/push to obtain native CI evidence;
-not accepted for main integration yet.** No image build, kernel operation,
+**Final disposition: clear for main integration of the compile-only gate**,
+after the successful corrected native CI and independent artifact checks
+recorded below. Remove the temporary experimental branch trigger and retain
+the explicitly bounded claims. No local image build, kernel operation,
 capability change or Docker execution was performed by this reviewer.
 
 ## Safety and reproducibility
@@ -71,3 +73,66 @@ unchanged restrictions, both compiles agree, and real native map/BTF mutants
 fail for the intended reasons. Record actual results and any portability
 changes, retain useful object/provenance evidence, and rerun ordinary merged
 repository gates. Do not reuse a cached prior-image success as this evidence.
+
+## First CI correction review
+
+The alias negative originally required `rx_packets` to occur exactly once
+in the entire object, but both DWARF and BTF carry it. The correction first
+extracts `.BTF`, replaces the unique alias within that section, then replaces
+the entire unique BTF payload in the object. Existing length/uniqueness guards
+and structural acceptance remain intact; it now tests the intended native
+metadata failure instead of failing fixture construction. Reviewed read-only.
+
+Artifact retention now uploads object/provenance and exact source archives
+for 14 days through a pinned action, not a container image. The nonroot tar
+step exposed remote ADD's default root-only archive permissions. This was
+independently identified from the Dockerfile and confirmed by actual CI:
+the directories were traversable but the two archive files were not readable.
+The narrow fix sets those two public source files to 0644 during build,
+without changing runtime user/capabilities/seccomp. This follows the documented
+[remote ADD permissions](https://docs.docker.com/reference/dockerfile/).
+
+Both corrections are **clear for experimental fix commits**. Root reports
+first native CI ran the final build/repeat comparison, baseline tracing,
+structural negatives and wrong-capacity negative successfully, then failed
+the alias fixture and artifact capture as described. That is attributed
+partial CI evidence, not a fully green gate or independently repeated native
+test. The corrected job still must pass before main acceptance.
+
+## Final native CI and artifact acceptance
+
+Independently queried the GitHub run metadata and complete job log for
+[run 35900039992](https://github.com/qobilidop/p4blo/actions/runs/35900039992),
+head `63ec6d1ee8f2cf866d00007f8be6b78592d9d2bb`: successful image build,
+required offline gate, artifact capture and artifact upload. The log enables
+`P4BLO_REQUIRE_XDP_BUILD=1` and shows **10 passed, no skips**, including the
+actual native positive/negative container gate. That gate requires all four
+inner unittest checks to pass, preserving the reviewed nonroot/capability/
+network/readonly restrictions and zero attempted BPF syscalls. This is
+native CI evidence inspected by the reviewer, not a local native rerun.
+
+Independently checked the downloaded artifact without Docker or extraction:
+
+- All 15 tar entries have safe relative paths in `artifacts/` or `archives/`
+  and regular-file/directory types; every extracted file matches its tar
+  member byte for byte.
+- Both object copies are byte-identical. Object SHA-256 is
+  `a86cd47b5da7289766dcaa2a7a729b5b963bf3be14c513409f5220e67d1b0421`,
+  also matching the retained hash file.
+- Both upstream archive hashes match their pinned Dockerfile values:
+  xdp-tools `b83d1a74deacf2ba48ee50798bb38a389ddda402967413c6c2ad1389daed3c16`;
+  libbpf `f94a66ab80e79aa11e15409479d8bc2572649f0ef25dbd2daf503ea5b05067ad`.
+- Retained build script and native inspector source exactly match the reviewed
+  CI commit. Provenance reports Clang 18.1.3 (1ubuntu1) and
+  `x86_64-linux-gnu`.
+- The object passes the restricted ELF profile locally: 30 sections and
+  1,064 code bytes. Five structural negative mutations fail as intended.
+  Both native-negative fixtures independently construct changed objects that
+  still pass the structural reader; their actual native rejection evidence
+  comes from the successful required CI gate, not this host-only check.
+
+No remaining blocker for this bounded infrastructure increment. Main's local
+missing-image skip must remain distinguished from this required CI success.
+This does not establish Linux verifier acceptance, kernel loading, packet
+execution, or behavioral equivalence of an XDP translation; those remain
+separate later work with their own authority and verification requirements.

@@ -1,5 +1,11 @@
 # Compile-only XDP work in progress
 
+Final native checkpoint: CI `35900039992` at `63ec6d1` passes all ten required
+checks and artifact retention. `tests/oracle/xdp/README.md` records the exact
+object hash, compiler and trust boundary. The notes below retain the local
+capacity incident and intermediate failures; they are not pending native
+acceptance instructions. Kernel execution remains outside this increment.
+
 2026-09-23, isolated `work/xdp-build`, base `0ad1b5b`. These files are not
 integrated or accepted gates. Main's Python/Lean work does not depend on them.
 

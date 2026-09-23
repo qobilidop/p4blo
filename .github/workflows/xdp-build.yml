@@ -3,7 +3,7 @@ name: XDP compile profile
 # Compilation, ELF/BTF metadata and negative tests only. No BPF load/attach.
 on:
   push:
-    branches: [main, work/xdp-build]
+    branches: [main]
   pull_request:
 
 permissions:
