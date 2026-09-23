@@ -47,6 +47,8 @@ def save(report: Report, path: Path) -> None:
                 "seed": report.seed,
                 "requests": [json.loads(request_json(case)) for case in report.inputs],
                 "divergences": [d.number for d in report.divergences],
+                "completed_requests": report.cases,
+                "protocol_error": report.protocol_error,
             },
             indent=2,
         )

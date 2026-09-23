@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -47,3 +49,18 @@ def test_unresponsive_peer_times_out_even_when_it_does_not_read(
         with pytest.raises(ProtocolError, match="timed out"):
             runner.run(Case(pb.Entries(), 0, bytes(packet_size)))
         assert process is not None and process.poll() is not None
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX process-group cleanup")
+def test_timeout_reaps_descendants_that_inherit_protocol_pipes(tmp_path: Path) -> None:
+    start = time.monotonic()
+    with LeanRunner(
+        [sys.executable, "-c", "import os,time; os.fork(); time.sleep(60)"],
+        tmp_path / "unused.json",
+        4,
+        timeout=0.2,
+    ) as runner:
+        with pytest.raises(ProtocolError, match="timed out"):
+            runner.run(Case(pb.Entries(), 0, b"x"))
+        assert runner.worker is not None and not runner.worker.is_alive()
+    assert time.monotonic() - start < 5

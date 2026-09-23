@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
         report = compare(args.program_dir, args.seed, args.count, args.ports, lean)
     except ProtocolError as e:
         print(f"protocol error: {e}", file=sys.stderr)
+        if e.report is not None:
+            show(e.report, args.program_dir, args.show, args.save)
         return 2
     print(report.summary())
     show(report, args.program_dir, args.show, args.save)

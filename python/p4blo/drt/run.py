@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
 import tempfile
 from collections.abc import Callable, Sequence
@@ -72,6 +73,10 @@ class ProtocolError(Exception):
     """The Lean side did not speak the protocol: it could not be started,
     it exited, or it replied with something that is neither outputs nor an
     error."""
+
+    def __init__(self, message: str, report: Report | None = None) -> None:
+        super().__init__(message)
+        self.report = report
 
 
 _CLASS_PREFIX = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*: ")
@@ -136,11 +141,12 @@ class Report:
     divergences: list[Divergence] = field(default_factory=list)
     inputs: tuple[Case, ...] = ()
     program_ir: pb.Program | None = field(default=None, repr=False)
+    protocol_error: str | None = None
 
     @property
     def passed(self) -> bool:
         """Generated valid inputs must execute, not merely fail alike."""
-        return not self.divergences and self.both_errored == 0
+        return not self.divergences and self.both_errored == 0 and self.protocol_error is None
 
     @property
     def agreed(self) -> int:
@@ -245,6 +251,7 @@ class LeanRunner:
                 stdout=subprocess.PIPE,
                 stderr=self.stderr,
                 text=True,
+                start_new_session=os.name == "posix",
             )
         except OSError as e:
             self.close()
@@ -279,16 +286,26 @@ class LeanRunner:
         if self.process is not None:
             # Kill before closing stdin: another thread may be blocked writing
             # it. Closing the text stream first would wait on its lock forever.
-            if self.process.poll() is None:
+            if os.name == "posix":
+                # A wrapper may have spawned children that retain the pipes.
+                # The session belongs to this runner, not the user's shell.
+                try:
+                    os.killpg(self.process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            elif self.process.poll() is None:
                 self.process.kill()
             self.process.wait()
             self.requests.put(None)
             if self.worker is not None:
                 self.worker.join(timeout=self.timeout)
-            if self.process.stdin is not None:
-                self.process.stdin.close()
-            if self.process.stdout is not None:
-                self.process.stdout.close()
+            # Never take a text-stream lock from a still-blocked worker, even
+            # if a hostile descendant escaped the owned process group.
+            if self.worker is None or not self.worker.is_alive():
+                if self.process.stdin is not None:
+                    self.process.stdin.close()
+                if self.process.stdout is not None:
+                    self.process.stdout.close()
             self.process = None
         if self.stderr is not None:
             self.stderr.close()
@@ -351,10 +368,19 @@ def compare_cases(
     """Run every case on both sides, in order, and collect the divergences."""
     frozen_program = pb.Program()
     frozen_program.CopyFrom(loaded.index.program)
-    report = Report(program, seed, ports, inputs=tuple(cases), program_ir=frozen_program)
-    for number, case in enumerate(cases):
+    inputs = tuple(
+        Case(pb.Entries.FromString(c.entries.SerializeToString()), c.ingress_port, c.packet)
+        for c in cases
+    )
+    report = Report(program, seed, ports, inputs=inputs, program_ir=frozen_program)
+    for number, case in enumerate(inputs):
         python = python_outcome(loaded, case, ports)
-        lean = run_lean(case)
+        try:
+            lean = run_lean(case)
+        except ProtocolError as e:
+            report.protocol_error = str(e)
+            e.report = report
+            raise
         report.cases += 1
         if python.error is not None and lean.error is not None:
             report.both_errored += 1
@@ -378,8 +404,20 @@ def compare(
     with tempfile.TemporaryDirectory() as tmp:
         program_json = Path(tmp) / f"{program_dir.name}.json"
         program_json.write_text(ir.dump_json(program))
-        with LeanRunner(lean, program_json, ports) as runner:
-            return compare_cases(program_dir.name, loaded, cases, ports, runner.run, seed)
+        try:
+            with LeanRunner(lean, program_json, ports) as runner:
+                return compare_cases(program_dir.name, loaded, cases, ports, runner.run, seed)
+        except ProtocolError as e:
+            if e.report is None:
+                e.report = Report(
+                    program_dir.name,
+                    seed,
+                    ports,
+                    inputs=tuple(cases),
+                    program_ir=program,
+                    protocol_error=str(e),
+                )
+            raise
 
 
 def default_lean_binary() -> Path:
