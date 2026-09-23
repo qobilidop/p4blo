@@ -17,6 +17,7 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
+from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
 from p4blo.drt.run import (
     ProtocolError,
@@ -54,26 +55,46 @@ def save(report: Report, path: Path) -> None:
 
 
 def load(path: Path) -> tuple[pb.Program, list[Case], int, int]:
-    data = json.loads(path.read_text())
-    if not isinstance(data, dict) or data.get("format") != "p4blo.drt" or data.get("version") != 1:
+    data = strict_json_loads(path.read_text())
+    if not isinstance(data, dict):
+        raise ValueError("replay must be an object")
+    if (
+        data.get("format") != "p4blo.drt"
+        or type(data.get("version")) is not int
+        or data["version"] != 1
+    ):
         raise ValueError("not a version 1 p4blo differential replay")
-    ports, seed = data["ports"], data["seed"]
+    ports, seed = data.get("ports"), data.get("seed")
     if type(ports) is not int or ports <= 0 or type(seed) is not int:
         raise ValueError("replay ports must be positive and seed must be an integer")
-    program = json_format.ParseDict(data["program"], pb.Program())
+    raw_program = data.get("program")
+    if not isinstance(raw_program, dict):
+        raise ValueError("replay program must be an object")
+    try:
+        program = json_format.ParseDict(raw_program, pb.Program())
+    except json_format.ParseError as error:
+        raise ValueError(f"invalid replay program protobuf JSON: {error}") from error
     cases: list[Case] = []
-    if not isinstance(data["requests"], list):
+    requests = data.get("requests")
+    if not isinstance(requests, list):
         raise ValueError("replay requests must be an array")
-    for request in data["requests"]:
-        if type(request["ingress_port"]) is not int:
+    for request in requests:
+        if not isinstance(request, dict):
+            raise ValueError("replay request must be an object")
+        ingress = request.get("ingress_port")
+        if type(ingress) is not int:
             raise ValueError("ingress_port must be an integer")
-        cases.append(
-            Case(
-                json_format.ParseDict(request["entries"], pb.Entries()),
-                request["ingress_port"],
-                bytes.fromhex(request["packet"]),
-            )
-        )
+        raw_entries = request.get("entries")
+        if not isinstance(raw_entries, dict):
+            raise ValueError("replay entries must be an object")
+        packet = request.get("packet")
+        if not isinstance(packet, str):
+            raise ValueError("replay packet must be a hex string")
+        try:
+            entries = json_format.ParseDict(raw_entries, pb.Entries())
+        except json_format.ParseError as error:
+            raise ValueError(f"invalid replay entries protobuf JSON: {error}") from error
+        cases.append(Case(entries, ingress, bytes.fromhex(packet)))
     return program, cases, ports, seed
 
 

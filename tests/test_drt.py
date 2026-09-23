@@ -281,6 +281,49 @@ def test_parse_reply_rejects_what_is_not_the_protocol() -> None:
             parse_reply(bad)
 
 
+@pytest.mark.parametrize(
+    "reply",
+    [
+        '{"outputs": [[1, "ab"]], "outputs": [], "state": {}}',
+        '{"outputs": [[1, "ab"]], "outp\\u0075ts": [], "state": {}}',
+        '{"outputs": [], "state": {"r": {"kind": "counter", "values": ["0x1"], "values": []}}}',
+        '{"outputs": [], "state": {"r": {"kind": "counter", "values": ["0x1"]}, '
+        '"r": {"kind": "counter", "values": []}}}',
+        '{"outputs": [], "state": {}, "diagnostic": "fault", "diagnostic": null}',
+        '{"error": "original fault", "error": "replacement", "state": {}}',
+        '{"outputs": [], "state": {}, "extension": NaN}',
+        '{"outputs": [], "state": {}, "extension": Infinity}',
+        '{"outputs": [], "state": {}, "extension": -Infinity}',
+        '{"error": "fault", "state": {}, "diagnostic": []}',
+    ],
+)
+def test_parse_reply_rejects_ambiguous_or_non_json_data(reply: str) -> None:
+    with pytest.raises(ProtocolError):
+        parse_reply(reply)
+
+
+def test_reply_extensions_and_error_comparison_policy_are_unchanged() -> None:
+    assert parse_reply('{"outputs": [], "state": {}, "extension": {"future": 1}}') == Outcome(
+        outputs=()
+    )
+    # Diagnostic strings are well-typed, but errors still compare their
+    # reason and state rather than optional diagnostic text.
+    assert parse_reply('{"error": "boom", "state": {}, "diagnostic": "detail"}') == Outcome(
+        error="boom"
+    )
+
+
+def test_reply_decoder_recursion_failure_is_a_protocol_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def exhausted(*_args: object, **_kwargs: object) -> None:
+        raise RecursionError("injected decoder exhaustion")
+
+    monkeypatch.setattr("p4blo.drt._json.json.loads", exhausted)
+    with pytest.raises(ProtocolError, match="decoder limit"):
+        parse_reply('{"outputs": [], "state": {}}')
+
+
 def test_agreement_compares_error_reasons_and_diagnostic_presence() -> None:
     """Two errors agree only for the same stated reason, the Python
     exception class stripped; two drops agree only when both or neither
