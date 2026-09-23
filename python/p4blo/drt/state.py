@@ -2,8 +2,8 @@
 
 Only logical state crosses the pipe, not Python objects or Lean hash-map
 layout. Hexadecimal strings carry unbounded naturals without JSON precision
-loss or Python's decimal-conversion limit. An unsupported extern must get an explicit adapter, never disappear
-silently from the comparison.
+loss or Python's decimal-conversion limit. An unsupported extern must get
+an explicit adapter, never disappear silently from the comparison.
 """
 
 from __future__ import annotations
