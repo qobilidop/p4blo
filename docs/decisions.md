@@ -236,6 +236,27 @@ one that says so.
   expressed. `assign` is overloaded over target kinds, so pyright
   reports a failed assignment as `reportCallIssue`; four must_fail
   headers say so. Everything else in the note's table holds.
+- **BMv2 is the second oracle** (`oracle/bmv2/`), built on the pinned
+  multi-arch p4c and BMv2 images grafted into one. It decides what
+  P4-SpecTec cannot: longest prefix from a real lpm table, const-entry
+  priorities, and runtime ternary priorities (inverted as p4c's own
+  runner does, since BMv2 has the smaller priority winning). It cannot
+  see `flood`, which no corpus program declares today.
+- **The BMv2 oracle prints `stack.last`, not `stack[stack.lastIndex]`.**
+  p4c compiles the two spellings differently: the member form becomes
+  BMv2's `stack_field` select key, the index form a dynamic expression
+  `simple_switch` refuses to load. The IR has only the index form (the
+  coverage table elaborates `.last` to it), so the rewrite lives in the
+  oracle runner rather than the printer, whose output is a golden shared
+  with the other oracle and the p4c typecheck.
+- **An out-of-range register read diverges from BMv2, knowingly.** p4blo
+  yields zero; BMv2's `register_read` leaves the destination untouched,
+  so a field keeps its parsed value. P4 leaves this
+  implementation-defined; p4blo's choice is in `docs/semantics.md` and
+  implemented in both interpreters, so the divergence is recorded as a
+  strict xfail in `tests/test_oracle_bmv2.py` and in
+  `corpus/register_bounds/README.md`, not resolved. Revisit only if a
+  corpus program comes to depend on the difference.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

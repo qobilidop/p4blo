@@ -39,9 +39,16 @@ land on the cells; both interpreters run every case.
 ## What the oracle sees
 
 The printed program declares `register<bit<8>>(32w4) r` and reads and
-writes it through `r.read` and `r.write`. Which value P4-SpecTec's
-v1model simulator gives an out-of-range read, and whether it accepts
-the write, is its own choice; the vectors here assert p4blo's, which is
-BMv2's. An oracle `error` verdict on `bounds.stf` is a construct it
-does not support, not a divergence; a `fail` verdict would be worth a
-decisions.md entry either way.
+writes it through `r.read` and `r.write`. Which value a simulator gives
+an out-of-range read, and whether it accepts the write, is its own
+choice; the vectors here assert p4blo's.
+
+**They are not BMv2's.** The second oracle (`oracle/bmv2/`) showed that
+BMv2 agrees about the write, which it ignores, and not about the read:
+`register_read` on an index at or beyond the array's size leaves the
+destination untouched rather than zeroing it, so a field keeps whatever
+the parser put there. Two of these vectors therefore diverge on BMv2 and
+are carried as a known divergence in `tests/test_oracle_bmv2.py`. P4
+leaves an out-of-range register access implementation-defined, p4blo's
+choice is written in `docs/semantics.md` and implemented twice, and the
+divergence is documented rather than resolved; see `docs/decisions.md`.
