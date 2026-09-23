@@ -37,9 +37,9 @@ The first thing a community version would build is a p4c backend;
    normative for syntax. Read it with
    [`docs/semantics.md`](docs/semantics.md), the closed behaviors.
 3. [`corpus/forwarder/`](corpus/forwarder/): the tutorial forwarder as a
-   p4blo program, authored in the Python eDSL, with its IR golden and
-   test vectors. Every corpus directory has a README naming what was
-   elaborated away.
+   p4blo program, authored in the typed Python eDSL and checked by
+   pyright, with its IR golden and test vectors. Every corpus directory
+   has a README naming what was elaborated away.
 4. [`python/p4blo/interp/`](python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
 5. [`lean/P4blo/`](lean/P4blo/): the same semantics in Lean, normative
