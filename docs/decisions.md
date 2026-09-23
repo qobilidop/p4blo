@@ -930,3 +930,14 @@ one that says so.
   the nested statement roundtrip proof effort. Revisit proof organization if
   induction becomes unwieldy, not accepted syntax or the universal claim.
   Plan, probe and independent review are committed under `stmt-codec-plan`.
+- **Port the actual forwarder next, preserving its original policy.** The
+  complete guarded control theorem is a bounded synthetic profile, not the
+  corpus forwarder: that program wraps TTL0, uses the old destination as
+  source MAC, passes non-IPv4 and recomputes checksums even after default drop.
+  Advance exact-golden Lean authoring, real execution and a modest invalid-
+  IPv4 control property. Label raw declaration/parser/table/extern assembly
+  as unverified; eliminate those seams incrementally. Confidence: high in
+  application choice, medium in reusable builder/API shape. Revisit on a
+  second real client or a proposed semantic change. The plan maps remaining
+  action-frame, parser, table, checksum and architecture obligations in
+  `notes/lean-forwarder-next.md`; do not substitute the guarded policy.
