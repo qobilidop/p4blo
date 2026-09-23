@@ -189,7 +189,6 @@ class View(Value):
     __ir_name__: ClassVar[str] = ""
     __fields__: ClassVar[dict[str, FieldSpec]] = {}
     __pb_type__: ClassVar[pb.Type] = pb.Type()
-    __core_type__: ClassVar[HeaderType | StructType | None] = None
     _what: ClassVar[str] = "view"
 
     def __init_subclass__(
@@ -252,7 +251,10 @@ class Header(View):
     @classmethod
     def _declare(cls, fields: dict[str, pb.Type]) -> None:
         with provenance():
-            cls.__core_type__ = HeaderType(cls.__ir_name__, fields)
+            # Building the core type is the check, not the result: it is
+            # what refuses a header field of struct type here, at the
+            # declaration, rather than when a program first uses the class.
+            HeaderType(cls.__ir_name__, fields)
         cls.__pb_type__ = pb.Type(header=cls.__ir_name__)
 
     def is_valid(self) -> Bool:
@@ -268,7 +270,7 @@ class Struct(View):
     @classmethod
     def _declare(cls, fields: dict[str, pb.Type]) -> None:
         with provenance():
-            cls.__core_type__ = StructType(cls.__ir_name__, fields)
+            StructType(cls.__ir_name__, fields)  # the check, as for a header
         cls.__pb_type__ = pb.Type(struct=cls.__ir_name__)
 
 

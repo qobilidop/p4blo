@@ -206,8 +206,11 @@ def test_reserved_and_renamed_fields() -> None:
     class ok(Header, name="renamed_t", rename={"is_valid_": "is_valid"}):
         is_valid_: bit8
 
-    assert ok.__core_type__ is not None
-    assert ok.__core_type__.build() == text_format.Parse(
+    class Renaming(Control[headers, metadata]):
+        def apply(self) -> None:
+            self.local("renamed", ok)
+
+    assert build(control=Renaming).header_types[-1] == text_format.Parse(
         'name: "renamed_t" fields { name: "is_valid" type { bits: 8 } }', pb.HeaderType()
     )
 
