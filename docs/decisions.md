@@ -379,3 +379,11 @@ one that says so.
   Lean-only round trips had hidden the defect because its decoder supplied
   zero for an absent value. Keep the producer's actual input unmodified by
   an adapter-specific repair and add explicit wire regressions.
+- **Generate stateful programs as well as their input sequences.** Fixed
+  stateful corpus programs cannot vary cell widths, independent register
+  and counter bounds, arithmetic or operation ordering. Generate typed
+  switch contexts with those choices and compare every request's packets
+  and complete abstract extern state. Shrink configurations and packet
+  lists together without filtering invalid programs. Deterministic cases
+  force boundary and persistence behavior; generated sequences explore
+  combinations. Include both program and inputs in replay artifact names.

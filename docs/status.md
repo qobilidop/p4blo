@@ -82,12 +82,19 @@ Things a resuming agent should know are in motion or deliberately left.
   defect: Lean omitted numeric zero in protobuf string fields. The encoder
   now emits `"0"`; explicit tests and independent cross-language review pass
   (`notes/reviews/zero-encoding.md`). No adapter normalization hides the bug.
+  Generated stateful programs passed independent review and 28 tests,
+  including 100 shrinking campaigns and 247 deterministic comparisons.
+  A reset-before-read fault shrinks to a two-request persistence witness
+  and its complete replay works (`notes/reviews/stateful-generation.md`).
   Next: integrate/review the Python certificate producer (isolated
-  `verification/mutation-campaign` branch) and generated stateful programs
-  (`verification/scalar-soundness`). Those two extensions are in progress,
-  not yet accepted checkpoints; root owns CI and integration documentation.
+  `verification/mutation-campaign` branch), still in progress, and finish
+  the fourth semantic mutation round in `verification/stateful-mutations`.
+  An out-of-bounds counter mutation survived the previous 27-test gate;
+  test both implementations against the new stateful suite before accepting
+  this checkpoint. Root owns CI and integration documentation.
   Still open: whole-program validity/soundness, validated-program termination,
-  variables/aggregates and broad stateful program generation. Neither finite
+  variables/aggregates and generation of tables, nested calls, parser faults
+  and further extern families. Neither finite
   traces nor matching test results prove universal Python equivalence.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
