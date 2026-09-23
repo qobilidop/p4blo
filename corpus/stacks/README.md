@@ -27,11 +27,12 @@ the P4_16 semantics ("v3").
 ## Elaborated away
 
 - **`#define MAX_H2_HEADERS 5`.** The preprocessor constant is the number
-  5, a Python constant in the source and a stack size in the IR.
+  5, a Python constant in the source, the depth in the stack's type, and
+  a stack size in the IR.
 - **Slice lvalues.** `hdr.h1.h2_valid_bits[i:i] = 1` has no `LValue` in the
   IR ([decisions.md](../../docs/decisions.md): slice lvalues are
-  elaborated, not added). `set_slice` in the source writes the
-  read-modify-write of the whole field, `f = (f & ~mask) | (v << lo)`,
+  elaborated, not added). The source writes `assign_slice`, which emits
+  the read-modify-write of the whole field, `f = (f & ~mask) | (v << lo)`,
   with every literal at the field's width: for `[2:2] = 1` the IR holds
   `f = (f & ~0x04) | (0x01 << 0x02)` on `bit<8>`, the complement and shift
   as nodes, so the golden reads like the formula.
@@ -39,7 +40,8 @@ the P4_16 semantics ("v3").
   cases `2:` and `3:`: each takes its width from the other operand, the
   target or the key, which the eDSL does.
 - **`hdr.h2.last`** is `hdr.h2[hdr.h2.lastIndex]`, which is how the
-  language defines it; the IR has `lastIndex` and indexing, and no `last`.
+  language defines it; the source writes `.last` and the eDSL elaborates
+  it, since the IR has `lastIndex` and indexing, and no `last`.
 - **The sub-control instance.** `cDoOneOp() do_one_op;` and
   `do_one_op.apply(hdr, hdr.h1.op1)` are a block call naming the block:
   an instantiation without constructor arguments adds nothing, and the IR
