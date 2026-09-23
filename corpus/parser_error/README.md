@@ -33,10 +33,9 @@ set ([design.md](../../docs/design.md#architectures)).
   field's width.
 - **`packet_in`, `packet_out`, `V1Switch`.** As in every corpus program;
   `verify_checks`, `compute_checksum` and `egress` are empty and left out.
-- **A field named `type`.** The header keeps the source's field name. The
-  eDSL's `Expr` has an attribute of that name, so `hdr.eth.type` would
-  return the expression's type instead of the field; `parser_error.py`
-  calls the field lookup directly for it. The IR is unaffected.
+- **A field named `type`.** The header keeps the source's field name. A
+  header view has one real attribute per field and no `__getattr__`, so
+  `hdr.eth.type` is the field and nothing else. The IR is unaffected.
 
 ## Deferred
 

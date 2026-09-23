@@ -7,55 +7,73 @@ format.
 
 from __future__ import annotations
 
-from p4blo.edsl.core import Expr, Program, bit, error_t
+from p4blo.edsl import (
+    Control,
+    CoreErrors,
+    Deparser,
+    Error,
+    Header,
+    Parser,
+    Program,
+    Struct,
+    Transition,
+    bit9,
+    bit16,
+    bit48,
+    state,
+)
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def field(base: Expr, name: str) -> Expr:
-    """`base.name` for a field whose name an `Expr` attribute shadows.
+class Ethernet(Header):
+    src: bit48
+    dst: bit48
+    type: bit16
 
-    `Ethernet.type` is a field of the source program; `Expr.type` is the
-    builder's own attribute, so `hdr.eth.type` never reaches the field
-    lookup. Calling the lookup directly does.
-    """
-    return Expr.__getattr__(base, name)
+
+class parsed_packet_t(Struct):
+    eth: Ethernet
+
+
+# The source's `local_metadata_t` is empty; the two intrinsic fields the
+# program uses join it under the contract's names: parser_error, which
+# the architecture provides, and egress_port, which it consumes.
+class local_metadata_t(Struct):
+    parser_error: Error
+    egress_port: bit9
+
+
+class parse(Parser[parsed_packet_t, local_metadata_t]):
+    @state(start=True)
+    def start(self) -> Transition:
+        self.extract(self.hdr.eth)
+        return self.accept
+
+
+class ingress(Control[parsed_packet_t, local_metadata_t]):
+    def apply(self) -> None:
+        with self.if_(self.meta.parser_error == CoreErrors.PacketTooShort):
+            self.set_valid(self.hdr.eth)
+            self.assign(self.hdr.eth.type, 0)
+            self.assign(self.hdr.eth.src, 0)
+            self.assign(self.hdr.eth.dst, 0)
+        self.assign(self.meta.egress_port, 0)
+
+
+class deparser(Deparser[parsed_packet_t]):
+    def apply(self) -> None:
+        self.emit(self.hdr)
 
 
 def build() -> pb.Program:
-    p = Program("parser_error")
-
-    ethernet = p.header("Ethernet", src=bit(48), dst=bit(48), type=bit(16))
-    headers = p.struct("parsed_packet_t", eth=ethernet)
-    # The source's `local_metadata_t` is empty; the two intrinsic fields the
-    # program uses join it under the contract's names: parser_error, which
-    # the architecture provides, and egress_port, which it consumes.
-    metadata = p.struct("local_metadata_t", parser_error=error_t, egress_port=bit(9))
-    p.headers = headers
-    p.metadata = metadata
-
-    with p.parser("parse") as ps:
-        with ps.state("start") as s:
-            s.extract(ps.hdr.eth)
-            s.accept()
-
-    with p.control("ingress") as c:
-        hdr, meta = c.hdr, c.meta
-        with c.body() as b:
-            with b.if_(meta.parser_error == p.errors.PacketTooShort):
-                b.set_valid(hdr.eth)
-                b.assign(field(hdr.eth, "type"), 0)
-                b.assign(hdr.eth.src, 0)
-                b.assign(hdr.eth.dst, 0)
-            b.assign(meta.egress_port, 0)
-
-    with p.deparser("deparser") as d:
-        with d.body() as b:
-            b.emit(d.hdr)
-
-    p.export("parser", "parse")
-    p.export("control", "ingress")
-    p.export("deparser", "deparser")
-    return p.build()
+    return Program(
+        "parser_error",
+        headers=parsed_packet_t,
+        metadata=local_metadata_t,
+        parser=parse,
+        control=ingress,
+        deparser=deparser,
+    ).build()
 
 
 if __name__ == "__main__":
