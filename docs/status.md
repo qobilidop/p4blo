@@ -121,8 +121,11 @@ Things a resuming agent should know are in motion or deliberately left.
   The user's revised public naming (`P4blo` for users, `P4bloIR` for spec)
   passes both Lean packages/audits, 114 required DRT and the full 1070-test
   gate (three exact expected discrepancies, no skips). Independent diff
-  inspection confirms all Lean bodies differ only by renamed tokens; a
-  fresh-worktree rebuild follows to exclude stale imports. Typed references
+  inspection confirms all Lean bodies differ only by renamed tokens. The
+  independent clean-worktree reproduction at `411ba82` also passes both
+  packages/audits, 114 required DRT, four layout guards and Buf/no-drift
+  with no active default toolchain: `notes/reviews/lean-public-names.md`.
+  Typed references
   follow. The stage-2 source/environment audit is preserved in
   `notes/xdp-preflight.md`: pinned original Ethernet-allow profile, complete
   per-CPU map observations, and an FD-only non-attaching oracle design.
