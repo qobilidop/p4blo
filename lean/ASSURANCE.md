@@ -688,3 +688,161 @@ storage. Revisit if ergonomic concrete forwarding bodies require pervasive
 type annotations. Do not retain duplicate scalar Expr/Cmd implementations
 as an expedient; factor their read/write seam once and retain the current
 scalar API as a specialization.
+
+## Field expressions: one shared read/operator implementation
+
+`Scalar.ExprWith Reads` now owns the only operator AST, `denoteWith` and
+`lowerWith`. Existing `ExprIn`, closed `Expr`, named constructors, literal
+helpers and theorem signatures remain scalar-reference specializations;
+the old scalar commands and all old examples are unchanged. `Fields.Expr`
+specializes the same implementation to aggregate references. The generic
+`evaluate_lower_with` proof requires only a per-leaf read law; the public
+field `evaluate_lower` discharges it with actual `Ref.evaluate`, so its
+statement has only concrete Index/frame premises and preserves the exact
+value and entire Run. Source operators are still independent Fin/Bool
+functions, not calls to the IR evaluator.
+
+The spec's `FieldTyping` gives declarative variable/member path and scalar
+operator rules. Paths require actual block VarDecl lookup, matching root
+name and nominal kind/ordered field declarations. Scalar reads additionally
+require a valid positive-width/bool scalar type. The source `lower_typed`
+theorem uses `RootWellFormed`, recursive `IndexAgrees` and `RootDeclares`;
+each premise has a concrete kernel witness. Six independent spec kernel
+negatives reject absent/empty roots, missing declarations, scalar containers,
+zero-width literals and overflowing literals. This is **not** a total
+aggregate checker, general validity/soundness theorem or action-scope
+declaration theorem. Writable field commands remain the next step.
+
+### Full stored-state observation, and a reviewed gap
+
+The default `fieldExpressions` executable exports seven authored expressions
+with case IDs, result widths and initial header validity. Fixed numeric
+inputs and expected answers are independently written in Lean tests and
+`tests/test_lean_edsl_fields.py`; the exporter emits no computed answer.
+The Python wrapper builds an ordinary validated program with a nested header
+root and metadata root. Its valid observer header reports every stored
+source field, stored header validity, an unrelated sentinel and the result.
+Nine-bit fields/results are zero-extended to sixteen bits; bools are cast
+through one bit to a byte. It observes invalid-header storage explicitly,
+not by trying to emit the invalid header.
+
+Independent review found that the first wrapper took the source snapshots
+before evaluating the authored expression, leaving a read-side-effect gap.
+The corrected wrapper evaluates the expression **once, first**, then takes
+the snapshots; output field declaration order remains unchanged. A required
+regression preserves the weak ordering as an adversarial control: a read of
+H.right can return the correct 257 while zeroing H.left. The weak gate agrees
+with Lean and survives. The corrected gate saves a mismatch, replays it with
+the fault active, and agrees after restoration. This observation wrapper is
+unverified scaffolding, not a whole-program compiler or application proof.
+
+### Read-seam mutations
+
+All experiments used an isolated worktree, one active fault at a time.
+
+1. In `Scalar.lowerWith`, lower `.add` to `.binary .sub`. Adjust the matching
+   `lower_typed_in` addition case to use the equally well-typed `.sub` rule.
+   `lake build P4blo.Scalar` exits 1 at `evaluate_lower_with`'s addition
+   equality: modular subtraction cannot equal independent modular addition.
+   This is a semantic **proof rejection**, not a runtime conformance kill.
+2. In `FieldTests.lean`, replace the nine-bit `port` reference definition by
+   `right` (also nine-bit). Default build/all audits pass; the field-port
+   DRT agrees, then the independent expected answer fails: result 262 instead
+   of 8, with the source-state snapshot unchanged. This is a compiled
+   valid-but-unintended accessor caught by the independent oracle.
+3. Replace the `bits` macro expansion's value by
+   `(if $value = 85 then 84 else $value)`. Default build/all audits pass;
+   field-add-valid DRT agrees, then the independent expected result fails:
+   255 instead of 0. This exercises the refactored generic literal notation,
+   which is not verified by the generic lowering theorem.
+4. In production Python `field_of`, immediately before its return insert:
+
+   ```python
+   if isinstance(container, Header) and container.type_name == "H" and field == "right":
+       container.fields[0] = Bits(8, 0)
+   ```
+
+   The field-right test fails at DRT and automatically saves its complete
+   program/request. Returned right/result bytes remain `0101`; only the
+   stored left snapshot changes from `ab` to `00`.
+5. In production Python `write_lvalue`, immediately after the existing
+   member-field assignment insert:
+
+   ```python
+   if isinstance(container, Header) and container.type_name == "H":
+       container.valid = True
+   ```
+
+   Field-add-invalid fails at DRT: only the stored validity observation
+   changes from `00` to `01`; result remains `00`.
+6. At the same setter location, instead insert:
+
+   ```python
+   if isinstance(container, Header) and container.type_name == "H" and lv.member.field == "right":
+       container.fields[0] = Bits(8, 0)
+   ```
+
+   Field-no fails at DRT: only the left snapshot changes from `ab` to `00`;
+   the selected literal result remains `01ff`. The last two faults affect
+   real production writes in the wrapper's initializers. They do not claim
+   that a typed field-command lowering theorem already exists.
+
+The three Python faults have no shared errors/diagnostics; their live bundle
+replays each exit 1 with one divergence. After restoring each source edit,
+the identical saved bundle replays with exit 0 and one agreement, without
+rebuilding Lean. The Python evaluator diff is empty. All Lean/source faults
+are restored too; default build and user tests pass after restoration.
+
+### Exact replay reconstruction
+
+From the root of an isolated checkout with this checkpoint's Lean binaries
+already built, apply one Python edit above, then run:
+
+```sh
+nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl_fields.py -q -k 'known_answers and field-right'
+```
+
+For faults 5 and 6, replace `field-right` with `field-add-invalid` and
+`field-no`, respectively. Each command exits 1 and automatically saves
+`.artifacts/drt/lean-fields-<case>.json` before the independent-answer check.
+Replay while the fault is active, restore only that source edit, then replay
+the **same** file again:
+
+```sh
+nix develop -c uv run python -m p4blo.drt.replay /absolute/checkout/.artifacts/drt/lean-fields-field-right.json --lean /absolute/checkout/ir/.lake/build/bin/p4blo-lean
+```
+
+Use the same case substitution in the bundle filename. Inputs are one empty
+packet at ingress port 0, empty table entries, four ports and seed 0. Saved
+bundle SHA-256 values, in the order read-side-effect/validity/sibling faults:
+
+```text
+b023413689d448f2b1d3b299bbfe03d40dc588930a490487ac3039017ecacb73
+7d3233bf72af3afa712ea206593126e5f6c9c5c535b4552ff1031c41e264d0d6
+e3b174b010a2301b4e9509c7d92b4cddcbd6270463630660de36c5e3742d4f81
+```
+
+The required observer regression independently repeats fault 4, checks the
+saved program and inputs exactly, verifies the weak-gate survivor and asserts
+both concrete full byte sequences plus live/restored outcomes on every run.
+
+### Read-seam gates and decisions
+
+Both Lean package builds/default audits/tests pass, including 392 executable
+spec checks plus six new kernel rejection examples, all legacy user tests
+and seven new field-expression answers. Four new audit roots (generic
+expression correctness and concrete field typing/evaluation) use precisely
+`[propext, Classical.choice, Quot.sound]`; prior scalar audits are unchanged.
+The corrected focused field suite passes **9 tests**; independent combined
+authored suites pass **43 tests**. Required all-suite DRT passes **250 tests**,
+1197 deselected, no skips. New Python formatting, lint and pyright pass.
+The integrator runs the full merged Python/schema/oracle gate; no Docker
+build was performed in this worktree. Review: `docs/notes/reviews/field-expressions.md`.
+
+Confidence is high in the concrete proof premises and medium in the generic
+read-family factoring. Existing syntax/examples remain compatible and the
+field examples use the same literal/operator syntax. Revisit if writable
+packet bodies force pervasive inference annotations. Next factor command
+writes once, discharge its generic laws using concrete scalar/field store
+operations, add root permissions and integrate full-state command fixtures;
+do not maintain two source sequencing interpreters.
