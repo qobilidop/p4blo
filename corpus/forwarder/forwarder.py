@@ -114,7 +114,7 @@ class MyIngress(Control[headers, metadata]):
         self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
 
     ipv4_lpm = Table(
-        keys=[lpm(headers.ipv4.dstAddr)],
+        keys=(lpm(headers.ipv4.dstAddr),),
         actions=[ipv4_forward, drop, NoAction],
         default=drop(),
         size=1024,

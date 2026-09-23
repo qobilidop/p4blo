@@ -427,6 +427,31 @@ def test_tables_with_typed_entries_over_two_keys() -> None:
     )
 
 
+def test_a_const_entry_value_of_the_wrong_width_is_refused() -> None:
+    """The run-time half of the typed entries: the IR writes an entry value
+    as a decimal string of the key's width, so a wrong width is gone by the
+    time the validator sees it. `keys=(...)` makes it a static error;
+    `keys=[...]` and `bit(n)` still reach this check."""
+
+    class C(Control[headers, metadata]):
+        @action
+        def nop(self) -> None:
+            pass
+
+        t = Table(
+            keys=[exact(headers.h.f)],
+            actions=[nop],
+            default=nop(),
+            entries=[entry(bit16(1), nop())],
+        )
+
+        def apply(self) -> None:
+            self.apply_table(self.t)
+
+    with pytest.raises(EdslError, match=r"the value is bit<16>, the key is bit<8>"):
+        control_of(C)
+
+
 def test_a_key_path_binds_to_the_parameter_of_its_type() -> None:
     class Two(Control):
         a: In[headers]

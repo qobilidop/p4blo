@@ -155,7 +155,7 @@ class MyIngress(Control[headers, metadata]):
         self.assign(self.hdr.h2[0].f2, f2)
 
     ops = Table(
-        keys=[ternary(headers.h1.op1), exact(headers.h1.hdr_type)],
+        keys=(ternary(headers.h1.op1), exact(headers.h1.hdr_type)),
         actions=[set_port, fill, drop, NoAction],
         default=NoAction(),
         entries=[

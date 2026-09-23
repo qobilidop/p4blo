@@ -38,7 +38,10 @@ The static rules:
   against the declared parameters, names, count and widths. Action
   parameters are directionless in the IR.
 - `Table` is a class attribute holding action objects and typed keys;
-  `keys=(k1, k2)` as a tuple types the entries for one to four keys.
+  `keys=(k1, k2)` as a tuple types the entries for one to four keys, so
+  that a const entry value of the wrong width is a static error. A
+  `keys=[...]` list is the untyped form, for generated programs; its
+  entries are checked at run time alone.
 - `self.assign(target: Var[W], value: Bits[W] | int)`: a place on the
   left, anything of that width on the right; `Bool`, `Enum` and `Error`
   places have their own overloads. `self.call(Sub, args...)` calls a
@@ -99,6 +102,7 @@ from p4blo.edsl.core.blocks import Parser as CoreParser
 from p4blo.edsl.core.blocks import Table as CoreTable
 from p4blo.edsl.core.expr import Expr as CoreExpr
 from p4blo.edsl.core.types import ParamSpec as CoreParam
+from p4blo.edsl.core.types import type_str
 from p4blo.edsl.errors import EdslError, caller_location, provenance
 from p4blo.edsl.values import Bits, Bool, Enum, Error, Value, Var, operand
 from p4blo.edsl.views import (
@@ -437,7 +441,7 @@ class Table[KS]:
     @overload
     def __init__(
         self: Table[tuple[Any, ...]],
-        keys: Sequence[Key[Any]] = (),
+        keys: list[Key[Any]] = ...,
         *,
         actions: Sequence[AnyAction],
         default: ActionCall | None = None,
@@ -1004,8 +1008,16 @@ class Control[H: Struct, M: Struct](Block):
         default = None if table.default is None else self._action_spec(table.default, what)
         entries: list[CoreEntry] = []
         for i, e in enumerate(table.entries):
-            spec = self._action_spec(e.action, f"{what} entry {i}")
-            entries.append(CoreEntry(tuple(_core_key_value(k) for k in e.keys), spec, e.priority))
+            where = f"{what} entry {i}"
+            spec = self._action_spec(e.action, where)
+            # Pair each value with its key's type, so that a typed value of
+            # the wrong width is refused here and not only where it fits; a
+            # value with no key is left to the core's arity check.
+            values = tuple(
+                _core_key_value(v, keys[j].expr.type if j < len(keys) else None, where)
+                for j, v in enumerate(e.keys)
+            )
+            entries.append(CoreEntry(values, spec, e.priority))
         with provenance():
             return core.table(
                 name,
@@ -1059,7 +1071,13 @@ class Control[H: Struct, M: Struct](Block):
         """The control's body; override it. Empty by default."""
 
 
-def _core_key_value(k: object) -> int | Masked | Prefix | DontCare:
+def _core_key_value(
+    k: object, key_type: pb.Type | None, what: str
+) -> int | Masked | Prefix | DontCare:
+    """One entry value as the core takes it, an int. The IR stores decimal
+    strings of the key's width, so the value's own width is gone by then:
+    a typed value is checked against `key_type` here, the run-time half of
+    the static guarantee `Table`'s typed overloads give."""
     if isinstance(k, Masked | Prefix | DontCare):
         return k
     if isinstance(k, Bits):
@@ -1067,6 +1085,10 @@ def _core_key_value(k: object) -> int | Masked | Prefix | DontCare:
             expr = k._expr  # pyright: ignore[reportPrivateUsage]
         if not expr.is_literal:
             raise EdslError(f"an entry value is a constant, got {k!r}")
+        if key_type is not None and expr.type != key_type:
+            raise EdslError(
+                f"{what}: the value is {type_str(expr.type)}, the key is {type_str(key_type)}"
+            )
         return int(expr.pb.literal.bits.value)
     if isinstance(k, bool) or not isinstance(k, int):
         raise EdslError(

@@ -75,7 +75,7 @@ class ingress(Control[Header_t, Meta_t]):
     # (smaller wins) mapped to the IR's 1, 2, 3 (larger wins); see the
     # README.
     t_ternary = Table(
-        keys=[ternary(Header_t.h.t)],
+        keys=(ternary(Header_t.h.t),),
         actions=[a, a_with_control_params],
         default=a(),
         entries=[
