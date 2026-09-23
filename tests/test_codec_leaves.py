@@ -19,6 +19,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
 LeafKind = Literal["literal", "type", "key"]
+CodecKind = LeafKind | Literal["expr"]
 
 
 @dataclass(frozen=True)
@@ -151,37 +152,61 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
 
 
 def assert_leaf(
-    lean_binary: Path, kind: LeafKind, wire: dict[str, object], expected: dict[str, object]
+    lean_binary: Path, kind: CodecKind, wire: object, expected: dict[str, object]
 ) -> dict[str, object]:
     """Retain raw leaf JSON before an independent known answer can fail."""
     binary = lean_binary.with_name("codec-leaves")
     assert binary.is_file(), f"missing test endpoint: {binary} (build ir/ default targets)"
     request = {"kind": kind, "wire": wire}
-    result = subprocess.run(
-        [str(binary)], input=json.dumps(request) + "\n", text=True, capture_output=True, timeout=10
-    )
+    command = [str(binary)]
+    failure: str | None = None
+    returncode: int | None = None
+    stderr = ""
     try:
-        actual = loads(result.stdout)
-    except ValueError:
-        actual = {"malformed_stdout": result.stdout}
-    if result.returncode != 0 or result.stderr or not same_json(actual, expected):
+        result = subprocess.run(
+            command, input=json.dumps(request) + "\n", text=True, capture_output=True, timeout=10
+        )
+        returncode, stderr = result.returncode, result.stderr
+        try:
+            actual = loads(result.stdout)
+        except ValueError:
+            actual = {"malformed_stdout": result.stdout}
+    except (subprocess.TimeoutExpired, OSError, UnicodeError) as error:
+        failure = type(error).__name__
+        actual = {"process_error": failure, "detail": str(error)}
+        if isinstance(error, subprocess.TimeoutExpired):
+            actual["stdout"] = process_text(error.stdout)
+            stderr = process_text(error.stderr)
+        elif isinstance(error, UnicodeDecodeError):
+            actual["raw_bytes_hex"] = error.object.hex()
+    if failure is not None or returncode != 0 or stderr or not same_json(actual, expected):
         artifact = {
             "format": "p4blo.codec-leaf.v0",
             "request": request,
             "expected": expected,
             "actual": actual,
-            "returncode": result.returncode,
-            "stderr": result.stderr,
+            "returncode": returncode,
+            "stderr": stderr,
+            "command": command,
+            "timeout_seconds": 10,
         }
         digest = hashlib.sha256(json.dumps(request, sort_keys=True).encode()).hexdigest()[:24]
         folder = Path(os.environ.get("P4BLO_CODEC_FAILURE_DIR", ROOT / ".artifacts/codec"))
         folder.mkdir(parents=True, exist_ok=True)
         (folder / f"leaf-{digest}.json").write_text(json.dumps(artifact, indent=2) + "\n")
-    assert result.returncode == 0, result.stderr
-    assert result.stderr == ""
+    assert failure is None, actual
+    assert returncode == 0, stderr
+    assert stderr == ""
     assert same_json(actual, expected), (actual, expected)
     assert isinstance(actual, dict)
     return dict(actual)
+
+
+def process_text(value: str | bytes | None) -> str:
+    """TimeoutExpired can contain bytes even when the child was run in text mode."""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value or ""
 
 
 def same_json(left: object, right: object) -> bool:
@@ -232,6 +257,58 @@ def test_leaf_observer_retains_type_confusion(
 def test_leaf_observer_requires_exact_json_types(left: object, right: object) -> None:
     assert left == right
     assert not same_json({"nested": [left]}, {"nested": [right]})
+
+
+@pytest.mark.parametrize(
+    "mode",
+    ["timeout-bytes", "timeout-text", "oserror", "crash", "empty", "malformed", "invalid-utf8"],
+)
+def test_leaf_observer_retains_process_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    (tmp_path / "codec-leaves").touch()
+    monkeypatch.setenv("P4BLO_CODEC_FAILURE_DIR", str(tmp_path / "failures"))
+    wire = {"index": {"base": {"var": "x"}, "index": {"var": "i"}}}
+    expected: dict[str, object] = {"encoded": wire}
+
+    def fake_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        if mode.startswith("timeout"):
+            output = b"partial\xff" if mode == "timeout-bytes" else "partial"
+            raise subprocess.TimeoutExpired(["fake"], 10, output=output, stderr=b"timeout")
+        if mode == "oserror":
+            raise OSError("cannot launch")
+        if mode == "invalid-utf8":
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+        return subprocess.CompletedProcess(
+            ["fake"],
+            -11 if mode == "crash" else 0,
+            "{" if mode == "malformed" else "",
+            "crashed" if mode == "crash" else "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(AssertionError):
+        assert_leaf(tmp_path / "p4blo-lean", "expr", wire, expected)
+    bundles = list((tmp_path / "failures").glob("*.json"))
+    assert len(bundles) == 1
+    saved = json.loads(bundles[0].read_text())
+    assert same_json(saved["request"], {"kind": "expr", "wire": wire})
+    assert same_json(saved["expected"], expected)
+    assert saved["command"] == [str(tmp_path / "codec-leaves")]
+    assert saved["timeout_seconds"] == 10
+    if mode.startswith("timeout"):
+        assert saved["actual"]["process_error"] == "TimeoutExpired"
+        assert saved["actual"]["stdout"] == ("partial�" if mode == "timeout-bytes" else "partial")
+        assert saved["stderr"] == "timeout" and saved["returncode"] is None
+    elif mode == "oserror":
+        assert saved["actual"]["process_error"] == "OSError"
+    elif mode == "crash":
+        assert saved["returncode"] == -11 and saved["stderr"] == "crashed"
+    elif mode == "invalid-utf8":
+        assert saved["actual"]["process_error"] == "UnicodeDecodeError"
+        assert saved["actual"]["raw_bytes_hex"] == "ff"
+    else:
+        assert saved["actual"] == {"malformed_stdout": "{" if mode == "malformed" else ""}
 
 
 @pytest.mark.parametrize(
