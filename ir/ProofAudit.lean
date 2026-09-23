@@ -1,6 +1,27 @@
 import P4bloIR
 import P4bloIR.ScalarStatements
 
+/-- info: 'P4bloIR.PlainCallEntry.dispatch_entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallEntry.dispatch_entry
+
+/-- info: 'P4bloIR.PlainCallEntry.entry_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallEntry.entry_steps
+
+/-- info: 'P4bloIR.PlainCallEntry.argument_out' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallEntry.argument_out
+
+/-- info: 'P4bloIR.PlainCallEntry.unknown_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallEntry.unknown_block
+
+/-- info: 'P4bloIR.PlainCallEntry.wrong_arity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.PlainCallEntry.wrong_arity
+
+
 /-- info: 'P4bloIR.FieldLaws.Declared.fields_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.FieldLaws.Declared.fields_eq
