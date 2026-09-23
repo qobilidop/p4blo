@@ -108,22 +108,22 @@ theorem Cmd.lower_typed {modes : Modes ctx} (cmd : Cmd modes)
 open P4bloIR.ScalarStatements (BlockFrame ChangesOnlyVars PreservesOutside)
 open P4bloIR.Execution (Steps)
 
-/-- Finite execution of precisely this body, leaving an arbitrary continuation
-unexecuted. The source result is exact, all unrelated Run fields are unchanged,
-and every runtime name outside the possible target set keeps its value. -/
-theorem Cmd.steps (cmd : Cmd modes) (env : Env ctx) (initial : P4bloIR.Run)
+/-- Finite execution of the authored prefix in a flat statement list, leaving
+the suffix and continuation unexecuted with exact source/noninterference facts. -/
+theorem Cmd.steps_prefix (cmd : Cmd modes) (env : Env ctx) (initial : P4bloIR.Run)
+    (suffix : List P4bloIR.Stmt)
     (continuation : List P4bloIR.Execution.Work)
     (hw : P4bloIR.ScalarTyping.Context.WellFormed ctx)
     (hf : FrameMatches env initial.frame) (hb : BlockFrame initial.frame) :
-    ∃ final, Steps { work := .statements cmd.lower :: continuation, run := initial }
-        { work := continuation, run := final } ∧
+    ∃ final, Steps { work := .statements (cmd.lower ++ suffix) :: continuation, run := initial }
+        { work := .statements suffix :: continuation, run := final } ∧
       FrameMatches (cmd.denote env) final.frame ∧ ChangesOnlyVars initial final ∧
       PreservesOutside cmd.targets initial final := by
-  apply cmd.steps_with (fun env {_} ref => env.get ref)
+  apply cmd.steps_prefix_with (fun env {_} ref => env.get ref)
     (fun env {_} place value => env.set place.ref value)
     (fun ref => .var ref.name) (fun place => .var place.ref.name)
     (fun place => place.ref.name) (fun env run => FrameMatches env run.frame)
-    ?_ ?_ env initial continuation hf hb
+    ?_ ?_ env initial suffix continuation hf hb
   · intro source run hm t ref
     simp [P4bloIR.evaluate, P4bloIR.readVar, P4bloIR.ScalarTyping.run_bind, hm ref]
   · intro t place source value run hm block
@@ -134,6 +134,21 @@ theorem Cmd.steps (cmd : Cmd modes) (env : Env ctx) (initial : P4bloIR.Run)
     · intro name hn
       simp only [List.mem_singleton] at hn
       simp [final, Std.HashMap.getElem?_insert, Ne.symm hn]
+
+/-- Finite execution of precisely this body, leaving an arbitrary continuation
+unexecuted. The source result and complete noninterference facts are retained. -/
+theorem Cmd.steps (cmd : Cmd modes) (env : Env ctx) (initial : P4bloIR.Run)
+    (continuation : List P4bloIR.Execution.Work)
+    (hw : P4bloIR.ScalarTyping.Context.WellFormed ctx)
+    (hf : FrameMatches env initial.frame) (hb : BlockFrame initial.frame) :
+    ∃ final, Steps { work := .statements cmd.lower :: continuation, run := initial }
+        { work := continuation, run := final } ∧
+      FrameMatches (cmd.denote env) final.frame ∧ ChangesOnlyVars initial final ∧
+      PreservesOutside cmd.targets initial final := by
+  obtain ⟨final, trace, hmatches, changes, outside⟩ :=
+    cmd.steps_prefix env initial [] continuation hw hf hb
+  refine ⟨final, ?_, hmatches, changes, outside⟩
+  simpa using trace.trans (.next rfl .refl)
 
 /-- Actual reference execution, not an alternative source evaluator. The
 declaration premise supplies statement typing; operational preservation uses
