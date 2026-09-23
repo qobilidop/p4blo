@@ -16,6 +16,7 @@ push; run them locally before pushing and check exit codes, not output.
 | Lean vs Python | `uv run pytest tests/test_drt.py -k lean_agrees` | 11 passed after `lake build`; skips only when the binary is missing |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
+| Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 
 A larger differential sweep, for a change to either interpreter:
 
@@ -33,7 +34,7 @@ uv run python -m p4blo.drt corpus/<program> 2000 --seed <n> --lean lean/.lake/bu
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `oracle/build.sh` | edit; the CI cache key reads it |
 | opam package universe | `OPAM_REPO_COMMIT` in `oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
-| GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>` |
+| GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
 | p4c test-suite sources | copies under `corpus/*/` with SPDX headers | not updated; they are the vectors |
 
 Nothing else is downloaded at build or test time. The `uv sync` path
