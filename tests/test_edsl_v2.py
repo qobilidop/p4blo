@@ -452,6 +452,40 @@ def test_a_const_entry_value_of_the_wrong_width_is_refused() -> None:
         control_of(C)
 
 
+def test_a_table_the_validator_would_reject_is_refused_at_build_time() -> None:
+    """An entry priority on a table with no ternary key, and an empty action
+    list: two shapes the eDSL used to build and the validator then rejected,
+    while the neighbouring rules were refused at build time. The eDSL's
+    refusal names the user's line; the validator's names a protobuf path."""
+
+    class Prio(Control[headers, metadata]):
+        @action
+        def nop(self) -> None:
+            pass
+
+        t = Table(
+            keys=(exact(headers.h.f),),
+            actions=[nop],
+            default=nop(),
+            entries=[entry(1, nop(), priority=3)],
+        )
+
+        def apply(self) -> None:
+            self.apply_table(self.t)
+
+    with pytest.raises(EdslError, match="only a table with a ternary key has priorities"):
+        control_of(Prio)
+
+    class NoActions(Control[headers, metadata]):
+        t = Table(keys=(exact(headers.h.f),), actions=[])
+
+        def apply(self) -> None:
+            self.apply_table(self.t)
+
+    with pytest.raises(EdslError, match="lists at least one action"):
+        control_of(NoActions)
+
+
 def test_a_key_path_binds_to_the_parameter_of_its_type() -> None:
     class Two(Control):
         a: In[headers]

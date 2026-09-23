@@ -856,6 +856,8 @@ class Control(Block):
         """
         self.declare(name, "table")
         names = [self.action_named(self._action_name(a)).name for a in actions]
+        if not names:
+            raise EdslError(f"table {name}: a table lists at least one action")
         if len(set(names)) != len(names):
             raise EdslError(f"table {name}: an action is listed twice")
         message = pb.Table(name=name, actions=names, const_default_action=const_default, size=size)
@@ -868,10 +870,13 @@ class Control(Block):
             message.default_action.CopyFrom(call)
         elif const_default:
             raise EdslError(f"table {name}: const_default needs a default action")
+        has_ternary = any(k.match_kind == pb.MATCH_KIND_TERNARY for k in keys)
         for i, e in enumerate(const_entries):
             what = f"table {name} entry {i}"
             if not isinstance(e, Entry):
                 raise EdslError(f"{what}: entries are entry(keys, action, priority)")
+            if e.priority != 0 and not has_ternary:
+                raise EdslError(f"{what}: only a table with a ternary key has priorities")
             if len(e.keys) != len(keys):
                 raise EdslError(f"{what}: {len(keys)} keys expected, got {len(e.keys)}")
             row = message.const_entries.add(priority=e.priority)
