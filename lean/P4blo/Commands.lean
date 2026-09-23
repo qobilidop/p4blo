@@ -27,6 +27,22 @@ def seq : CmdWith Reads Places → CmdWith Reads Places → CmdWith Reads Places
   | .write place value next, second => .write place value (next.seq second)
   | .branch condition yes no next, second => .branch condition yes no (next.seq second)
 
+/-- Ordinary list sequencing in source order, using the existing command
+composition. No new AST, runtime locals or host-language effect semantics. -/
+def block (commands : List (CmdWith Reads Places)) : CmdWith Reads Places :=
+  commands.foldr seq .done
+
+theorem seq_done (cmd : CmdWith Reads Places) : cmd.seq .done = cmd := by
+  induction cmd with
+  | done => rfl
+  | write place value next ih => simp [seq, ih]
+  | branch condition yes no next _ _ ih => simp [seq, ih]
+
+theorem block_nil : block ([] : List (CmdWith Reads Places)) = .done := rfl
+
+theorem block_singleton (cmd : CmdWith Reads Places) : block [cmd] = cmd :=
+  seq_done cmd
+
 def denoteWith (read : Source → {t : Ty} → Reads t → Meaning t)
     (write : Source → {t : Ty} → Places t → Meaning t → Source)
     (cmd : CmdWith Reads Places) (store : Source) : Source :=
@@ -70,6 +86,28 @@ theorem lowerWith_seq (read : {t : Ty} → Reads t → P4bloIR.Expr)
   | done => rfl
   | write target value next ih => simp [seq, lowerWith, ih]
   | branch condition yes no next _ _ ih => simp [seq, lowerWith, ih]
+
+theorem denoteWith_block (read : Source → {t : Ty} → Reads t → Meaning t)
+    (write : Source → {t : Ty} → Places t → Meaning t → Source)
+    (commands : List (CmdWith Reads Places)) (store : Source) :
+    (block commands).denoteWith read write store =
+      commands.foldl (fun state cmd => cmd.denoteWith read write state) store := by
+  induction commands generalizing store with
+  | nil => rfl
+  | cons cmd rest ih =>
+    simp only [block, List.foldr_cons, denoteWith_seq, List.foldl_cons]
+    exact ih _
+
+theorem lowerWith_block (read : {t : Ty} → Reads t → P4bloIR.Expr)
+    (place : {t : Ty} → Places t → P4bloIR.LValue)
+    (commands : List (CmdWith Reads Places)) :
+    (block commands).lowerWith read place =
+      commands.flatMap (fun cmd => cmd.lowerWith read place) := by
+  induction commands with
+  | nil => rfl
+  | cons cmd rest ih =>
+    simp only [block, List.foldr_cons, lowerWith_seq, List.flatMap_cons]
+    exact congrArg (List.append (cmd.lowerWith read place)) ih
 
 open P4bloIR.ScalarStatements (BlockFrame ChangesOnlyVars PreservesOutside)
 open P4bloIR.Execution (Steps)

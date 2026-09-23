@@ -212,3 +212,11 @@ write-fault regressions. The wrapper uses actual `inout` header/metadata and
 input-only route parameters, and observes fields only after the body finishes.
 It preserves a nonempty payload; it is still unverified scaffolding for the
 proved body, not a proof of calls, initialization or architecture behavior.
+
+Use `Scalar.Cmd.block [...]` or `Fields.Cmd.block [...]` for ordinary
+left-to-right command lists. Branch bodies can be lists too; subsequent
+commands run after the selected branch. These functions compose the existing
+typed AST, not a new interpreter or Lean `do` language. The field examples
+retain kernel checks that their new spelling constructs the exact old ASTs.
+See [the sequencing note](../docs/notes/command-blocks.md) for composition
+proofs, independent order checks and deliberate reversal/omission faults.

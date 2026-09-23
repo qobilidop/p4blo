@@ -69,6 +69,7 @@ end Cmd
 def Cmd.assign (place : Place modes t) (value : ExprIn ctx t) : Cmd modes := CmdWith.assign place value
 def Cmd.ite (condition : ExprIn ctx .boolean) (yes no : Cmd modes) : Cmd modes := CmdWith.ite condition yes no
 def Cmd.seq (first second : Cmd modes) : Cmd modes := CmdWith.seq first second
+def Cmd.block (commands : List (Cmd modes)) : Cmd modes := CmdWith.block commands
 
 def Cmd.denote (cmd : Cmd modes) (env : Env ctx) : Env ctx :=
   cmd.denoteWith (fun env {_} ref => env.get ref) (fun env {_} place value => env.set place.ref value) env
@@ -85,6 +86,14 @@ theorem Cmd.denote_seq (first second : Cmd modes) (env : Env ctx) :
 theorem Cmd.lower_seq (first second : Cmd modes) :
     (first.seq second).lower = first.lower ++ second.lower := by
   exact CmdWith.lowerWith_seq _ _ first second
+
+theorem Cmd.denote_block (commands : List (Cmd modes)) (env : Env ctx) :
+    (Cmd.block commands).denote env = commands.foldl (fun state cmd => cmd.denote state) env :=
+  CmdWith.denoteWith_block _ _ commands env
+
+theorem Cmd.lower_block (commands : List (Cmd modes)) :
+    (Cmd.block commands).lower = commands.flatMap Cmd.lower :=
+  CmdWith.lowerWith_block _ _ commands
 
 theorem Cmd.lower_typed {modes : Modes ctx} (cmd : Cmd modes)
     (hw : P4bloIR.ScalarTyping.Context.WellFormed ctx) (hd : modes.Agrees scope) :

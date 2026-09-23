@@ -42,22 +42,25 @@ def routePort : Ref roots (.bits 9) :=
 /-- Dependent writes to the same header, a condition using the updated
 value, two branches and a shared tail writing a different root. -/
 def dependent : Cmd modes :=
-  (Cmd.assign ttl (ttl.read + bits[8, 1])).seq
-  ((Cmd.assign protocol (ttl.read + protocol.read)).seq
-  ((Cmd.ite (ttl.read === bits[8, 0])
-    ((Cmd.assign port (.read routePort)).seq (Cmd.assign drop (.boolean true)))
-    ((Cmd.assign port (port.read + bits[9, 1])).seq (Cmd.assign drop (.boolean false)))).seq
-    (Cmd.assign scratch ttl.read)))
+  Cmd.block [
+    Cmd.assign ttl (ttl.read + bits[8, 1]),
+    Cmd.assign protocol (ttl.read + protocol.read),
+    Cmd.ite (ttl.read === bits[8, 0])
+      (Cmd.block [Cmd.assign port (.read routePort), Cmd.assign drop (.boolean true)])
+      (Cmd.block [Cmd.assign port (port.read + bits[9, 1]), Cmd.assign drop (.boolean false)]),
+    Cmd.assign scratch ttl.read]
 
 /-- Already-parsed, route-selected forwarding rewrite. The caller supplies
 route hit and fields. Checksum recomputation, parsing, validity tests, table
 lookup, architecture packet fate and deparsing are not authored here. -/
 def forward : Cmd modes :=
   let reject := Cmd.assign drop (.boolean true)
-  let rewrite := (Cmd.assign dst (.read routeDst)).seq
-    ((Cmd.assign src (.read routeSrc)).seq
-    ((Cmd.assign ttl (ttl.read + bits[8, 255])).seq
-    ((Cmd.assign port (.read routePort)).seq (Cmd.assign drop (.boolean false)))))
+  let rewrite := Cmd.block [
+    Cmd.assign dst (.read routeDst),
+    Cmd.assign src (.read routeSrc),
+    Cmd.assign ttl (ttl.read + bits[8, 255]),
+    Cmd.assign port (.read routePort),
+    Cmd.assign drop (.boolean false)]
   Cmd.ite (.read routeHit)
     (Cmd.ite (ttl.read === bits[8, 0]) reject
       (Cmd.ite (ttl.read === bits[8, 1]) reject rewrite)) reject

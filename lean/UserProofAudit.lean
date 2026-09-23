@@ -4,6 +4,34 @@ import P4blo.Fields
 import P4blo.FieldExpressions
 import P4blo.FieldCommandExamples
 
+/-- info: 'P4blo.Scalar.CmdWith.block_singleton' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Scalar.CmdWith.block_singleton
+
+/-- info: 'P4blo.Scalar.CmdWith.denoteWith_block' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.Scalar.CmdWith.denoteWith_block
+
+/-- info: 'P4blo.Scalar.CmdWith.lowerWith_block' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Scalar.CmdWith.lowerWith_block
+
+/-- info: 'P4blo.Scalar.Cmd.denote_block' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.Scalar.Cmd.denote_block
+
+/-- info: 'P4blo.Scalar.Cmd.lower_block' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Scalar.Cmd.lower_block
+
+/-- info: 'P4blo.Fields.Cmd.denote_block' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.Fields.Cmd.denote_block
+
+/-- info: 'P4blo.Fields.Cmd.lower_block' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Cmd.lower_block
+
 /-- info: 'P4blo.Fields.Modes.scope_agrees' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.Fields.Modes.scope_agrees
