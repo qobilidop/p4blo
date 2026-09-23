@@ -90,7 +90,7 @@ theorem authored_policy (s : Snapshot) :
       FieldCommandExamples.dst, FieldCommandExamples.src, FieldCommandExamples.ttl,
       FieldCommandExamples.port, FieldCommandExamples.drop, FieldCommandExamples.routeHit,
       FieldCommandExamples.routeDst, FieldCommandExamples.routeSrc, FieldCommandExamples.routePort,
-      restore, observe, Ref.get, Ref.set, Record.get, Record.set, Path.get, Path.set, policy,
+      restore, observe, Read.get, Ref.get, Ref.set, Record.get, Record.set, Path.get, Path.set, policy,
       FieldCommandExamples.roots, FieldCommandExamples.headers, FieldCommandExamples.headerFields,
       FieldCommandExamples.ethernet, FieldCommandExamples.ethernetFields,
       FieldCommandExamples.ipv4, FieldCommandExamples.ipv4Fields,

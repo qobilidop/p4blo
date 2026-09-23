@@ -1,67 +1,54 @@
-import P4blo.Fields
+import P4blo.HeaderFields
 import P4blo.Scalar
 import P4bloIR.FieldTyping
 
 namespace P4blo.Fields
 
-/-- Root names and local shape restrictions; nominal consistency remains
-the additional `IndexAgrees` premise. -/
-def RootWellFormed (roots : Layout) : Prop :=
-  (roots.fields.map P4bloIR.Field.name).Nodup ∧
-  (∀ field ∈ roots.fields, field.name ≠ "") ∧ roots.LocallyWellFormed
 
-/-- Exact actual block variable declarations, separate from runtime values. -/
-def RootDeclares (roots : Layout) (scope : P4bloIR.BlockScope) : Prop :=
-  ∀ {shape} (root : Slot roots shape), ∃ decl,
-    scope.var? root.name = some decl ∧ decl.name = root.name ∧ decl.type = shape.toIR
+/-- Read leaves are distinct from writable scalar locations. Operators and
+their meaning still live once in Scalar.ExprWith. -/
+inductive Read (roots : Layout) : Scalar.Ty → Type
+  | scalar : Ref roots t → Read roots t
+  | headerValid : HeaderRef roots → Read roots .boolean
 
-theorem Slot.locallyWellFormed (slot : Slot fields shape) (hw : fields.LocallyWellFormed) :
-    shape.LocallyWellFormed := by
-  induction slot with
-  | here => exact hw.1
-  | there slot ih => exact ih hw.2
+instance : Coe (Ref roots t) (Read roots t) := ⟨Read.scalar⟩
 
-theorem Path.leaf_valid (path : Path shape t) (hw : shape.LocallyWellFormed) : t.Valid := by
-  induction path with
-  | @scalar scalarType => cases scalarType <;> exact hw
-  | field slot path ih => exact ih (slot.locallyWellFormed hw.2.1)
+def Read.get : Read roots t → Store roots → Scalar.Meaning t
+  | .scalar ref, store => ref.get store
+  | .headerValid ref, store => ref.get store
 
-theorem Path.typed (path : Path shape t) (hi : shape.IndexAgrees index)
-    (hb : P4bloIR.FieldTyping.Path index scope base shape.toIR) :
-    P4bloIR.FieldTyping.Path index scope (path.expr base) (Scalar.Ty.toIR t) := by
-  induction path generalizing base with
-  | scalar => exact hb
-  | @field fields child t kind name slot path ih =>
-    have hfields : P4bloIR.FieldTyping.FieldsOf index
-        (Shape.aggregate kind name fields).toIR fields.fields := by
-      cases kind with
-      | header => exact .header hi.1
-      | struct => exact .struct hi.1
-    exact ih (slot.indexAgrees hi.2) (.member ⟨slot.name, child.toIR⟩ hb hfields slot.mem)
+def Read.expr : Read roots t → P4bloIR.Expr
+  | .scalar ref => ref.expr
+  | .headerValid ref => ref.expr
 
-theorem Ref.typed (ref : Ref roots t) (hw : RootWellFormed roots)
+theorem Read.typed (read : Read roots t) (hw : RootWellFormed roots)
     (hi : roots.IndexAgrees index) (hd : RootDeclares roots scope) :
-    P4bloIR.FieldTyping.Typed index scope ref.expr t := by
-  cases ref with
-  | mk root path =>
-    obtain ⟨decl, hfind, hname, htype⟩ := hd root
-    have hn := hw.2.1 _ root.mem
-    have hpath : P4bloIR.FieldTyping.Path index scope (.var root.name) _ :=
-      .var root.name decl hn hfind hname
-    rw [htype] at hpath
-    apply P4bloIR.FieldTyping.Typed.read
-    · have ht : Scalar.Ty.toIR t = P4bloIR.ScalarStatements.irType t := by cases t <;> rfl
-      rw [← ht]
-      exact path.typed (root.indexAgrees hi) hpath
-    · exact path.leaf_valid (root.locallyWellFormed hw.2.2)
+    P4bloIR.FieldTyping.Typed index scope read.expr t := by
+  cases read with
+  | scalar ref => exact ref.typed hw hi hd
+  | headerValid ref => exact ref.typed hw hi hd
 
-abbrev Expr (roots : Layout) := Scalar.ExprWith (Ref roots)
+theorem Read.evaluate (read : Read roots t) (store : Store roots) (run : P4bloIR.Run)
+    (hi : roots.IndexAgrees run.index) (hf : FrameMatches store run.frame) :
+    (P4bloIR.evaluate read.expr).run run = (.ok (Scalar.toValue (read.get store)), run) := by
+  cases read with
+  | scalar ref => exact ref.evaluate store run hi hf
+  | headerValid ref => exact ref.evaluate store run hi hf
+
+abbrev Expr (roots : Layout) := Scalar.ExprWith (Read roots)
+
+def HeaderRef.isValid (ref : HeaderRef roots) : Expr roots .boolean := .read (.headerValid ref)
 
 def denote (store : Store roots) (expression : Expr roots t) : Scalar.Meaning t :=
   Scalar.denoteWith (fun ref => ref.get store) expression
 
 def lower (expression : Expr roots t) : P4bloIR.Expr :=
   Scalar.lowerWith (fun ref => ref.expr) expression
+
+theorem HeaderRef.denote_isValid (ref : HeaderRef roots) (store : Store roots) :
+    denote store ref.isValid = ref.get store := rfl
+
+theorem HeaderRef.lower_isValid (ref : HeaderRef roots) : lower ref.isValid = ref.expr := rfl
 
 theorem lower_typed (expression : Expr roots t) (hw : RootWellFormed roots)
     (hi : roots.IndexAgrees index) (hd : RootDeclares roots scope) :

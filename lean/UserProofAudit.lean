@@ -20,6 +20,22 @@ import P4blo.SourceZero
 #guard_msgs in
 #print axioms P4blo.Fields.Shape.zero_correct
 
+/-- info: 'P4blo.Fields.Read.typed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Read.typed
+
+/-- info: 'P4blo.Fields.Read.evaluate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Read.evaluate
+
+/-- info: 'P4blo.Fields.HeaderRef.denote_isValid' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.Fields.HeaderRef.denote_isValid
+
+/-- info: 'P4blo.Fields.HeaderRef.lower_isValid' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.Fields.HeaderRef.lower_isValid
+
 /-- info: 'P4blo.Fields.HeaderPath.evaluate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.Fields.HeaderPath.evaluate
