@@ -4,7 +4,7 @@ import P4bloIR.ScalarStatements
 /-!
 # Scoped field typing and root permissions
 
-Declarative typing for variable/member reads, writable paths, scalar
+Declarative typing for variable/member and header-validity reads, writable paths, scalar
 expressions and assignment/conditional bodies. Actual block declarations,
 root permissions and exact nominal index declarations are explicit.
 This is not a total aggregate checker or whole-program validity.
@@ -32,6 +32,8 @@ inductive Typed (index : Index) (scope : BlockScope) : Expr → ScalarTy → Pro
       Typed index scope (.literal (.bits width value)) (.bits width)
   | boolean (value : Bool) : Typed index scope (.literal (.boolean value)) .boolean
   | read {e t} : Path index scope e (ScalarStatements.irType t) → t.Valid → Typed index scope e t
+  | isValid {header name fields} : Path index scope header (.header name) →
+      FieldLaws.Declared index .header name fields → Typed index scope (.isValid header) .boolean
   | binary {left right a b c} (op : BinaryOp) :
       Typed index scope left a → Typed index scope right b →
       ScalarTyping.binaryType op a b = some c → Typed index scope (.binary op left right) c
