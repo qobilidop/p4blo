@@ -278,3 +278,16 @@ arguments and its call sites.
   there is ignored. BMv2 ignores the write too but leaves the read's
   destination untouched; `docs/decisions.md` records why that divergence
   stands.
+- **Builtin family names** use the segment before the first dot: `register.8`
+  and `register` bind the same service, subject to the declaration's shape.
+  A suffix neither changes the algorithm nor relaxes shape checks.
+- **Byte CRC services** are stateless, have no constructor arguments, and
+  expose `compute(in bit<D>) -> bit<W>`. `crc16` is CRC-16/ARC (W=16,
+  polynomial 0x8005, reflected input/output, initial/final XOR zero);
+  `crc32` is CRC-32/ISO-HDLC (W=32, polynomial 0x04c11db7, reflected
+  input/output, initial/final XOR 0xffffffff). D must be positive and a
+  multiple of eight. Consume exactly D/8 bytes, most-significant byte first,
+  retaining leading zeros; return the full result without range reduction.
+  Calls must match the bound width. Non-byte inputs are rejected, not padded.
+  The exact contract, known answers and pinned SpecTec padding discrepancy
+  are in `notes/crc-contract.md`; this profile does not adopt that discrepancy.

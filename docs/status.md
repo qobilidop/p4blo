@@ -125,6 +125,17 @@ Things a resuming agent should know are in motion or deliberately left.
   No BPF compile/load/run evidence exists yet. Build-tool availability,
   scoped kernel capabilities and source licensing need explicit handling;
   macOS itself is not a blocker because Docker provides a Linux kernel.
+  CRC16/CRC32 services and the existing-family suffix dispatch repair are
+  integrated (`198f5b3`, `ee3980a`). Original/printed BMv2 known answers pass;
+  pinned SpecTec's odd-byte CRC32 padding bug has two exact strict expected
+  discrepancies beside ordinary passing controls. Both oracle CI jobs now
+  select these probes. Independent review fixed a crash-masking classifier
+  and constructor-arity rejection gaps: `notes/reviews/crc-externs.md`.
+  Integration gates: both Lean packages/audits (336 spec checks), 114 required
+  DRT tests, full **1070 passed, 3 expected discrepancies, no skips**, with
+  lint/typecheck/schema/workflow checks passing. Python firewall port and
+  original register-state observation are next, in an isolated worktree;
+  neither is claimed complete by the CRC increment.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

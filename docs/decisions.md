@@ -506,3 +506,14 @@ one that says so.
   infer a passing oracle from Docker availability or a skipped kernel test.
   `notes/xdp-preflight.md` records exact pins, checks and remaining authority
   boundaries. This decision authorizes no global kernel security changes.
+- **Add byte CRC services without enlarging core IR syntax.** Use stateless
+  `crc16`/`crc32` extern contracts with exact positive byte-aligned widths,
+  full results and no implicit range reduction. Confidence: high on meaning,
+  medium on API generality; revisit for non-byte inputs or another polynomial.
+  Independent original-P4 known answers found pinned SpecTec's odd-byte
+  padding defect, while BMv2 confirms the selected standard behavior. Keep
+  narrowly classified strict expected discrepancies plus passing controls;
+  do not adapt input to manufacture agreement. The simple original firewall
+  flow sequence cannot detect a consistent wrong hash. Full state/collision
+  observations remain required for the port. See `notes/crc-contract.md`
+  and `notes/reviews/crc-externs.md` for exact findings and review fixes.

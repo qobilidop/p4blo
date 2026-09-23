@@ -45,3 +45,5 @@ jobs:
         run: nix develop -c uv sync --locked
       - name: Replay the corpus on BMv2
         run: nix develop -c uv run pytest tests/test_oracle_bmv2.py -v
+      - name: Check original and printed CRC known answers
+        run: nix develop -c uv run pytest tests/test_crc.py -k bmv2 -v
