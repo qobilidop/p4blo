@@ -47,11 +47,12 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 
 Things a resuming agent should know are in motion or deliberately left.
 
-- **eDSL v2 (implemented 2026-09-22, under review).** The typed surface
-  is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`; all ten corpus
-  programs are authored in v2 with byte-identical goldens and pyright
-  clean sources; `tests/test_pyright.py` guards the static rules. An
-  independent review is in flight; its findings land like the others.
+- **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
+  typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;
+  all ten corpus programs are authored in v2 with byte-identical
+  goldens, type-checked in CI; `tests/test_pyright.py` guards the
+  static rules with must-pass and must-fail fixtures. The review is
+  `notes/reviews/edsl-v2.md` and every finding is fixed.
 - **BMv2 as a second oracle: done** (`oracle/bmv2/`, its own CI job). It
   decides longest prefix, const-entry and ternary priorities without the
   translation P4-SpecTec needs. It cannot see `flood`, which no corpus

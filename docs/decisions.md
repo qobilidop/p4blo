@@ -257,6 +257,21 @@ one that says so.
   strict xfail in `tests/test_oracle_bmv2.py` and in
   `corpus/register_bounds/README.md`, not resolved. Revisit only if a
   corpus program comes to depend on the difference.
+- **The eDSL review's findings are all fixed** (`notes/reviews/edsl-v2.md`).
+  Two mattered: the typed const entries were checked nowhere, because a
+  fallback `Table` overload accepted any sequence of keys and every
+  corpus program used the form that selected it, so a tuple of keys now
+  selects only the typed overloads; and `select` compared keysets with
+  Python equality, which on two eDSL literals built an expression and
+  asked it for a truth value, so keysets are now compared as the IR
+  holds them, which also makes the duplicate and unreachable-case checks
+  work for literals and enums for the first time. An enum assignment
+  across two enum types is now a static error too, through a protocol
+  that puts the type parameter in a contravariant position. An action
+  may call another action, which the IR allowed and the surface refused.
+  `StateRef.__call__` is defined only outside type checking, so pyright
+  keeps its better diagnostic and an untyped program still gets an
+  EdslError.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
