@@ -16,7 +16,7 @@ import P4blo.CallBodyEntryTests
 import P4blo.CallInitializerTests
 import P4blo.CallReturnTests
 import P4blo.GuardedCallPrefixTests
-import P4blo.GuardedControlCall
+import P4blo.GuardedControlCallTests
 
 /-- info: 'P4blo.GuardedControlCall.body_prefix' depends on axioms: [propext] -/
 #guard_msgs in
@@ -49,6 +49,10 @@ import P4blo.GuardedControlCall
 /-- info: 'P4blo.GuardedControlCall.preserves_outside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.GuardedControlCall.preserves_outside
+
+/-- info: 'P4blo.GuardedControlCallTests.concrete_call' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCallTests.concrete_call
 
 /-- info: 'P4blo.GuardedCallPrefix.initializers_eq' does not depend on any axioms -/
 #guard_msgs in
