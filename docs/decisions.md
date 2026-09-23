@@ -223,6 +223,19 @@ one that says so.
   p4lang-builds publishes native amd64 and arm64 images of p4c 1.2.5.15
   and BMv2 1.15.4 with immutable version tags. p4c is pinned by its index
   digest; the BMv2 image makes the optional second oracle cheap.
+- **eDSL v2 as implemented deviates from the note in four places**,
+  each forced by the type checker and accepted: the width aliases
+  `bitN` are places (`Var[L[N]]`) and a typed literal `bitN(v)` types as
+  a place too, because annotated fields must be assignable and action
+  parameters must accept literals, so a literal used as a target is
+  caught at run time only; `Bool`, `Enum` and `Error` targets have no
+  static place split; an extern's `in` parameters accept any value
+  (`Val`) with the width checked at run time, since binding `T` to a
+  place type would reject cast rvalues; sub-block call arguments are
+  run-time checked, as a callable protocol from annotations cannot be
+  expressed. `assign` is overloaded over target kinds, so pyright
+  reports a failed assignment as `reportCallIssue`; four must_fail
+  headers say so. Everything else in the note's table holds.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.
