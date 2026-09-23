@@ -1,6 +1,6 @@
 name = "p4blo"
 version = "0.1.0"
-defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands", "fieldExpressions", "fieldCommands", "headerReads"]
+defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands", "fieldExpressions", "fieldCommands", "headerReads", "callEntry"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "userTests"
 
@@ -37,3 +37,7 @@ root = "FieldCommandsMain"
 [[lean_exe]]
 name = "headerReads"
 root = "HeaderReadsMain"
+
+[[lean_exe]]
+name = "callEntry"
+root = "CallEntryMain"
