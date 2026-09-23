@@ -118,8 +118,13 @@ Things a resuming agent should know are in motion or deliberately left.
   `lean/ASSURANCE.md`. Integration gates passed: both Lean packages/audits,
   108 required DRT tests, and 1025 full tests plus the existing strict BMv2
   expected discrepancy (no skips). This is not whole-program authoring/validity.
-  Next: user's revised
-  public naming (`P4blo` for users, `P4bloIR` for spec) and typed references.
+  Next: user's revised public naming (`P4blo` for users, `P4bloIR` for spec)
+  and typed references. The stage-2 source/environment audit is preserved in
+  `notes/xdp-preflight.md`: pinned original Ethernet-allow profile, complete
+  per-CPU map observations, and an FD-only non-attaching oracle design.
+  No BPF compile/load/run evidence exists yet. Build-tool availability,
+  scoped kernel capabilities and source licensing need explicit handling;
+  macOS itself is not a blocker because Docker provides a Linux kernel.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

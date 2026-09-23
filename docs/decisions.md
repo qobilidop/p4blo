@@ -496,3 +496,13 @@ one that says so.
   Independent expected packets guard the surface that the kernel proofs
   do not verify. `lean/ASSURANCE.md` records the remaining decisions, exact
   exclusions and the three reproducible mutation experiments.
+- **Preflight an authentic small XDP build before broad translation.**
+  Start investigation with upstream's Ethernet-only default-allow feature
+  build, preserving MAC lookup order, all per-CPU map slots, wrapped counters
+  and distinct actions. Confidence: medium on milestone ordering; revisit
+  after firewall integration. Keep GPL oracle inputs separate and review
+  redistribution before porting source. Prefer an FD-only kernel harness
+  without interface attachment, pinned maps or live-frame execution; never
+  infer a passing oracle from Docker availability or a skipped kernel test.
+  `notes/xdp-preflight.md` records exact pins, checks and remaining authority
+  boundaries. This decision authorizes no global kernel security changes.
