@@ -42,6 +42,16 @@ result is
      "cli": str,                          the CLI's output
      "outputs": {"<port>": [hex, ...]},   the per-port pcaps, in order
      "log": str}                          the switch's log and stderr
+
+A phase may additionally supply nonempty `post_commands` (whole-array
+`register_read <name>` only) and a `completion_packet` (`port`, lowercase
+hex `data`). After the normal settling interval, the exact completion
+output must appear once before readback; missing/duplicate barriers fail.
+Callers must send a distinct non-stateful sentinel LAST and ensure no
+earlier packet can emit it. This is a barrier only for a sequential
+single-ingress pipeline, not general asynchronous quiescence. Results add
+`post_cli` and complete `registers` arrays, strictly checked against the
+compiled program's widths/sizes. Old requests retain their old behavior.
 """
 
 from __future__ import annotations
@@ -51,6 +61,7 @@ import errno
 import fcntl
 import json
 import os
+import re
 import signal
 import socket
 import struct
@@ -202,7 +213,9 @@ def _run_cli(commands: list[str]) -> str:
     return output
 
 
-def _wait_for_completion(proc: subprocess.Popen[bytes], outputs: list[Path]) -> None:
+def _wait_for_completion(
+    proc: subprocess.Popen[bytes], outputs: list[Path], barrier: tuple[Path, bytes] | None = None
+) -> None:
     """Return once the output files have stopped growing for SETTLE seconds,
     and not before MIN_RUN seconds have passed."""
 
@@ -222,7 +235,79 @@ def _wait_for_completion(proc: subprocess.Popen[bytes], outputs: list[Path]) -> 
             last = current
             quiet_since = now
         if now - start >= MIN_RUN and now - quiet_since >= SETTLE:
-            return
+            if barrier is None:
+                return
+            path, expected = barrier
+            if path.exists():
+                matches = read_pcap(path.read_bytes()).count(expected)
+                if matches > 1:
+                    raise DriverError("completion packet appeared more than once")
+                if matches == 1:
+                    return
+        if barrier is not None and now - start >= START_TIMEOUT:
+            raise DriverError("packet processing did not complete before the deadline")
+
+
+def _post_profile(
+    ports: list[int], post_commands: object, completion_packet: object
+) -> tuple[list[str], tuple[int, bytes] | None]:
+    """Optional read-only state observation, never arbitrary post-traffic CLI."""
+    if post_commands is None and completion_packet is None:
+        return [], None
+    if not isinstance(post_commands, list) or not post_commands:
+        raise DriverError("post_commands must be a nonempty list of register_read commands")
+    if any(
+        not isinstance(command, str)
+        or re.fullmatch(r"register_read [A-Za-z_][A-Za-z_0-9.]*", command) is None
+        for command in post_commands
+    ):
+        raise DriverError("post_commands permits only whole-array register_read commands")
+    if len(set(post_commands)) != len(post_commands):
+        raise DriverError("duplicate post_commands register read")
+    if not isinstance(completion_packet, dict) or set(completion_packet) != {"port", "data"}:
+        raise DriverError("completion_packet must contain exactly port and data")
+    port, data = completion_packet["port"], completion_packet["data"]
+    if type(port) is not int or port not in ports:
+        raise DriverError("completion_packet port has no interface")
+    if not isinstance(data, str) or re.fullmatch(r"(?:[0-9a-f]{2})+", data) is None:
+        raise DriverError("completion_packet data must be nonempty canonical hexadecimal bytes")
+    return post_commands, (port, bytes.fromhex(data))
+
+
+def _parse_register_readback(
+    output: str, commands: list[str], program: dict
+) -> dict[str, list[int]]:
+    """Recognize the complete pinned CLI transcript; never scrape partial cells."""
+    header = (
+        "Obtaining JSON from switch...\nDone\nControl utility for runtime P4 table manipulation\n"
+    )
+    footer = "RuntimeCmd: \n" + "register index omitted, reading entire array\n" * len(commands)
+    if not output.startswith(header) or not output.endswith(footer):
+        raise DriverError("unexpected register readback transcript")
+    lines = output[len(header) : -len(footer)].splitlines()
+    if len(lines) != len(commands):
+        raise DriverError("missing or duplicate register readback")
+    declarations = {r["name"]: r for r in program.get("register_arrays", [])}
+    observed: dict[str, list[int]] = {}
+    for command, line in zip(commands, lines, strict=True):
+        name = command.removeprefix("register_read ")
+        declaration = declarations.get(name)
+        if declaration is None:
+            raise DriverError(f"register readback name not in compiled program: {name}")
+        match = re.fullmatch(r"RuntimeCmd: " + re.escape(name) + r"= ([0-9]+(?:, [0-9]+)*)", line)
+        if match is None:
+            raise DriverError(f"malformed register readback: {name}")
+        raw = match[1].split(", ")
+        values = [int(value) for value in raw]
+        size, width = declaration["size"], declaration["bitwidth"]
+        if (
+            len(values) != size
+            or any(str(value) != original for value, original in zip(values, raw, strict=True))
+            or any(value >= 2**width for value in values)
+        ):
+            raise DriverError(f"register readback has wrong size or out-of-range cells: {name}")
+        observed[name] = values
+    return observed
 
 
 def _stop(proc: subprocess.Popen[bytes]) -> None:
@@ -245,9 +330,16 @@ def _tail(path: Path) -> str:
 
 
 def run_phase(
-    json_path: Path, ports: list[int], commands: list[str], packets: list[dict], workdir: Path
+    json_path: Path,
+    ports: list[int],
+    commands: list[str],
+    packets: list[dict],
+    workdir: Path,
+    post_commands: object = None,
+    completion_packet: object = None,
 ) -> dict:
     ports = sorted(set(ports))
+    post, completion = _post_profile(ports, post_commands, completion_packet)
     for packet in packets:
         if packet["port"] not in ports:
             raise DriverError(f"packet on port {packet['port']}, which has no interface")
@@ -293,7 +385,21 @@ def run_phase(
         for writer in writers:
             writer.close()
         writers = []
-        _wait_for_completion(proc, [Path(f"{prefix}{port}_out.pcap") for port in ports])
+        barrier = (
+            None
+            if completion is None
+            else (Path(f"{prefix}{completion[0]}_out.pcap"), completion[1])
+        )
+        _wait_for_completion(proc, [Path(f"{prefix}{port}_out.pcap") for port in ports], barrier)
+        if post:
+            result["post_cli"] = _run_cli(post)
+            result["registers"] = _parse_register_readback(
+                result["post_cli"], post, json.loads(json_path.read_text())
+            )
+            if proc.poll() is not None:
+                raise DriverError(
+                    f"simple_switch exited with code {proc.returncode} during readback"
+                )
     except DriverError as e:
         result["error"] = str(e)
     finally:
@@ -351,7 +457,13 @@ def replay(request: dict) -> dict:
             workdir.mkdir()
             try:
                 result = run_phase(
-                    json_path, request["ports"], phase["commands"], phase["packets"], workdir
+                    json_path,
+                    request["ports"],
+                    phase["commands"],
+                    phase["packets"],
+                    workdir,
+                    phase.get("post_commands"),
+                    phase.get("completion_packet"),
                 )
             except DriverError as e:
                 result = {"error": str(e), "cli": "", "outputs": {}, "log": ""}
