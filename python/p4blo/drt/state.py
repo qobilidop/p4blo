@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from p4blo.arch import Loaded
 from p4blo.externs.checksum import Checksum16
 from p4blo.externs.counter import Counter
+from p4blo.externs.crc import CRC
 from p4blo.externs.register import Register
 
 
@@ -40,6 +41,8 @@ def snapshot(loaded: Loaded) -> Snapshot:
             observed.append(Observation(name, "counter", values=tuple(extern.counts)))
         elif isinstance(extern, Checksum16):
             observed.append(Observation(name, "checksum16"))
+        elif isinstance(extern, CRC):
+            observed.append(Observation(name, f"crc{extern.output_width}"))
         else:
             raise TypeError(f"no differential state adapter for extern {name!r}")
     return tuple(observed)
@@ -51,7 +54,7 @@ def encode(state: Snapshot) -> dict[str, dict[str, object]]:
         fields: dict[str, object] = {"kind": item.kind}
         if item.kind == "register":
             fields["width"] = item.width
-        if item.kind != "checksum16":
+        if item.kind not in ("checksum16", "crc16", "crc32"):
             fields["values"] = [hex(v) for v in item.values]
         result[item.name] = fields
     return result
@@ -69,6 +72,8 @@ def decode(raw: object) -> Snapshot:
             "register": {"kind", "width", "values"},
             "counter": {"kind", "values"},
             "checksum16": {"kind"},
+            "crc16": {"kind"},
+            "crc32": {"kind"},
         }
         if not isinstance(kind, str) or kind not in expected or set(fields) != expected[kind]:
             raise ValueError(f"invalid extern state for {name!r}")

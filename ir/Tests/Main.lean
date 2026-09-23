@@ -5,6 +5,7 @@ import Tests.ScalarTyping
 import Tests.Execution
 import Tests.ExecutionCertificate
 import Tests.CertificateWire
+import Tests.CRC
 import Tests.ExternFamilies
 
 /-!
@@ -178,6 +179,7 @@ def main (args : List String) : IO UInt32 := do
     ScalarTypingTests.tests
     ExecutionTests.tests
     ExecutionCertificateTests.tests
+    CRCTests.tests
     ExternFamiliesTests.tests
     certificateWireTests).run []
   if failures.isEmpty then

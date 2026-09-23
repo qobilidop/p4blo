@@ -294,6 +294,27 @@ def standard_metadata_binding(
 REGISTER = "register"
 COUNTER = "counter"
 CHECKSUM16 = "checksum16"
+CRC_WIDTHS = {"crc16": 16, "crc32": 32}
+
+
+def _crc_width(decl: pb.ExternType) -> int:
+    width = CRC_WIDTHS[ir.extern_family(decl.name)]
+    if decl.constructor_params or len(decl.methods) != 1:
+        raise PrintError(f"{decl.name}: CRC declaration has the wrong shape")
+    method = decl.methods[0]
+    if (
+        method.name != "compute"
+        or len(method.params) != 1
+        or method.params[0].direction != pb.DIRECTION_IN
+        or method.params[0].type.WhichOneof("kind") != "bits"
+        or method.returns.WhichOneof("kind") != "bits"
+        or method.returns.bits != width
+    ):
+        raise PrintError(f"{decl.name}: CRC declaration has the wrong shape")
+    data_width = method.params[0].type.bits
+    if data_width == 0 or data_width % 8:
+        raise PrintError(f"{decl.name}: data width must be a positive multiple of 8")
+    return width
 
 
 def _instance_size(instance: pb.ExternInstance) -> str:
@@ -317,6 +338,11 @@ def _print_extern_instance(index: ir.Index, instance: pb.ExternInstance) -> str 
     if family == COUNTER:
         return f"counter({_instance_size(instance)}, CounterType.packets) {instance.name};"
     if family == CHECKSUM16:
+        return None
+    if family in CRC_WIDTHS:
+        _crc_width(extern_type)
+        if instance.args:
+            raise PrintError(f"{family}: constructor takes no arguments")
         return None
     raise PrintError(f"no v1model form for extern type {extern_type.name!r}")
 
@@ -411,6 +437,16 @@ class _StmtPrinter:
             family = ir.extern_family(self.index.extern_types[instance.extern_type].name)
         if family == CHECKSUM16:
             return self._checksum(call)
+        if family in CRC_WIDTHS:
+            assert self.index is not None
+            instance = self.index.extern_instances[call.instance]
+            width = _crc_width(self.index.extern_types[instance.extern_type])
+            if call.method != "compute" or len(call.args) != 1 or not call.HasField("result"):
+                raise PrintError(f"{family} call {call.instance}.{call.method} has the wrong shape")
+            return (
+                f"hash({print_lvalue(call.result)}, HashAlgorithm.{family}, "
+                f"{width}w0, {{ {_print_arg(call.args[0])} }}, 64w{1 << width});"
+            )
         method = f"{call.instance}.{call.method}({_print_args(call.args)})"
         if call.HasField("result"):
             return f"{print_lvalue(call.result)} = {method};"

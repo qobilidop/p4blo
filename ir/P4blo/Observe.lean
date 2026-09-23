@@ -23,6 +23,8 @@ def ExternState.observe : ExternState → Lean.Json
   | .counter counts => Lean.Json.mkObj
     [("kind", .str "counter"), ("values", .arr (counts.map fun n => .str (naturalHex n)))]
   | .checksum16 => Lean.Json.mkObj [("kind", .str "checksum16")]
+  | .crc16 _ => Lean.Json.mkObj [("kind", .str "crc16")]
+  | .crc32 _ => Lean.Json.mkObj [("kind", .str "crc32")]
 
 def Externs.observe (externs : Externs) : Lean.Json :=
   Lean.Json.mkObj (externs.instances.toList.map fun (name, state) => (name, state.observe))

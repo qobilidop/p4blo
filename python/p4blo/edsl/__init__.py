@@ -121,7 +121,7 @@ from p4blo.edsl.blocks import (
     ternary,
 )
 from p4blo.edsl.errors import EdslError
-from p4blo.edsl.externs import Extern
+from p4blo.edsl.externs import CRC16, CRC32, Extern
 from p4blo.edsl.program import Program
 from p4blo.edsl.values import (
     Bits,
@@ -209,6 +209,8 @@ from p4blo.edsl.values import (
 from p4blo.edsl.views import Header, Stack, Struct, View
 
 __all__ = [
+    "CRC16",
+    "CRC32",
     "Accept",
     "Action",
     "ActionCall",
