@@ -17,7 +17,7 @@ boundaries are in [verification.md](verification.md).
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT with zero unexplained divergences, one theorem | green: Lean interpreter (181 checks); 18,000 random cases with zero divergences, 200 per program in CI over all ten; theorem `P4blo.extract_emit` proved with core Lean only |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 259 Lean checks; corpus plus typed generated-program DRT with extern-state comparison; packing, closed scalar soundness/value laws and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -58,16 +58,25 @@ Things a resuming agent should know are in motion or deliberately left.
   The closed scalar checker and `ScalarTyping.check_sound` landed and were
   independently reviewed: accepted expressions evaluate with the inferred
   type and preserve any Run. This is not Python or whole-program soundness.
-  Typed generated-program DRT now covers scalar operators systematically
-  plus 200 shrinking examples. Latest full gate: 893 passed, 15 SpecTec
-  skips, 1 expected BMv2 divergence; Lean build and 252 Lean checks pass.
-  First semantic mutation campaign: four killed, two scalar survivors
-  (`notes/mutations/2026-09-23.md`). The stronger generator is being tested
-  against those survivors and independently reviewed. Next: finish that
-  iteration, retain CI failure bundles, and integrate the proof-friendly
-  statement machine underway in its own worktree. The existing
-  `partial` executor is executable but opaque to the logic; the packing
-  theorem is not a theorem about complete program execution.
+  Typed generated-program DRT covers scalar operators systematically,
+  200 shrinking examples and faulting unselected parser branches. CI retains
+  failure bundles for 14 days. Latest full gate: **915 passed, 1 expected
+  BMv2 divergence, no skips**, with the pinned SpecTec oracle built locally;
+  Lean build/audit and 259 Lean checks pass; required DRT: 26 passed.
+  The statement interpreter now uses a total continuation step and an
+  unfoldable actual runner, with a finite-trace soundness theorem. It was
+  independently compared with the old executor on fault/copyback cases.
+  Eleven scalar value/branch laws complement the type-safety theorem.
+  First mutation round: four killed, two survived; the strengthened suite
+  kills both survivors and two fresh faults. A third evaluation-order round
+  is underway (`notes/mutations/2026-09-23.md`). Proof-integrity mutation
+  tests separately reject `sorry` and a forged axiom. Next: integrate and
+  independently review a bounded reexecution certificate prototype, then
+  bind a narrow Python stateful execution to it. In progress in the isolated
+  `verification/scalar-soundness` branch; not yet an accepted checkpoint.
+  Still open: whole-program validity/soundness, validated-program termination,
+  variables/aggregates and broad stateful program generation. Neither finite
+  traces nor matching test results prove universal Python equivalence.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;
