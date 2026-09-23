@@ -971,3 +971,13 @@ one that says so.
   operational laws separate from source permissions and global validity.
   The old block API is a corollary, not a silently broadened contract. Scope
   and independent review: `notes/action-root-writes.md`.
+- **Compose nine foundational declaration codecs next.** Remaining decoders
+  form an acyclic graph after total statements; do not refactor them merely
+  to add proofs. Reuse type/literal/list laws in a focused declaration-law
+  module, keeping every direction and invalid-but-wire-representable shape.
+  Confidence: high in feasibility after the independently checked probe,
+  medium-high in nine laws remaining review-sized; split the six foundational
+  laws from three extern-related laws if needed. Capture independent raw
+  baselines first, and challenge the shared Direction name table explicitly.
+  Full Program, text/binary codecs and semantic validity remain separate.
+  Plan and review: `notes/program-codec-next.md` and its matching report.

@@ -569,8 +569,12 @@ Things a resuming agent should know are in motion or deliberately left.
   paired mapping/default/diagnostic faults that retain roundtrip proofs.
   All 25 retained live observations (20 distinct inputs) match tracked
   fixtures and replay restored. Evidence: `notes/stmt-codec.md`; final review:
-  `notes/reviews/stmt-codec.md`. The next declaration/program-codec slice is
-  being scoped separately; no whole-program codec guarantee follows here.
+  `notes/reviews/stmt-codec.md`. The next declaration slice has an accepted,
+  independently checked plan/probe: `notes/program-codec-next.md` and its
+  matching review, with `ir/DeclarationCodecProbe.lean` left unregistered.
+  Nine foundational declaration codecs are already total and need composition
+  proofs, not another decoder refactor. Independent descriptors/raw baselines
+  precede proof work; full Program remains a later obligation.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 
