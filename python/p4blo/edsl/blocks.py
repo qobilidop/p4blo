@@ -566,9 +566,10 @@ class Block:
                 cls._meta_type = _struct_arg(cls, args[1]) if len(args) > 1 else None
         params: list[ParamDecl] = []
         locals_: list[tuple[str, object]] = []
+        # Only this class's own body, so `hdr` and `meta` declared on
+        # `Parser`, `Control` and `Deparser` stay the conventional defaults
+        # until a subclass annotates them itself.
         for attr, annotation in own_annotations(cls).items():
-            if attr in ("hdr", "meta") and attr not in cls.__dict__.get("__annotations__", {}):
-                continue
             direction, t = direction_of(annotation)
             if direction is not None:
                 params.append((attr, direction, t))
