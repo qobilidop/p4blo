@@ -12,11 +12,11 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `901c994`, including total Expr/LValue codec proofs,
+Combined local integration at `dbfa37c`, including total Expr/LValue codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
-prefixes and actual plain-root call entry: both Lean package gates and default audits pass, with
+prefixes and actual body-bearing plain-root call entry: both Lean package gates and default audits pass, with
 **488 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
@@ -37,8 +37,12 @@ Guarded forwarding adds 64 independent Lean state answers and 32 exported
 Python/Lean cases, including invalid headers and boundary TTLs.
 Call entry adds seven spec checks, twelve default-audited roots and 23
 focused Python checks, including independent full-state and strict JSON
-observer regressions. Required real-Lean DRT: **602 passed**, no skips. Full gate:
-**2045 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+observer regressions. Body-parametric entry adds six audited roots, twelve
+native entry boundaries and eighteen Python checks comparing complete selected
+block syntax and strictly typed snapshots. The old entry exporter remains
+byte-identical; the new exporter matches the reviewed candidate exactly.
+Required real-Lean DRT: **607 passed**, no skips. Full gate:
+**2063 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -49,9 +53,9 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `source-zero.md`, `lvalue-codec.md`, `frame-initialization.md` and
 `header-validity-expressions.md`, `initial-source-frames.md` and
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
-`plain-call-entry.md`.
+`plain-call-entry.md` and `body-parametric-entry.md`.
 
-All five remote workflows pass for `c59878f`; newer CI must be checked
+All five remote workflows pass for `eb245f7`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -296,18 +300,28 @@ Things a resuming agent should know are in motion or deliberately left.
   controls permanently reject demonstrated observer gaps. These internal
   snapshots are not packet-program replay bundles. Scope/review:
   `notes/plain-call-entry.md`, `notes/reviews/plain-call-entry.md`.
-  Next, isolated `work/body-parametric-entry` builds against committed
-  `ac69759`: preserve the old API while proving actual built lookup/scope and
-  initialization for a body-bearing block. Then compose real local assignments
-  and guarded forwarding to the exact pending observer suffix and return.
+  Body-parametric entry (`db6b861`/`381e627`) is integrated at `dbfa37c`:
+  one actual-built body family supplies lookup/scope and initialization while
+  preserving the old empty API. The source proof is generalized once, not
+  duplicated. Full selected guarded-block syntax matches the tracked Python
+  wrapper, including both local assignments and the complete observer. Six
+  audited roots, twelve native boundaries and 41 combined entry tests pass.
+  A wrong empty index fails the proof; two wrong-but-compiling selected bodies
+  fail independent syntax identity. No body execution is inferred from entry.
+  Scope/review: `notes/body-parametric-entry.md` and its matching review.
+  Next compose real local assignments and guarded forwarding to the exact
+  pending observer suffix and return.
   Staged contract: `notes/call-body-prefix-plan.md`. Do not substitute the
   empty declaration witness, reshape the wrapper or claim copyback/global
   validity from a successful finite prefix.
   A disjoint local-assignment prerequisite is active in
   `work/call-initializers` against the same committed interfaces; it will
   prove the exact scratch19/unrelated165 prefix without assuming an actual
-  body-bearing call. A read-only normal-return feasibility probe in
-  `work/plain-call-return` is separate; no return implementation is claimed.
+  body-bearing call. Normal-return implementation is active separately in
+  `work/plain-call-return` after its reviewed feasibility probe; contract:
+  `notes/plain-call-return-plan.md`. It preserves the current post-callee Run
+  outside the restored caller frame, not a historical entry Run. No return
+  implementation has landed yet.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
   at `45fe743`: the same command induction now retains the exact pending
   suffix/continuation and full source/noninterference facts. Old whole-body

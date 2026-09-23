@@ -878,3 +878,18 @@ one that says so.
   laws over copying initialization proofs if reduction is costly. Revisit
   after a second signature needs a more general API. The staged contract,
   exact identity checks and exclusions are in `notes/call-body-prefix-plan.md`.
+- **Reuse one actual-built body family and preserve the empty API.** Symbolic
+  body parameterization checks directly, including scope.block identity; no
+  duplicate binder or initialization proof was needed. Existing entry bytes
+  remain exact. Confidence: high for this verified reuse, medium for retaining
+  the fixed signature as the future public API. Complete selected-block syntax
+  checks distinguish arbitrary-body entry correctness from intended program
+  syntax; wrong initializers/observer mappings can correctly pass entry proofs.
+- **Prove normal return against the current callee-after Run.** Restore only
+  the captured caller frame, then copy three fixed writable roots from the
+  captured callee. Preserve current packet/extern/other shared effects rather
+  than reverting to entry state. Confidence: high after actual-loop and
+  restored-write feasibility proofs; keep typing, arbitrary lvalues and fault
+  unwinding out of this slice. Distinct writes commute, so order requires a
+  delegating trace observer rather than an order claim from final state alone.
+  The reviewed boundary and tests are in `notes/plain-call-return-plan.md`.
