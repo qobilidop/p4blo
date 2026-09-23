@@ -1,8 +1,8 @@
 """Immutable, representation-independent observations of builtin externs.
 
 Only logical state crosses the pipe, not Python objects or Lean hash-map
-layout. Decimal strings carry unbounded naturals without JSON precision
-loss. An unsupported extern must get an explicit adapter, never disappear
+layout. Hexadecimal strings carry unbounded naturals without JSON precision
+loss or Python's decimal-conversion limit. An unsupported extern must get an explicit adapter, never disappear
 silently from the comparison.
 """
 
@@ -52,7 +52,7 @@ def encode(state: Snapshot) -> dict[str, dict[str, object]]:
         if item.kind == "register":
             fields["width"] = item.width
         if item.kind != "checksum16":
-            fields["values"] = [str(v) for v in item.values]
+            fields["values"] = [hex(v) for v in item.values]
         result[item.name] = fields
     return result
 
@@ -80,11 +80,11 @@ def decode(raw: object) -> Snapshot:
             raise ValueError("extern values must be an array")
         numbers: list[int] = []
         for value in values:
-            if not isinstance(value, str) or not value.isascii() or not value.isdecimal():
-                raise ValueError("extern values must be decimal natural-number strings")
-            number = int(value)
-            if str(number) != value:
-                raise ValueError("extern values must use canonical decimal spelling")
+            if not isinstance(value, str) or not value.startswith("0x"):
+                raise ValueError("extern values must be hexadecimal natural-number strings")
+            number = int(value, 16)
+            if number < 0 or hex(number) != value:
+                raise ValueError("extern values must use canonical hexadecimal spelling")
             if isinstance(width, int) and number.bit_length() > width:
                 raise ValueError("register value exceeds its width")
             numbers.append(number)

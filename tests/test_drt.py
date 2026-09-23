@@ -10,7 +10,6 @@ with the reason otherwise.
 
 from __future__ import annotations
 
-import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -31,7 +30,7 @@ from p4blo.drt import (
     run_python,
 )
 from p4blo.drt.coverage import parser_visits
-from p4blo.drt.run import default_lean_binary, parse_reply, python_outcome
+from p4blo.drt.run import parse_reply, python_outcome
 from p4blo.drt.state import snapshot
 from p4blo.edsl.core import Program, bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
@@ -413,21 +412,6 @@ def test_case_to_stf_refuses_an_empty_packet() -> None:
 # ---------------------------------------------------------------------------
 # The real thing
 # ---------------------------------------------------------------------------
-
-
-@pytest.fixture(scope="module")
-def lean_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    binary = default_lean_binary()
-    if not binary.exists():
-        if os.environ.get("P4BLO_REQUIRE_LEAN") == "1":
-            pytest.fail(f"required Lean executable is missing: {binary}")
-        pytest.skip(f"{binary} is not built (cd lean && lake build)")
-    program_json = tmp_path_factory.mktemp("lean") / "forwarder.json"
-    program_json.write_text(ir.dump_json(golden(CORPUS / "forwarder")))
-    reason = LeanRunner.probe([binary], program_json, PORTS)
-    if reason is not None:
-        pytest.fail(f"p4blo-lean has no working `run` mode: {reason}")
-    return binary
 
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)

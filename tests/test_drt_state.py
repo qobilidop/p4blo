@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -10,7 +11,7 @@ import pytest
 
 from p4blo import arch, ir
 from p4blo.drt.case import Case
-from p4blo.drt.run import ProtocolError, compare_cases, parse_reply, python_outcome
+from p4blo.drt.run import LeanRunner, ProtocolError, compare_cases, parse_reply, python_outcome
 from p4blo.drt.state import Observation, decode, encode, snapshot
 from p4blo.externs.counter import Counter
 from p4blo.externs.register import Register
@@ -23,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_state_roundtrip_is_lossless_and_independent_of_object_order() -> None:
     state = (
         Observation("c", "counter", values=(2**100, 0)),
-        Observation("r", "register", 129, (2**128, 0)),
+        Observation("r", "register", 16384, (2**16383, 0)),
         Observation("s", "checksum16"),
     )
     wire = encode(state)
@@ -37,11 +38,12 @@ def test_state_roundtrip_is_lossless_and_independent_of_object_order() -> None:
         None,
         [],
         {"r": {"kind": "unknown"}},
-        {"r": {"kind": "register", "width": True, "values": ["0"]}},
-        {"r": {"kind": "register", "width": 1, "values": ["2"]}},
+        {"r": {"kind": "register", "width": True, "values": ["0x0"]}},
+        {"r": {"kind": "register", "width": 1, "values": ["0x2"]}},
         {"r": {"kind": "register", "width": 8, "values": [1]}},
-        {"c": {"kind": "counter", "values": ["-1"]}},
-        {"c": {"kind": "counter", "values": ["01"]}},
+        {"c": {"kind": "counter", "values": ["-0x1"]}},
+        {"c": {"kind": "counter", "values": ["0x01"]}},
+        {"c": {"kind": "counter", "values": ["0xA"]}},
         {"c": {"kind": "counter", "values": ["١"]}},
         {"c": {"kind": "checksum16", "ignored_state": [1]}},
     ],
@@ -90,3 +92,28 @@ def test_state_difference_is_visible_even_when_errors_match() -> None:
     outcome = python_outcome(loaded, Case(pb.Entries(), 99, b""), 4)
     assert outcome.error is not None
     assert not outcome.agrees_with(replace(outcome, state=()))
+
+
+def wide_register_roundtrip(tmp_path: Path, command: list[str | Path]) -> None:
+    program = ir.load_text(ROOT / "corpus/register_bounds/register_bounds.txtpb")
+    for field in program.header_types[0].fields:
+        field.type.bits = 16384
+    program.extern_types[0].methods[0].params[0].type.bits = 16384
+    program.extern_types[0].methods[1].params[1].type.bits = 16384
+    program.blocks[1].locals[0].type.bits = 16384
+    loaded = arch.load(program)  # Includes validation of the widened program.
+    packet = bytes(2048) + b"\x80" + bytes(2047) + bytes(2048)
+    program_json = tmp_path / "wide.json"
+    program_json.write_text(ir.dump_json(program))
+    with LeanRunner(command, program_json, 4) as runner:
+        report = compare_cases("wide", loaded, [Case(pb.Entries(), 0, packet)], 4, runner.run)
+    assert report.passed, report.divergences
+    assert snapshot(loaded)[0].values[0].bit_length() == 16384
+
+
+def test_wide_register_roundtrips_through_fake_peer(tmp_path: Path) -> None:
+    wide_register_roundtrip(tmp_path, [sys.executable, "-m", "p4blo.drt.fake_lean"])
+
+
+def test_lean_agrees_on_wide_register_state(tmp_path: Path, lean_binary: Path) -> None:
+    wide_register_roundtrip(tmp_path, [lean_binary])

@@ -305,11 +305,14 @@ one that says so.
   useful diagnostics, not self-contained stateful reproductions.
 - **Observe logical extern state after every request.** Differential
   replies include named register widths/cells, counter values and checksum
-  instance presence, including on errors. Naturals use decimal strings;
+  instance presence, including on errors. Naturals use hexadecimal strings;
   instance ordering is irrelevant. Missing state or unsupported adapters
   fail instead of silently comparing packets alone. Internal errors are
   not claimed transactional: observing the state makes any mismatch
   visible, while valid-input campaigns reject all such errors anyway.
+  Review caught Python's decimal-conversion limit on a valid bit<16384>
+  register; hexadecimal preserves arbitrary widths without changing
+  interpreter-global security settings.
 - **Adversarial verification is recurring work.** At Bili's request,
   intentionally mutate both implementations in isolated worktrees, record
   killed and surviving mutants, improve tests for survivors, and repeat.
