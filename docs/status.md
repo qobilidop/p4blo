@@ -12,38 +12,21 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Typed-context integration at `46893ff`: both Lean package gates and audits
-pass, including **357 spec checks**, 21 user known answers and nine negative
-typing checks. Required real-Lean DRT: **175 passed**. Full Python/schema/
-oracle gate: **1180 passed, 5 precise expected discrepancies, no skips**;
-formatting, lint, typechecking, schema generation and workflow checks pass.
-The saved typed-read mutant bundle replays successfully after restoration.
-Independent review: [notes/reviews/typed-frames.md](notes/reviews/typed-frames.md).
-The authoring replay-retention follow-up passes **24 focused checks**,
-**177 required DRT** and the full **1182 passed / 5 expected / no skips**
-gate. A scoped actual Python-read fault now requires automatic replay
-creation before the expected-output assertion, live replay divergence and
-restored replay agreement. Shared wrong answers still fail independently.
-Review: `notes/reviews/authoring-replay.md`. No Lean or production code changed.
-Firewall-boundary integration at `8b2ebdd`: **233 required DRT** and full
-**1423 passed / 5 precise expected discrepancies / no skips**, including
-formatting/lint/type/schema/workflow gates. Lean source/binaries are unchanged
-from the checked 357-test spec build. The BMv2 job now selects the new file.
-All four remote workflows passed for boundary checkpoint `602d349`;
-newer CI must be checked separately.
-Scalar-command integration at `83c31f2`: both Lean package gates/audits
-pass, including **369 spec checks**, 21 expression known answers/nine
-negative checks, nine command answers/four negative checks, real parameter
-writes and the continuation witness. Required DRT: **242 passed**. After
-generated-flow integration at `4206cb5`, required DRT is **246 passed** and
-the full gate is **1447 passed / 5 precise expected discrepancies / no skips**,
-including formatting/lint/type/schema/workflow checks, exit 0.
-Review: `notes/reviews/typed-statements.md`. The actual Python-write mutant's
-saved bundle is preserved in main's ignored `.artifacts/drt` and has tracked
-reconstruction instructions in `lean/ASSURANCE.md`.
-Earlier checkpoint evidence
-remains in the named review/assurance reports and git history, not as competing
-current instructions below.
+Field-primitive integration at `792a029`, including typed commands and
+generated firewall flows: both Lean package gates/audits pass, with **392
+spec checks**, 21 expression answers/nine negative checks, nine command
+answers/four negative checks, real parameter writes and the continuation
+witness. Required real-Lean DRT: **246 passed**. Full Python/schema/oracle
+gate: **1447 passed / 5 precise expected discrepancies / no skips**, plus
+formatting, lint, types, schema generation/no drift and workflow checks;
+all commands exited 0. Independent reviews: `notes/reviews/typed-statements.md`,
+`field-primitives.md`, `firewall-boundaries.md` and `firewall-generated.md`.
+
+All four remote workflows passed for checkpoint `eb3ff02`; newer CI must be
+checked separately. The five retained semantic-fault bundles have tracked
+reconstruction recipes and ignored concrete copies under `.artifacts/drt`.
+Earlier exact counts and experiments remain in named review/assurance
+reports and git history, not competing current instructions below.
 
 ## Claim matrix
 
@@ -52,7 +35,7 @@ current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 369 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, contextual scalar soundness/completeness, exact scalar expression/command lowering under frame agreement, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 392 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; packing, contextual scalar soundness/completeness, exact scalar expression/command lowering, field primitive reconstruction, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -130,8 +113,13 @@ Things a resuming agent should know are in motion or deliberately left.
   Review: `notes/reviews/typed-statements.md`; exact scope in `lean/ASSURANCE.md`.
   Next: typed packet/metadata fields, not every remaining scalar operator.
   `notes/typed-fields-plan.md` requires actual Index agreement and full
-  sibling/validity preservation. Primitive field proof work is active in
-  isolated `work/typed-fields`, based on committed `83c31f2`.
+  sibling/validity preservation. Primitive field bridges are integrated
+  from `ddb9f0e`: exact nominal declaration/shape premises, stored invalid-
+  header fields, validity and siblings, with three actual setter proof faults
+  rejected. Review: `notes/reviews/field-primitives.md`. These return rebuilt
+  containers, not persistent nested-frame writes. Independent aggregate
+  stores/paths are active in isolated `work/typed-fields`, based on that
+  committed interface.
 
 - **Tutorial firewall: bounded Python port and original-state oracle done.**
   The typed port adds no core IR construct. Independent packet and complete
@@ -206,24 +194,28 @@ Things a resuming agent should know are in motion or deliberately left.
   preserve intentionally invalid IR replays rather than applying semantic
   validation at the artifact boundary. This is distinct from a codec proof.
 
-- **XDP and later examples: source/environment preflight only.**
+- **XDP and later examples: compile-only infrastructure in review.**
   `notes/xdp-preflight.md` pins the authentic Ethernet-allow xdp-filter
   build and libbpf, complete per-CPU observations and an FD-only non-attaching
-  oracle design. No BPF compile/load/run evidence exists. A reproducible
-  compile-only image is a safe next independent step; capability-bearing
+  oracle design. Main's accepted evidence remains preflight; compile-only
+  work is isolated on `work/xdp-build`. Capability-bearing
   execution and redistribution licensing need explicit handling.
   Do not treat Docker availability or skipped kernel tests as an oracle pass.
   Flowlet time/randomness and the bounded Katran profile still require audit.
-  Compile-only image implementation is active in isolated `work/xdp-build`
-  based on `0ad1b5b`. The pinned object and open-only native metadata inspector
-  build and run without added capabilities; the full offline gate/review is
-  not yet complete and no kernel execution is claimed. Docker VM disk capacity
+  The pinned object and open-only native metadata inspector build and run
+  without added capabilities; final offline acceptance is not yet complete
+  and no kernel execution is claimed. Docker VM disk capacity
   blocked an additional build dependency. Only exact own rebuildable cache
   entries and the own temporary image were removed; the image has a verified
   host recovery export. The isolated `docs/notes/xdp-build-progress.md`
   records recovery/hash, tested versus untested files and next steps.
-  Unrelated images/volumes are not authorized cleanup targets. The main worktree does not depend on this pending
-  infrastructure; Python/Lean proof work continues independently.
+  Unrelated images/volumes are not authorized cleanup targets. A dedicated
+  workflow now tests the isolated branch on a clean GitHub runner. First CI
+  compiled/repeated the original and passed baseline syscall tracing and
+  map-capacity rejection; an ambiguous BTF test anchor and unreadable public
+  source archives were fixed in small follow-ups. Final rerun/review remains
+  required before integration. The main worktree does not depend on this
+  pending infrastructure; Python/Lean proof work continues independently.
 
 - **eDSL v2: done** (2026-09-22, reviewed and fixed 2026-09-23). The
   typed surface is `p4blo.edsl`, the v1 builder is `p4blo.edsl.core`;

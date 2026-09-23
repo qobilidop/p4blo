@@ -28,6 +28,7 @@ These are distinct obligations, not interchangeable confidence scores.
 | Evidence | Exact boundary | Does not establish |
 |---|---|---|
 | `extract_emit` | Packing/extraction round trip under its stated premises | Whole parser/deparser correctness |
+| `FieldLaws.read_declared`, `update_declared` | Exact field primitive results, validity/siblings and whole-Run preservation under actual nominal declarations and exact container shape | Stored-value typing, persistent nested lvalue writes, global validity |
 | `ScalarTyping.check_sound` | Every accepted closed scalar expression evaluates at its inferred type and preserves the initial Run | Variables, aggregates, whole-program validation, Python |
 | `ScalarTyping.checkIn_sound`, `checkIn_complete` | Contextual scalar checking is sound under actual typed-frame agreement and complete for its relation under a well-formed context | Aggregates, statements, whole-program validation, Python |
 | `P4blo.Scalar.lower_typed_in`, `evaluate_lower_in` | Typed source expressions lower to contextually typed IR under well-formedness, and evaluate to the exact independent source value with the whole Run unchanged under exact frame agreement | Intended surface elaboration, arbitrary program initialization, writable statements, serialization |

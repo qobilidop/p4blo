@@ -626,3 +626,19 @@ one that says so.
   rules and is killed only by state comparison. Original BMv2 checks fixed
   policies; its current protocol cannot replace rules mid-sequence. Revisit
   that limitation before claiming original-oracle coverage of host changes.
+- **Check field primitives before generalizing the authoring store.**
+  Exact nominal kind/declaration agreement excludes header-first lookup
+  ambiguity; exact list shape excludes the existing short-list setter no-op.
+  Prove precise rebuilt values, validity and every sibling with whole-Run
+  preservation. Confidence: high. This returns a container, not a persistent
+  nested frame update or a typed-value theorem. Three actual setter faults
+  are rejected by the primitive equation proof; source-path/runtime mutation
+  evidence belongs to the next increment. Keep those boundaries separate.
+- **Use isolated CI for compile-only XDP capacity.** Local Docker disk
+  pressure is not permission to delete unrelated images/volumes or change
+  global VM settings. Export/remove only own artifacts and run the pending
+  native gate on an experimental repository branch's clean runner instead.
+  Confidence: high on isolation, medium on portability until actual CI.
+  No BPF load, interface attachment, added runtime capability or image
+  publication is authorized by this step. Retain object provenance plus
+  corresponding upstream sources; merge only after native checks and review.
