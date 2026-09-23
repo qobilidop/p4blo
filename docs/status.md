@@ -12,12 +12,12 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `dcbf392`, including total Expr/LValue/Stmt codec proofs,
+Combined local integration at `01d8b09`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
 prefixes and actual body-bearing plain-root call entry: both Lean package gates and default audits pass, with
-**498 spec checks**, all existing scalar/context/
+**506 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -63,6 +63,10 @@ The separately named observer-free whole control call adds nine audited roots, 1
 profiles and 91 Python checks, including actual normal completion, full state,
 all incoming/outgoing mutable copies and independent ordered-write controls.
 Its exporter is byte-identical to the reviewed candidate.
+The action-root prerequisite adds exact unshadowed block writes and action-hit
+read/write laws, preserving the old block API. Four new audits, a genuine
+active-frame kernel witness and eight native storage/error checks pass. Four
+isolated compiling Env faults are proof-rejected; the runtime is unchanged.
 Required real-Lean DRT: **822 passed**, no skips. Full gate:
 **2381 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
@@ -77,9 +81,9 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
 `plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
-`guarded-control-call.md` and `stmt-codec.md`.
+`guarded-control-call.md`, `stmt-codec.md` and `action-root-writes.md`.
 
-All five remote workflows pass for `54cb697`; newer CI must be checked
+All five remote workflows pass for `4328f8b`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -112,7 +116,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 498 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 506 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -391,6 +395,14 @@ Things a resuming agent should know are in motion or deliberately left.
   old-destination/TTL-wrap policy, and action-layer restoration in eleven
   transitions. Implement it only against the committed real port interface;
   it does not prove table selection, checksum or complete forwarding.
+  The small operational root prerequisite is independently reviewed and
+  committed at `01d8b09`: actual active-map absence permits a block write
+  without dropping action storage; action-hit reads/writes prefer and change
+  only that layer. The old BlockFrame API remains a corollary. A constructive
+  active witness, four new default audits and eight native controls accompany
+  four compiling actual-frame faults rejected by the proofs. This does not
+  broaden source permissions or prove an action body/return. Scope/review:
+  `notes/action-root-writes.md` and its matching independent report.
   Its proof-only flat-suffix prerequisite (`ea87e2f`/`5d706de`) is integrated
   at `45fe743`: the same command induction now retains the exact pending
   suffix/continuation and full source/noninterference facts. Old whole-body

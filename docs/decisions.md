@@ -962,3 +962,12 @@ one that says so.
   Revisit on a second action needing parameter writes or copyback. Do not
   change the one command AST or weaken BlockFrame premises to fit this
   example. Reviewed plan: `notes/forwarder-action-next.md`.
+- **Base active-frame root laws on actual map membership.** An action name
+  alone neither establishes shadowing nor permits dropping the action map.
+  The root-write prerequisite uses the actual missing action lookup and
+  successful block lookup, with exact whole-Run results; action-hit read/write
+  laws need no block premise. Confidence: high after constructive witnesses
+  and four actual compiled frame faults rejected by the proofs. Keep these
+  operational laws separate from source permissions and global validity.
+  The old block API is a corollary, not a silently broadened contract. Scope
+  and independent review: `notes/action-root-writes.md`.

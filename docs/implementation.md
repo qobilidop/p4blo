@@ -101,6 +101,11 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   obligations. The next real application is an exact-golden Lean forwarder
   port with a bounded invalid-IPv4 control property, following
   `notes/lean-forwarder-next.md`; raw assembly seams are explicitly unverified.
+  Its positive-path prerequisite now has actual unshadowed block-write and
+  action-hit read/write laws, with constructive active-frame witnesses and
+  four compiled model faults rejected. Source permissions and the existing
+  no-action command API are unchanged. The next selected-action trace follows
+  `notes/forwarder-action-next.md`; that application proof remains pending.
 
 ## Application milestones
 
