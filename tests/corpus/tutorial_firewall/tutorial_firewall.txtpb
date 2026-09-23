@@ -1,0 +1,1734 @@
+name: "tutorial_firewall"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "ethernet_t"
+  fields {
+    name: "dstAddr"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "srcAddr"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "etherType"
+    type {
+      bits: 16
+    }
+  }
+}
+header_types {
+  name: "ipv4_t"
+  fields {
+    name: "version"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "ihl"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "diffserv"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "totalLen"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "identification"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "flags"
+    type {
+      bits: 3
+    }
+  }
+  fields {
+    name: "fragOffset"
+    type {
+      bits: 13
+    }
+  }
+  fields {
+    name: "ttl"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "protocol"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "hdrChecksum"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "srcAddr"
+    type {
+      bits: 32
+    }
+  }
+  fields {
+    name: "dstAddr"
+    type {
+      bits: 32
+    }
+  }
+}
+header_types {
+  name: "tcp_t"
+  fields {
+    name: "srcPort"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "dstPort"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "seqNo"
+    type {
+      bits: 32
+    }
+  }
+  fields {
+    name: "ackNo"
+    type {
+      bits: 32
+    }
+  }
+  fields {
+    name: "dataOffset"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "res"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "cwr"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "ece"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "urg"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "ack"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "psh"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "rst"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "syn"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "fin"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "window"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "checksum"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "urgentPtr"
+    type {
+      bits: 16
+    }
+  }
+}
+struct_types {
+  name: "headers"
+  fields {
+    name: "ethernet"
+    type {
+      header: "ethernet_t"
+    }
+  }
+  fields {
+    name: "ipv4"
+    type {
+      header: "ipv4_t"
+    }
+  }
+  fields {
+    name: "tcp"
+    type {
+      header: "tcp_t"
+    }
+  }
+}
+struct_types {
+  name: "metadata"
+  fields {
+    name: "ingress_port"
+    type {
+      bits: 9
+    }
+  }
+  fields {
+    name: "egress_port"
+    type {
+      bits: 9
+    }
+  }
+  fields {
+    name: "drop"
+    type {
+      boolean {
+      }
+    }
+  }
+}
+extern_types {
+  name: "register"
+  constructor_params {
+    name: "size"
+    type {
+      bits: 32
+    }
+    direction: DIRECTION_IN
+  }
+  methods {
+    name: "read"
+    params {
+      name: "result"
+      type {
+        bits: 1
+      }
+      direction: DIRECTION_OUT
+    }
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+  }
+  methods {
+    name: "write"
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+    params {
+      name: "value"
+      type {
+        bits: 1
+      }
+      direction: DIRECTION_IN
+    }
+  }
+}
+extern_types {
+  name: "crc16"
+  methods {
+    name: "compute"
+    params {
+      name: "data"
+      type {
+        bits: 104
+      }
+      direction: DIRECTION_IN
+    }
+    returns {
+      bits: 16
+    }
+  }
+}
+extern_types {
+  name: "crc32"
+  methods {
+    name: "compute"
+    params {
+      name: "data"
+      type {
+        bits: 104
+      }
+      direction: DIRECTION_IN
+    }
+    returns {
+      bits: 32
+    }
+  }
+}
+extern_types {
+  name: "checksum16"
+  methods {
+    name: "compute"
+    params {
+      name: "data"
+      type {
+        bits: 144
+      }
+      direction: DIRECTION_IN
+    }
+    returns {
+      bits: 16
+    }
+  }
+}
+extern_instances {
+  name: "bloom_filter_1"
+  extern_type: "register"
+  args {
+    bits {
+      width: 32
+      value: "4096"
+    }
+  }
+}
+extern_instances {
+  name: "bloom_filter_2"
+  extern_type: "register"
+  args {
+    bits {
+      width: 32
+      value: "4096"
+    }
+  }
+}
+extern_instances {
+  name: "hash16"
+  extern_type: "crc16"
+}
+extern_instances {
+  name: "hash32"
+  extern_type: "crc32"
+}
+extern_instances {
+  name: "csum"
+  extern_type: "checksum16"
+}
+blocks {
+  name: "MyParser"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    transition {
+      direct {
+        state: "parse_ethernet"
+      }
+    }
+  }
+  states {
+    name: "parse_ethernet"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "ethernet"
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "etherType"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 16
+                value: "2048"
+              }
+            }
+          }
+          target {
+            state: "parse_ipv4"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "parse_ipv4"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "ipv4"
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ipv4"
+              }
+            }
+            field: "protocol"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "6"
+              }
+            }
+          }
+          target {
+            state: "tcp"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "tcp"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "tcp"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "MyIngress"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  locals {
+    name: "reg_pos_one"
+    type {
+      bits: 32
+    }
+  }
+  locals {
+    name: "reg_pos_two"
+    type {
+      bits: 32
+    }
+  }
+  locals {
+    name: "reg_val_one"
+    type {
+      bits: 1
+    }
+  }
+  locals {
+    name: "reg_val_two"
+    type {
+      bits: 1
+    }
+  }
+  locals {
+    name: "direction"
+    type {
+      bits: 1
+    }
+  }
+  locals {
+    name: "crc16_result"
+    type {
+      bits: 16
+    }
+  }
+  locals {
+    name: "check_ports_hit"
+    type {
+      boolean {
+      }
+    }
+  }
+  actions {
+    name: "NoAction"
+  }
+  actions {
+    name: "drop"
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "drop"
+          }
+        }
+        value {
+          literal {
+            boolean: true
+          }
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          literal {
+            bits {
+              width: 9
+              value: "511"
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "compute_hashes"
+    params {
+      name: "ipAddr1"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "ipAddr2"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "port1"
+      type {
+        bits: 16
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "port2"
+      type {
+        bits: 16
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      call_extern {
+        instance: "hash16"
+        method: "compute"
+        args {
+          expr {
+            binary {
+              op: BINARY_OP_CONCAT
+              left {
+                binary {
+                  op: BINARY_OP_CONCAT
+                  left {
+                    binary {
+                      op: BINARY_OP_CONCAT
+                      left {
+                        binary {
+                          op: BINARY_OP_CONCAT
+                          left {
+                            var: "ipAddr1"
+                          }
+                          right {
+                            var: "ipAddr2"
+                          }
+                        }
+                      }
+                      right {
+                        var: "port1"
+                      }
+                    }
+                  }
+                  right {
+                    var: "port2"
+                  }
+                }
+              }
+              right {
+                member {
+                  base {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "ipv4"
+                    }
+                  }
+                  field: "protocol"
+                }
+              }
+            }
+          }
+        }
+        result {
+          var: "crc16_result"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "reg_pos_one"
+        }
+        value {
+          cast {
+            to {
+              bits: 32
+            }
+            operand {
+              binary {
+                op: BINARY_OP_BIT_AND
+                left {
+                  var: "crc16_result"
+                }
+                right {
+                  literal {
+                    bits {
+                      width: 16
+                      value: "4095"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    body {
+      call_extern {
+        instance: "hash32"
+        method: "compute"
+        args {
+          expr {
+            binary {
+              op: BINARY_OP_CONCAT
+              left {
+                binary {
+                  op: BINARY_OP_CONCAT
+                  left {
+                    binary {
+                      op: BINARY_OP_CONCAT
+                      left {
+                        binary {
+                          op: BINARY_OP_CONCAT
+                          left {
+                            var: "ipAddr1"
+                          }
+                          right {
+                            var: "ipAddr2"
+                          }
+                        }
+                      }
+                      right {
+                        var: "port1"
+                      }
+                    }
+                  }
+                  right {
+                    var: "port2"
+                  }
+                }
+              }
+              right {
+                member {
+                  base {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "ipv4"
+                    }
+                  }
+                  field: "protocol"
+                }
+              }
+            }
+          }
+        }
+        result {
+          var: "reg_pos_two"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          var: "reg_pos_two"
+        }
+        value {
+          binary {
+            op: BINARY_OP_BIT_AND
+            left {
+              var: "reg_pos_two"
+            }
+            right {
+              literal {
+                bits {
+                  width: 32
+                  value: "4095"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "ipv4_forward"
+    params {
+      name: "dstAddr"
+      type {
+        bits: 48
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "port"
+      type {
+        bits: 9
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          var: "port"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "srcAddr"
+          }
+        }
+        value {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "dstAddr"
+          }
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "dstAddr"
+          }
+        }
+        value {
+          var: "dstAddr"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ipv4"
+              }
+            }
+            field: "ttl"
+          }
+        }
+        value {
+          binary {
+            op: BINARY_OP_SUB
+            left {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "ipv4"
+                  }
+                }
+                field: "ttl"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "1"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "set_direction"
+    params {
+      name: "dir"
+      type {
+        bits: 1
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          var: "direction"
+        }
+        value {
+          var: "dir"
+        }
+      }
+    }
+  }
+  tables {
+    name: "ipv4_lpm"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "ipv4"
+            }
+          }
+          field: "dstAddr"
+        }
+      }
+      match_kind: MATCH_KIND_LPM
+    }
+    actions: "ipv4_forward"
+    actions: "drop"
+    actions: "NoAction"
+    default_action {
+      action: "drop"
+    }
+    size: 1024
+  }
+  tables {
+    name: "check_ports"
+    keys {
+      expr {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "ingress_port"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    keys {
+      expr {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "egress_port"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    actions: "set_direction"
+    actions: "NoAction"
+    default_action {
+      action: "NoAction"
+    }
+    size: 1024
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "ipv4"
+            }
+          }
+        }
+      }
+      then {
+        apply {
+          table: "ipv4_lpm"
+        }
+      }
+      then {
+        conditional {
+          condition {
+            is_valid {
+              header {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "tcp"
+                }
+              }
+            }
+          }
+          then {
+            assign {
+              target {
+                var: "direction"
+              }
+              value {
+                literal {
+                  bits {
+                    width: 1
+                    value: "0"
+                  }
+                }
+              }
+            }
+          }
+          then {
+            apply {
+              table: "check_ports"
+              hit {
+                var: "check_ports_hit"
+              }
+            }
+          }
+          then {
+            conditional {
+              condition {
+                var: "check_ports_hit"
+              }
+              then {
+                conditional {
+                  condition {
+                    binary {
+                      op: BINARY_OP_EQ
+                      left {
+                        var: "direction"
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 1
+                            value: "0"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  then {
+                    call_action {
+                      action: "compute_hashes"
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "ipv4"
+                              }
+                            }
+                            field: "srcAddr"
+                          }
+                        }
+                      }
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "ipv4"
+                              }
+                            }
+                            field: "dstAddr"
+                          }
+                        }
+                      }
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "tcp"
+                              }
+                            }
+                            field: "srcPort"
+                          }
+                        }
+                      }
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "tcp"
+                              }
+                            }
+                            field: "dstPort"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  otherwise {
+                    call_action {
+                      action: "compute_hashes"
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "ipv4"
+                              }
+                            }
+                            field: "dstAddr"
+                          }
+                        }
+                      }
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "ipv4"
+                              }
+                            }
+                            field: "srcAddr"
+                          }
+                        }
+                      }
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "tcp"
+                              }
+                            }
+                            field: "dstPort"
+                          }
+                        }
+                      }
+                      args {
+                        expr {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "tcp"
+                              }
+                            }
+                            field: "srcPort"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              then {
+                conditional {
+                  condition {
+                    binary {
+                      op: BINARY_OP_EQ
+                      left {
+                        var: "direction"
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 1
+                            value: "0"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  then {
+                    conditional {
+                      condition {
+                        binary {
+                          op: BINARY_OP_EQ
+                          left {
+                            member {
+                              base {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "tcp"
+                                }
+                              }
+                              field: "syn"
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 1
+                                value: "1"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        call_extern {
+                          instance: "bloom_filter_1"
+                          method: "write"
+                          args {
+                            expr {
+                              var: "reg_pos_one"
+                            }
+                          }
+                          args {
+                            expr {
+                              literal {
+                                bits {
+                                  width: 1
+                                  value: "1"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        call_extern {
+                          instance: "bloom_filter_2"
+                          method: "write"
+                          args {
+                            expr {
+                              var: "reg_pos_two"
+                            }
+                          }
+                          args {
+                            expr {
+                              literal {
+                                bits {
+                                  width: 1
+                                  value: "1"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  otherwise {
+                    conditional {
+                      condition {
+                        binary {
+                          op: BINARY_OP_EQ
+                          left {
+                            var: "direction"
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 1
+                                value: "1"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        call_extern {
+                          instance: "bloom_filter_1"
+                          method: "read"
+                          args {
+                            lvalue {
+                              var: "reg_val_one"
+                            }
+                          }
+                          args {
+                            expr {
+                              var: "reg_pos_one"
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        call_extern {
+                          instance: "bloom_filter_2"
+                          method: "read"
+                          args {
+                            lvalue {
+                              var: "reg_val_two"
+                            }
+                          }
+                          args {
+                            expr {
+                              var: "reg_pos_two"
+                            }
+                          }
+                        }
+                      }
+                      then {
+                        conditional {
+                          condition {
+                            binary {
+                              op: BINARY_OP_OR
+                              left {
+                                binary {
+                                  op: BINARY_OP_NE
+                                  left {
+                                    var: "reg_val_one"
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 1
+                                        value: "1"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              right {
+                                binary {
+                                  op: BINARY_OP_NE
+                                  left {
+                                    var: "reg_val_two"
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 1
+                                        value: "1"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          then {
+                            call_action {
+                              action: "drop"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        is_valid {
+          header {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "ipv4"
+            }
+          }
+        }
+      }
+      then {
+        call_extern {
+          instance: "csum"
+          method: "compute"
+          args {
+            expr {
+              binary {
+                op: BINARY_OP_CONCAT
+                left {
+                  binary {
+                    op: BINARY_OP_CONCAT
+                    left {
+                      binary {
+                        op: BINARY_OP_CONCAT
+                        left {
+                          binary {
+                            op: BINARY_OP_CONCAT
+                            left {
+                              binary {
+                                op: BINARY_OP_CONCAT
+                                left {
+                                  binary {
+                                    op: BINARY_OP_CONCAT
+                                    left {
+                                      binary {
+                                        op: BINARY_OP_CONCAT
+                                        left {
+                                          binary {
+                                            op: BINARY_OP_CONCAT
+                                            left {
+                                              binary {
+                                                op: BINARY_OP_CONCAT
+                                                left {
+                                                  binary {
+                                                    op: BINARY_OP_CONCAT
+                                                    left {
+                                                      member {
+                                                        base {
+                                                          member {
+                                                            base {
+                                                              var: "hdr"
+                                                            }
+                                                            field: "ipv4"
+                                                          }
+                                                        }
+                                                        field: "version"
+                                                      }
+                                                    }
+                                                    right {
+                                                      member {
+                                                        base {
+                                                          member {
+                                                            base {
+                                                              var: "hdr"
+                                                            }
+                                                            field: "ipv4"
+                                                          }
+                                                        }
+                                                        field: "ihl"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                                right {
+                                                  member {
+                                                    base {
+                                                      member {
+                                                        base {
+                                                          var: "hdr"
+                                                        }
+                                                        field: "ipv4"
+                                                      }
+                                                    }
+                                                    field: "diffserv"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                            right {
+                                              member {
+                                                base {
+                                                  member {
+                                                    base {
+                                                      var: "hdr"
+                                                    }
+                                                    field: "ipv4"
+                                                  }
+                                                }
+                                                field: "totalLen"
+                                              }
+                                            }
+                                          }
+                                        }
+                                        right {
+                                          member {
+                                            base {
+                                              member {
+                                                base {
+                                                  var: "hdr"
+                                                }
+                                                field: "ipv4"
+                                              }
+                                            }
+                                            field: "identification"
+                                          }
+                                        }
+                                      }
+                                    }
+                                    right {
+                                      member {
+                                        base {
+                                          member {
+                                            base {
+                                              var: "hdr"
+                                            }
+                                            field: "ipv4"
+                                          }
+                                        }
+                                        field: "flags"
+                                      }
+                                    }
+                                  }
+                                }
+                                right {
+                                  member {
+                                    base {
+                                      member {
+                                        base {
+                                          var: "hdr"
+                                        }
+                                        field: "ipv4"
+                                      }
+                                    }
+                                    field: "fragOffset"
+                                  }
+                                }
+                              }
+                            }
+                            right {
+                              member {
+                                base {
+                                  member {
+                                    base {
+                                      var: "hdr"
+                                    }
+                                    field: "ipv4"
+                                  }
+                                }
+                                field: "ttl"
+                              }
+                            }
+                          }
+                        }
+                        right {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "ipv4"
+                              }
+                            }
+                            field: "protocol"
+                          }
+                        }
+                      }
+                    }
+                    right {
+                      member {
+                        base {
+                          member {
+                            base {
+                              var: "hdr"
+                            }
+                            field: "ipv4"
+                          }
+                        }
+                        field: "srcAddr"
+                      }
+                    }
+                  }
+                }
+                right {
+                  member {
+                    base {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "ipv4"
+                      }
+                    }
+                    field: "dstAddr"
+                  }
+                }
+              }
+            }
+          }
+          result {
+            member {
+              base {
+                member {
+                  base {
+                    var: "hdr"
+                  }
+                  field: "ipv4"
+                }
+              }
+              field: "hdrChecksum"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "MyDeparser"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "ethernet"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "ipv4"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "tcp"
+        }
+      }
+    }
+  }
+}
+headers: "headers"
+metadata: "metadata"
+exports {
+  role: "parser"
+  block: "MyParser"
+}
+exports {
+  role: "control"
+  block: "MyIngress"
+}
+exports {
+  role: "deparser"
+  block: "MyDeparser"
+}
