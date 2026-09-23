@@ -1,5 +1,9 @@
 # Scalar construction assurance
 
+The historical closed-scalar increment below is followed by the contextual
+increment at the end of this file; its expanded claims supersede the older
+"Next boundary" section without rewriting the earlier experiment record.
+
 Implementation increment: 2026-09-23. This file records the exact boundary
 and experiments for the first user-facing Lean eDSL, independently of the
 larger whole-program roadmap.
@@ -143,3 +147,182 @@ After restoring all mutants on 2026-09-23:
 
 No unavailable gate is being counted as passed. The macOS linker emitted
 the existing SDK-version warnings; Lean proof/linter warnings remain errors.
+
+## Contextual increment: typed references and exact frames
+
+Implemented 2026-09-23 against `7942768`, before statement authoring. The
+specification now has one `TypedIn context` relation and one recursive scalar
+checker, with the previous `Typed`, `check`, `infer` interfaces specializing
+the empty context. `inferIn` validates the entire finite context (unique,
+nonempty names and positive bit widths), including unused declarations.
+`checkIn_typed` exposes well-formedness and typing, `checkIn_complete` proves
+completeness under well-formedness, and `checkIn_sound` proves successful
+same-Run evaluation under the actual runtime `FrameTyped` assumption.
+Completeness is only for this scalar relation, not for all valid IR programs.
+
+The user language similarly has one `ExprIn context` AST, with `Expr` as its
+closed alias. Positional `Ref` membership and heterogeneous `Env` values
+make source variable reads independent of string lookup and IR runtime
+values. `lower_typed_in` proves contextual typing under context validity.
+`evaluate_lower_in` proves **exact source value and the entire unchanged
+Run** under `FrameMatches`; this relation calls the real action-first
+`Frame.read?`, not a newly invented lookup. `Env.frame_matches` constructs
+a witness for every well-formed context/environment, and
+`FrameMatches.typed` supplies the specification's typed-frame premise.
+
+Declaration agreement is a separate `Declares` predicate. Neither the
+constructed witness nor exact value agreement certifies a valid block,
+action, declaration scope, writable parameter, or whole program. No separate
+optimized interpreter or verified serialization is claimed. Assignments,
+statement sequencing, aggregate references and statement validity remain
+future increments.
+
+### Decisions and revisit triggers
+
+- Finite lists with decidable whole-context validity, not an unchecked
+  function environment. Confidence: high for this fragment; revisit when
+  aggregate bindings and nested source scopes require richer contexts.
+- One AST with a closed specialization avoids duplicated semantics.
+  Typed named accessors currently bind positional references once; literal
+  notation infers its context from the surrounding expected type. The
+  explicit `bits` helper remains closed. Confidence: medium on ergonomics;
+  revisit with the first useful statement program and preserve known-answer
+  tests around any new binding/notation elaborator.
+- Value agreement and declaration agreement remain separate. Confidence:
+  high. The next statement increment must add declaration/writability
+  obligations and must not treat `Env.frame` as a validated program frame.
+- The original `lower_typed` audit now uses `[propext, Quot.sound]` rather
+  than `[propext]`, because it specializes the generalized context proof
+  through list uniqueness/membership. All other new audit roots use only
+  the recorded standard foundations; exact axiom lists remain default gates.
+  Confidence: high; theorem statement review is still required in addition
+  to checking absence of untrusted axioms.
+
+### Additional coverage
+
+- Nine contextual checker tests: valid read/composition; missing binding;
+  width/kind mismatch; and invalid unused empty-name, zero-width, duplicate
+  same-type and duplicate different-type contexts.
+- Nine negative elaboration tests in total, now with explicit expected
+  types so an uninferred context cannot masquerade as a width/type rejection.
+  The three additions reject a wrong-width reference, a reference into an
+  empty context, and a nonboolean variable used as a mux condition.
+- Kernel-checked frame witness, rejected missing/wrong-width frames, and
+  action shadowing: the block environment no longer matches a frame whose
+  action layer overrides its value, while the corresponding action value
+  does match. Runtime tests independently expect the shadowed value 42.
+- Eight independently expected variable examples (21 total): both reads,
+  addition, wrapping addition, both mux arms, equal and unequal references.
+  Python checks exact exported ID/width/input-binding coverage and values,
+  assembles ordinary validated scalar packet programs, then checks expected
+  bytes and cross-language agreement. The exporter supplies syntax and
+  input values only, never source-computed expected outputs.
+
+### Contextual adversarial experiments
+
+Experiments run in detached worktree `p4blo-frame-mutants` at `7942768`
+with the candidate patch applied. This is separate from the implementation
+worktree. Each fault is applied alone and restored with an inverse patch.
+
+1. **Wrong lowered variable name.** Replace `lower`'s `.read ref` case
+   `.var ref.name` with `.var (ref.name ++ "wrong")`. The default user build
+   exits 1 in both `lower_typed_in` and `evaluate_lower_in`: lookup/typing
+   cannot establish the new name, and exact evaluation cannot use the
+   original frame agreement. This is proof/build rejection, not a runtime
+   inconsistency detected by differential testing.
+2. **Same-width wrong source accessor.** Change `ScalarExamples.x` from
+   `.read .here` to `.read (.there .here)`. Default build, proof audits and
+   exporter all succeed. `lake test` exits 1 with `open source known answer
+   failed: read-x`; independently the required Python test for `read-x`
+   exits 1 with output `07` instead of `13`. This is a compiled semantic
+   known-answer kill even though the core lowering theorem still holds.
+
+3. **Swap input bindings without changing the source expression.** Change
+   `ScalarExamples.values a b c` to construct `.cons b (.cons a ...)`.
+   Default user build and proof audits succeed. Required pytest for
+   `read-add` exits 1 in the shared fixture with `unexpected initial
+   bindings: read-x`: the exporter supplies x=7/y=19 where the independent
+   input contract specifies x=19/y=7. This is a compiled fixture-contract
+   kill, before interpreter execution, not a DRT result or a proof failure.
+   In particular, commutative addition alone cannot detect swapped inputs.
+4. **Wrong production Python read.** Insert `name = "y" if name == "x"
+   else name` at the start of `interp.env.Env.read`. No Lean source or
+   exported input changes. The required `read-x` known-answer test exits 1
+   (`07` versus `13`). Calling `compare_program` directly on that same
+   exported program, empty packet and four ports independently reports
+   **one divergence, zero agreed, zero shared errors**: Python outputs `07`,
+   Lean outputs `13`, with no error or state differences. This is an actual
+   production Lean–Python differential kill, not just a build or oracle
+   fixture failure.
+
+To reproduce, apply one exact edit above to this increment in an isolated
+worktree. Build both packages with `scripts/check-lean.sh` before mutation;
+for Lean mutations run `lake +leanprover/lean4:v4.34.0 -d lean build` from
+the root in Nix. Then run `lake test` in `lean/` for the source known answers
+or required `pytest 'tests/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`
+(substitute `read-add` for experiment 3). The direct differential check in
+experiment 4 uses the fixture's validated `read-x` program,
+`Case(pb.Entries(), 0, b"")`, four ports and `ir/.lake/build/bin/p4blo-lean`;
+it bypasses the preceding independent expected-output assertion solely to
+demonstrate differential detection. Restore each edit before the next.
+
+The exact reconstruction/save command for experiment 4 is below. Run from
+the isolated worktree with the Python read mutation active (adjust the
+absolute worktree path when reproducing). The tracked pytest fixture is
+called through `__wrapped__` solely to reuse its independent input checks
+and packet-program assembly, without invoking its expected-output assertion.
+
+```sh
+mkdir -p /Users/qobilidop/my/work/p4blo-frame-mutants/.artifacts/drt
+nix develop -c uv run python - <<'PY'
+import runpy
+from pathlib import Path
+from p4blo.drt.case import Case
+from p4blo.drt.replay import save
+from p4blo.drt.run import compare_program
+from p4blo.v0 import p4blo_pb2 as pb
+
+root = Path('/Users/qobilidop/my/work/p4blo-frame-mutants')
+binary = root / 'ir/.lake/build/bin/p4blo-lean'
+fixture = runpy.run_path(str(root / 'tests/test_lean_edsl.py'))['authored_expressions']
+program = fixture.__wrapped__(binary)['read-x']
+report = compare_program(program, [Case(pb.Entries(), 0, b'')], 4, [binary])
+path = root / '.artifacts/drt/typed-frame-read-x.json'
+save(report, path)
+print(report.summary())
+assert not report.passed and len(report.divergences) == 1
+PY
+nix develop -c uv run python -m p4blo.drt.replay \
+  /Users/qobilidop/my/work/p4blo-frame-mutants/.artifacts/drt/typed-frame-read-x.json \
+  --lean /Users/qobilidop/my/work/p4blo-frame-mutants/ir/.lake/build/bin/p4blo-lean
+```
+
+Observed reconstruction exits 0 (the assertion expects a mismatch). Replay
+with the mutant active exits **1**: one divergence, Python port 0 `07`, Lean
+port 0 `13`. Remove the one-line mutation and rerun the **same saved bundle**
+without rebuilding either Lean executable: replay exits **0**, one agreed,
+zero diverged, zero shared errors. The bundle includes the concrete program,
+ports, seed and request, so replay does not invoke the exporter or fixture.
+Its SHA-256 is
+`38451c94a44d22dabafb456feb3b2cc7967ec5d0107106f58caa05a04e2a1615`.
+The bundle is an ignored experiment artifact; the complete reconstruction
+above is tracked here so later sessions do not depend on a temporary file.
+
+### Contextual completed gates
+
+On the unmutated candidate, 2026-09-23:
+
+- `scripts/check-lean.sh`: exit 0; both packages, exact axiom audits,
+  specification tests, 21 source/lowered known answers, nine negative
+  elaboration tests, frame-premise kernel tests and API smoke tests pass.
+- Required `pytest tests/test_lean_edsl.py -q`: **22 passed**.
+- Required `pytest tests -k lean_agrees -q`: **122 passed**, 959 deselected,
+  no skips. Binaries were built before these tests, not concurrently.
+- `scripts/check.sh`: exit 0; **1078 passed, 3 expected divergences**,
+  no skips, plus formatting/lint/type/schema/workflow checks.
+- Independent read-only reviewer reexecuted the 22 focused tests, reviewed
+  theorem statements and actual axiom roots, and confirmed the added
+  `Quot.sound` dependency traces through `Ref.lookup`/`List.mem_map`.
+
+These counts are for this branch's base and increment; the integrator must
+rerun merged-main gates because other reviewed work is progressing in parallel.
