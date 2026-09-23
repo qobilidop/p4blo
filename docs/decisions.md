@@ -203,6 +203,14 @@ one that says so.
 - **AGENTS.md is the resumption entry point** and `docs/workflows.md`
   the procedures; `docs/status.md` carries an "Open threads" section.
   Nothing needed to continue the work may live outside the repository.
+- **eDSL v2 proposed, not yet built** (`docs/notes/edsl-v2-design.md`).
+  Bili asked for an eDSL that is as type safe as possible and never
+  refers to things by string. Two surveys (pakeles and p4py; the HDL
+  and compiler eDSLs) and two pyright probes led to: headers and blocks
+  as classes, states and actions as methods, widths as `Literal` type
+  parameters, `Bits[Any]` where the type system has no width
+  arithmetic, no source reading, goldens unchanged. Awaiting Bili's
+  review of the open questions before code.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

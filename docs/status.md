@@ -47,14 +47,10 @@ Last updated: 2026-09-22, after the step 1 checkpoint.
 
 Things a resuming agent should know are in motion or deliberately left.
 
-- **eDSL v2 design (in progress, 2026-09-22).** Bili asked for better
-  ergonomics and static type safety: no references by string, widths a
-  type checker can see, headers as annotated Python classes. A pyright
-  probe showed `Literal` width parameters catch mismatches statically.
-  Prior-art surveys of pakeles, p4py and the HDL eDSLs are being
-  written up; the design note will land under `docs/notes/` and the
-  decision in `decisions.md` before any code changes. Corpus goldens
-  must not change shape when the eDSL does.
+- **eDSL v2 (designed, awaiting review, 2026-09-22).** The proposal is
+  `notes/edsl-v2-design.md`, with its two surveys and two pyright
+  probes beside it. Its open questions are for Bili; no code has been
+  written. Corpus goldens must not change when the eDSL does.
 - **BMv2 as a second oracle** was never run; the design lists it as
   optional. It would independently check longest-prefix and `flood`,
   which P4-SpecTec cannot (see the oracle entries in `decisions.md`).
