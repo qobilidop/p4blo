@@ -85,6 +85,7 @@ from p4blo.edsl.core.blocks import (
     StateBody,
     Stmts,
     dont_care,
+    keyset,
     masked,
     prefix,
     range_,
@@ -887,20 +888,30 @@ class Parser[H: Struct, M: Struct](Block):
         """`transition select(keys) { ... }`: `cases` maps a keyset (a tuple
         of them for several keys) to a target, in order; `default` matches
         anything. A keyset repeated, or one after a case that matches
-        anything, is refused as unreachable."""
+        anything, is refused as unreachable; the two are compared as IR
+        keysets, because two equal eDSL values are distinct objects whose
+        `==` builds a comparison expression rather than deciding."""
         key_tuple = keys if isinstance(keys, tuple) else (keys,)
         with provenance():
             core_keys = [k._expr for k in key_tuple]  # pyright: ignore[reportPrivateUsage]
         core_cases: list[tuple[tuple[_CoreKeySet, ...], Target]] = []
-        seen: list[tuple[object, ...]] = []
+        seen: list[tuple[pb.KeySet, ...]] = []
         for spec, target in cases.items():
             sets = spec if isinstance(spec, tuple) else (spec,)
-            if seen and all(isinstance(s, DontCare) for s in seen[-1]):
+            if len(sets) != len(core_keys):
+                raise EdslError(f"select has {len(core_keys)} keys; case {spec!r} has {len(sets)}")
+            core_sets = tuple(_core_keyset(s) for s in sets)
+            with provenance():
+                normal = tuple(
+                    keyset(self._core.types, s, k.type)
+                    for s, k in zip(core_sets, core_keys, strict=True)
+                )
+            if seen and all(s.WhichOneof("kind") == "dont_care" for s in seen[-1]):
                 raise EdslError(f"select: case {spec!r} is unreachable after one matching anything")
-            if sets in seen:
+            if normal in seen:
                 raise EdslError(f"select: case {spec!r} is repeated")
-            seen.append(sets)
-            core_cases.append((tuple(_core_keyset(s) for s in sets), target))
+            seen.append(normal)
+            core_cases.append((core_sets, target))
         return _Select(core_keys, core_cases, default)
 
     def extract(self, target: Header) -> None:

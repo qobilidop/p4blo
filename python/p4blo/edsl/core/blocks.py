@@ -94,7 +94,10 @@ type KeyValueSpec = int | Masked | Prefix | DontCare
 lpm key, `masked(v, m)` or an int or `dont_care` for a ternary key."""
 
 
-def _keyset(types: TypeTable, spec: KeySetSpec, key: pb.Type) -> pb.KeySet:
+def keyset(types: TypeTable, spec: KeySetSpec, key: pb.Type) -> pb.KeySet:
+    """One select keyset as the IR holds it. Public because the typed
+    surface normalises through it before comparing two keysets: a
+    `pb.KeySet` compares by value, an `Expr` does not."""
     if isinstance(spec, DontCare):
         return pb.KeySet(dont_care=pb.DontCare())
     if isinstance(spec, Masked):
@@ -615,7 +618,7 @@ class StateBody(Stmts):
                 raise EdslError(f"select has {len(key_list)} keys; case {spec!r} has {len(sets)}")
             case = select.cases.add(target=_target(target))
             for s, k in zip(sets, key_list, strict=True):
-                case.sets.append(_keyset(self.types, s, k.type))
+                case.sets.append(keyset(self.types, s, k.type))
         if default is not None:
             case = select.cases.add(target=_target(default))
             for _ in key_list:
@@ -930,6 +933,7 @@ __all__ = [
     "dont_care",
     "entry",
     "exact",
+    "keyset",
     "lpm",
     "masked",
     "prefix",

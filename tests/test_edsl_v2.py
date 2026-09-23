@@ -39,6 +39,7 @@ from p4blo.edsl import (
     bit16,
     bit32,
     concat,
+    dont_care,
     entry,
     exact,
     lpm,
@@ -290,6 +291,58 @@ def test_a_state_must_return_its_transition() -> None:
 
     with pytest.raises(EdslError, match="must return its transition"):
         build(parser=P)
+
+
+def test_select_keysets_of_every_kind_reach_the_ir() -> None:
+    """A literal or an enum member is a keyset like any other. Two of them in
+    one select used to ask an eDSL value for its truth value, because the
+    repeated-case check compared the cases with `==`."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            self.extract(self.hdr.h)
+            return self.select(self.hdr.h.g, {bit16(0x800): self.colored, bit16(0x86DD): self.done})
+
+        @state
+        def colored(self) -> Transition:
+            color = self.local("color", Color)
+            return self.select(color, {Color.RED: self.done, Color.GREEN: self.done})
+
+        @state
+        def done(self) -> Transition:
+            return self.accept
+
+    states = build(parser=P).blocks[0].states
+    assert [c.sets[0].exact.bits.value for c in states[0].transition.select.cases] == [
+        "2048",
+        "34525",
+    ]
+    assert [c.sets[0].exact.enum_member.member for c in states[1].transition.select.cases] == [
+        "RED",
+        "GREEN",
+    ]
+
+
+def test_a_keyset_repeated_under_another_spelling_is_refused() -> None:
+    """The keysets are compared as the IR holds them, so `bit16(1)` and the
+    int `1` are the same case even though they are different objects."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            return self.select(self.hdr.h.g, {bit16(1): self.accept, 1: self.reject})
+
+    with pytest.raises(EdslError, match="is repeated"):
+        build(parser=P)
+
+    class Q(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            return self.select(self.hdr.h.g, {dont_care: self.accept, bit16(1): self.reject})
+
+    with pytest.raises(EdslError, match="unreachable"):
+        build(parser=Q)
 
 
 # -- actions and tables ------------------------------------------------------------
