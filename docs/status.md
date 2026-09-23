@@ -141,6 +141,11 @@ Things a resuming agent should know are in motion or deliberately left.
   original register-state observation are next, in an isolated worktree;
   neither is claimed complete by the CRC increment.
   All four remote workflows passed at CRC integration checkpoint `c6a72c3`.
+  Next scoped proof work is specified in `notes/typed-frames-plan.md`:
+  context-indexed scalar expressions with exact environment/frame agreement,
+  followed by writable statements proved against the existing step machine.
+  The plan is investigated, not implemented; packet field paths follow promptly
+  so proofs serve readable examples instead of delaying them for all operators.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

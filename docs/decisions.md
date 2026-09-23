@@ -526,3 +526,12 @@ one that says so.
   and all wire identities; no duplicate compatibility library is needed
   before the initial API stabilizes. Historical review logs retain the
   original symbols so their evidence remains attributable to their commits.
+- **Extend verified authoring through exact typed-frame agreement.**
+  Follow `notes/typed-frames-plan.md`: context-indexed scalar reads first,
+  then assignment/sequence/if proved against the existing execution machine.
+  Keep source values and environments independent of the IR evaluator and
+  distinguish declaration agreement, value agreement and write permission.
+  Confidence: high on obligations, medium on positional context representation;
+  revisit when typed packet fields expose ergonomic or transport overhead.
+  Prove related frames exist rather than hiding an impossible precondition.
+  This is a scoped body fragment, not a whole-program validity claim.
