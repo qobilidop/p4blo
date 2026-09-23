@@ -9,6 +9,36 @@ import P4blo.ForwardPolicy
 import P4blo.SourceZero
 import P4blo.InitialFrames
 import P4blo.InitialFrameTests
+import P4blo.CallEntryTests
+
+/-- info: 'P4blo.CallEntry.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.index_built
+
+/-- info: 'P4blo.CallEntry.initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.initialized
+
+/-- info: 'P4blo.CallEntry.source_entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.source_entry
+
+/-- info: 'P4blo.CallEntryTests.concrete_entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntryTests.concrete_entry
+
+/-- info: 'P4blo.CallEntry.bad_extra_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.bad_extra_built
+
+/-- info: 'P4blo.CallEntry.bad_extra_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.bad_extra_zero
+
+/-- info: 'P4blo.CallEntry.bad_extra_premise' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.CallEntry.bad_extra_premise
+
 
 /-- info: 'P4blo.Fields.Shape.zeroWith_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
