@@ -1,0 +1,47 @@
+name: BMv2 oracle
+
+# Claim 2's second oracle: the corpus replays on BMv2's simple_switch, which
+# decides longest-prefix matching and the two priority conventions itself
+# where P4-SpecTec needs the translation to supply them (oracle/bmv2/README.md).
+# Separate from CI, like the P4-SpecTec job, because it needs Docker and a
+# 2 GB image and only this job does. A red run here means either a divergence
+# between the reference interpreter and BMv2, or an oracle that could not
+# judge; tests/test_oracle_bmv2.py labels which.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  actions: write # both caches below store their state in the Actions cache
+
+jobs:
+  bmv2:
+    name: simple_switch
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # buildx for the layer cache and for the Dockerfile's `ADD --checksum`,
+      # which plain `docker build` does not have.
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build the oracle image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: oracle/bmv2
+          load: true # into the daemon, where oracle/bmv2/run.py looks for it
+          tags: p4blo-bmv2:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+      - uses: nix-community/cache-nix-action@135667ec418502fa5a3598af6fb9eb733888ce6a # v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 2G
+      - name: Sync Python environment
+        run: nix develop -c uv sync --locked
+      - name: Replay the corpus on BMv2
+        run: nix develop -c uv run pytest tests/test_oracle_bmv2.py -v
