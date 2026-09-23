@@ -24,10 +24,10 @@ connects them.
 | Serialization: messages, field numbers, encoding versions | Protobuf schema |
 | Correspondence between wire values and abstract programs | Conversion specified in Lean |
 
-This revises the target architecture from "protobuf is normative for
-syntax, Lean for meaning." Existing instructions and implementation still
-describe that earlier arrangement; updating them is part of a future
-migration, not something this note claims to have accomplished.
+This revises the earlier "protobuf is normative for syntax, Lean for
+meaning" arrangement. Active instructions now assign abstract syntax to
+Lean and encoding to protobuf. Whole-program validity formalization and
+verified conversions remain obligations, not completed guarantees.
 
 The goal is not to derive everything from one file. It is to give every
 accepted program one unambiguous meaning and every implementation a checked
@@ -151,9 +151,10 @@ docs/     Design, decisions, status, workflows
 
 These describe the semantic components, not an exhaustive list of build
 and repository-support files. Package-local tests stay with their library.
-Exact moves and build configuration remain to be planned; do not create
-empty future directories. The current `lean/` contains the specification,
-so this tree describes a migration, not the present filesystem.
+Do not create empty future directories. The specification and schema now
+live in `ir/`; `lean/` is the independent user package with a reference
+execution API. Corpus/oracle consolidation and the typed eDSL remain work
+in progress; this tree still describes the complete target, not completion.
 
 The two Lean packages have a one-way dependency: the user-facing package
 imports the IR specification, never the reverse. Separate packaging does

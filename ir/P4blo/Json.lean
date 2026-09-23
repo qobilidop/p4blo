@@ -19,9 +19,12 @@ that every error names where it happened (`blocks[2].states[0].transition:
 no kind set`). Unknown keys are ignored: field numbers 100 and above are
 reserved for annotations, and a newer producer may add fields.
 
-Encoding produces JSON that `dump_json` would produce and `load_json` would
-accept: defaults are omitted, decimal strings are re-rendered. Decoding an
-encoding is the identity.
+Encoding targets the restricted profile emitted by `dump_json`: defaults
+are omitted, decimal strings are re-rendered (including a present "0").
+Cross-language conformance is tested, not universally proved. Lean `Nat`
+fields may exceed protobuf uint32; representability must constrain any
+roundtrip theorem. Unknown-key handling above is current adapter behavior,
+not a safe semantic-version compatibility policy; that boundary remains open.
 
 The decoders for `Expr`, `LValue` and `Stmt` recurse through
 `Lean.Json`'s arrays and objects, which is not structural recursion Lean

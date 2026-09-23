@@ -61,15 +61,27 @@ Things a resuming agent should know are in motion or deliberately left.
   north star and agreed example progression: consolidate the existing
   corpus, then tutorial firewall, `xdp-filter`, conditional flowlet switching,
   and a bounded Katran configuration, with a common acceptance bar. Upstream
-  pins, precise profiles, and oracle preflight remain open; no new candidate
-  has been ported or run during this discussion. No migration or new proofs
-  have been implemented at this checkpoint. Rust is excluded. Bili has now
+  pins and precise application profiles remain open. Rust is excluded. Bili has now
   authorized autonomous implementation and explicitly resumed small commits
   and pushes. Follow [implementation.md](implementation.md), recording low-
   confidence choices and revisit triggers rather than waiting for feedback.
-  Next step: preserve the baseline gates while splitting the IR specification
-  from the user-facing Lean package. Checkpoint verification: `git diff --check`;
-  code/test gates not rerun for this documentation-only change.
+  The specification and schema now live in `ir/` (`p4blo-ir`); the separate
+  `lean/` package (`p4blo-lean`, `P4bloLean` imports) exposes reference block
+  and switch execution, not a second engine or full validator. The typed
+  eDSL is next. `scripts/check-lean.sh` explicitly builds and tests both
+  packages with matching toolchains and the spec's proof audit; dependency
+  compilation alone would omit that audit. Generated protobuf bindings and
+  executable protocol are unchanged. The old executable path no longer exists.
+  Independent review: `notes/reviews/package-boundary.md`; its wrong empty-
+  packet expectation was fixed without changing semantics. New layout tests
+  guard dependency direction, toolchains and descriptor/binary locations.
+  Verification: both Lean package gates pass (287 spec checks and the API
+  smoke tests), required DRT **95 passed**, schema generation has no drift.
+  Full Python/schema/oracle gate: **1004 passed, 1 expected BMv2 divergence,
+  no skips**, lint/typecheck/format/schema/workflow checks pass. Clean-worktree
+  review follows commit.
+  Next steps: verified typed scalar authoring and shared corpus/oracle
+  consolidation, then typed references/statements for the stage-0 examples.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern

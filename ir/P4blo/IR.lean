@@ -1,8 +1,8 @@
 /-!
 # The p4blo IR as Lean data
 
-Every type here mirrors one message or enum of `proto/p4blo/v0/p4blo.proto`,
-which is the normative syntax; the doc comment on each says which. Field
+These types define the abstract IR. Their versioned wire counterparts live
+in `ir/proto/p4blo/v0/p4blo.proto`; the doc comment on each says which. Field
 names are the proto's, lower-camel-cased (`header_types` is `headerTypes`),
 and where the proto's name is a Lean keyword the doc comment gives the
 substitute (`then` is `thenBranch`, `instance` is `inst`, `in` is `«in»`).

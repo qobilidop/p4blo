@@ -22,8 +22,8 @@ program or claimed to satisfy whole-program validation.
 The executable modes are:
 
 ```
-lean/.lake/build/bin/p4blo-lean certificate-example-program
-lean/.lake/build/bin/p4blo-lean check-example-certificate artifact.json
+ir/.lake/build/bin/p4blo-lean certificate-example-program
+ir/.lake/build/bin/p4blo-lean check-example-certificate artifact.json
 ```
 
 The second mode also accepts `-` for stdin. Exit 0 means `accepted`; exit 1

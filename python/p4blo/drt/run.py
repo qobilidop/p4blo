@@ -490,7 +490,7 @@ def default_lean_binary() -> Path:
     root = Path(__file__).resolve().parents[3]
     return (
         root
-        / "lean"
+        / "ir"
         / ".lake"
         / "build"
         / "bin"

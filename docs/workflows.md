@@ -13,7 +13,7 @@ locally before pushing, and check exit codes, not output.
 | Gate | Command | Expected |
 |---|---|---|
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
-| Lean | `cd lean && lake build && lake test` | `all tests passed`, exit 0 |
+| Lean | `scripts/check-lean.sh` | both packages build, each audit/test driver passes, exit 0 |
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
@@ -23,7 +23,7 @@ locally before pushing, and check exit codes, not output.
 A larger differential sweep, for a change to either interpreter:
 
 ```
-uv run python -m p4blo.drt corpus/<program> 2000 --seed <n> --lean lean/.lake/build/bin/p4blo-lean
+uv run python -m p4blo.drt corpus/<program> 2000 --seed <n> --lean ir/.lake/build/bin/p4blo-lean
 ```
 
 Use `--save <directory>` to retain a failed experiment. Its JSON bundle
@@ -75,7 +75,7 @@ and promote confirmed minimal regressions into tracked tests or corpus data.
 |---|---|---|
 | nixpkgs (Python, uv, buf, protoc, elan, Node, opam) | `flake.lock` | `nix flake update` |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
-| Lean toolchain | `lean/lean-toolchain` | edit; `lake-manifest.json` for lake deps (none) |
+| Lean toolchain | `ir/lean-toolchain`, `lean/lean-toolchain` (must match) | edit both; user package depends on local `../ir`, manifests committed |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `oracle/build.sh` | edit; the CI cache key reads it |
 | opam package universe | `OPAM_REPO_COMMIT` in `oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
@@ -100,14 +100,14 @@ uv run python oracle/run.py -v corpus/forwarder/forwarder.txtpb corpus/forwarder
 ## Changing things
 
 **A closed behavior.** Write it in `docs/semantics.md` first, then
-implement it in `python/p4blo/interp/` and `lean/P4blo/` together, with a
+implement it in `python/p4blo/interp/` and `ir/P4blo/` together, with a
 test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
 
-**The schema.** Edit `proto/p4blo/v0/p4blo.proto`, run `buf lint` and
+**The schema.** Edit `ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
-`lean/P4blo/IR.lean` and `Json.lean`, update the validator's rules and
+`ir/P4blo/IR.lean` and `Json.lean`, update the validator's rules and
 `docs/coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python corpus/<name>/<name>.py > corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
@@ -132,7 +132,7 @@ sources are in p4c under `testdata/p4_16_samples/`.
 
 **An extern.** Add its implementation under `python/p4blo/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
-`lean/P4blo/Externs.lean`, the printer's v1model form in
+`ir/P4blo/Externs.lean`, the printer's v1model form in
 `python/p4blo/printer.py`, and a typed family class in
 `python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
@@ -146,7 +146,7 @@ program whose vectors observe the extern.
 contract vocabulary is the table in `docs/design.md`, and the rules
 every architecture follows are in the same section and in
 `docs/decisions.md` ("Architecture rules", "Port rules"). If the Lean
-switch must follow, change `lean/P4blo/Switch.lean` in the same commit.
+switch must follow, change `ir/P4blo/Switch.lean` in the same commit.
 
 ## Working with agents
 

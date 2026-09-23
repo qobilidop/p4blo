@@ -1,9 +1,11 @@
 // p4blo v0: P4's semantic core as an IR, architecture-free.
 //
-// This file is the normative syntax of the IR. It is post-elaboration: every
+// This file is the normative wire syntax of the IR. Lean's P4blo.IR owns
+// abstract syntax; full validity formalization and codec proofs are ongoing.
+// The IR is post-elaboration: every
 // width is resolved, every name is resolved, there are no generics, no
 // arbitrary-precision int, no implicit casts, no tuples. The meaning of a
-// program is given by the Lean interpreter under lean/, with the closed
+// program is given by the Lean interpreter under ir/, with the closed
 // behaviors listed in docs/semantics.md.
 //
 // Names. Declarations are referenced by name, as in ONNX, so that the text

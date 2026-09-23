@@ -1,30 +1,16 @@
-# p4blo's Lean side: the IR as Lean data, a JSON decoder for programs, and
-# (later) the normative interpreter. Lean core only; no Mathlib.
-name = "p4blo"
-version = "0.1.0"
-defaultTargets = ["P4blo", "p4blo-lean", "ProofAudit"]
-moreLeanArgs = ["-DwarningAsError=true"]
-testDriver = "tests"
-
-[[lean_lib]]
-name = "P4blo"
-
-[[lean_lib]]
-name = "ProofAudit"
-
-# The pipe endpoint for differential testing: reads a JSON program, decodes
-# it, builds the index and prints a summary.
-[[lean_exe]]
 name = "p4blo-lean"
-root = "Main"
+version = "0.1.0"
+defaultTargets = ["P4bloLean"]
+moreLeanArgs = ["-DwarningAsError=true"]
+testDriver = "userTests"
 
-# The test modules under Tests/, so that the test driver can import them.
+[[require]]
+name = "p4blo-ir"
+path = "../ir"
+
 [[lean_lib]]
-name = "Tests"
-globs = ["Tests.+"]
+name = "P4bloLean"
 
-# `lake test` runs this against Tests/forwarder.json and
-# Tests/forwarder_vectors.json.
 [[lean_exe]]
-name = "tests"
-root = "Tests.Main"
+name = "userTests"
+root = "P4bloLeanTests"

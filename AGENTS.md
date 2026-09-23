@@ -19,7 +19,7 @@ independent Lean semantics validated against a runnable reference.
    tested, what is out of scope.
 4. `docs/workflows.md`: the gates, where every external input is
    pinned, and how to make each kind of change.
-5. `docs/semantics.md` and `proto/p4blo/v0/p4blo.proto` when touching
+5. `docs/semantics.md` and `ir/proto/p4blo/v0/p4blo.proto` when touching
    meaning or syntax; `docs/coverage.md` for what P4 constructs are in.
 
 ## Environment
@@ -32,7 +32,7 @@ interpreter, `buf`, `protoc` or `elan`.
 
 ```
 scripts/check.sh                                   # every Python and schema check CI runs
-cd lean && lake build && lake test                 # the Lean interpreter and theorem
+scripts/check-lean.sh                              # both Lean packages, audits and tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 nix develop .#oracle -c oracle/build.sh            # the P4-SpecTec oracle, once
 uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
@@ -57,8 +57,11 @@ so the required CI gate discovers them without a hand-maintained file list.
 - **Generated code is committed.** `python/p4blo/v0/*_pb2.py*` come
   from `buf generate`. Never edit them; edit the schema and regenerate.
   CI fails on drift.
-- **The schema is normative for syntax; the Lean interpreter for
-  meaning.** A closed behavior is written in `docs/semantics.md` first
+- **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
+  The spec is the `ir/` Lake package. The `lean/` user package imports it,
+  never the reverse. Whole-program validity and codec proofs remain work
+  in progress, not guarantees supplied by this organization. A closed
+  behavior is written in `docs/semantics.md` first
   and implemented in both interpreters second.
 - **Corpus programs** live under `corpus/<name>/` with their eDSL
   source, golden, README and STF vectors; `tests/test_corpus.py` picks
@@ -94,8 +97,10 @@ so the required CI gate discovers them without a hand-maintained file list.
   explicitly rather than presenting skips as successful checks.
 - **Continue autonomously within the requested direction.** Make scoped
   design decisions without waiting for feedback and record their reasons
-  in `docs/decisions.md` for later review. Keep advancing the active
-  roadmap while a safe, concrete next step is known.
+  in `docs/decisions.md` for later review. Record confidence and a revisit
+  trigger for uncertain choices. Follow `docs/implementation.md` (Python
+  and Lean only). Prefer reversible steps to waiting for feedback. Keep
+  advancing the active roadmap while a safe, concrete next step is known.
 - **Challenge verification adversarially.** Introduce deliberate semantic
   faults in isolated worktrees on both the Python and Lean sides. Record
   which conformance tests kill each mutant, investigate survivors, and

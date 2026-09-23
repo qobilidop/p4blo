@@ -11,7 +11,7 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
 
 ## Foundation
 
-- [ ] Move authoritative Lean semantics and wire schema into `ir/`, preserving
+- [x] Move authoritative Lean semantics and wire schema into `ir/`, preserving
   module identities, golden bytes and behavior. Introduce a separate `lean/`
   Lake package depending one-way on `ir/`. Update CI, tools and instructions.
 - [ ] Consolidate shared corpus/oracle infrastructure under `tests/`; keep

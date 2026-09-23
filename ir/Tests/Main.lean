@@ -8,7 +8,7 @@ import Tests.CertificateWire
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
-from the `lean/` directory (the fixture paths may also be given as
+from the `ir/` directory (the fixture paths may also be given as
 arguments: the program JSON, then the vectors JSON).
 
 `Tests/forwarder.json` is `p4blo.ir.dump_json` of
@@ -17,7 +17,7 @@ with
 
     uv run python -c 'from pathlib import Path; from p4blo import ir; \
       print(ir.dump_json(ir.load_text(Path("corpus/forwarder/forwarder.txtpb"))))' \
-      > lean/Tests/forwarder.json
+      > ir/Tests/forwarder.json
 -/
 
 open P4blo

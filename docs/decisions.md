@@ -454,3 +454,10 @@ one that says so.
   top-level `proto/`. Confidence: medium; revisit naming if public API use
   exposes avoidable friction. This is a structural boundary, not a claim
   that whole-program validity or all codec proofs already exist.
+- **Existing public APIs may change for demonstrated usability gains.**
+  Bili explicitly authorized redesigning the Python eDSL as well as other
+  components. Preserve the semantic contract and readable examples; keep
+  authoring changes separate from semantics changes and migrate callers
+  with diagnostic/golden tests. Confidence: high on permission, medium on
+  which redesign is best. Revisit using the firewall and Lean authoring
+  experience rather than rewriting the working Python surface speculatively.

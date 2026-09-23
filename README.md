@@ -18,10 +18,10 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | the schema and its contract fit in a few pages; ten corpus programs need only named elaborations, no escape hatch | [`proto/p4blo/v0/p4blo.proto`](proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`corpus/`](corpus/) |
+| The core is small and post-elaboration | the schema and its contract fit in a few pages; ten corpus programs need only named elaborations, no escape hatch | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`corpus/`](corpus/) |
 | The core is semantically complete for real programs | every corpus vector matches P4-SpecTec's simulator packet for packet, through a printed P4 program under a v1model shim | [`oracle/`](oracle/), `tests/test_oracle.py` |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`python/p4blo/arch/`](python/p4blo/arch/) |
-| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`lean/`](lean/), `python/p4blo/drt/` |
+| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
 [`docs/status.md`](docs/status.md). Not claimed: performance, running
@@ -45,8 +45,9 @@ and observation adapter remain explicit trust boundaries.
 
 1. [`docs/design.md`](docs/design.md): what p4blo is, why, and how each
    claim is tested.
-2. [`proto/p4blo/v0/p4blo.proto`](proto/p4blo/v0/p4blo.proto): the IR,
-   normative for syntax. Read it with
+2. [`ir/P4blo/IR.lean`](ir/P4blo/IR.lean): the abstract IR;
+   [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto) defines
+   its wire syntax. Read them with
    [`docs/semantics.md`](docs/semantics.md), the closed behaviors.
 3. [`corpus/forwarder/`](corpus/forwarder/): the tutorial forwarder as a
    p4blo program, authored in the typed Python eDSL and checked by
@@ -54,7 +55,7 @@ and observation adapter remain explicit trust boundaries.
    has a README naming what was elaborated away.
 4. [`python/p4blo/interp/`](python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
-5. [`lean/P4blo/`](lean/P4blo/): the same semantics in Lean, normative
+5. [`ir/P4blo/`](ir/P4blo/): the same semantics in Lean, normative
    for meaning.
 6. [`docs/coverage.md`](docs/coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
@@ -82,7 +83,7 @@ Then:
 
 ```
 scripts/check.sh              # every Python and schema check CI runs
-cd lean && lake build && lake test
+scripts/check-lean.sh         # both Lean packages, audits and tests
 ```
 
 The oracle needs P4-SpecTec: `nix develop .#oracle -c oracle/build.sh`
@@ -94,9 +95,9 @@ typechecked with p4c through Docker when it is available.
 
 | Path | What |
 |---|---|
-| `proto/p4blo/v0/` | the IR schema, normative for syntax |
+| `ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
-| `lean/` | the proof-visible interpreter, extern models, checked theorems, axiom audit, differential endpoint |
+| `lean/` | user-facing Lean library, depending on `ir/`; reference execution API and planned typed eDSL |
 | `corpus/` | ten programs: eDSL source, IR golden, README, STF vectors |
 | `oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, semantics, coverage, status, decisions, notes |

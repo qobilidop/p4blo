@@ -34,7 +34,7 @@ These are distinct obligations, not interchangeable confidence scores.
 | Differential tests and semantic mutants | Concrete independent Python/Lean executions and sensitivity to recorded faults | All inputs or all possible implementation defects |
 | External oracles | Corpus behavior through the pinned P4 adapters | Correctness outside tested behavior or documented adapter limits |
 
-`lean/ProofAudit.lean` checks the proof dependencies of the advertised
+`ir/ProofAudit.lean` checks the proof dependencies of the advertised
 roots. Independent review checks the statements and integration, which the
 axiom audit cannot do. [certificates.md](certificates.md) specifies the
 compiled claim-checking experiment and its additional trust assumptions.

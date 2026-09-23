@@ -15,6 +15,7 @@ build/
 result
 
 # Lean
+ir/.lake/
 lean/.lake/
 
 # Editors
