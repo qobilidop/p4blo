@@ -16,6 +16,39 @@ import P4blo.CallBodyEntryTests
 import P4blo.CallInitializerTests
 import P4blo.CallReturnTests
 import P4blo.GuardedCallPrefixTests
+import P4blo.GuardedControlCall
+
+/-- info: 'P4blo.GuardedControlCall.body_prefix' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.body_prefix
+
+/-- info: 'P4blo.GuardedControlCall.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.index_built
+
+/-- info: 'P4blo.GuardedControlCall.block_lookup' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.block_lookup
+
+/-- info: 'P4blo.GuardedControlCall.source_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.source_steps
+
+/-- info: 'P4blo.GuardedControlCall.call_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.call_correct
+
+/-- info: 'P4blo.GuardedControlCall.changes_only_vars' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.changes_only_vars
+
+/-- info: 'P4blo.GuardedControlCall.result_lookup' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.result_lookup
+
+/-- info: 'P4blo.GuardedControlCall.preserves_outside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.GuardedControlCall.preserves_outside
 
 /-- info: 'P4blo.GuardedCallPrefix.initializers_eq' does not depend on any axioms -/
 #guard_msgs in
