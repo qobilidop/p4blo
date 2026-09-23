@@ -1,5 +1,6 @@
 import Lean.Data.Json
 import P4bloIR.IR
+import P4bloIR.JsonBounds
 
 /-!
 # JSON decoding and encoding of the IR
@@ -29,10 +30,11 @@ fields may exceed protobuf uint32; representability must constrain any
 roundtrip theorem. Unknown-key handling above is current adapter behavior,
 not a safe semantic-version compatibility policy; that boundary remains open.
 
-The decoders for `Expr`, `LValue` and `Stmt` recurse through
-`Lean.Json`'s arrays and objects, which is not structural recursion Lean
-can see, so they are `partial`. They terminate because every recursive
-call is on a proper sub-value of a finite JSON tree.
+`Expr.decode` uses well-founded recursion on the structural size of JSON.
+An actual child is smaller; a synthesized empty-message default is no
+larger than its object payload and hence smaller than the enclosing oneof.
+`LValue` and `Stmt` remain `partial`; making their object/array recursion
+proof-visible is a separate obligation.
 -/
 
 namespace P4bloIR
@@ -179,6 +181,158 @@ def oneof (path : String) (j : Json) (cases : List (String × (String → Json �
   | [] => fail path "no kind set"
   | ks => fail path s!"more than one kind set: {ks.map (·.1)}"
 
+/-- An actual object field is smaller than the object that contains it. -/
+theorem get_some_lt (path : String) (j : Json) (key : String) (v : Json)
+    (h : get? path j key = .ok (some v)) : sizeOf v < sizeOf j := by
+  cases j with
+  | obj fields =>
+    cases found : fields.get? key with
+    | none => simp [get?, found, pure, Except.pure] at h
+    | some value =>
+      cases value <;> simp [get?, found, pure, Except.pure] at h
+      all_goals subst v; exact JsonBounds.object_lookup_lt fields key _ found
+  | _ => cases h
+
+/-- The synthesized empty message is no larger than an object payload. -/
+theorem message_target_le (path : String) (j : Json) (key : String)
+    (value : Option Json) (h : get? path j key = .ok value) :
+    sizeOf (value.getD (Json.mkObj [])) ≤ sizeOf j := by
+  cases value with
+  | some v => exact Nat.le_of_lt (get_some_lt path j key v h)
+  | none =>
+    cases j with
+    | obj fields => exact JsonBounds.empty_object_le fields
+    | _ => cases h
+
+/-- Message access retains a strict bound relative to its enclosing oneof. -/
+def msgFieldBounded (outer : Json) (path : String) (j : Json)
+    (smaller : sizeOf j < sizeOf outer) (key : String)
+    (dec : String → (child : Json) → sizeOf child < sizeOf outer → Dec α) : Dec α :=
+  match h : get? path j key with
+  | .error error => .error error
+  | .ok value => dec (sub path key) (value.getD (Json.mkObj []))
+      (Nat.lt_of_le_of_lt (message_target_le path j key value h) smaller)
+
+theorem msgFieldBounded_erasure (outer : Json) (path : String) (j : Json)
+    (smaller : sizeOf j < sizeOf outer) (key : String)
+    (dec : String → Json → Dec α) :
+    msgFieldBounded outer path j smaller key (fun p v _ => dec p v) =
+      msgField path j key dec := by
+  unfold msgFieldBounded msgField
+  split <;> simp_all [bind, Except.bind] <;> rfl
+
+abbrev Child (j : Json) := {v : Json // sizeOf v < sizeOf j}
+
+def getChild? (path : String) (j : Json) (key : String) : Dec (Option (Child j)) :=
+  match h : get? path j key with
+  | .error error => .error error
+  | .ok none => .ok none
+  | .ok (some v) => .ok (some ⟨v, get_some_lt path j key v h⟩)
+
+theorem getChild_erasure (path : String) (j : Json) (key : String) :
+    Option.map Subtype.val <$> getChild? path j key = get? path j key := by
+  unfold getChild?
+  split <;> simp_all [Functor.map, Except.map]
+
+/-- Scan in recognized-case order, retaining the lookup's descent witness. -/
+def collectBounded (path : String) (j : Json) :
+    List (String × β) → List (String × β × Child j) → Dec (List (String × β × Child j))
+  | [], acc => .ok acc
+  | (key, value) :: rest, acc =>
+    match getChild? path j key with
+    | .error error => .error error
+    | .ok none => collectBounded path j rest acc
+    | .ok (some v) => collectBounded path j rest
+        (acc ++ [(key, value, v)])
+
+private def eraseChild (entry : String × β × Child j) : String × β × Json :=
+  (entry.1, entry.2.1, entry.2.2.val)
+
+private theorem collectBounded_erasure (path : String) (j : Json)
+    (cases : List (String × β)) (acc : List (String × β × Child j)) :
+    List.map eraseChild <$> collectBounded path j cases acc =
+      forIn cases (acc.map eraseChild) (fun (key, value) present => do
+        if let some v ← get? path j key then
+          pure (.yield (present ++ [(key, value, v)]))
+        else pure (.yield present)) := by
+  induction cases generalizing acc with
+  | nil => rfl
+  | cons head rest ih =>
+    rcases head with ⟨key, value⟩
+    have erase := getChild_erasure path j key
+    cases h : getChild? path j key with
+    | error error =>
+      simp [h, Functor.map, Except.map] at erase
+      simp [collectBounded, List.forIn_cons, h, ← erase, bind, Except.bind,
+        Functor.map, Except.map, pure, Except.pure]
+    | ok result =>
+      cases result with
+      | none =>
+        simp [h, Functor.map, Except.map] at erase
+        simpa [collectBounded, List.forIn_cons, h, ← erase, bind, Except.bind,
+          pure, Except.pure] using ih acc
+      | some v =>
+        simp [h, Functor.map, Except.map] at erase
+        simpa [collectBounded, List.forIn_cons, h, ← erase, bind, Except.bind,
+          pure, Except.pure, List.map_append, eraseChild]
+          using ih (acc ++ [(key, value, v)])
+
+private def mapPayload (f : β → γ) (entry : String × β × Child j) :
+    String × γ × Child j := (entry.1, f entry.2.1, entry.2.2)
+
+private theorem collectBounded_map (path : String) (j : Json) (f : β → γ)
+    (cases : List (String × β)) (acc : List (String × β × Child j)) :
+    collectBounded path j (cases.map fun (k, v) => (k, f v)) (acc.map (mapPayload f)) =
+      List.map (mapPayload f) <$> collectBounded path j cases acc := by
+  induction cases generalizing acc with
+  | nil => rfl
+  | cons head rest ih =>
+    rcases head with ⟨key, value⟩
+    cases h : getChild? path j key with
+    | error error => simp [List.map_cons, collectBounded, h, Functor.map, Except.map]
+    | ok result =>
+      cases result with
+      | none => simpa [collectBounded, h] using ih acc
+      | some v =>
+        simpa [collectBounded, h, List.map_append, mapPayload]
+          using ih (acc ++ [(key, value, v)])
+
+def oneofBounded (path : String) (j : Json)
+    (cases : List (String × (String → (v : Json) → sizeOf v < sizeOf j → Dec α))) :
+    Dec α := do
+  let present ← collectBounded path j cases []
+  match present with
+  | [(key, dec, v)] => dec (sub path key) v.val v.property
+  | [] => fail path "no kind set"
+  | ks => fail path s!"more than one kind set: {ks.map (·.1)}"
+
+/-- Proof annotation does not alter successful results or any diagnostic. -/
+theorem oneofBounded_erasure (path : String) (j : Json)
+    (cases : List (String × (String → Json → Dec α))) :
+    oneofBounded path j (cases.map fun (key, dec) => (key, fun p v _ => dec p v)) =
+      oneof path j cases := by
+  unfold oneofBounded oneof
+  rw [show ([] : List (String × (String → (v : Json) → sizeOf v < sizeOf j → Dec α) × Child j)) =
+    List.map (mapPayload (fun dec p v (_ : sizeOf v < sizeOf j) => dec p v))
+      ([] : List (String × (String → Json → Dec α) × Child j)) from rfl]
+  rw [collectBounded_map path j (fun dec p v (_ : sizeOf v < sizeOf j) => dec p v) cases []]
+  dsimp only
+  have collected := collectBounded_erasure path j cases []
+  dsimp only at collected
+  simp only [List.map_nil] at collected
+  rw [← collected]
+  cases h : collectBounded path j cases [] with
+  | error error => rfl
+  | ok present =>
+    cases present with
+    | nil => rfl
+    | cons a rest =>
+      cases rest with
+      | nil => rfl
+      | cons b rest =>
+        simp [Functor.map, Except.map, bind, Except.bind,
+          List.map_map, mapPayload, eraseChild, Function.comp_def]
+
 /-- An empty message `{}`; anything else that is an object is accepted too,
 since its keys may be reserved annotations. -/
 def emptyMsg (path : String) (j : Json) : Dec Unit :=
@@ -312,31 +466,69 @@ def ExternInstance.decode (path : String) (j : Json) : Dec ExternInstance := do
          args := ← listField path j "args" Literal.decode }
 
 open Decode in
-/-- Decode an `Expr` message. `partial`: see the module comment. -/
-partial def Expr.decode (path : String) (j : Json) : Dec Expr :=
-  oneof path j
-    [("literal", fun p v => Expr.literal <$> Literal.decode p v),
-     ("var", fun p v => Expr.var <$> str p v),
-     ("member", fun p v => do
-       pure (Expr.member (← msgField p v "base" Expr.decode) (← strField p v "field"))),
-     ("index", fun p v => do
-       pure (Expr.index (← msgField p v "base" Expr.decode) (← msgField p v "index" Expr.decode))),
-     ("last_index", fun p v => Expr.lastIndex <$> msgField p v "stack" Expr.decode),
-     ("unary", fun p v => do
-       pure (Expr.unary (← enumField p v "op" UnaryOp.names) (← msgField p v "operand" Expr.decode))),
-     ("binary", fun p v => do
+/-- Decode an `Expr` message with checked finite-JSON descent and no fuel cutoff. -/
+def Expr.decode (path : String) (j : Json) : Dec Expr :=
+  let recur := fun p v (_ : sizeOf v < sizeOf j) => Expr.decode p v
+  oneofBounded path j
+    [("literal", fun p v _ => Expr.literal <$> Literal.decode p v),
+     ("var", fun p v _ => Expr.var <$> str p v),
+     ("member", fun p v h => do
+       pure (Expr.member (← msgFieldBounded j p v h "base" recur) (← strField p v "field"))),
+     ("index", fun p v h => do
+       pure (Expr.index (← msgFieldBounded j p v h "base" recur)
+         (← msgFieldBounded j p v h "index" recur))),
+     ("last_index", fun p v h => Expr.lastIndex <$> msgFieldBounded j p v h "stack" recur),
+     ("unary", fun p v h => do
+       pure (Expr.unary (← enumField p v "op" UnaryOp.names)
+         (← msgFieldBounded j p v h "operand" recur))),
+     ("binary", fun p v h => do
        pure (Expr.binary (← enumField p v "op" BinaryOp.names)
-         (← msgField p v "left" Expr.decode) (← msgField p v "right" Expr.decode))),
-     ("cast", fun p v => do
-       pure (Expr.cast (← msgField p v "to" Ty.decode) (← msgField p v "operand" Expr.decode))),
-     ("slice", fun p v => do
-       pure (Expr.slice (← msgField p v "operand" Expr.decode)
+         (← msgFieldBounded j p v h "left" recur) (← msgFieldBounded j p v h "right" recur))),
+     ("cast", fun p v h => do
+       pure (Expr.cast (← msgField p v "to" Ty.decode)
+         (← msgFieldBounded j p v h "operand" recur))),
+     ("slice", fun p v h => do
+       pure (Expr.slice (← msgFieldBounded j p v h "operand" recur)
          (← uint32Field p v "hi") (← uint32Field p v "lo"))),
-     ("is_valid", fun p v => Expr.isValid <$> msgField p v "header" Expr.decode),
-     ("mux", fun p v => do
-       pure (Expr.mux (← msgField p v "condition" Expr.decode)
-         (← msgField p v "then" Expr.decode) (← msgField p v "otherwise" Expr.decode))),
-     ("lookahead", fun p v => Expr.lookahead <$> msgField p v "type" Ty.decode)]
+     ("is_valid", fun p v h => Expr.isValid <$> msgFieldBounded j p v h "header" recur),
+     ("mux", fun p v h => do
+       pure (Expr.mux (← msgFieldBounded j p v h "condition" recur)
+         (← msgFieldBounded j p v h "then" recur) (← msgFieldBounded j p v h "otherwise" recur))),
+     ("lookahead", fun p v _ => Expr.lookahead <$> msgField p v "type" Ty.decode)]
+termination_by sizeOf j
+
+open Decode in
+/-- The actual total decoder unfolds to its original, proof-erased body.
+This equation includes malformed inputs and preserves diagnostic order. -/
+theorem Expr.decode_unfold (path : String) (j : Json) :
+    Expr.decode path j =
+      oneof path j
+        [("literal", fun p v => Expr.literal <$> Literal.decode p v),
+         ("var", fun p v => Expr.var <$> str p v),
+         ("member", fun p v => do
+           pure (Expr.member (← msgField p v "base" Expr.decode) (← strField p v "field"))),
+         ("index", fun p v => do
+           pure (Expr.index (← msgField p v "base" Expr.decode) (← msgField p v "index" Expr.decode))),
+         ("last_index", fun p v => Expr.lastIndex <$> msgField p v "stack" Expr.decode),
+         ("unary", fun p v => do
+           pure (Expr.unary (← enumField p v "op" UnaryOp.names) (← msgField p v "operand" Expr.decode))),
+         ("binary", fun p v => do
+           pure (Expr.binary (← enumField p v "op" BinaryOp.names)
+             (← msgField p v "left" Expr.decode) (← msgField p v "right" Expr.decode))),
+         ("cast", fun p v => do
+           pure (Expr.cast (← msgField p v "to" Ty.decode) (← msgField p v "operand" Expr.decode))),
+         ("slice", fun p v => do
+           pure (Expr.slice (← msgField p v "operand" Expr.decode)
+             (← uint32Field p v "hi") (← uint32Field p v "lo"))),
+         ("is_valid", fun p v => Expr.isValid <$> msgField p v "header" Expr.decode),
+         ("mux", fun p v => do
+           pure (Expr.mux (← msgField p v "condition" Expr.decode)
+             (← msgField p v "then" Expr.decode) (← msgField p v "otherwise" Expr.decode))),
+         ("lookahead", fun p v => Expr.lookahead <$> msgField p v "type" Ty.decode)] := by
+  rw [Expr.decode.eq_def]
+  simp only [msgFieldBounded_erasure]
+  rw [← oneofBounded_erasure]
+  rfl
 
 open Decode in
 /-- Decode an `LValue` message. `partial`: see the module comment. -/
