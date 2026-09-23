@@ -5,6 +5,8 @@ import Tests.ScalarTyping
 import Tests.Execution
 import Tests.ExecutionCertificate
 import Tests.CertificateWire
+import Tests.CRC
+import Tests.ExternFamilies
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -177,6 +179,8 @@ def main (args : List String) : IO UInt32 := do
     ScalarTypingTests.tests
     ExecutionTests.tests
     ExecutionCertificateTests.tests
+    CRCTests.tests
+    ExternFamiliesTests.tests
     certificateWireTests).run []
   if failures.isEmpty then
     IO.println "all tests passed"

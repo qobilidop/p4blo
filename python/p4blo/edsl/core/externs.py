@@ -43,3 +43,17 @@ def checksum16(program: Program, data_width: TypeLike, name: str = "checksum16")
         name,
         methods={"compute": method([("data", "in", data_width)], returns=bit(16))},
     )
+
+
+def crc16(program: Program, data_width: TypeLike, name: str = "crc16") -> ExternType:
+    """Full CRC-16/ARC over positive byte-aligned `bit<D>`."""
+    return program.extern_type(
+        name, methods={"compute": method([("data", "in", data_width)], returns=bit(16))}
+    )
+
+
+def crc32(program: Program, data_width: TypeLike, name: str = "crc32") -> ExternType:
+    """Full CRC-32/ISO-HDLC over positive byte-aligned `bit<D>`."""
+    return program.extern_type(
+        name, methods={"compute": method([("data", "in", data_width)], returns=bit(32))}
+    )

@@ -186,12 +186,14 @@ def fits(value: Value, type: pb.Type) -> bool:
 
 def default_registry() -> Registry:
     """Every implementation shipped with the corpus."""
-    from p4blo.externs import checksum, counter, register
+    from p4blo.externs import checksum, counter, crc, register
 
     registry = Registry()
     registry.register(register.IMPLEMENTATION)
     registry.register(counter.IMPLEMENTATION)
     registry.register(checksum.IMPLEMENTATION)
+    registry.register(crc.CRC16_IMPLEMENTATION)
+    registry.register(crc.CRC32_IMPLEMENTATION)
     return registry
 
 

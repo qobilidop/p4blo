@@ -114,6 +114,9 @@ inductive ExternState
   | counter (counts : Array Nat)
   /-- `checksum16()` with `bit<16> compute(in bit<D> data)`: stateless. -/
   | checksum16
+  /-- Full byte-aligned CRC, remembering the monomorphic input width. -/
+  | crc16 (dataWidth : Nat)
+  | crc32 (dataWidth : Nat)
   deriving Repr, Inhabited
 
 /-- The shape of `register`. -/
@@ -129,6 +132,32 @@ def counterShape : Shape :=
 /-- The shape of `checksum16`. -/
 def checksum16Shape : Shape :=
   { constructor := [], methods := [("compute", { params := [⟨.«in», .var "D"⟩], returns := some (.fixed 16) })] }
+
+/-- A stateless full-width CRC over a monomorphic bit string. -/
+def crcShape (outputWidth : Nat) : Shape :=
+  { constructor := [], methods := [("compute", { params := [⟨.«in», .var "D"⟩], returns := some (.fixed outputWidth) })] }
+
+/-- Reflect exactly `width` low bits. -/
+def reflectBits (width value : Nat) : Nat :=
+  (List.range width).foldl (fun acc i => (acc <<< 1) ||| ((value >>> i) &&& 1)) 0
+
+/-- Forward-polynomial CRC with explicitly reflected input bytes and output.
+Unlike Python's reflected byte lookup, this shifts a bounded register left
+one input bit at a time. Only the extern binding advertises supported widths. -/
+def fullCRC (outputWidth polynomial initial finalXor dataWidth value : Nat) : Nat :=
+  let mask := 2 ^ outputWidth - 1
+  let bytes := dataWidth / 8
+  let result := (List.range bytes).foldl (fun crc i =>
+    let byte := (value >>> (8 * (bytes - 1 - i))) &&& 255
+    (List.range 8).foldl (fun crc bit =>
+      let feedback := ((crc >>> (outputWidth - 1)) ^^^ (byte >>> bit)) &&& 1
+      let shifted := (crc <<< 1) &&& mask
+      if feedback == 1 then shifted ^^^ polynomial else shifted) crc) initial
+  reflectBits outputWidth result ^^^ finalXor
+
+def crc16 (dataWidth value : Nat) : Nat := fullCRC 16 0x8005 0 0 dataWidth value
+def crc32 (dataWidth value : Nat) : Nat :=
+  fullCRC 32 0x04c11db7 0xffffffff 0xffffffff dataWidth value
 
 /-- Fold the carries of a one's-complement sum until it fits in 16 bits. -/
 def foldCarry (total : Nat) : Nat :=
@@ -167,6 +196,12 @@ def ExternState.call : ExternState → String → List Value → Except String (
     pure (.counter counts, {})
   | .checksum16, "compute", [.bits data] =>
     pure (.checksum16, { returns := some (.bits (Bits.wrap 16 (internetChecksum data.width data.value))) })
+  | .crc16 width, "compute", [.bits data] => do
+    if data.width != width then throw "crc16: call does not fit bound width"
+    pure (.crc16 width, { returns := some (.bits (Bits.wrap 16 (P4blo.crc16 width data.value))) })
+  | .crc32 width, "compute", [.bits data] => do
+    if data.width != width then throw "crc32: call does not fit bound width"
+    pure (.crc32 width, { returns := some (.bits (Bits.wrap 32 (P4blo.crc32 width data.value))) })
   | state, method, args => throw s!"bad extern call {method} with {args.length} arguments on {repr state}"
 
 /-- The value of a literal. -/
@@ -196,17 +231,25 @@ def shapeOf : String → Option Shape
   | "register" => some registerShape
   | "counter" => some counterShape
   | "checksum16" => some checksum16Shape
+  | "crc16" => some (crcShape 16)
+  | "crc32" => some (crcShape 32)
   | _ => none
 
 /-- The initial state of an instance of `decl` with constructor `args`. -/
 private def make (decl : ExternType) (bindings : Bindings) (args : List Value) :
     Except String ExternState :=
-  match decl.name, args with
+  match (decl.name.splitOn ".").head!, args with
   | "register", [.bits size] => do
     let some width := bindings["T"]? | throw "register: T is unbound"
     pure (.register width (Array.replicate size.value 0))
   | "counter", [.bits size] => pure (.counter (Array.replicate size.value 0))
   | "checksum16", [] => pure .checksum16
+  | "crc16", [] | "crc32", [] => do
+    let family := (decl.name.splitOn ".").head!
+    let some width := bindings["D"]? | throw s!"{family}: D is unbound"
+    if width == 0 || width % 8 != 0 then
+      throw s!"{family}: data width must be a positive multiple of 8"
+    pure (if family == "crc16" then .crc16 width else .crc32 width)
   | name, _ => throw s!"{name}: constructor arguments do not fit"
 
 /-- One model per extern instance of the program, as `Registry.bind` does:
@@ -216,7 +259,8 @@ def bind (index : Index) : Except String Externs := do
   let mut instances : HashMap String ExternState := {}
   for inst in index.program.externInstances do
     let some decl := index.externTypes[inst.externType]? | throw s!"unknown extern type '{inst.externType}'"
-    let some shape := shapeOf decl.name | throw s!"no implementation for extern type '{decl.name}'"
+    let some shape := shapeOf (decl.name.splitOn ".").head!
+      | throw s!"no implementation for extern type '{decl.name}'"
     let bindings ← matchShape decl shape
     let args := inst.args.map Literal.toValue
     if args.length != decl.constructorParams.length then

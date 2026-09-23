@@ -274,4 +274,22 @@ class Checksum16[T: Bits[Any]](Extern, name="checksum16"):
     def compute(self, data: In[Val[T]]) -> Bits[L[16]]: ...
 
 
-__all__ = ["Checksum16", "Counter", "Extern", "Register"]
+class CRC16[T: Bits[Any]](Extern, name="crc16"):
+    """Full CRC-16/ARC: `bit<16> compute(in T data)`, byte-aligned T."""
+
+    def __init__(self, name: str, *, type_name: str = "") -> None:
+        super().__init__(name, type_name=type_name)
+
+    def compute(self, data: In[Val[T]]) -> Bits[L[16]]: ...
+
+
+class CRC32[T: Bits[Any]](Extern, name="crc32"):
+    """Full CRC-32/ISO-HDLC: `bit<32> compute(in T data)`, byte-aligned T."""
+
+    def __init__(self, name: str, *, type_name: str = "") -> None:
+        super().__init__(name, type_name=type_name)
+
+    def compute(self, data: In[Val[T]]) -> Bits[L[32]]: ...
+
+
+__all__ = ["CRC16", "CRC32", "Checksum16", "Counter", "Extern", "Register"]
