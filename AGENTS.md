@@ -63,7 +63,10 @@ full gates table, every pin, and the procedure for each kind of change.
   their golden byte for byte.
 - **Every decision the design does not settle** becomes a dated entry
   in `docs/decisions.md`. `docs/status.md` is updated at every
-  checkpoint, including its "Open threads".
+  checkpoint, including its "Open threads". Record the exact checks run,
+  skipped gates, remaining obligations and next concrete step. A fresh
+  agent must be able to resume from the repository alone; conversation
+  history and temporary files are not handoff documentation.
 - **Commits** follow the usual git conventions (Chris Beams' seven
   rules; the kernel's "describe your changes"). One logical change per
   commit: if the subject wants an "and" or a semicolon, split it. The
@@ -74,8 +77,23 @@ full gates table, every pin, and the procedure for each kind of change.
   reader must know afterwards. Do not restate the diff; omit the body
   when the subject says it all. Agent commits end with a
   `Co-Authored-By: <agent> <email>` trailer after a blank line.
+  Read recent commits before writing new ones and break work into
+  reasonably sized, independently understandable changes. For every
+  Codex-authored commit, immediately before committing run
+  `"${CODEX_HOME:-$HOME/.codex}/bin/coauthor"` in the active session and
+  append its output unchanged. If it fails, stop and report the failure;
+  never guess or hard-code the model.
+- **Commit and push autonomously.** The user authorizes committing and
+  pushing completed, checked work without a separate permission prompt.
+  Inspect the branch and remote first, preserve unrelated changes, and
+  never force-push or bypass failing gates. Record unavailable gates
+  explicitly rather than presenting skips as successful checks.
 - **Sub-agents** work in their own worktree, own a disjoint set of
   files, build against interfaces already committed on `main`, and
   finish with the gates green. Integration happens on `main`. Each
   build step is followed by an independent read-only review, kept
   under `docs/notes/reviews/`. Details in `docs/workflows.md`.
+  Spawn them when useful without waiting for permission; choose a model
+  appropriate to the task's complexity. Create each worktree before
+  delegating and include its absolute path and file ownership in the
+  brief. Sub-agents must not edit the integrator's working tree.
