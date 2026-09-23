@@ -1,6 +1,6 @@
 """The half of the BMv2 oracle that runs inside the container.
 
-oracle/bmv2/run.py, on the host, prints the program, translates the vector
+tests/oracle/bmv2/run.py, on the host, prints the program, translates the vector
 and judges; this script, installed in the image as `p4blo-bmv2-driver`,
 compiles and replays. Everything crosses the container boundary as JSON on
 stdin and stdout, so no host directory is bind-mounted and the pcap FIFOs
@@ -153,7 +153,8 @@ def _open_fifo_writer(path: Path, proc: subprocess.Popen[bytes], deadline: float
     flags = fcntl.fcntl(fd, fcntl.F_GETFL)
     fcntl.fcntl(fd, fcntl.F_SETFL, flags & ~os.O_NONBLOCK)
     try:
-        fcntl.fcntl(fd, fcntl.F_SETPIPE_SZ, PIPE_SIZE)
+        # Linux-only container operation; macOS type stubs omit this constant.
+        fcntl.fcntl(fd, getattr(fcntl, "F_SETPIPE_SZ"), PIPE_SIZE)  # noqa: B009
     except OSError:
         pass  # the default 64 KiB then; enough for any corpus vector
     return os.fdopen(fd, "wb", buffering=0)

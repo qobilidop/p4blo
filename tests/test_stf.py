@@ -129,7 +129,7 @@ def test_bad_lines_are_rejected(line: str) -> None:
 # Name resolution
 # ---------------------------------------------------------------------------
 
-FORWARDER = Path(__file__).resolve().parent.parent / "corpus" / "forwarder"
+FORWARDER = Path(__file__).resolve().parent.parent / "tests" / "corpus" / "forwarder"
 
 TERNARY = """
     name: "ternary"

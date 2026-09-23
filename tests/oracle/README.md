@@ -1,12 +1,12 @@
 # The oracle
 
-Claim 2 of [design.md](../docs/design.md#the-four-claims): the corpus
+Claim 2 of [design.md](../../docs/design.md#the-four-claims): the corpus
 programs, printed to P4 under the v1model shim, match the reference
 interpreter packet for packet on an external oracle. The oracle is
 [P4-SpecTec](https://github.com/kaist-plrg/p4-spectec)'s simulator, the
 P4 specification's own mechanization, driven through its `sim` command
 on the same STF vectors `python/p4blo/stf.py` replays on the Python
-interpreter. It is built by `oracle/build.sh`, driven by `oracle/run.py`,
+interpreter. It is built by `tests/oracle/build.sh`, driven by `tests/oracle/run.py`,
 and asserted by `tests/test_oracle.py`, which skips without a binary and
 runs in its own CI job, `.github/workflows/oracle.yml`, because the
 OCaml toolchain is heavy and only the oracle needs it.
@@ -52,10 +52,10 @@ strategy"), so:
 ```
 # Ubuntu (what CI does)
 sudo apt-get install -y opam libgmp-dev pkg-config
-oracle/build.sh
+tests/oracle/build.sh
 
 # With Nix, on Linux or macOS
-nix-shell -p opam gmp pkgconf --run oracle/build.sh
+nix-shell -p opam gmp pkgconf --run tests/oracle/build.sh
 ```
 
 opam's root defaults to `~/.opam`; set `OPAMROOT` to put it elsewhere.
@@ -68,7 +68,7 @@ about six minutes: two for the switch, two for the packages, two for
 ## Running
 
 ```
-uv run python oracle/run.py corpus/forwarder/forwarder.txtpb corpus/forwarder/*.stf
+uv run python tests/oracle/run.py tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
 uv run pytest tests/test_oracle.py -v
 ```
 
@@ -100,7 +100,7 @@ one verdict per vector:
 
 The process exits non-zero on anything but pass and prints the exact
 command for the first vector that did not pass. `tests/test_oracle.py`
-is parametrized over every `corpus/*/*.stf` and fails with `DIVERGENCE`
+is parametrized over every `tests/corpus/*/*.stf` and fails with `DIVERGENCE`
 or `ORACLE ERROR (not a divergence)` in the message, so a red CI run
 says which it was.
 
@@ -192,7 +192,7 @@ about four seconds.
 
 - **Checksums.** The forwarder's vectors carry an IPv4 header checksum
   that is deliberately wrong (the checksum extern is deferred;
-  `corpus/forwarder/README.md`). The shim prints empty
+  `tests/corpus/forwarder/README.md`). The shim prints empty
   `MyVerifyChecksum` and `MyComputeChecksum` controls, so the simulator
   neither checks nor recomputes it: it carried the field through
   unchanged and matched the expected output, exactly as the reference
@@ -235,7 +235,7 @@ The pinned way is the flake's oracle shell, which carries opam, gmp and
 pkgconf at the versions in `flake.lock`; CI uses it:
 
 ```
-nix develop .#oracle -c oracle/build.sh
+nix develop .#oracle -c tests/oracle/build.sh
 ```
 
 `build.sh` pins P4-SpecTec (`P4_SPECTEC_COMMIT`), the p4c submodule it

@@ -2,7 +2,7 @@
 
 Every test compares a built message with a hand-written text-format
 expectation. The forwarder test is the acceptance test: the eDSL program
-under corpus/forwarder must equal the golden txtpb beside it.
+under tests/corpus/forwarder must equal the golden txtpb beside it.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from p4blo.edsl.core import (
 from p4blo.edsl.core import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "corpus"
+CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
 
 
 def corpus_module(name: str) -> ModuleType:

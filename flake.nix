@@ -26,8 +26,8 @@
             UV_PYTHON_DOWNLOADS = "never";
           };
         };
-        # What oracle/build.sh needs to build P4-SpecTec: `nix develop .#oracle
-        # -c oracle/build.sh`. Kept out of the default shell because only the
+        # What tests/oracle/build.sh needs: `nix develop .#oracle
+        # -c tests/oracle/build.sh`. Kept out of the default shell because only the
         # oracle needs an OCaml toolchain.
         oracle = pkgs.mkShell {
           packages = [

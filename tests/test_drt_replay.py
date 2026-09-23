@@ -42,7 +42,7 @@ def test_both_clis_describe_state_only_divergences(
     monkeypatch.setitem(replay_main.__globals__, "replay", lambda *_: report)
     assert replay_main(["unused.json", "--fake"]) == 1
     replay_output = capsys.readouterr().out
-    cli.show(report, ROOT / "corpus/register_bounds", 1, None)
+    cli.show(report, ROOT / "tests/corpus/register_bounds", 1, None)
     excerpt_output = capsys.readouterr().out
     if not packet:
         assert "cannot be represented in STF" in excerpt_output
@@ -52,7 +52,7 @@ def test_both_clis_describe_state_only_divergences(
 
 
 def register_program() -> pb.Program:
-    return ir.load_text(ROOT / "corpus/register_bounds/register_bounds.txtpb")
+    return ir.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
 
 
 def test_replay_keeps_the_prefix_that_establishes_register_state(tmp_path: Path) -> None:
@@ -126,7 +126,7 @@ def test_protocol_failure_preserves_the_experiment_and_prior_divergences(
         return compare(program_dir, seed, count, ports, [sys.executable, "-c", peer])
 
     monkeypatch.setattr(cli, "compare", faulty_compare)
-    assert cli.main([str(ROOT / "corpus/register_bounds"), "2", "--save", str(tmp_path)]) == 2
+    assert cli.main([str(ROOT / "tests/corpus/register_bounds"), "2", "--save", str(tmp_path)]) == 2
     [bundle] = list(tmp_path.glob("*.json"))
     data = json.loads(bundle.read_text())
     assert data["completed_requests"] == 1
@@ -157,7 +157,7 @@ def test_startup_failure_still_saves_concrete_inputs(tmp_path: Path) -> None:
     assert (
         cli.main(
             [
-                str(ROOT / "corpus/register_bounds"),
+                str(ROOT / "tests/corpus/register_bounds"),
                 "2",
                 "--lean",
                 str(missing),

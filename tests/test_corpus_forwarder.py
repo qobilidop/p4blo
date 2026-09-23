@@ -11,7 +11,7 @@ import pytest
 from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "corpus" / "forwarder"
+CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus" / "forwarder"
 PROGRAM = CORPUS / "forwarder.txtpb"
 
 

@@ -67,7 +67,7 @@ def test_missing_state_cannot_make_an_old_comparator_pass() -> None:
 
 
 def test_state_snapshot_is_not_aliased_to_live_cells() -> None:
-    loaded = arch.load(ir.load_text(ROOT / "corpus/register_bounds/register_bounds.txtpb"))
+    loaded = arch.load(ir.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb"))
     before = snapshot(loaded)
     register = next(e for e in loaded.externs.values() if isinstance(e, Register))
     register.cells[0] = Bits(register.width, 7)
@@ -77,7 +77,7 @@ def test_state_snapshot_is_not_aliased_to_live_cells() -> None:
 
 
 def test_silent_counter_mutation_is_a_divergence() -> None:
-    program = ir.load_text(ROOT / "corpus/stateful/stateful.txtpb")
+    program = ir.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
     loaded, mutant = arch.load(program), arch.load(program)
 
     def corrupt(case: Case):
@@ -95,7 +95,7 @@ def test_silent_counter_mutation_is_a_divergence() -> None:
 
 
 def test_state_difference_is_visible_even_when_errors_match() -> None:
-    program = ir.load_text(ROOT / "corpus/stateful/stateful.txtpb")
+    program = ir.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
     loaded = arch.load(program)
     outcome = python_outcome(loaded, Case(pb.Entries(), 99, b""), 4)
     assert outcome.error is not None
@@ -116,7 +116,7 @@ def test_state_only_diagnostics_show_values_without_decimal_limits() -> None:
 
 
 def wide_register_roundtrip(tmp_path: Path, command: list[str | Path]) -> None:
-    program = ir.load_text(ROOT / "corpus/register_bounds/register_bounds.txtpb")
+    program = ir.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
     for field in program.header_types[0].fields:
         field.type.bits = 16384
     program.extern_types[0].methods[0].params[0].type.bits = 16384

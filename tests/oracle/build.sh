@@ -2,13 +2,13 @@
 # Build P4-SpecTec's simulator at the commit p4blo pins, and print the path of
 # the resulting `p4spectec` binary. Idempotent: every step checks its own
 # result first, so rerunning after a cache hit or a partial failure only does
-# what is missing. See oracle/README.md.
+# what is missing. See tests/oracle/README.md.
 #
 # Needs: git, make, a C compiler, opam (2.1 or newer), and libgmp with its
 # headers plus pkgconf, which zarith's opam packages probe for. On Linux and
 # macOS:
 #
-#   nix:     nix develop .#oracle -c oracle/build.sh   (the pinned way; CI does this)
+#   nix:     nix develop .#oracle -c tests/oracle/build.sh   (the pinned way; CI does this)
 #   ubuntu:  sudo apt-get install -y opam libgmp-dev pkg-config
 #
 # Environment:
@@ -51,7 +51,7 @@ DIR="${P4BLO_ORACLE_DIR:-$HOME/.cache/p4blo/p4-spectec}"
 STAMP="$DIR/.p4blo-built"
 BINARY="$DIR/p4spectec"
 
-log() { printf '[oracle/build] %s\n' "$*" >&2; }
+log() { printf '[tests/oracle/build] %s\n' "$*" >&2; }
 
 # A finished build is stamped with its commit; a matching stamp means there
 # is nothing to do, and opam need not even be installed (the CI cache hit).

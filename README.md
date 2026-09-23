@@ -18,8 +18,8 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | the schema and its contract fit in a few pages; ten corpus programs need only named elaborations, no escape hatch | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`corpus/`](corpus/) |
-| The core is semantically complete for real programs | every corpus vector matches P4-SpecTec's simulator packet for packet, through a printed P4 program under a v1model shim | [`oracle/`](oracle/), `tests/test_oracle.py` |
+| The core is small and post-elaboration | the schema and its contract fit in a few pages; ten corpus programs need only named elaborations, no escape hatch | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
+| The core is semantically complete for real programs | every corpus vector matches P4-SpecTec's simulator packet for packet, through a printed P4 program under a v1model shim | [`tests/oracle/`](tests/oracle/), `tests/test_oracle.py` |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`python/p4blo/arch/`](python/p4blo/arch/) |
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `python/p4blo/drt/` |
 
@@ -49,7 +49,7 @@ and observation adapter remain explicit trust boundaries.
    [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto) defines
    its wire syntax. Read them with
    [`docs/semantics.md`](docs/semantics.md), the closed behaviors.
-3. [`corpus/forwarder/`](corpus/forwarder/): the tutorial forwarder as a
+3. [`tests/corpus/forwarder/`](tests/corpus/forwarder/): the tutorial forwarder as a
    p4blo program, authored in the typed Python eDSL and checked by
    pyright, with its IR golden and test vectors. Every corpus directory
    has a README naming what was elaborated away.
@@ -86,9 +86,9 @@ scripts/check.sh              # every Python and schema check CI runs
 scripts/check-lean.sh         # both Lean packages, audits and tests
 ```
 
-The oracle needs P4-SpecTec: `nix develop .#oracle -c oracle/build.sh`
+The oracle needs P4-SpecTec: `nix develop .#oracle -c tests/oracle/build.sh`
 builds it in a pinned OCaml environment; see
-[`oracle/README.md`](oracle/README.md). The printer's goldens are
+[`tests/oracle/README.md`](tests/oracle/README.md). The printer's goldens are
 typechecked with p4c through Docker when it is available.
 
 ## Layout
@@ -98,8 +98,8 @@ typechecked with p4c through Docker when it is available.
 | `ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
 | `lean/` | user-facing Lean library, depending on `ir/`; reference execution API and planned typed eDSL |
-| `corpus/` | ten programs: eDSL source, IR golden, README, STF vectors |
-| `oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
+| `tests/corpus/` | ten programs: eDSL source, IR golden, README, STF vectors |
+| `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, semantics, coverage, status, decisions, notes |
 | `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |
 

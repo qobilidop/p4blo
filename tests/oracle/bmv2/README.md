@@ -1,6 +1,6 @@
 # The BMv2 oracle
 
-The second, optional oracle for [claim 2](../../docs/design.md#the-four-claims):
+The second, optional oracle for [claim 2](../../../docs/design.md#the-four-claims):
 the corpus programs, printed to P4 under the v1model shim, replayed on
 the reference *implementation* rather than on the specification. p4c's
 BMv2 backend compiles the printed program and BMv2's `simple_switch`
@@ -8,9 +8,9 @@ runs the same STF vectors `python/p4blo/stf.py` replays on the Python
 interpreter. It is built by [`Dockerfile`](Dockerfile), driven by
 [`run.py`](run.py) with [`driver.py`](driver.py) inside the container,
 and asserted by
-[`tests/test_oracle_bmv2.py`](../../tests/test_oracle_bmv2.py), which
+[`tests/test_oracle_bmv2.py`](../../test_oracle_bmv2.py), which
 skips without Docker or without the image and runs in its own CI job,
-[`.github/workflows/oracle-bmv2.yml`](../../.github/workflows/oracle-bmv2.yml).
+[`.github/workflows/oracle-bmv2.yml`](../../../.github/workflows/oracle-bmv2.yml).
 
 It is the *second* oracle: [P4-SpecTec](../README.md) is the first, and
 the one that speaks for the specification. This one speaks for what P4
@@ -19,9 +19,9 @@ programmers actually run, and the two disagree in useful ways.
 ## What it checks that P4-SpecTec cannot
 
 - **Longest-prefix matching.** The specification's simulator has no
-  longest-prefix rule: `oracle/run.py` has to hand it a priority equal
+  longest-prefix rule: `tests/oracle/run.py` has to hand it a priority equal
   to the prefix length, so the *translation* supplies the rule the
-  semantics claims (`oracle/README.md`, "The STF dialect"). BMv2's lpm
+  semantics claims (`tests/oracle/README.md`, "The STF dialect"). BMv2's lpm
   tables are real, so `forwarder/lpm_precedence.stf` is decided by the
   switch, from a `table_add ... 0x0a000200/24` the runner writes
   verbatim. This is the main reason the second oracle exists.
@@ -55,7 +55,7 @@ programmers actually run, and the two disagree in useful ways.
 - **Checksums.** The same gap as the first oracle: the shim prints
   empty `MyVerifyChecksum` and `MyComputeChecksum`, so a deliberately
   wrong IPv4 checksum is carried through unchanged
-  (`corpus/forwarder/README.md`).
+  (`tests/corpus/forwarder/README.md`).
 
 ## The pins
 
@@ -83,8 +83,8 @@ links against.
 ## Building and running
 
 ```
-docker build -t p4blo-bmv2 oracle/bmv2                         # a few minutes, then cached
-uv run python oracle/bmv2/run.py -v corpus/forwarder/forwarder.txtpb corpus/forwarder/*.stf
+docker build -t p4blo-bmv2 tests/oracle/bmv2                         # a few minutes, then cached
+uv run python tests/oracle/bmv2/run.py -v tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
 uv run pytest tests/test_oracle_bmv2.py -v                     # about 30 seconds for the corpus
 ```
 
@@ -214,7 +214,7 @@ makes the diagnosis certain.
 Nothing here says p4blo is wrong. The P4 specification leaves an
 out-of-bounds `register` access implementation-defined, and p4blo's
 choice is a closed behavior written down and implemented twice. What the
-oracle does correct is `corpus/register_bounds/README.md`, which says
+oracle does correct is `tests/corpus/register_bounds/README.md`, which says
 the vectors assert "p4blo's, which is BMv2's": they are not BMv2's. That
 file and `docs/semantics.md` are outside this directory's scope; the
 divergence is carried here and in `tests/test_oracle_bmv2.py` as a

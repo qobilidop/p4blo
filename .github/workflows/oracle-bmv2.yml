@@ -2,7 +2,7 @@ name: BMv2 oracle
 
 # Claim 2's second oracle: the corpus replays on BMv2's simple_switch, which
 # decides longest-prefix matching and the two priority conventions itself
-# where P4-SpecTec needs the translation to supply them (oracle/bmv2/README.md).
+# where P4-SpecTec needs the translation to supply them (tests/oracle/bmv2/README.md).
 # Separate from CI, like the P4-SpecTec job, because it needs Docker and a
 # 2 GB image and only this job does. A red run here means either a divergence
 # between the reference interpreter and BMv2, or an oracle that could not
@@ -30,8 +30,8 @@ jobs:
       - name: Build the oracle image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: oracle/bmv2
-          load: true # into the daemon, where oracle/bmv2/run.py looks for it
+          context: tests/oracle/bmv2
+          load: true # into the daemon, where tests/oracle/bmv2/run.py looks for it
           tags: p4blo-bmv2:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

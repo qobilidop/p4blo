@@ -272,7 +272,7 @@ arguments and its call sites.
   order, then the return value. The binding sees and returns copies,
   so it can never alias program storage.
 - **Extern implementations** for the corpus are specified by their
-  own vectors under `corpus/`, not here. Where an implementation closes
+  own vectors under `tests/corpus/`, not here. Where an implementation closes
   something P4 leaves open, the choice is a closed behavior like any
   other: a `register` read at or beyond its size yields zero and a write
   there is ignored. BMv2 ignores the write too but leaves the read's

@@ -461,3 +461,11 @@ one that says so.
   with diagnostic/golden tests. Confidence: high on permission, medium on
   which redesign is best. Revisit using the firewall and Lean authoring
   experience rather than rewriting the working Python surface speculatively.
+- **Shared verification assets live under `tests/`.** Move the corpus and
+  oracle drivers/build contexts there, preserving all program/golden/vector
+  bytes and oracle pins. Make `tests` an explicit Python package for stable
+  adapter imports. Confidence: high; revisit if published examples need a
+  separate installation/distribution story, not merely another root folder.
+  Assert nonempty/minimum corpus discovery and preserve relative vector IDs
+  so migration cannot hide tests or the strict BMv2 divergence. The move
+  also puts oracle Python code under pyright; retain that stronger gate.

@@ -13,7 +13,7 @@ an escape hatch.
 | Vectors | `forward.stf`, `miss.stf`, `non_ipv4.stf`, `lpm_precedence.stf`, `too_short.stf` |
 
 The golden was written by hand for step 1 and is generated from the eDSL
-source since the checksum landed: `python corpus/forwarder/forwarder.py`
+source since the checksum landed: `python tests/corpus/forwarder/forwarder.py`
 prints it, after the leading comment.
 
 ## Elaborated away

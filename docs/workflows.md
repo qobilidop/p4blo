@@ -16,14 +16,14 @@ locally before pushing, and check exit codes, not output.
 | Lean | `scripts/check-lean.sh` | both packages build, each audit/test driver passes, exit 0 |
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
-| BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
+| BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 
 A larger differential sweep, for a change to either interpreter:
 
 ```
-uv run python -m p4blo.drt corpus/<program> 2000 --seed <n> --lean ir/.lake/build/bin/p4blo-lean
+uv run python -m p4blo.drt tests/corpus/<program> 2000 --seed <n> --lean ir/.lake/build/bin/p4blo-lean
 ```
 
 Use `--save <directory>` to retain a failed experiment. Its JSON bundle
@@ -76,11 +76,11 @@ and promote confirmed minimal regressions into tracked tests or corpus data.
 | nixpkgs (Python, uv, buf, protoc, elan, Node, opam) | `flake.lock` | `nix flake update` |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
 | Lean toolchain | `ir/lean-toolchain`, `lean/lean-toolchain` (must match) | edit both; user package depends on local `../ir`, manifests committed |
-| P4-SpecTec | `P4_SPECTEC_COMMIT` in `oracle/build.sh` | edit; the CI cache key reads it |
-| opam package universe | `OPAM_REPO_COMMIT` in `oracle/build.sh` | edit together with the commit above |
+| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it |
+| opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
-| p4c test-suite sources | copies under `corpus/*/` with SPDX headers | not updated; they are the vectors |
+| p4c test-suite sources | copies under `tests/corpus/*/` with SPDX headers | not updated; they are the vectors |
 
 Nothing else is downloaded at build or test time. The `uv sync` path
 without Nix gets the same Python packages but not the same interpreter,
@@ -89,13 +89,13 @@ without Nix gets the same Python packages but not the same interpreter,
 ## The oracle locally
 
 ```
-nix develop .#oracle -c oracle/build.sh        # ~6 minutes the first time; prints the binary path
+nix develop .#oracle -c tests/oracle/build.sh        # ~6 minutes the first time; prints the binary path
 P4BLO_ORACLE_DIR=~/.cache/p4blo/p4-spectec uv run pytest tests/test_oracle.py -v
-uv run python oracle/run.py -v corpus/forwarder/forwarder.txtpb corpus/forwarder/*.stf
+uv run python tests/oracle/run.py -v tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
 ```
 
-`oracle/README.md` says what the simulator can and cannot check and how
-`oracle/run.py` translates the STF dialect for it.
+`tests/oracle/README.md` says what the simulator can and cannot check and how
+`tests/oracle/run.py` translates the STF dialect for it.
 
 ## Changing things
 
@@ -109,16 +109,16 @@ behavior is resolved by adding it to the doc, not by patching one side.
 `buf generate` (the generated files are committed), mirror the change in
 `ir/P4blo/IR.lean` and `Json.lean`, update the validator's rules and
 `docs/coverage.md`, then regenerate every corpus golden from its eDSL
-source (`uv run python corpus/<name>/<name>.py > corpus/<name>/<name>.txtpb`)
+source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
 Record the decision in `docs/decisions.md`.
 
-**A corpus program.** Create `corpus/<name>/` with `<name>.py` (the
-source, in the typed eDSL `p4blo.edsl`; `corpus/forwarder/forwarder.py`
+**A corpus program.** Create `tests/corpus/<name>/` with `<name>.py` (the
+source, in the typed eDSL `p4blo.edsl`; `tests/corpus/forwarder/forwarder.py`
 is the model), `<name>.txtpb` (its output), `README.md` (source, what
 was elaborated away, what is deferred, in the style of the others), and
 `*.stf` vectors in the dialect `python/p4blo/stf.py` documents.
-Type-check the source with `uv run pyright corpus/<name>/<name>.py`: a
+Type-check the source with `uv run pyright tests/corpus/<name>/<name>.py`: a
 misspelled field, state, action or table, an unequal width, or a
 `concat` used without `as_` is an error there before the build runs.
 `tests/test_pyright.py` guards those static rules, with a file under

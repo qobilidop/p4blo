@@ -17,7 +17,7 @@ wire.
 ## Elaborated away
 
 - **`error { ... }`.** The four errors are declared after core.p4's seven,
-  in the source's order, as [semantics.md](../../docs/semantics.md)
+  in the source's order, as [semantics.md](../../../docs/semantics.md)
   ("Errors") fixes the list.
 - **Two `verify(false, ...)`.** Written as two `verify` statements. The
   first raises `IPv4BadPacket` and the parser stops there, so the second
@@ -27,7 +27,7 @@ wire.
   field, unused, and gains `parser_error` under the contract's name. The
   program never writes `egress_spec`, so no `egress_port` is declared: an
   undeclared contract field reads as zero
-  ([decisions.md](../../docs/decisions.md), "Architecture rules"), which is
+  ([decisions.md](../../../docs/decisions.md), "Architecture rules"), which is
   BMv2's default egress port too, and the vector expects port 0.
 - **`0xbad`** takes the width of `dstAddr`, `bit<48>`.
 - **`packet_in`, `packet_out`, `V1Switch`.** As in every corpus program;

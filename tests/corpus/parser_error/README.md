@@ -6,9 +6,9 @@ here. A 6-byte packet fails the extract; the control still runs, makes the
 header valid and zeroes it; and the output is 14 zero bytes followed by all
 six original bytes, with `$` demanding that exact length. That checks two
 things at once: a failed extract consumes nothing
-([semantics.md](../../docs/semantics.md), "Extraction past the packet
+([semantics.md](../../../docs/semantics.md), "Extraction past the packet
 end"), and the control runs after a parser rejection with `parser_error`
-set ([design.md](../../docs/design.md#architectures)).
+set ([design.md](../../../docs/design.md#architectures)).
 
 | | |
 |---|---|

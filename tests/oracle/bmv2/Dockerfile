@@ -1,7 +1,7 @@
 # The image for p4blo's second oracle: p4c's BMv2 backend and BMv2's
 # simple_switch in one Ubuntu noble image, with the simple_switch_CLI made
-# runnable. Built by `docker build -t p4blo-bmv2 oracle/bmv2` and driven by
-# oracle/bmv2/run.py; see oracle/bmv2/README.md.
+# runnable. Built by `docker build -t p4blo-bmv2 tests/oracle/bmv2` and driven by
+# tests/oracle/bmv2/run.py; see tests/oracle/bmv2/README.md.
 #
 # Both sources are github.com/qobilidop/p4lang-builds images, pinned by the
 # digest of their multi-architecture index (native amd64 and arm64 both

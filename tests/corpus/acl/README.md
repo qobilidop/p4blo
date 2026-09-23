@@ -3,7 +3,7 @@
 p4c's `ternary2-bmv2`, the corpus ACL: five ternary tables with runtime
 entries and overlapping priorities, a parser loop over a header stack, and
 a dispatch on which action a table ran. It is the program that fixes the
-priority convention (see [decisions.md](../../docs/decisions.md), "Entry
+priority convention (see [decisions.md](../../../docs/decisions.md), "Entry
 priority") and the first with vectors produced by BMv2 and reviewed by the
 p4c maintainers.
 
@@ -17,7 +17,7 @@ p4c maintainers.
 ## Elaborated away
 
 - **`switch (ex1.apply().action_run)`.** Out by elaboration per
-  [design.md](../../docs/design.md#scope). A control local `ex1_run`
+  [design.md](../../../docs/design.md#scope). A control local `ex1_run`
   (`bit<8>`) records which of `ex1`'s actions ran: the body sets it to 0
   before applying `ex1`, `act1`, `act2` and `act3` assign 1, 2 and 3, and
   `setbyte` assigns 4; `noop`, the default action, stays empty and leaves

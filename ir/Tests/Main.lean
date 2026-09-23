@@ -12,11 +12,11 @@ from the `ir/` directory (the fixture paths may also be given as
 arguments: the program JSON, then the vectors JSON).
 
 `Tests/forwarder.json` is `p4blo.ir.dump_json` of
-`corpus/forwarder/forwarder.txtpb`; regenerate it from the repository root
+`tests/corpus/forwarder/forwarder.txtpb`; regenerate it from the repository root
 with
 
     uv run python -c 'from pathlib import Path; from p4blo import ir; \
-      print(ir.dump_json(ir.load_text(Path("corpus/forwarder/forwarder.txtpb"))))' \
+      print(ir.dump_json(ir.load_text(Path("tests/corpus/forwarder/forwarder.txtpb"))))' \
       > ir/Tests/forwarder.json
 -/
 

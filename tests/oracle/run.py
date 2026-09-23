@@ -1,6 +1,6 @@
 """Replay corpus vectors on P4-SpecTec's simulator, the oracle for claim 2.
 
-    uv run python oracle/run.py corpus/forwarder/forwarder.txtpb corpus/forwarder/*.stf
+    uv run python tests/oracle/run.py <program.txtpb> <vectors.stf>
 
 For each vector file: the program is printed with `p4blo.printer.print_program`
 into a temporary directory, the vector is translated into the STF dialect the
@@ -20,7 +20,7 @@ runs from the P4-SpecTec checkout. The verdict per vector is one of
 
 The process exits non-zero on any verdict but pass. The binary is found via
 `$P4BLO_ORACLE_BIN`, else `$P4BLO_ORACLE_DIR/p4spectec`, else the default
-directory of oracle/build.sh; the spec and the include directory are taken
+directory of tests/oracle/build.sh; the spec and the include directory are taken
 from the checkout the binary sits in.
 """
 
@@ -37,7 +37,7 @@ from pathlib import Path
 
 # Runnable as a script from the repository root without installing anything:
 # the package lives under python/.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "python"))
 
 from p4blo import ir, printer, stf  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402
@@ -89,7 +89,7 @@ class Oracle:
         if not self.spec.is_dir():
             return f"{self.spec} is not a directory; is {self.root} a P4-SpecTec checkout?"
         if not (self.include / "v1model.p4").is_file():
-            return f"{self.include} has no v1model.p4; oracle/build.sh fetches it"
+            return f"{self.include} has no v1model.p4; tests/oracle/build.sh fetches it"
         return None
 
 
@@ -99,7 +99,7 @@ def find_oracle(environ: dict[str, str] | None = None) -> Oracle | None:
     `$P4BLO_ORACLE_BIN` names the binary directly; its checkout is the
     directory it sits in, which is where `make build` links it. Otherwise
     the binary is `p4spectec` under `$P4BLO_ORACLE_DIR`, defaulting to where
-    oracle/build.sh puts it.
+    tests/oracle/build.sh puts it.
     """
     env = os.environ if environ is None else environ
     bin_var = env.get("P4BLO_ORACLE_BIN")
@@ -343,7 +343,7 @@ def run(oracle: Oracle, program: Path, vectors: list[Path]) -> list[Verdict]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="oracle/run.py", description="replay STF vectors on P4-SpecTec's simulator"
+        prog="tests/oracle/run.py", description="replay STF vectors on P4-SpecTec's simulator"
     )
     parser.add_argument("program", type=Path, help="the program, in IR text format (.txtpb)")
     parser.add_argument("vectors", type=Path, nargs="+", help="STF vector files")
@@ -355,7 +355,8 @@ def main(argv: list[str] | None = None) -> int:
     oracle = find_oracle()
     if oracle is None:
         print(
-            "no p4spectec binary: run oracle/build.sh, or set P4BLO_ORACLE_BIN or P4BLO_ORACLE_DIR",
+            "no p4spectec binary: run tests/oracle/build.sh, "
+            "or set P4BLO_ORACLE_BIN or P4BLO_ORACLE_DIR",
             file=sys.stderr,
         )
         return 2

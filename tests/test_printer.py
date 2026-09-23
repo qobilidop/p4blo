@@ -23,7 +23,7 @@ from p4blo.printer import PrintError, print_expr, print_lvalue, print_stmt, prin
 from p4blo.v0 import p4blo_pb2 as pb
 
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden" / "printer"
-CORPUS = Path(__file__).resolve().parent.parent / "corpus"
+CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
 
 
 # ---------------------------------------------------------------------------

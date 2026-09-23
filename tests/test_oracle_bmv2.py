@@ -1,15 +1,15 @@
 """Claim 2's second oracle: every corpus vector replays on BMv2's simple_switch.
 
 The oracle is p4c's BMv2 backend and `simple_switch` in the `p4blo-bmv2`
-Docker image (oracle/bmv2/Dockerfile), driven by oracle/bmv2/run.py. Without
+Docker image (tests/oracle/bmv2/Dockerfile), driven by tests/oracle/bmv2/run.py. Without
 Docker or without the image every replay test skips and says how to build it;
-with them, each `corpus/<program>/*.stf` must pass, where a divergence and an
+with them, each `tests/corpus/<program>/*.stf` must pass, where a divergence and an
 oracle-side error (a construct the switch cannot load, a crash, a timeout)
 are both failures, labeled apart as in tests/test_oracle.py: the second is not
 a disagreement, but it leaves the claim unchecked.
 
 One vector is a known, analysed divergence and is marked `xfail`: see
-`KNOWN_DIVERGENCES` below and oracle/bmv2/README.md.
+`KNOWN_DIVERGENCES` below and tests/oracle/bmv2/README.md.
 """
 
 from __future__ import annotations
@@ -23,9 +23,9 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from oracle.bmv2 import run as bmv2_run  # noqa: E402
+from tests.oracle.bmv2 import run as bmv2_run  # noqa: E402
 
-CORPUS = ROOT / "corpus"
+CORPUS = ROOT / "tests" / "corpus"
 VECTORS = sorted(CORPUS.glob("*/*.stf"))
 
 # A vector p4blo and BMv2 genuinely disagree about, with the reason. Strict,
@@ -36,7 +36,7 @@ KNOWN_DIVERGENCES = {
         "an out-of-range register read yields zero in p4blo (docs/semantics.md, "
         '"Externs") and leaves the destination field untouched in BMv2 '
         "(targets/simple_switch/primitives.cpp, `register_read`); see "
-        "oracle/bmv2/README.md"
+        "tests/oracle/bmv2/README.md"
     ),
 }
 
@@ -67,7 +67,7 @@ def image() -> str:
     name = bmv2_run.default_image()
     reason = bmv2_run.unavailable(name)
     if reason is not None:
-        pytest.skip(f"the BMv2 oracle is not available: {reason} (see oracle/bmv2/README.md)")
+        pytest.skip(f"the BMv2 oracle is not available: {reason} (see tests/oracle/bmv2/README.md)")
     return name
 
 
@@ -79,7 +79,7 @@ def image() -> str:
 def test_use_last_rewrites_the_printed_last_index_form() -> None:
     # p4c compiles `stack.last.f` in a select into BMv2's `stack_field` key
     # and `stack[stack.lastIndex].f` into a dynamic index simple_switch
-    # refuses to load, so the printed program is rewritten (oracle/bmv2/run.py).
+    # refuses to load, so the printed program is rewritten (tests/oracle/bmv2/run.py).
     p4 = (
         "        verify(hdr.h2[hdr.h2.lastIndex].hdr_type == 8w2, error.BadHeaderType);\n"
         "        transition select(hdr.h2[hdr.h2.lastIndex].next_hdr_type) {\n"

@@ -79,9 +79,18 @@ Things a resuming agent should know are in motion or deliberately left.
   smoke tests), required DRT **95 passed**, schema generation has no drift.
   Full Python/schema/oracle gate: **1004 passed, 1 expected BMv2 divergence,
   no skips**, lint/typecheck/format/schema/workflow checks pass. Clean-worktree
-  review follows commit.
-  Next steps: verified typed scalar authoring and shared corpus/oracle
-  consolidation, then typed references/statements for the stage-0 examples.
+  review also passed from no build caches and no active default toolchain:
+  both Lean packages, 3 layout tests, 95 required DRT and Buf/no-drift checks.
+  Shared corpus and oracle tooling now live under `tests/`, with unchanged
+  source/golden/vector bytes and oracle pins. All three replay suites discover
+  the same 10 programs/15 vector files, guarded by a layout regression. The
+  migrated Docker context builds; oracle drivers now also pass pyright.
+  Consolidation gates: both Lean packages and 95 required DRT pass; full gate
+  **1005 passed, 1 expected divergence, no skips**. Independent review is in
+  `notes/reviews/shared-verification-layout.md`; the strengthened discovery
+  check separately passes. Next: verified typed scalar authoring, then typed references and
+  statements for stage-0 examples. Package migration remote Lean/SpecTec/BMv2
+  workflows passed at `931e47f`; Python/schema CI was still running when checked.
 
 - **Verification program: active.** Follow `verification.md` in order.
   Required Lean CI, complete-sequence replay bundles and abstract extern
@@ -146,7 +155,7 @@ Things a resuming agent should know are in motion or deliberately left.
   goldens, type-checked in CI; `tests/test_pyright.py` guards the
   static rules with must-pass and must-fail fixtures. The review is
   `notes/reviews/edsl-v2.md` and every finding is fixed.
-- **BMv2 as a second oracle: done** (`oracle/bmv2/`, its own CI job). It
+- **BMv2 as a second oracle: done** (`tests/oracle/bmv2/`, its own CI job). It
   decides longest prefix, const-entry and ternary priorities without the
   translation P4-SpecTec needs. It cannot see `flood`, which no corpus
   program declares; a program that does would be the way to test it.

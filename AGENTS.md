@@ -34,9 +34,9 @@ interpreter, `buf`, `protoc` or `elan`.
 scripts/check.sh                                   # every Python and schema check CI runs
 scripts/check-lean.sh                              # both Lean packages, audits and tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
-nix develop .#oracle -c oracle/build.sh            # the P4-SpecTec oracle, once
+nix develop .#oracle -c tests/oracle/build.sh            # the P4-SpecTec oracle, once
 uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
-docker build -t p4blo-bmv2 oracle/bmv2             # the BMv2 oracle image, once
+docker build -t p4blo-bmv2 tests/oracle/bmv2             # the BMv2 oracle image, once
 uv run pytest tests/test_oracle_bmv2.py            # corpus vectors on BMv2
 ```
 
@@ -63,7 +63,7 @@ so the required CI gate discovers them without a hand-maintained file list.
   in progress, not guarantees supplied by this organization. A closed
   behavior is written in `docs/semantics.md` first
   and implemented in both interpreters second.
-- **Corpus programs** live under `corpus/<name>/` with their eDSL
+- **Corpus programs** live under `tests/corpus/<name>/` with their eDSL
   source, golden, README and STF vectors; `tests/test_corpus.py` picks
   new ones up by itself. Sources are written in the typed eDSL
   (`p4blo.edsl`), are type-checked by pyright in CI, and must rebuild

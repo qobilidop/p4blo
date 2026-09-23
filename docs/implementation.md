@@ -14,7 +14,7 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
 - [x] Move authoritative Lean semantics and wire schema into `ir/`, preserving
   module identities, golden bytes and behavior. Introduce a separate `lean/`
   Lake package depending one-way on `ir/`. Update CI, tools and instructions.
-- [ ] Consolidate shared corpus/oracle infrastructure under `tests/`; keep
+- [x] Consolidate shared corpus/oracle infrastructure under `tests/`; keep
   generated bindings with Python, package-local Lean tests with their package.
   Avoid compatibility directories that indefinitely duplicate ownership.
 - [ ] Provide a typed Lean construction language, independent compositional

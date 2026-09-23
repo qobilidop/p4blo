@@ -15,7 +15,7 @@ with
     import json
     from pathlib import Path
     from p4blo import ir, stf
-    corpus = Path("corpus/forwarder")
+    corpus = Path("tests/corpus/forwarder")
     index = ir.Index.build(ir.load_text(corpus / "forwarder.txtpb"))
     vectors = []
     for path in sorted(corpus.glob("*.stf")):

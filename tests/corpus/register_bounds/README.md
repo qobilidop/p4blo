@@ -3,7 +3,7 @@
 Our own program: a `register<bit<8>>(4)` indexed by an 8-bit header
 field, so that most packets name a cell beyond the end. It exists for
 one closed behavior, "a read at or beyond `size` yields zero and a
-write there is ignored" ([semantics.md](../../docs/semantics.md),
+write there is ignored" ([semantics.md](../../../docs/semantics.md),
 "Externs"; `python/p4blo/externs/register.py`;
 `ir/P4blo/Externs.lean`), which the [stateful](../stateful/README.md)
 program cannot reach: its register has 256 cells and its index is an
@@ -43,7 +43,7 @@ writes it through `r.read` and `r.write`. Which value a simulator gives
 an out-of-range read, and whether it accepts the write, is its own
 choice; the vectors here assert p4blo's.
 
-**They are not BMv2's.** The second oracle (`oracle/bmv2/`) showed that
+**They are not BMv2's.** The second oracle (`tests/oracle/bmv2/`) showed that
 BMv2 agrees about the write, which it ignores, and not about the read:
 `register_read` on an index at or beyond the array's size leaves the
 destination untouched rather than zeroing it, so a field keeps whatever

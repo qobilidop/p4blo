@@ -1559,7 +1559,7 @@ def test_extern_args(mutate) -> None:
 # -- the corpus ------------------------------------------------------------------
 
 
-CORPUS = Path(__file__).parent.parent / "corpus"
+CORPUS = Path(__file__).parent.parent / "tests" / "corpus"
 
 
 @pytest.mark.parametrize("program", sorted(CORPUS.glob("*/*.txtpb")), ids=lambda p: p.stem)

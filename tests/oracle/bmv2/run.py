@@ -1,14 +1,14 @@
 """Replay corpus vectors on BMv2's simple_switch, the second oracle for claim 2.
 
-    uv run python oracle/bmv2/run.py corpus/forwarder/forwarder.txtpb corpus/forwarder/*.stf
+    uv run python tests/oracle/bmv2/run.py <program.txtpb> <vectors.stf>
 
 The program is printed with `p4blo.printer.print_program` under the v1model
 shim, rewritten for BMv2's parser (see `use_last`) and compiled once with
 `p4c-bm2-ss prog.p4 -o prog.json` inside the `p4blo-bmv2` Docker image
-(oracle/bmv2/Dockerfile). Each vector is then
+(tests/oracle/bmv2/Dockerfile). Each vector is then
 translated (see `translate`) into runs of simple_switch: `add` and
 `setdefault` lines become `simple_switch_CLI` commands, `packet` lines
-become pcap records, and the image's driver (oracle/bmv2/driver.py) plays
+become pcap records, and the image's driver (tests/oracle/bmv2/driver.py) plays
 them the way p4c's own backends/bmv2/bmv2stf.py does, through `--use-files`.
 The outputs come back per port and are compared with the `expect` lines
 under p4blo's rules (`stf.Expect.matches`: a prefix unless `$`, `*` nibbles).
@@ -43,7 +43,7 @@ from pathlib import Path
 
 # Runnable as a script from the repository root without installing anything:
 # the package lives under python/.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "python"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
 
 from p4blo import ir, printer, stf  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402
@@ -105,7 +105,7 @@ def unavailable(image: str | None = None) -> str | None:
     except (OSError, subprocess.TimeoutExpired) as e:
         return f"docker did not run: {e}"
     if probe.returncode != 0:
-        return f"the {image} image is not built: docker build -t {image} oracle/bmv2"
+        return f"the {image} image is not built: docker build -t {image} tests/oracle/bmv2"
     try:
         probe = subprocess.run(
             ["docker", "run", "--rm", image, "p4blo-bmv2-driver", "--version"],
@@ -428,7 +428,7 @@ def judge(plan: Plan, reply: dict) -> tuple[str, str]:
     made strict about leftovers; unlike the reference replay it cannot say
     which input packet an output came from, since this BMv2 build logs
     nothing per packet, so a wrong output that happens to equal a later
-    expectation on the same port is not caught (oracle/bmv2/README.md).
+    expectation on the same port is not caught (tests/oracle/bmv2/README.md).
     """
     failures: list[stf.Failure] = []
     results = reply.get("phases", [])
@@ -538,7 +538,7 @@ def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="oracle/bmv2/run.py", description="replay STF vectors on BMv2's simple_switch"
+        prog="tests/oracle/bmv2/run.py", description="replay STF vectors on BMv2's simple_switch"
     )
     parser.add_argument("program", type=Path, help="the program, in IR text format (.txtpb)")
     parser.add_argument("vectors", type=Path, nargs="+", help="STF vector files")

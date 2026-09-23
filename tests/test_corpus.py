@@ -1,7 +1,7 @@
 """Every corpus program: it validates, its eDSL source rebuilds its golden,
 and its vectors replay under the switch architecture.
 
-A corpus program lives in `corpus/<name>/` as `<name>.py` (the eDSL
+A corpus program lives in `tests/corpus/<name>/` as `<name>.py` (the eDSL
 source), `<name>.txtpb` (the IR golden), a README, and `*.stf` vectors.
 Each vector file replays on a freshly loaded program, so extern state does
 not leak between files; within a file it persists, as the vectors intend.
@@ -17,7 +17,7 @@ import pytest
 from p4blo import arch, ir, stf, validator
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "corpus"
+CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 VECTORS = sorted(v for p in PROGRAMS for v in p.glob("*.stf"))
 

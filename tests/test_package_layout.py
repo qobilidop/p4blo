@@ -5,6 +5,7 @@ from pathlib import Path
 
 from p4blo.drt.run import default_lean_binary
 from p4blo.v0 import p4blo_pb2 as pb
+from tests import test_corpus, test_oracle, test_oracle_bmv2
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,3 +30,19 @@ def test_lean_package_dependency_is_one_way() -> None:
 def test_schema_descriptor_identity_survives_move() -> None:
     assert pb.DESCRIPTOR.name == "p4blo/v0/p4blo.proto"
     assert (ROOT / "ir/proto" / pb.DESCRIPTOR.name).is_file()
+
+
+def test_shared_corpus_discovery_is_not_empty() -> None:
+    corpus = ROOT / "tests/corpus"
+    programs = sorted(corpus.glob("*/*.txtpb"))
+    vectors = sorted(corpus.glob("*/*.stf"))
+    assert len(programs) >= 10
+    assert len(vectors) >= 15
+    assert all(p.with_suffix(".py").is_file() for p in programs)
+    assert test_corpus.PROGRAMS == sorted(p.parent for p in programs)
+    assert test_corpus.VECTORS == vectors
+    assert test_oracle.VECTORS == vectors
+    assert test_oracle_bmv2.VECTORS == vectors
+    assert "register_bounds/bounds.stf" in test_oracle_bmv2.KNOWN_DIVERGENCES
+    assert not (ROOT / "corpus").exists()
+    assert not (ROOT / "oracle").exists()

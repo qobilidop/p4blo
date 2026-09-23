@@ -1,7 +1,7 @@
 # stateful
 
 p4c's `issue1097-2-bmv2`, the stateful pick of
-[decisions.md](../../docs/decisions.md): one program-level
+[decisions.md](../../../docs/decisions.md): one program-level
 `register<bit<8>>(256)` read and written from both halves of the pipeline.
 It is the corpus program for the extern registry, and the only p4c v1model
 STF program whose register is both read and written.

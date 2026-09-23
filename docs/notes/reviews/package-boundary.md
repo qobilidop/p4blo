@@ -147,3 +147,31 @@ This review does not substitute for the two-package build, full regression
 suite, required differential gate, descriptor regeneration, or clean-worktree
 reproduction. The integrator runs the current gate; independent reproduction
 will be recorded separately after a committed interface is available.
+
+## Independent clean-worktree reproduction
+
+Reproduced commit `931e47f` in the review worktree on 2026-09-23, after
+confirming that neither `ir/.lake` nor `lean/.lake` existed. The worktree
+also started without a Python virtual environment; `uv sync --locked`
+created its own environment from the pinned Nix Python 3.13.15.
+
+Commands ran from the review checkout root, inside its Nix environment:
+
+| Check | Actual result |
+|---|---|
+| `scripts/check-lean.sh` (absolute script path) | Exit 0; specification and user library built from no Lake cache, specification audit/test driver and user API test driver passed |
+| `elan show` at checkout root | `no active toolchain`; explicit toolchain invocation works without an elan default |
+| `uv run pytest tests/test_package_layout.py -q` | 3 passed, exit 0 |
+| `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees -q` | 95 passed, 910 deselected, no skips, exit 0 |
+| Combined layout/conformance selection | 98 passed, 907 deselected, no skips, exit 0 |
+| `buf lint`, `buf generate`, generated-binding `git diff --exit-code` | Each exit 0; no generated drift |
+| `git status --short` after gates, before this report addition | Clean |
+
+The pinned Lean native archives emitted macOS deployment-target linker
+warnings (archive target 15.0 versus link minimum 14.0). They did not prevent
+build or execution; no Lean proof warning or test failure occurred.
+
+The full Python/oracle suite was not independently rerun in this review;
+the integrator's separate evidence covers that gate. No main-worktree edits
+or commits were made. The package migration is independently reproduced
+for these checks, with no remaining finding blocking the next increment.

@@ -1,8 +1,8 @@
 """Claim 2's oracle: every corpus vector replays on P4-SpecTec's simulator.
 
-The oracle is P4-SpecTec's `p4spectec sim`, built by oracle/build.sh and
-driven by oracle/run.py. Without a built binary every replay test skips and
-says so; with one, each `corpus/<program>/*.stf` must pass, where a
+The oracle is P4-SpecTec's `p4spectec sim`, built by tests/oracle/build.sh and
+driven by tests/oracle/run.py. Without a built binary every replay test skips and
+says so; with one, each `tests/corpus/<program>/*.stf` must pass, where a
 divergence and an oracle-side error (a construct the simulator does not
 support, a crash) are both failures, labeled apart: the second is not a
 disagreement, but it leaves the claim unchecked.
@@ -21,9 +21,9 @@ from p4blo import ir, stf
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from oracle import run as oracle_run  # noqa: E402
+from tests.oracle import run as oracle_run  # noqa: E402
 
-CORPUS = ROOT / "corpus"
+CORPUS = ROOT / "tests" / "corpus"
 VECTORS = sorted(CORPUS.glob("*/*.stf"))
 
 
@@ -44,8 +44,8 @@ def oracle() -> oracle_run.Oracle:
     found = oracle_run.find_oracle()
     if found is None:
         pytest.skip(
-            "P4-SpecTec's p4spectec is not built: run oracle/build.sh, "
-            "or set P4BLO_ORACLE_BIN or P4BLO_ORACLE_DIR (see oracle/README.md)"
+            "P4-SpecTec's p4spectec is not built: run tests/oracle/build.sh, "
+            "or set P4BLO_ORACLE_BIN or P4BLO_ORACLE_DIR (see tests/oracle/README.md)"
         )
     reason = found.missing()
     if reason is not None:
@@ -70,7 +70,7 @@ def test_translate_drops_no_packet_and_passes_the_rest_through(forwarder: ir.Ind
 
 def test_translate_renders_lpm_prefixes_as_wildcards_with_priority(forwarder: ir.Index) -> None:
     # P4-SpecTec reads `value/len` its own way and has no longest-prefix
-    # rule (oracle/README.md): the wildcard form at the key's full width is
+    # rule (tests/oracle/README.md): the wildcard form at the key's full width is
     # what both it and p4c read as a prefix, hex when the prefix is
     # nibble-aligned and binary otherwise, and the prefix length becomes the
     # entry's priority, larger winning.

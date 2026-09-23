@@ -19,7 +19,7 @@ def lean_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
             pytest.fail(f"required Lean executable is missing: {binary}")
         pytest.skip(f"{binary} is not built (run lake build in ir/)")
     root = Path(__file__).resolve().parents[1]
-    program = ir.load_text(root / "corpus/forwarder/forwarder.txtpb")
+    program = ir.load_text(root / "tests/corpus/forwarder/forwarder.txtpb")
     program_json = tmp_path_factory.mktemp("lean") / "forwarder.json"
     program_json.write_text(ir.dump_json(program))
     reason = LeanRunner.probe([binary], program_json, 4)

@@ -153,8 +153,9 @@ These describe the semantic components, not an exhaustive list of build
 and repository-support files. Package-local tests stay with their library.
 Do not create empty future directories. The specification and schema now
 live in `ir/`; `lean/` is the independent user package with a reference
-execution API. Corpus/oracle consolidation and the typed eDSL remain work
-in progress; this tree still describes the complete target, not completion.
+execution API. Shared corpus and oracle tooling live under `tests/`. The
+typed eDSL remains work in progress; structural migration does not complete
+the planned proof and application milestones.
 
 The two Lean packages have a one-way dependency: the user-facing package
 imports the IR specification, never the reverse. Separate packaging does
