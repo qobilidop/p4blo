@@ -849,9 +849,13 @@ def check_golden(name: str, text: str) -> Path:
 # p4test through Docker
 # ---------------------------------------------------------------------------
 
-# Pinned by digest so every machine typechecks with the same p4c (1.2.5.17).
-# Update: `docker pull p4lang/p4c && docker inspect --format '{{index .RepoDigests 0}}' p4lang/p4c`.
-P4C_IMAGE = "p4lang/p4c@sha256:40e536fb6034ad54ff527d50a03892a68112bf1ab116658dd3e2eb556b20c50e"
+# p4c 1.2.5.15 from Bili's multi-arch builds (github.com/qobilidop/p4lang-builds),
+# pinned by the digest of its image index so amd64 and arm64 hosts both run it
+# natively. Update with `docker buildx imagetools inspect <image>:<tag>`.
+P4C_IMAGE = (
+    "ghcr.io/qobilidop/p4lang-builds/p4c"
+    "@sha256:794edb1682e286792fbf7b1ca5da2ed7be52ddbeab3659a3bbfb4e1906684e48"
+)
 _DOCKER_EXIT_CODES = {125, 126, 127}
 
 
@@ -900,8 +904,8 @@ def p4test(path: Path, attempt: int = 0) -> None:
     if result.returncode in _DOCKER_EXIT_CODES or "No such file or directory" in result.stderr:
         pytest.skip(f"docker could not run p4test on {path}: {result.stderr.strip()}")
     if "internal compiler error" in result.stderr:
-        # The image is amd64 only; under emulation on an ARM host its C
-        # preprocessor crashes now and then. That is the emulator, not p4test.
+        # Kept from the days of an amd64-only image under emulation, whose C
+        # preprocessor crashed now and then; harmless with a native image.
         if attempt < 2:
             return p4test(path, attempt=attempt + 1)
         pytest.skip(f"p4c crashed under emulation on {path}: {result.stderr.strip()[:200]}")

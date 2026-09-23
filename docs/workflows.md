@@ -32,7 +32,7 @@ uv run python -m p4blo.drt corpus/<program> 2000 --seed <n> --lean lean/.lake/bu
 | Lean toolchain | `lean/lean-toolchain` | edit; `lake-manifest.json` for lake deps (none) |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `oracle/build.sh` | edit; the CI cache key reads it |
 | opam package universe | `OPAM_REPO_COMMIT` in `oracle/build.sh` | edit together with the commit above |
-| p4c for typechecking | image digest in `tests/test_printer.py` | `docker pull p4lang/p4c && docker inspect --format '{{index .RepoDigests 0}}' p4lang/p4c` |
+| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>` |
 | p4c test-suite sources | copies under `corpus/*/` with SPDX headers | not updated; they are the vectors |
 

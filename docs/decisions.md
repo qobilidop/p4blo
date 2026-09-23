@@ -218,6 +218,11 @@ one that says so.
   then a review. The v1 builder becomes `p4blo.edsl.core`, the
   implementation layer and the documented dynamic API for generated
   programs; goldens do not change.
+- **p4c and BMv2 from Bili's multi-arch builds.** The official p4c image
+  is amd64 only and crashed under emulation on ARM; github.com/qobilidop/
+  p4lang-builds publishes native amd64 and arm64 images of p4c 1.2.5.15
+  and BMv2 1.15.4 with immutable version tags. p4c is pinned by its index
+  digest; the BMv2 image makes the optional second oracle cheap.
 - **Node in the flake.** The `pyright` wheel downloads its own Node
   when none is on the path, which is a hidden unpinned dependency.
   The flake provides Node so the download never happens.

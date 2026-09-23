@@ -52,9 +52,9 @@ Things a resuming agent should know are in motion or deliberately left.
   blocks, tables, externs, program) gated by the forwarder golden;
   then corpus rewrite of all ten programs and a pyright diagnostics
   suite; then review. Goldens must not change.
-- **BMv2 as a second oracle** was never run; the design lists it as
-  optional. It would independently check longest-prefix and `flood`,
-  which P4-SpecTec cannot (see the oracle entries in `decisions.md`).
+- **BMv2 as a second oracle (in progress).** Bili's p4lang-builds images
+  make it cheap; an agent is building `oracle/bmv2/`. It independently
+  checks longest-prefix and `flood`, which P4-SpecTec cannot.
 - **Playground** (Pyodide/marimo) was removed from the plan on
   2026-09-22; the pure-Python and Python 3.13 constraints keep it
   possible.
