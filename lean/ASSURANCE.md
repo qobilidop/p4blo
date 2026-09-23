@@ -846,3 +846,55 @@ packet bodies force pervasive inference annotations. Next factor command
 writes once, discharge its generic laws using concrete scalar/field store
 operations, add root permissions and integrate full-state command fixtures;
 do not maintain two source sequencing interpreters.
+
+## Command write-seam foundation
+
+The next field-command increment begins with two separate reviewed steps.
+The spec's `FieldTyping.WritablePath` carries actual root declaration,
+nonempty/exact name and `ScalarStatements.writable` permission through
+variable/member paths. `StatementTyped`/`BodyTyped` admit only matching
+scalar-leaf assignment and scalar-boolean conditionals. No new syntax,
+runtime behavior, total field checker or whole-program validity is claimed.
+Kernel negatives reject nested writes through input/directionless roots,
+missing/empty roots, a wrong nominal kind and a nine-bit RHS for an eight-bit
+field. Constructive local/out/inout paths establish nonvacuity. The relation
+checkpoint passed both package gates and 43 existing authored tests; review:
+`docs/notes/reviews/field-permissions.md`.
+
+`Scalar.CmdWith Reads Places` now owns the single command AST and recursive
+source denotation, lowering, possible-root target collection and sequencing.
+`Scalar.Cmd modes` is a specialization, retaining its named constructors,
+combinators and theorem signatures. The old scalar evaluator/lowerer are
+thin adapters, not parallel recursive implementations. Existing scalar
+fixtures are unchanged.
+
+`CmdWith.steps_with` composes exact scalar-read and scalar-write leaf laws
+at related source/runtime states into finite **actual Execution.step**
+prefixes, leaving an arbitrary continuation unexecuted. Each write must
+succeed, relate the independently updated source store, preserve every
+non-value Run field and preserve names outside its root. The no-action
+`BlockFrame` premise remains explicit and is preserved through the real
+map-update relation. The generic theorem does not assume correctness of a
+whole command. `Scalar.Cmd.steps` discharges these leaf laws using actual
+scalar read/write operations; `execute_correct` keeps its original concrete
+declaration/permission/value premises and uses `Finishes.sound` as before.
+
+Default audits include both generic sequencing laws and generic prefix
+execution. Their exact axiom sets are respectively none, `[propext]`, and
+`[propext, Classical.choice, Quot.sound]`; all old scalar audit expectations
+are unchanged. Both package builds/audits/tests pass, including all prior
+expression/command/path fixtures; all 43 existing authored conformance tests
+also pass. Independent review repeats those tests, the user executable and
+public API/axiom queries: `docs/notes/reviews/command-seam.md`.
+The integrator owns merged full gates.
+The next checkpoint must instantiate this seam with concrete aggregate
+root modes and path writes before any verified field-command claim.
+
+Confidence is high in the compositional proof and medium in this explicit
+parameter API. It introduces no typeclass hierarchy or new dependencies.
+Revisit if the route-selected forwarding fixture needs pervasive dependent
+casts, if concrete final theorems retain arbitrary correctness callbacks,
+or if compatibility pressures create a second sequencing implementation.
+The field campaign will distinguish proof-rejected faults from compiled
+surface/runtime kills; this factoring alone adds no new mutation-adequacy
+claim beyond the earlier retained scalar command experiments.

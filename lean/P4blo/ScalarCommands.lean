@@ -1,4 +1,4 @@
-import P4blo.Scalar
+import P4blo.Commands
 import P4blo.ScalarPlaces
 
 namespace P4blo.Scalar
@@ -57,56 +57,34 @@ theorem FrameMatches.set {env : Env ctx} (hf : FrameMatches env frame)
 
 variable {ctx : Context} {modes : Modes ctx}
 
-/-- Structured command lists with explicit tails. Public assignment,
-conditional and sequencing combinators below hide that representation;
-lowering introduces no synthetic IR statement to implement sequencing. -/
-inductive Cmd {ctx : Context} (modes : Modes ctx)
-  | done
-  | write {t : Ty} (place : Place modes t) (value : ExprIn ctx t) (next : Cmd modes)
-  | branch (condition : ExprIn ctx .boolean) (yes no next : Cmd modes)
+/-- The scalar specialization of the single typed command language. -/
+abbrev Cmd {ctx : Context} (modes : Modes ctx) := CmdWith (Ref ctx) (Place modes)
 
-def Cmd.assign (place : Place modes t) (value : ExprIn ctx t) : Cmd modes :=
-  .write place value .done
+namespace Cmd
+abbrev done {ctx : Context} {modes : Modes ctx} := @CmdWith.done (Ref ctx) (Place modes)
+abbrev write {ctx : Context} {modes : Modes ctx} := @CmdWith.write (Ref ctx) (Place modes)
+abbrev branch {ctx : Context} {modes : Modes ctx} := @CmdWith.branch (Ref ctx) (Place modes)
+end Cmd
 
-def Cmd.ite (condition : ExprIn ctx .boolean) (yes no : Cmd modes) : Cmd modes :=
-  .branch condition yes no .done
-
-def Cmd.seq : Cmd modes → Cmd modes → Cmd modes
-  | .done, second => second
-  | .write place value next, second => .write place value (next.seq second)
-  | .branch condition yes no next, second => .branch condition yes no (next.seq second)
+def Cmd.assign (place : Place modes t) (value : ExprIn ctx t) : Cmd modes := CmdWith.assign place value
+def Cmd.ite (condition : ExprIn ctx .boolean) (yes no : Cmd modes) : Cmd modes := CmdWith.ite condition yes no
+def Cmd.seq (first second : Cmd modes) : Cmd modes := CmdWith.seq first second
 
 def Cmd.denote (cmd : Cmd modes) (env : Env ctx) : Env ctx :=
-  match cmd with
-  | .done => env
-  | .write place value next => next.denote (env.set place.ref (denoteIn env value))
-  | .branch condition yes no next =>
-    next.denote (if denoteIn env condition then yes.denote env else no.denote env)
+  cmd.denoteWith (fun env {_} ref => env.get ref) (fun env {_} place value => env.set place.ref value) env
 
-def Cmd.lower : Cmd modes → List P4bloIR.Stmt
-  | .done => []
-  | .write place value next => .assign (.var place.ref.name) (Scalar.lower value) :: next.lower
-  | .branch condition yes no next =>
-    .conditional (Scalar.lower condition) yes.lower no.lower :: next.lower
+def Cmd.lower (cmd : Cmd modes) : List P4bloIR.Stmt :=
+  cmd.lowerWith (fun ref => .var ref.name) (fun place => .var place.ref.name)
 
-def Cmd.targets : Cmd modes → List String
-  | .done => []
-  | .write place _ next => place.ref.name :: next.targets
-  | .branch _ yes no next => yes.targets ++ no.targets ++ next.targets
+def Cmd.targets (cmd : Cmd modes) : List String := cmd.targetsWith (fun place => place.ref.name)
 
 theorem Cmd.denote_seq (first second : Cmd modes) (env : Env ctx) :
     (first.seq second).denote env = second.denote (first.denote env) := by
-  induction first generalizing env with
-  | done => rfl
-  | write place value next ih => exact ih _
-  | branch condition yes no next _ _ ih => exact ih _
+  exact CmdWith.denoteWith_seq _ _ first second env
 
 theorem Cmd.lower_seq (first second : Cmd modes) :
     (first.seq second).lower = first.lower ++ second.lower := by
-  induction first with
-  | done => rfl
-  | write place value next ih => simp [Cmd.seq, Cmd.lower, ih]
-  | branch condition yes no next _ _ ih => simp [Cmd.seq, Cmd.lower, ih]
+  exact CmdWith.lowerWith_seq _ _ first second
 
 theorem Cmd.lower_typed {modes : Modes ctx} (cmd : Cmd modes)
     (hw : P4bloIR.ScalarTyping.Context.WellFormed ctx) (hd : modes.Agrees scope) :
@@ -132,65 +110,21 @@ theorem Cmd.steps (cmd : Cmd modes) (env : Env ctx) (initial : P4bloIR.Run)
         { work := continuation, run := final } ∧
       FrameMatches (cmd.denote env) final.frame ∧ ChangesOnlyVars initial final ∧
       PreservesOutside cmd.targets initial final := by
-  induction cmd generalizing env initial continuation with
-  | done =>
-    refine ⟨initial, .next rfl .refl, hf, .refl _, ?_⟩
-    intro name _
-    rfl
-  | write place value next ih =>
-    let result := denoteIn env value
-    let middle : P4bloIR.Run := { initial with frame := { initial.frame with
-      vars := initial.frame.vars.insert place.ref.name (toValue result) } }
-    have hm : FrameMatches (env.set place.ref result) middle.frame := hf.set hw hb place.ref result
-    have hchange : ChangesOnlyVars initial middle := ⟨_, rfl⟩
-    obtain ⟨final, tail, hfinal, hfields, houtside⟩ :=
-      ih (env.set place.ref result) middle continuation hm (hchange.blockFrame hb)
-    have dispatch : (P4bloIR.Execution.dispatch
-        (.statement (.assign (.var place.ref.name) (Scalar.lower value)))).run initial =
-        (.ok [], middle) := by
-      simp [P4bloIR.Execution.dispatch, P4bloIR.ScalarTyping.run_bind,
-        P4bloIR.ScalarTyping.run_map,
-        evaluate_lower_in value env initial hf, P4bloIR.writeLValue,
-        P4bloIR.ScalarStatements.writeVar_block initial hb (hf place.ref), middle, result]
-    refine ⟨final, .next rfl (.next ?_ tail), hfinal, hchange.trans hfields, ?_⟩
-    · simp [P4bloIR.Execution.step, dispatch]
-    · intro name hname
-      have hn : name ≠ place.ref.name ∧ name ∉ next.targets := by
-        simpa [Cmd.targets] using hname
-      rw [houtside name hn.2]
-      simp [middle, Std.HashMap.getElem?_insert, Ne.symm hn.1]
-  | branch condition yes no next hy hn ht =>
-    let chosen := if denoteIn env condition then yes else no
-    have hc : ∃ middle,
-        Steps { work := .statements chosen.lower :: .statements next.lower :: continuation, run := initial }
-          { work := .statements next.lower :: continuation, run := middle } ∧
-        FrameMatches (chosen.denote env) middle.frame ∧ ChangesOnlyVars initial middle ∧
-        PreservesOutside chosen.targets initial middle := by
-      cases hcondition : denoteIn env condition
-      · simpa [chosen, hcondition] using hn env initial (.statements next.lower :: continuation) hf hb
-      · simpa [chosen, hcondition] using hy env initial (.statements next.lower :: continuation) hf hb
-    obtain ⟨middle, branchTrace, hmiddle, hchange, hbranchOutside⟩ := hc
-    obtain ⟨final, tail, hfinal, hfields, houtside⟩ :=
-      ht (chosen.denote env) middle continuation hmiddle (hchange.blockFrame hb)
-    have dispatch : (P4bloIR.Execution.dispatch (.statement (.conditional (Scalar.lower condition)
-        yes.lower no.lower))).run initial = (.ok [.statements chosen.lower], initial) := by
-      have hbool (b : Bool) : P4bloIR.expectBool (.bool b) = pure b := rfl
-      cases hcondition : denoteIn env condition <;>
-        simp [P4bloIR.Execution.dispatch, P4bloIR.ScalarTyping.run_bind,
-          evaluate_lower_in condition env initial hf, toValue, hbool,
-          chosen, hcondition]
-    refine ⟨final, .next rfl (.next ?_ (branchTrace.trans tail)), ?_, hchange.trans hfields, ?_⟩
-    · simp [P4bloIR.Execution.step, dispatch]
-    · intro t ref
-      cases hcondition : denoteIn env condition <;>
-        simpa [Cmd.denote, chosen, hcondition] using hfinal ref
-    · intro name hname
-      have hnames : name ∉ yes.targets ∧ name ∉ no.targets ∧ name ∉ next.targets := by
-        simpa [Cmd.targets] using hname
-      rw [houtside name hnames.2.2]
-      apply hbranchOutside
-      cases hcondition : denoteIn env condition <;>
-        simp_all [chosen]
+  apply cmd.steps_with (fun env {_} ref => env.get ref)
+    (fun env {_} place value => env.set place.ref value)
+    (fun ref => .var ref.name) (fun place => .var place.ref.name)
+    (fun place => place.ref.name) (fun env run => FrameMatches env run.frame)
+    ?_ ?_ env initial continuation hf hb
+  · intro source run hm t ref
+    simp [P4bloIR.evaluate, P4bloIR.readVar, P4bloIR.ScalarTyping.run_bind, hm ref]
+  · intro t place source value run hm block
+    let final : P4bloIR.Run := { run with frame := { run.frame with
+      vars := run.frame.vars.insert place.ref.name (toValue value) } }
+    refine ⟨final, ?_, hm.set hw block place.ref value, ⟨_, rfl⟩, ?_⟩
+    · exact P4bloIR.ScalarStatements.writeVar_block run block (hm place.ref)
+    · intro name hn
+      simp only [List.mem_singleton] at hn
+      simp [final, Std.HashMap.getElem?_insert, Ne.symm hn]
 
 /-- Actual reference execution, not an alternative source evaluator. The
 declaration premise supplies statement typing; operational preservation uses

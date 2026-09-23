@@ -104,6 +104,13 @@ permit locals and `out`/`inout` parameters, rejecting `in` and directionless
 ones. `Modes.Agrees` separately checks exact declarations in the actual
 scope; the runtime does not itself enforce parameter write permissions.
 
+`Cmd` specializes one `CmdWith Reads Places` implementation. Source
+sequencing, conditionals, lowering and target collection are defined once;
+the generic finite-prefix proof composes exact per-read/per-write laws.
+The public scalar theorem discharges those laws using real scalar frame
+operations. Generic callbacks are an internal composition boundary, not a
+replacement for concrete correctness premises in the user-facing theorem.
+
 `Cmd.execute_correct` proves typing of the lowered body and successful
 execution through the **existing** reference executor, with the exact final
 source environment. Only the block-value map can change; all unrelated Run
