@@ -578,8 +578,9 @@ def ofNat (key : String) (n : Nat) : Fields := if n == 0 then [] else [(key, Lea
 /-- A boolean field, omitted when false. -/
 def ofBool (key : String) (b : Bool) : Fields := if b then [(key, .bool b)] else []
 
-/-- A decimal-string field, omitted when zero. -/
-def ofDecimal (key : String) (n : Nat) : Fields := if n == 0 then [] else [(key, .str (toString n))]
+/-- A decimal-string field. Numeric zero is the nonempty string `"0"`, not
+the protobuf string default `""`, and must remain present. -/
+def ofDecimal (key : String) (n : Nat) : Fields := [(key, .str (toString n))]
 
 /-- A message field. -/
 def ofMsg (key : String) (j : Json) : Fields := [(key, j)]

@@ -371,3 +371,11 @@ one that says so.
   and stateful suites must not silently fall outside the gate. Build Lean
   before running conformance in a worktree: a concurrent rebuild can remove
   the executable while tests need it, producing a real but avoidable failure.
+- **Fix zero serialization at the source, not in the claim producer.**
+  The Python certificate bridge exposed that Lean's JSON encoder omitted
+  decimal-string zero values. A protobuf string defaults to empty, not to
+  `"0"`; Python correctly could not execute the exported empty bit literal.
+  Always emit decimal strings, including zero, for literals and table keys.
+  Lean-only round trips had hidden the defect because its decoder supplied
+  zero for an absent value. Keep the producer's actual input unmodified by
+  an adapter-specific repair and add explicit wire regressions.

@@ -61,6 +61,16 @@ def forwarderTests (p : Program) : T Unit := do
     (deparser.body.length == 2 && deparser.params.map (·.direction) == [.«in»])
 
 def roundtripTests (p : Program) : T Unit := do
+  let field (j : Lean.Json) (outer inner : String) := do
+    (← j.getObjVal? outer).getObjVal? inner >>= Lean.Json.getStr?
+  check "zero bits encode as a present decimal string"
+    (field (Literal.bits 8 0).toJson "bits" "value" matches .ok "0")
+  check "zero LPM value encodes as a present decimal string"
+    (field (KeyValue.lpm 0 0).toJson "lpm" "value" matches .ok "0")
+  check "zero ternary value encodes as a present decimal string"
+    (field (KeyValue.ternary 0 0).toJson "ternary" "value" matches .ok "0")
+  check "zero ternary mask encodes as a present decimal string"
+    (field (KeyValue.ternary 0 0).toJson "ternary" "mask" matches .ok "0")
   let encoded := (Lean.toJson p).pretty
   match Program.fromJsonString encoded with
   | .ok p' => check "decode (encode p) == p" (p' == p)
