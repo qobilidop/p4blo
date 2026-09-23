@@ -448,7 +448,7 @@ def lean_report(
     return tuple(seen)
 
 
-def test_lean_states_the_same_reason_as_python(lean_binary: Path, tmp_path: Path) -> None:
+def test_lean_agrees_on_error_reasons(lean_binary: Path, tmp_path: Path) -> None:
     """Both sides refuse an lpm prefix wider than the key and an ingress
     port that is not the switch's, in the same words."""
     program = golden(CORPUS / "forwarder")
