@@ -17,7 +17,7 @@ boundaries are in [verification.md](verification.md).
 | 1. The core is small and post-elaboration | schema and contract fit in a few pages; no corpus escape hatch | green: ten corpus programs fit with named elaborations only; coverage table published |
 | 2. Semantically complete for real programs | four corpus programs match the oracle packet for packet | green: every corpus vector passes on P4-SpecTec and on BMv2 (15 files, 10 programs), with one recorded divergence on an out-of-range register read |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 259 Lean checks; corpus plus typed generated-program DRT with extern-state comparison; packing, closed scalar soundness/value laws and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 283 Lean checks; corpus plus typed generated-program DRT with extern-state comparison; packing, closed scalar soundness/value laws, finite-trace execution and bounded-checker soundness proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -62,18 +62,25 @@ Things a resuming agent should know are in motion or deliberately left.
   200 shrinking examples and faulting unselected parser branches. CI retains
   failure bundles for 14 days. Latest full gate: **915 passed, 1 expected
   BMv2 divergence, no skips**, with the pinned SpecTec oracle built locally;
-  Lean build/audit and 259 Lean checks pass; required DRT: 26 passed.
+  At that checkpoint Lean build/audit and 259 Lean checks passed; required
+  DRT: 26 passed. All four remote workflows passed for `a3de320`.
+  Subsequent bounded checker/wire work passes build/audit and 283 Lean checks.
   The statement interpreter now uses a total continuation step and an
   unfoldable actual runner, with a finite-trace soundness theorem. It was
   independently compared with the old executor on fault/copyback cases.
   Eleven scalar value/branch laws complement the type-safety theorem.
   First mutation round: four killed, two survived; the strengthened suite
-  kills both survivors and two fresh faults. A third evaluation-order round
-  is underway (`notes/mutations/2026-09-23.md`). Proof-integrity mutation
-  tests separately reject `sorry` and a forged axiom. Next: integrate and
-  independently review a bounded reexecution certificate prototype, then
-  bind a narrow Python stateful execution to it. In progress in the isolated
-  `verification/scalar-soundness` branch; not yet an accepted checkpoint.
+  kills both survivors and two fresh faults. A third round kills all three
+  eager branch mutants with replayable mismatches
+  (`notes/mutations/2026-09-23.md`). Proof-integrity mutation tests separately
+  reject `sorry` and a forged axiom. The reviewed bounded reexecution checker
+  is integrated; its fixed-program JSON bridge passed independent review,
+  including 58 CLI tamper probes (`notes/reviews/certificate-wire.md`). See
+  `certificates.md` for its exact trust boundary.
+  Next: integrate/review the Python certificate producer (isolated
+  `verification/mutation-campaign` branch) and generated stateful programs
+  (`verification/scalar-soundness`). Those two extensions are in progress,
+  not yet accepted checkpoints; root owns CI and integration documentation.
   Still open: whole-program validity/soundness, validated-program termination,
   variables/aggregates and broad stateful program generation. Neither finite
   traces nor matching test results prove universal Python equivalence.

@@ -366,3 +366,8 @@ one that says so.
   accepted/mismatch/exhausted/invalid outcomes and canonical hexadecimal
   state values. `docs/certificates.md` records the wire contract and trust
   boundary before adding the Python producer.
+- **Discover conformance suites rather than enumerate files.** Required
+  Lean CI selects `lean_agrees` tests across the test tree. New certificate
+  and stateful suites must not silently fall outside the gate. Build Lean
+  before running conformance in a worktree: a concurrent rebuild can remove
+  the executable while tests need it, producing a real but avoidable failure.

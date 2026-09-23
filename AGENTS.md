@@ -33,7 +33,7 @@ interpreter, `buf`, `protoc` or `elan`.
 ```
 scripts/check.sh                                   # every Python and schema check CI runs
 cd lean && lake build && lake test                 # the Lean interpreter and theorem
-uv run pytest tests/test_drt.py -k lean_agrees     # Lean versus Python
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 nix develop .#oracle -c oracle/build.sh            # the P4-SpecTec oracle, once
 uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
 docker build -t p4blo-bmv2 oracle/bmv2             # the BMv2 oracle image, once
@@ -45,6 +45,10 @@ workflows run them in CI: Python and schema, Lean, and one per oracle.
 Docker with the pinned p4c image also typechecks the printer's goldens
 when available and is skipped otherwise. `docs/workflows.md` has the
 full gates table, every pin, and the procedure for each kind of change.
+Build Lean before running differential tests; never rebuild its executable
+concurrently with tests in the same worktree. New real-Lean conformance
+tests use the shared `lean_binary` fixture and `test_lean_agrees` name prefix
+so the required CI gate discovers them without a hand-maintained file list.
 
 ## Conventions
 

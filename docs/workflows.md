@@ -14,7 +14,7 @@ locally before pushing, and check exit codes, not output.
 |---|---|---|
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
 | Lean | `cd lean && lake build && lake test` | `all tests passed`, exit 0 |
-| Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_drt.py tests/test_drt_state.py tests/test_drt_programs.py -k lean_agrees` | corpus, wide state and typed generated programs; missing or broken Lean is a failure |
+| Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
@@ -34,6 +34,10 @@ The CLI fails on matching errors as well as divergences for campaigns of
 generated valid inputs. Every Lean request has a timeout, including writes
 to a peer that stops reading. Local tests may skip an absent binary unless
 `P4BLO_REQUIRE_LEAN=1`; an existing but broken binary is always a failure.
+Build Lean first, then run the Python gate: rebuilding and testing in the
+same worktree concurrently can remove the executable while a test needs it.
+New real-Lean tests use the shared `lean_binary` fixture and names beginning
+with `test_lean_agrees`; CI discovers them across the complete test tree.
 
 The active assurance roadmap is [verification.md](verification.md). Keep
 proved properties, tested agreement and open obligations separate in every
