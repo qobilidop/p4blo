@@ -2,6 +2,7 @@ import Tests.Check
 import Tests.Interp
 import Tests.Forwarder
 import Tests.ScalarTyping
+import Tests.Execution
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -161,7 +162,8 @@ def main (args : List String) : IO UInt32 := do
       check "fixture decodes" false
     negativeTests
     interpTests
-    ScalarTypingTests.tests).run []
+    ScalarTypingTests.tests
+    ExecutionTests.tests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0
