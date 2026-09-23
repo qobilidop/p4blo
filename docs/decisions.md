@@ -340,3 +340,11 @@ one that says so.
   grepping for `sorry`: an imported custom axiom or native proof shortcut
   also changes the audit. It checks proof dependencies, not whether a
   theorem states the intended semantic property.
+- **Statement execution uses an explicit continuation machine.** A total
+  step function performs one semantic operation; the actual interpreter
+  drives it using Lean's proof-visible `partial_fixpoint`. Finite traces
+  imply the actual driver result. Block-return continuations run during
+  fault unwinding; action returns and table hit writes remain success-only.
+  This preserves existing behavior without treating a resource budget as
+  ParserTimeout. Global termination for validated programs is a separate,
+  still-open theorem.

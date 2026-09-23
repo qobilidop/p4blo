@@ -14,11 +14,12 @@ Calls follow docs/semantics.md, "Controls": `in` arguments are copied in,
 in parameter order. Every entry of a block or action binds by name in a
 fresh activation (see `Env`).
 
-The executor is `partial`: a block call runs the callee's body, which is
-not a subterm of the caller's, and a parser walks its states in a loop. The
-validator's acyclic call graph bounds the calls, and the no-consumption
-revisit rule bounds the state walk (a state is entered at most once per
-cursor position), so every run terminates; Lean is not shown the proof.
+`Execution.step` is a total transition function over an explicit continuation
+stack. `Execution.drive` is the actual runner, defined with `partial_fixpoint`
+so its unfolding equation is available to proofs. `Execution.Finishes.sound`
+connects any finite trace to that runner. No validated-program termination
+theorem is claimed: the validator's acyclic calls and the parser's revisit
+rule still need a joint termination proof. No implementation fuel is used.
 -/
 
 namespace P4blo
@@ -193,92 +194,9 @@ def withAction (name : String) (params : Std.HashMap String Value) (body : List 
   setFrame { inner with action := outer.action, actionVars := outer.actionVars }
   pure inner
 
-mutual
-
-/-- Execute statements in order. -/
-partial def execute (stmts : List Stmt) : M Unit := stmts.forM executeOne
-
-/-- Execute one statement. The right-hand side of an assignment is
-evaluated before the target is resolved. -/
-partial def executeOne : Stmt → M Unit
-  | .assign target value => do writeLValue target (← evaluate value)
-  | .conditional condition thenBranch otherwise => do
-    if ← expectBool (← evaluate condition) then execute thenBranch else execute otherwise
-  | .apply table hit => applyTable table hit
-  | .callAction action args => callAction action args
-  | .callBlock block args => callBlock block args
-  | .callExtern inst method args result => callExtern inst method args result
-  | .setValid header => setValidity header true
-  | .setInvalid header => setValidity header false
-  | .push stack count => do
-    writeLValue stack (← liftExcept (pushFront (← readLValue stack) count (← getIndex)))
-  | .pop stack count => do
-    writeLValue stack (← liftExcept (popFront (← readLValue stack) count (← getIndex)))
-  | .extract target => extract target
-  | .advance bits => advance bits
-  | .verify condition error => verify condition error
-  | .emit value => do emitValue (← evaluate value)
-
-/-- Evaluate the keys once, look them up, run the chosen action, then
-record `hit` (docs/semantics.md, "Tables"). -/
-partial def applyTable (name : String) (hit : Option LValue) : M Unit := do
-  let frame ← getFrame
-  let some table := frame.scope.tables[name]? | throwInterp s!"unknown table '{name}'"
-  let keys ← table.keys.mapM fun k => do expectBits (← evaluate k.expr)
-  let m ← liftExcept ((← requireEntries).lookup (frame.block.name, table.name) keys)
-  if let some call := m.action then runActionCall call
-  if let some lv := hit then writeLValue lv (.bool m.hit)
-
-/-- Run an action chosen by a table, with its action data bound to the
-directionless parameters by value. -/
-partial def runActionCall (call : ActionCall) : M Unit := do
-  let frame ← getFrame
-  let some action := frame.scope.actions[call.action]? | throwInterp s!"unknown action '{call.action}'"
-  if call.args.length != action.params.length then
-    throwInterp s!"action '{action.name}' takes {action.params.length} arguments"
-  let params := (action.params.zip call.args).foldl
-    (fun m (p, a) => m.insert p.name (literalValue a)) ({} : Std.HashMap String Value)
-  let _ ← withAction action.name params action.body execute
-
-/-- A direct action call from a control body, with directional arguments
-passed like a block call's. -/
-partial def callAction (name : String) (args : List Arg) : M Unit := do
-  let frame ← getFrame
-  let some action := frame.scope.actions[name]? | throwInterp s!"unknown action '{name}'"
-  if args.length != action.params.length then
-    throwInterp s!"action '{action.name}' takes {action.params.length} arguments"
-  let mut params : Std.HashMap String Value := {}
-  for (param, arg) in action.params.zip args do
-    params := params.insert param.name (← argumentValue param arg)
-  let inner ← withAction action.name params action.body execute
-  copyBack action.params args inner
-
-/-- Run a sub-parser or sub-control. If a sub-parser raises, its arguments
-are copied back first, so the outcome shows what it had already written
-(docs/semantics.md, "Parsers"). -/
-partial def callBlock (name : String) (args : List Arg) : M Unit := do
-  let index ← getIndex
-  let some block := index.blocks[name]? | throwInterp s!"unknown block '{name}'"
-  if args.length != block.params.length then
-    throwInterp s!"block '{block.name}' takes {block.params.length} arguments"
-  let mut callee ← liftExcept (Frame.forBlock index block)
-  for (param, arg) in block.params.zip args do
-    callee := { callee with vars := callee.vars.insert param.name (← argumentValue param arg) }
-  let caller ← getFrame
-  setFrame callee
-  let fault ← tryCatch (do runBlock block; pure none) (fun e => pure (some e))
-  let calleeAfter ← getFrame
-  setFrame caller
-  copyBack block.params args calleeAfter
-  if let some e := fault then throw e
-
-/-- A parser walks its states; a control or deparser runs its body. -/
-partial def runBlock (block : Block) : M Unit :=
-  if block.kind == .parser then runStates block else execute block.body
-
 /-- Call a method on an extern instance, then copy the `out` and `inout`
 results and the return value back (docs/semantics.md, "Externs"). -/
-partial def callExtern (inst method : String) (args : List Arg) (result : Option LValue) :
+def callExtern (inst method : String) (args : List Arg) (result : Option LValue) :
     M Unit := do
   let index ← getIndex
   let some instance_ := index.externInstances[inst]? | throwInterp s!"unknown extern instance '{inst}'"
@@ -302,22 +220,200 @@ partial def callExtern (inst method : String) (args : List Arg) (result : Option
     let some v := r.returns | throwInterp s!"method '{method}' returned nothing"
     writeLValue lv v
 
-/-- Walk the states from `startState` until `accept` returns or `reject`
-raises `NoError`. -/
-partial def runStates (block : Block) : M Unit := do
-  let scope := (← getFrame).scope
-  let some start := scope.states[block.startState]? | throwInterp s!"unknown state '{block.startState}'"
-  let mut state := start
-  repeat
+namespace Execution
+
+/-- Defunctionalized control flow. Return items carry the frame layers and
+copyback arguments that used to live in recursive monadic continuations. -/
+inductive Work
+  | statements (body : List Stmt)
+  | statement (stmt : Stmt)
+  | table (name : String) (hit : Option LValue)
+  | tableAction (call : ActionCall)
+  | action (name : String) (args : List Arg)
+  | block (name : String) (args : List Arg)
+  | runBlock (block : Block)
+  | states (block : Block)
+  | state (scope : BlockScope) (state : State)
+  | transition (scope : BlockScope) (transition : Transition)
+  | writeHit (target : Option LValue) (hit : Bool)
+  | actionReturn (outer : Frame) (copy : Option (List Param × List Arg))
+  | blockReturn (caller : Frame) (params : List Param) (args : List Arg)
+
+/-- A block return must run even during fault unwinding. Action return and
+table hit writes are success-only, as in the original `withAction`. -/
+def Work.handlesFault : Work → Bool
+  | .blockReturn .. => true
+  | _ => false
+
+/-- Execute one work item without recursively executing another. The returned
+items are prepended to the remaining continuation stack in source order. -/
+def dispatch : Work → M (List Work)
+  | .statements [] => pure []
+  | .statements (s :: ss) => pure [.statement s, .statements ss]
+  | .statement stmt => do
+    match stmt with
+    | .assign target value => writeLValue target (← evaluate value)
+    | .conditional condition thenBranch otherwise =>
+      return [.statements (if ← expectBool (← evaluate condition) then thenBranch else otherwise)]
+    | .apply table hit => return [.table table hit]
+    | .callAction action args => return [.action action args]
+    | .callBlock block args => return [.block block args]
+    | .callExtern inst method args result => callExtern inst method args result
+    | .setValid header => setValidity header true
+    | .setInvalid header => setValidity header false
+    | .push stack count =>
+      writeLValue stack (← liftExcept (pushFront (← readLValue stack) count (← getIndex)))
+    | .pop stack count =>
+      writeLValue stack (← liftExcept (popFront (← readLValue stack) count (← getIndex)))
+    | .extract target => extract target
+    | .advance bits => advance bits
+    | .verify condition error => verify condition error
+    | .emit value => emitValue (← evaluate value)
+    pure []
+  | .table name hit => do
+    let frame ← getFrame
+    let some table := frame.scope.tables[name]? | throwInterp s!"unknown table '{name}'"
+    let keys ← table.keys.mapM fun k => do expectBits (← evaluate k.expr)
+    let m ← liftExcept ((← requireEntries).lookup (frame.block.name, table.name) keys)
+    pure ((m.action.toList.map Work.tableAction) ++ [.writeHit hit m.hit])
+  | .writeHit target hit => do
+    if let some lv := target then writeLValue lv (.bool hit)
+    pure []
+  | .tableAction call => do
+    let outer ← getFrame
+    let some action := outer.scope.actions[call.action]?
+      | throwInterp s!"unknown action '{call.action}'"
+    if call.args.length != action.params.length then
+      throwInterp s!"action '{action.name}' takes {action.params.length} arguments"
+    let params := (action.params.zip call.args).foldl
+      (fun m (p, a) => m.insert p.name (literalValue a)) ({} : Std.HashMap String Value)
+    setFrame { outer with action := some action.name, actionVars := some params }
+    pure [.statements action.body, .actionReturn outer none]
+  | .action name args => do
+    let outer ← getFrame
+    let some action := outer.scope.actions[name]? | throwInterp s!"unknown action '{name}'"
+    if args.length != action.params.length then
+      throwInterp s!"action '{action.name}' takes {action.params.length} arguments"
+    let mut params : Std.HashMap String Value := {}
+    for (param, arg) in action.params.zip args do
+      params := params.insert param.name (← argumentValue param arg)
+    setFrame { outer with action := some action.name, actionVars := some params }
+    pure [.statements action.body, .actionReturn outer (some (action.params, args))]
+  | .actionReturn outer copy => do
+    let inner ← getFrame
+    setFrame { inner with action := outer.action, actionVars := outer.actionVars }
+    if let some (params, args) := copy then copyBack params args inner
+    pure []
+  | .block name args => do
+    let index ← getIndex
+    let some block := index.blocks[name]? | throwInterp s!"unknown block '{name}'"
+    if args.length != block.params.length then
+      throwInterp s!"block '{block.name}' takes {block.params.length} arguments"
+    let mut callee ← liftExcept (Frame.forBlock index block)
+    for (param, arg) in block.params.zip args do
+      callee := { callee with vars := callee.vars.insert param.name (← argumentValue param arg) }
+    let caller ← getFrame
+    setFrame callee
+    pure [.runBlock block, .blockReturn caller block.params args]
+  | .blockReturn caller params args => do
+    let calleeAfter ← getFrame
+    setFrame caller
+    copyBack params args calleeAfter
+    pure []
+  | .runBlock block =>
+    pure [if block.kind == .parser then .states block else .statements block.body]
+  | .states block => do
+    let scope := (← getFrame).scope
+    let some start := scope.states[block.startState]?
+      | throwInterp s!"unknown state '{block.startState}'"
+    pure [.state scope start]
+  | .state scope state => do
     enterState state
-    execute state.body
-    match ← transition state.transition with
+    pure [.statements state.body, .transition scope state.transition]
+  | .transition scope trans => do
+    match ← P4blo.transition trans with
     | .state next =>
       let some s := scope.states[next]? | throwInterp s!"unknown state '{next}'"
-      state := s
-    | .accept => return
+      pure [.state scope s]
+    | .accept => pure []
     | .reject => throwParse "NoError"
 
-end
+/-- Complete machine configuration, including a fault being unwound. -/
+structure Machine where
+  work : List Work
+  run : Run
+  fault : Option Fault := none
+
+abbrev Outcome := Except Fault Unit × Run
+
+/-- One total step. A failing copyback replaces the pending fault; a successful
+block return preserves it. All other items are skipped while unwinding. -/
+def step (machine : Machine) : Outcome ⊕ Machine :=
+  match machine.work with
+  | [] => .inl (match machine.fault with
+      | none => (.ok (), machine.run)
+      | some fault => (.error fault, machine.run))
+  | task :: rest =>
+    if machine.fault.isSome && !task.handlesFault then
+      .inr { machine with work := rest }
+    else
+      match (dispatch task).run machine.run with
+      | (.ok next, run) => .inr { work := next ++ rest, run, fault := machine.fault }
+      | (.error fault, run) => .inr { work := rest, run, fault := some fault }
+
+/-- The executable interpreter loop, with an unfolding theorem generated by
+Lean's fixed-point construction. For a nonterminating input the flat-order
+fixed point makes no asserted language outcome; finite traces are covered by
+`Finishes.sound`. There is deliberately no fuel counter or timeout here. -/
+def drive (machine : Machine) : Outcome :=
+  match step machine with
+  | .inl result => result
+  | .inr next => drive next
+partial_fixpoint
+
+/-- A finite execution trace of the actual transition function. -/
+inductive Finishes : Machine → Outcome → Prop
+  | done (h : step machine = .inl result) : Finishes machine result
+  | next (h : step machine = .inr next) : Finishes next result → Finishes machine result
+
+/-- Every finite trace determines exactly the outcome of the actual runner. -/
+theorem Finishes.sound (h : Finishes machine result) : drive machine = result := by
+  induction h with
+  | done h => rw [drive.eq_def, h]
+  | next h _ ih => rw [drive.eq_def, h]; exact ih
+
+/-- Embed the machine runner in the existing state-and-fault API. -/
+def run (work : List Work) : M Unit := fun initial =>
+  drive { work, run := initial }
+
+theorem run_eq (work : List Work) (initial : Run) :
+    (run work).run initial = drive { work, run := initial } := rfl
+
+end Execution
+
+/-- Execute statements in order through the proof-visible machine. -/
+def execute (stmts : List Stmt) : M Unit := Execution.run [.statements stmts]
+
+/-- Execute one statement; assignment evaluates its RHS before its target. -/
+def executeOne (stmt : Stmt) : M Unit := Execution.run [.statement stmt]
+
+/-- Evaluate table keys once, run the selected action, then write `hit`. -/
+def applyTable (name : String) (hit : Option LValue) : M Unit :=
+  Execution.run [.table name hit]
+
+/-- Run a table action with its directionless data parameters. -/
+def runActionCall (call : ActionCall) : M Unit := Execution.run [.tableAction call]
+
+/-- A direct action call, with success-only argument copyback. -/
+def callAction (name : String) (args : List Arg) : M Unit := Execution.run [.action name args]
+
+/-- A block call restores its caller and copies arguments back even on faults. -/
+def callBlock (name : String) (args : List Arg) : M Unit := Execution.run [.block name args]
+
+/-- A parser walks its states; a control or deparser runs its body. -/
+def runBlock (block : Block) : M Unit := Execution.run [.runBlock block]
+
+/-- Walk parser states to acceptance or a parser fault, enforcing revisits. -/
+def runStates (block : Block) : M Unit := Execution.run [.states block]
 
 end P4blo

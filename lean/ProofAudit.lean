@@ -21,3 +21,15 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4blo.extract_emit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.extract_emit
+
+/-- info: 'P4blo.Execution.drive.eq_def' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Execution.drive.eq_def
+
+/-- info: 'P4blo.Execution.Finishes.sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Execution.Finishes.sound
+
+/-- info: 'P4blo.Execution.run_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Execution.run_eq
