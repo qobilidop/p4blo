@@ -26,6 +26,7 @@ disagrees measures nothing.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -52,6 +53,7 @@ from tests.test_drt_stateful_programs import (
 
 CORPUS = Path(__file__).resolve().parent / "corpus"
 UNHIT = Path(__file__).resolve().parent / "drt-unhit-tags.json"
+LEDGER = Path(__file__).resolve().parents[1] / "docs" / "ir-semantics.md"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PORTS = 4
@@ -244,6 +246,29 @@ def test_lean_agrees_that_the_inventory_is_well_formed(lean_binary: Path) -> Non
         assert tag == tag.strip() and "." in tag and " " not in tag, tag
         assert doc and "\n" not in doc, tag
     assert "parser.extract.tooShort" in inventory
+
+
+def ledger_entry_names() -> set[str]:
+    """The names of the ledger's entries: each bold phrase in the paragraph
+    that opens an entry, without its final period. An entry that names two
+    cases, such as `push_front(n)` and `pop_front(n)`, has two names."""
+    names: set[str] = set()
+    for entry in re.split(r"^- (?=\*\*)", LEDGER.read_text(encoding="utf-8"), flags=re.M)[1:]:
+        lead = " ".join(entry.split("\n  - ")[0].split())
+        names.update(m.rstrip(".") for m in re.findall(r"\*\*(.+?)\*\*", lead))
+    return names
+
+
+def test_lean_agrees_that_tag_citations_name_ledger_entries(lean_binary: Path) -> None:
+    """A tag docstring that cites the ledger names one of its entries."""
+    names = ledger_entry_names()
+    assert "Header equality" in names and "`pop_front(n)`" in names
+    cited = {tag: doc for tag, doc in rule_inventory([lean_binary]).items() if "ledger:" in doc}
+    assert len(cited) > 80
+    for tag, doc in cited.items():
+        match = re.match(r"ledger: (.+?)\.(?: |$)", doc)
+        assert match is not None, f"{tag}: the citation must open the docstring: {doc}"
+        assert match[1] in names, f"{tag} cites no ledger entry: {match[1]!r}"
 
 
 def test_lean_agrees_that_every_reply_carries_coverage(lean_binary: Path) -> None:

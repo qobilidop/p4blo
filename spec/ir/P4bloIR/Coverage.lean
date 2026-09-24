@@ -15,13 +15,17 @@ the criterion.
 `<category>.<construct>` for a plain evaluator case and
 `<category>.<construct>.<case>` for a closed behavior of
 docs/ir-semantics.md, all segments lower camel case. The categories are
-`expr` (one case of `evaluate`, and the value rules of "Values"), `value`,
+`expr` (one case of `evaluate`, and the rules of "Values and operations"), `value`,
 `header`, `stack`, `lvalue` (one case of `writeLValue`), `stmt` (one case of
 `executeOne`), `parser`, `select`, `table`, `call` and `emit`. A tag is
 never renamed: a new rule gets a new tag, and a retired rule's tag is
 deleted with it. The docstring of each constructor says the rule it stands
 for; `Coverage.all` lists every tag with that docstring, read from the
 environment at compile time, so the list and the docstrings cannot drift.
+A docstring that stands for an entry of the ledger, docs/ir-semantics.md,
+opens with `ledger: <entry>`, where the entry is named by a bold phrase
+that opens it, without its final period, so that a test can join the tags
+to the entries; a plain evaluator case names its Lean definition instead.
 
 **Conditions.** `classify` is a pure function of the configuration the
 step machine is about to step: the head work item and the current `Run`.
@@ -134,105 +138,123 @@ tag_inventory Tag
   «expr.mux»
   /-- `evaluate`, `lookahead<T>`. -/
   «expr.lookahead»
-  -- Values: the closed behaviors of "Values".
-  /-- Values, "Arithmetic": `+` whose true sum is at least `2^N`, so it wraps. -/
+  -- Values and operations: the closed behaviors of that section.
+  /-- ledger: Arithmetic on `bit<N>`. `+` whose true sum is at least `2^N`,
+  so it wraps. -/
   «expr.add.wrap»
-  /-- Values, "Arithmetic": `-` with the right operand larger, so it wraps. -/
+  /-- ledger: Arithmetic on `bit<N>`. `-` with the right operand larger, so
+  it wraps. -/
   «expr.sub.wrap»
-  /-- Values, "Arithmetic": `*` whose true product is at least `2^N`, so it wraps. -/
+  /-- ledger: Arithmetic on `bit<N>`. `*` whose true product is at least
+  `2^N`, so it wraps. -/
   «expr.mul.wrap»
-  /-- Values, "Arithmetic": `|+|` whose true sum exceeds `2^N - 1`, so it saturates. -/
+  /-- ledger: Arithmetic on `bit<N>`. `|+|` whose true sum exceeds
+  `2^N - 1`, so it saturates. -/
   «expr.addSat.clamp»
-  /-- Values, "Arithmetic": `|-|` with the right operand larger, so it saturates at 0. -/
+  /-- ledger: Arithmetic on `bit<N>`. `|-|` with the right operand larger,
+  so it saturates at 0. -/
   «expr.subSat.clamp»
-  /-- Values, "Shifts": `<<` by an amount at least the width, which gives 0. -/
+  /-- ledger: Shifts. `<<` by an amount at least the width, which gives 0. -/
   «expr.shl.overflow»
-  /-- Values, "Shifts": `>>` by an amount at least the width, which gives 0. -/
+  /-- ledger: Shifts. `>>` by an amount at least the width, which gives 0. -/
   «expr.shr.overflow»
-  /-- Values, "Shifts": `<<` by less than the width that shifts set bits out,
+  /-- ledger: Shifts. `<<` by less than the width that shifts set bits out,
   so the result is truncated to `N` bits. -/
   «expr.shl.truncate»
-  /-- Values, "Shifts": a shift whose amount has a different width from the
+  /-- ledger: Shifts. A shift whose amount has a different width from the
   shifted value; the amount's width does not affect the result. -/
   «expr.shift.otherWidth»
-  /-- Values, "Comparison": `==` or `!=` on two `bit<N>` values. -/
+  /-- ledger: Comparison. `==` or `!=` on two `bit<N>` values, at the top
+  or inside a struct. -/
   «expr.equality.bits»
-  /-- Values, "Comparison": `==` or `!=` on two booleans. -/
+  /-- ledger: Comparison. `==` or `!=` on two booleans, at the top or
+  inside a struct. -/
   «expr.equality.bool»
-  /-- Values, "Comparison": `==` or `!=` on two enum members, by member. -/
+  /-- ledger: Comparison. `==` or `!=` on two enum members, by member. -/
   «expr.equality.enum»
-  /-- Values, "Comparison": `==` or `!=` on two errors, by member. -/
+  /-- ledger: Comparison. `==` or `!=` on two errors, by member. -/
   «expr.equality.error»
-  /-- Headers, "Header equality": two valid headers, compared fieldwise. -/
+  /-- ledger: Header equality. Two valid headers, compared fieldwise, at the
+  top or inside a struct or stack. -/
   «expr.equality.header.bothValid»
-  /-- Headers, "Header equality": one valid and one invalid header, unequal. -/
+  /-- ledger: Header equality. One valid and one invalid header, unequal. -/
   «expr.equality.header.validityDiffers»
-  /-- Headers, "Header equality": two invalid headers, equal regardless of fields. -/
+  /-- ledger: Header equality. Two invalid headers, equal regardless of
+  fields. -/
   «expr.equality.header.bothInvalid»
-  /-- Headers, "Header equality": two invalid headers whose stored fields
+  /-- ledger: Header equality. Two invalid headers whose stored fields
   differ, still equal. -/
   «expr.equality.header.invalidFieldsDiffer»
-  /-- Values, "Comparison": `==` or `!=` on two structs, fieldwise. -/
+  /-- ledger: Comparison. `==` or `!=` on two structs, fieldwise. -/
   «expr.equality.struct»
-  /-- Values, "Comparison": `==` or `!=` on two stacks, elementwise. -/
+  /-- ledger: Comparison. `==` or `!=` on two stacks, elementwise. -/
   «expr.equality.stack»
-  /-- Values, "Comparison": two stacks with different `nextIndex`, which
+  /-- ledger: Comparison. Two stacks with different `nextIndex`, which
   equality does not compare. -/
   «expr.equality.stack.nextIndexDiffers»
-  /-- Values, "Casts": `bit<N>` to a narrower `bit<M>`, truncating. -/
+  /-- ledger: Casts. `bit<N>` to a narrower `bit<M>`, truncating. -/
   «expr.cast.truncate»
-  /-- Values, "Casts": `bit<N>` to a wider `bit<M>`, zero-extending. -/
+  /-- ledger: Casts. `bit<N>` to a wider `bit<M>`, zero-extending. -/
   «expr.cast.extend»
-  /-- Values, "Casts": `bit<N>` to `bit<N>`. -/
+  /-- ledger: Casts. `bit<N>` to `bit<N>`. -/
   «expr.cast.sameWidth»
-  /-- Values, "Casts": `bool` to `bit<1>`. -/
+  /-- ledger: Casts. `bool` to `bit<1>`. -/
   «expr.cast.boolToBits»
-  /-- Values, "Casts": `bit<1>` to `bool`. -/
+  /-- ledger: Casts. `bit<1>` to `bool`. -/
   «expr.cast.bitsToBool»
-  /-- `evaluate`: `&&` whose left operand is false, so the right is not evaluated. -/
+  /-- ledger: Evaluation order. `&&` whose left operand is false, so the
+  right is not evaluated. -/
   «expr.and.shortCircuit»
-  /-- `evaluate`: `||` whose left operand is true, so the right is not evaluated. -/
+  /-- ledger: Evaluation order. `||` whose left operand is true, so the
+  right is not evaluated. -/
   «expr.or.shortCircuit»
-  /-- Parsers, "lookahead": a `bit<N>` read. -/
+  /-- ledger: `lookahead<T>`. A `bit<N>` read. -/
   «expr.lookahead.bits»
-  /-- Parsers, "lookahead": a `bool` read, one bit. -/
+  /-- ledger: `lookahead<T>`. A `bool` read, one bit. -/
   «expr.lookahead.bool»
-  /-- Parsers, "lookahead": a header read, whose result is valid. -/
+  /-- ledger: `lookahead<T>`. A header read, whose result is valid. -/
   «expr.lookahead.header»
-  /-- Parsers, "lookahead": fewer bits remain than the width, `PacketTooShort`. -/
+  /-- ledger: `lookahead<T>`. Fewer bits remain than the width,
+  `PacketTooShort`. -/
   «expr.lookahead.tooShort»
-  /-- Values, "Uninitialized variables": a read of a block local or an `out`
-  parameter that holds its type's zero value. A witness, not the exact
-  behavior: a variable explicitly written with zero also counts. -/
+  /-- ledger: Uninitialized variables. A read of a block local, a block's
+  `out` parameter or an action's `out` parameter that holds its type's
+  zero value. A witness, not the exact behavior: a variable explicitly
+  written with zero also counts. -/
   «value.uninitialized»
-  -- Headers.
-  /-- Headers, "Reading a field of an invalid header": the stored value is returned. -/
+  -- Headers: entries of Expressions, Lvalues and assignment, and
+  -- Statements and calls.
+  /-- ledger: Reading a field of an invalid header. The stored value is
+  returned. -/
   «header.field.readInvalid»
-  /-- Headers, "Writing a field of an invalid header": stored, validity unchanged. -/
+  /-- ledger: Writing a field of an invalid header. Stored, validity
+  unchanged. -/
   «header.field.writeInvalid»
-  /-- Headers, "Assigning a header": an invalid header is assigned, so the
+  /-- ledger: Assigning a header. An invalid header is assigned, so the
   target becomes invalid and the fields are copied anyway. -/
   «header.assign.invalid»
-  /-- Headers, "`setValid` on a valid header": no effect on the fields. -/
+  /-- ledger: `setValid` on a valid header. No effect on the fields. -/
   «header.setValid.alreadyValid»
-  /-- Headers, "`setInvalid` on an invalid one": no effect on the fields. -/
+  /-- ledger: `setInvalid` on an invalid one. No effect on the fields. -/
   «header.setInvalid.alreadyInvalid»
-  -- Header stacks.
-  /-- Header stacks, "Index out of range": a read of `hs[i]` with `i >= S`
-  gives a zero invalid header. -/
+  -- Header stacks: entries of Expressions and Statements and calls.
+  /-- ledger: Index out of range. A read of `hs[i]` with `i >= S` gives a
+  zero invalid header. -/
   «stack.index.readOutOfRange»
-  /-- Header stacks, "Index out of range": a write through `hs[i]` with
-  `i >= S` does nothing. -/
+  /-- ledger: Index out of range. A write through `hs[i]` with `i >= S`
+  does nothing. -/
   «stack.index.writeOutOfRange»
-  /-- Header stacks, "`hs.lastIndex`": `nextIndex == 0`, so the value wraps to `2^32 - 1`. -/
+  /-- ledger: `hs.lastIndex`. `nextIndex == 0`, so the value wraps to
+  `2^32 - 1`. -/
   «stack.lastIndex.empty»
-  /-- Header stacks, "`push_front`": `nextIndex + n` exceeds the size, so it clamps at `S`. -/
+  /-- ledger: `push_front(n)`. `nextIndex + n` exceeds the size, so it
+  clamps at `S`. -/
   «stack.push.clamp»
-  /-- Header stacks, "`push_front`": `n > S`, which behaves as `n = S`. -/
+  /-- ledger: `push_front(n)`. `n > S`, which behaves as `n = S`. -/
   «stack.push.oversize»
-  /-- Header stacks, "`pop_front`": `n` exceeds `nextIndex`, so it clamps at 0. -/
+  /-- ledger: `pop_front(n)`. `n` exceeds `nextIndex`, so it clamps at 0. -/
   «stack.pop.clamp»
-  /-- Header stacks, "`pop_front`": `n > S`, which behaves as `n = S`. -/
+  /-- ledger: `pop_front(n)`. `n > S`, which behaves as `n = S`. -/
   «stack.pop.oversize»
   -- Lvalues: one tag per case of `writeLValue` at the top of a write.
   /-- `writeLValue`, a variable. -/
@@ -275,151 +297,163 @@ tag_inventory Tag
   /-- `executeOne`, `emit`. -/
   «stmt.emit»
   -- Parsers.
-  /-- Parsers, "Extract sets the target valid": an extract into a header lvalue. -/
+  /-- ledger: Extract sets the target valid. An extract into a header
+  lvalue. -/
   «parser.extract.header»
-  /-- Header stacks, "`hs.next`": an extract into `hs.next`. -/
+  /-- ledger: `hs.next`. An extract into `hs.next`. -/
   «parser.extract.next»
-  /-- Parsers, "Extraction past the packet end": fewer bits remain than the
+  /-- ledger: Extraction past the packet end. Fewer bits remain than the
   header's width, `PacketTooShort`, nothing consumed. -/
   «parser.extract.tooShort»
-  /-- Parsers, "Extract sets the target valid": a header of width zero,
-  which consumes nothing even at the end of the packet. -/
+  /-- ledger: Extract sets the target valid. A header of width zero, which
+  consumes nothing even at the end of the packet. -/
   «parser.extract.zeroWidth»
-  /-- Header stacks, "`hs.next`": `nextIndex == S`, `StackOutOfBounds`. -/
+  /-- ledger: `hs.next`. `nextIndex == S`, `StackOutOfBounds`. -/
   «parser.extract.next.full»
-  /-- Header stacks, "`hs.next`": a full stack and a short packet together,
-  which report `StackOutOfBounds`. -/
+  /-- ledger: `hs.next`. A full stack and a short packet together, which
+  report `StackOutOfBounds`. -/
   «parser.extract.next.fullAndShort»
-  /-- Header stacks, "`hs.next`": an extract into `hs[i]` with `i >= S`,
-  which consumes the bits and stores nothing. -/
+  /-- ledger: `hs.next`. An extract into `hs[i]` with `i >= S`, which
+  consumes the bits and stores nothing. -/
   «parser.extract.indexOutOfRange»
-  /-- Parsers, "`advance(n)`": past the end, `PacketTooShort`, the cursor stays. -/
+  /-- ledger: `advance(n)`. Past the end, `PacketTooShort`, the cursor
+  stays. -/
   «parser.advance.tooShort»
-  /-- Parsers, "`verify`": the condition holds. -/
+  /-- ledger: `verify(cond, err)`. The condition holds. -/
   «parser.verify.pass»
-  /-- Parsers, "`verify`": the condition fails and the error is raised. -/
+  /-- ledger: `verify(cond, err)`. The condition fails and the error is
+  raised. -/
   «parser.verify.fail»
-  /-- Parsers, "`verify`": the condition fails with error `NoError`, the
-  same outcome as an explicit `reject`. -/
+  /-- ledger: `verify(cond, err)`. The condition fails with error
+  `NoError`, the same outcome as an explicit `reject`. -/
   «parser.verify.failNoError»
-  /-- The parser's transition case, a direct target. -/
+  /-- `Execution.dispatch`, a transition with a direct target. -/
   «parser.transition.direct»
-  /-- The parser's transition case, a `select`. -/
+  /-- `Execution.dispatch`, a transition by `select`. -/
   «parser.transition.select»
-  /-- A transition to a state. -/
+  /-- `Execution.dispatch`, a transition to a state. -/
   «parser.target.state»
-  /-- A transition to `accept`. -/
+  /-- `Execution.dispatch`, a transition to `accept`. -/
   «parser.target.accept»
-  /-- Parsers, "`reject`": a transition to `reject` reached explicitly,
-  which rejects with `NoError`. -/
+  /-- ledger: `reject`. A transition to `reject` reached explicitly, which
+  rejects with `NoError`. -/
   «parser.target.reject»
-  /-- Parsers, "Parser loop bound": a state entered again after the cursor
+  /-- ledger: Parser loop bound. A state entered again after the cursor
   advanced, which is allowed. -/
   «parser.revisit»
-  /-- Parsers, "Parser loop bound": a state entered again with the cursor
+  /-- ledger: Parser loop bound. A state entered again with the cursor
   where it was, `ParserTimeout`. -/
   «parser.timeout»
-  /-- Parsers, "Parser loop bound": a `ParserTimeout` inside a sub-parser,
+  /-- ledger: Parser loop bound. A `ParserTimeout` inside a sub-parser,
   whose states count as states of the enclosing run. -/
   «parser.timeout.subparser»
-  /-- Parsers: a call of a sub-parser. -/
+  /-- ledger: A raised error stops the parser. A call of a sub-parser. -/
   «parser.subparser»
-  /-- Parsers: an explicit `reject` inside a sub-parser, which rejects the
-  whole run after the copyback. -/
+  /-- ledger: A raised error stops the parser. An explicit `reject`
+  transition inside a sub-parser, which rejects the whole run after the
+  copyback. A `verify` that raises `NoError` is not one. -/
   «parser.subparser.reject»
   -- Select.
-  /-- Parsers, "`select`": the taken case has an exact key set. -/
+  /-- ledger: `select`. The taken case has an exact key set. -/
   «select.exact»
-  /-- Parsers, "`select`": the taken case has a masked key set. -/
+  /-- ledger: `select`. The taken case has a masked key set. -/
   «select.masked»
-  /-- Parsers, "`select`": the taken case has a range key set. -/
+  /-- ledger: `select`. The taken case has a range key set. -/
   «select.range»
-  /-- Parsers, "`select`": the taken case has a don't-care key set. -/
+  /-- ledger: `select`. The taken case has a don't-care key set. -/
   «select.dontCare»
-  /-- Parsers, "`select`": a later case also matches; the first one wins. -/
+  /-- ledger: `select`. A later case also matches; the first one wins. -/
   «select.firstOfSeveral»
-  /-- Parsers, "`select`": no case matches, `NoMatch`. -/
+  /-- ledger: `select`. No case matches, `NoMatch`. -/
   «select.noMatch»
-  /-- Parsers, "`select`": a key that is a `bool`, enum or error. -/
+  /-- ledger: `select`. A key that is a `bool`, enum or error. -/
   «select.nonBitsKey»
-  /-- Parsers, "`select`": more than one key, evaluated once in order. -/
+  /-- ledger: `select`. More than one key, evaluated once in order. -/
   «select.multiKey»
   -- Tables.
-  /-- Tables, "Exact keys": an applied table has an exact key. -/
+  /-- ledger: Exact keys. An applied table has an exact key. -/
   «table.key.exact»
-  /-- Tables, "LPM": an applied table has an lpm key. -/
+  /-- ledger: LPM. An applied table has an lpm key. -/
   «table.key.lpm»
-  /-- Tables, "Ternary": an applied table has a ternary key. -/
+  /-- ledger: Ternary. An applied table has a ternary key. -/
   «table.key.ternary»
-  /-- Tables, "`hit`": an entry matched. -/
+  /-- ledger: `hit`. An entry matched. -/
   «table.hit»
-  /-- Tables, "Table miss": no entry matched and the default action runs. -/
+  /-- ledger: Table miss. No entry matched and the default action runs. -/
   «table.miss»
-  /-- Tables, "Table miss": the default action on a miss is an action. -/
+  /-- ledger: Table miss. The default action on a miss is an action other
+  than `NoAction`. -/
   «table.miss.defaultAction»
-  /-- Tables, "Table miss": the default on a miss is `NoAction`, nothing. -/
+  /-- ledger: Table miss. The default on a miss is `NoAction`, declared or
+  not, which does nothing. -/
   «table.miss.noAction»
-  /-- Tables, "Host default action": a miss runs a default the host replaced. -/
+  /-- ledger: Host default action. A miss in a table whose default the
+  host set, even to the action the program declares. -/
   «table.miss.hostDefault»
-  /-- Tables, "LPM": two matching entries with different prefix lengths;
+  /-- ledger: LPM. Two matching entries with different prefix lengths;
   the longest wins. -/
   «table.lpm.longest»
-  /-- Tables, "Ternary": two matching entries; the largest priority wins. -/
+  /-- ledger: Ternary. Two matching entries; the largest priority wins. -/
   «table.ternary.priority»
-  /-- Tables, "Ternary": a matching entry has priority 0, an ordinary one. -/
+  /-- ledger: Ternary. A matching entry has priority 0, an ordinary one. -/
   «table.ternary.priorityZero»
-  /-- Tables: a program's const entry matches. -/
+  /-- `Installed.lookup`: a program's const entry matches. The Tables
+  section of the ledger opens with const entries; no entry is theirs. -/
   «table.constEntry»
-  /-- Tables, "`hit`": the apply writes whether it hit. -/
+  /-- ledger: `hit`. The apply writes whether it hit. -/
   «table.hit.written»
-  /-- Tables, "`hit`": the chosen action assigns the same lvalue the apply
+  /-- ledger: `hit`. The chosen action assigns the same lvalue the apply
   writes `hit` to, and is overwritten. A syntactic witness over the
   action's body. -/
   «table.hit.overwritesAction»
   -- Calls.
-  /-- Controls, "Block calls": a sub-block call enters. -/
+  /-- ledger: Block calls. A sub-block call enters. -/
   «call.block»
-  /-- Controls, "Action calls": a direct action call enters. -/
+  /-- ledger: Action calls. A direct action call enters. -/
   «call.action»
-  /-- Tables: a table runs an action with its action data. -/
+  /-- ledger: Action calls. A table runs an action with its action data. -/
   «call.tableAction»
-  /-- Externs, "Extern calls": a method call on an extern instance. -/
+  /-- ledger: Extern calls. A method call on an extern instance. -/
   «call.extern»
-  /-- Controls, "Block calls": an `in` parameter, copied in. -/
+  /-- ledger: Block calls. An `in` parameter, copied in. -/
   «call.param.in»
-  /-- Controls, "Block calls": an `out` parameter, starting at zero. -/
+  /-- ledger: Block calls. An `out` parameter, starting at zero. -/
   «call.param.out»
-  /-- Controls, "Block calls": an `inout` parameter, copied in and back. -/
+  /-- ledger: Block calls. An `inout` parameter, copied in and back. -/
   «call.param.inout»
-  /-- Controls, "Action calls": a directionless parameter, read-only action data. -/
+  /-- ledger: Action calls. A directionless parameter, read-only action
+  data. -/
   «call.param.none»
-  /-- Controls, "Block calls": two or more `out` or `inout` arguments are
+  /-- ledger: Block calls. Two or more `out` or `inout` arguments are
   copied back, in parameter order. -/
   «call.copyOut.order»
-  /-- Controls, "Block calls": an `in` argument reads storage that an `out`
-  or `inout` argument of the same call writes; it is copied in first. A
+  /-- ledger: Block calls. An `in` argument reads storage that an `out` or
+  `inout` argument of the same call writes; it is copied in first. A
   syntactic witness: the paths share a prefix. -/
   «call.copyIn.overlap»
-  /-- Controls, "Recursion": an action called from inside an action. -/
+  /-- ledger: Recursion. An action called from inside an action. -/
   «call.action.nested»
-  /-- Parsers: a block return that copies arguments back while a fault is
-  being unwound, as a sub-parser's error propagates. -/
+  /-- ledger: A raised error stops the parser. A block return that copies
+  arguments back while a fault is being unwound, as a sub-parser's error
+  propagates. -/
   «call.block.faultCopyBack»
-  /-- Externs, "Extern calls": results written back to `out` or `inout` arguments. -/
+  /-- ledger: Extern calls. Results written back to `out` or `inout`
+  arguments. -/
   «call.extern.out»
-  /-- Externs, "Extern calls": the return value written after the results. -/
+  /-- ledger: Extern calls. The return value written after the results. -/
   «call.extern.result»
   -- Deparsers.
-  /-- Deparsers: `emit` of a valid header. -/
+  /-- ledger: `emit` of an invalid header. The other case: `emit` of a
+  valid header writes its fields. -/
   «emit.header.valid»
-  /-- Deparsers, "`emit` of an invalid header": writes nothing. -/
+  /-- ledger: `emit` of an invalid header. Writes nothing. -/
   «emit.header.invalid»
-  /-- Deparsers, "`emit` of a struct": its fields in declaration order. -/
+  /-- ledger: `emit` of a struct. Its fields in declaration order. -/
   «emit.struct»
-  /-- Deparsers, "`emit` of a stack": elements from 0 to `S - 1`. -/
+  /-- ledger: `emit` of a stack. Elements from 0 to `S - 1`. -/
   «emit.stack»
-  /-- Deparsers, "Bit alignment": the emitted total is not a multiple of
-  eight, so it is padded with zero bits. -/
+  /-- ledger: Bit alignment. The emitted total is not a multiple of eight,
+  so it is padded with zero bits. -/
   «emit.padding»
 end_tag_inventory
 
@@ -1071,7 +1105,7 @@ def classify (ctx : Context) (m : Machine) : List Tag :=
     else workTags ctx m.run m.fault rest task
 
 /-- The tags of a finished run: the deparser's zero padding when the emitted
-bits are not whole bytes (docs/ir-semantics.md, "Bit alignment"). -/
+bits are not whole bytes (ledger: Bit alignment). -/
 def finalTags (run : Run) : List Tag :=
   match run.emitter with
   | some e => if e.width % 8 != 0 then [.«emit.padding»] else []
