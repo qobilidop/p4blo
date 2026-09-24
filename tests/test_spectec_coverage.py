@@ -9,17 +9,19 @@ the rules of 8-dynamic and the functions of 3-operations.
 
 Without any OCaml toolchain this checks that both fixtures name the pinned
 commit, that the report joins the inventory, that every in-scope item is hit
-or excluded, and that no exclusion is stale. With the oracle and the coverage
-probe built at the pin, the report is also regenerated and compared, which
-takes about fifteen seconds and runs in the oracle CI job; elsewhere that test
-skips and says why.
+or excluded, that no exclusion is stale, and that docs/coverage.md states the
+same counts. With the oracle and the coverage probe built at the pin, the
+report is also regenerated and compared, which takes about fifteen seconds
+and runs in the oracle CI job; elsewhere that test skips and says why.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -123,6 +125,39 @@ def test_exclusions_are_well_formed() -> None:
         if category == "unhit" and not str(entry.get("reach", "")).strip():
             problems.append(f"{where}: an unhit item says which input would reach it")
     assert not problems, "\n".join(problems)
+
+
+def counts() -> dict[str, Counter[str]]:
+    """Per scope (rules, functions): hit and each exclusion category."""
+    categories = {key(e): e["category"] for e in load(EXCLUSIONS)["exclusions"]}
+    result: dict[str, Counter[str]] = {"rule": Counter(), "dec": Counter()}
+    for item in load(REPORT)["items"]:
+        if in_scope(item):
+            # An item neither hit nor excluded fails its own test above.
+            status = "hit" if item["hit"] else categories.get(key(item), "not excluded")
+            result[item["kind"]][status] += 1
+    return result
+
+
+def test_docs_state_the_report_counts() -> None:
+    text = COVERAGE_DOC.read_text(encoding="utf-8")
+    section = text.split("## Rule coverage on P4-SpecTec", 1)
+    assert len(section) == 2, "docs/coverage.md has no rule coverage section"
+    table: dict[str, tuple[int, int]] = {}
+    for line in section[1].splitlines():
+        match = re.match(
+            r"^\| (hit|excluded-construct|not-representable|architecture|unhit)"
+            r" \| (\d+) \| (\d+) \|$",
+            line,
+        )
+        if match:
+            table[match.group(1)] = (int(match.group(2)), int(match.group(3)))
+    measured = counts()
+    expected = {
+        name: (measured["rule"][name], measured["dec"][name])
+        for name in ("hit", *sorted(CATEGORIES))
+    }
+    assert table == expected
 
 
 def test_report_matches_a_fresh_measurement() -> None:
