@@ -30,7 +30,7 @@ the P4_16 semantics ("v3").
   5, a Python constant in the source, the depth in the stack's type, and
   a stack size in the IR.
 - **Slice lvalues.** `hdr.h1.h2_valid_bits[i:i] = 1` has no `LValue` in the
-  IR ([decisions.md](../../../docs/decisions.md): slice lvalues are
+  IR ([decisions.md](../../../.agents/decisions.md): slice lvalues are
   elaborated, not added). The source writes `assign_slice`, which emits
   the read-modify-write of the whole field, `f = (f & ~mask) | (v << lo)`,
   with every literal at the field's width: for `[2:2] = 1` the IR holds
@@ -59,7 +59,7 @@ the P4_16 semantics ("v3").
 - **`standard_metadata`.** The program never reads or writes it, so `M` is
   an empty struct. With no `egress_port` in the metadata contract the
   switch sends every packet to port 0, which is what every vector expects
-  ([decisions.md](../../../docs/decisions.md), architecture rules).
+  ([decisions.md](../../../.agents/decisions.md), architecture rules).
 - **`error { BadHeaderType }`** is declared after core.p4's seven errors,
   as the IR requires, and `verify(..., error.BadHeaderType)` names it.
 - **The parser's `packet_in` and the deparser's `packet_out`.** A p4blo

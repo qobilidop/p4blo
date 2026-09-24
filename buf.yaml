@@ -6,7 +6,7 @@ lint:
     - STANDARD
   except:
     # buf accepts v1, v2, v1beta1 ... but not v0. The schema is pre-1.0 by
-    # design and says so in its package name; see docs/decisions.md.
+    # design and says so in its package name; see .agents/decisions.md.
     - PACKAGE_VERSION_SUFFIX
 breaking:
   use:

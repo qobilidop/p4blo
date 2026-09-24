@@ -28,7 +28,7 @@ frontend's mapping from p4c's convention onto the IR's.
   | 3 | `0x1181 &&& 0xF00F ... @priority(1)` | 1 | 3 |
 
   The IR's priority is larger-wins everywhere
-  ([decisions.md](../../../docs/decisions.md), "Entry priority"), so the
+  ([decisions.md](../../../.agents/decisions.md), "Entry priority"), so the
   mapping is `IR = 4 - p4c`, any order-reversing injection of the three
   numbers being equivalent. Entries keep the source's order in the golden;
   the printer prints them in descending priority without annotations so

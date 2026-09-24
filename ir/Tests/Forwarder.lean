@@ -115,7 +115,7 @@ def replay (sw : Switch) (v : StfVector) : T Unit := do
       if let some d := result.diagnostic then IO.println s!"     diagnostic: {d}"
       check name ok
 
-/-- The port rules of docs/decisions.md, as `tests/test_arch.py` checks them
+/-- The port rules of .agents/decisions.md, as `tests/test_arch.py` checks them
 on the Python switch: an ingress port outside `[0, ports)` is the caller's
 error before anything runs, an egress port outside it drops the packet with
 a diagnostic, and 511 is just such a port. -/

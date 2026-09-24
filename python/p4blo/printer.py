@@ -5,7 +5,7 @@ blocks so that it compiles with p4c and runs on BMv2 or P4-SpecTec's
 simulator. The shim is the whole architecture binding and lives in
 `standard_metadata_binding`; everything else is a faithful reversal of the
 IR's dedicated nodes back into P4 syntax (`packet.extract(...)`,
-`h.isValid()`, `s.push_front(n)` and so on; see docs/decisions.md).
+`h.isValid()`, `s.push_front(n)` and so on; see .agents/decisions.md).
 
 Entry points: `print_program` for a whole program, and `print_type`,
 `print_expr`, `print_lvalue` and `print_stmt` for pieces. A program handed

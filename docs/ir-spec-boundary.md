@@ -3,7 +3,7 @@
 Implementation plan accepted: 2026-09-23. Bili authorized autonomous
 implementation, small tested commits and pushes. This is not a completed
 migration or a claim that the proposed proofs already exist. Track execution
-in [../implementation.md](implementation.md) and [../status.md](status.md).
+in `.agents/roadmap.md` and `.agents/status.md`.
 This checkpoint incorporates the subsequent agreement on a separate
 user-facing Lean package and the design informed by the prior-art survey.
 It also records the P4 expressiveness north star and the agreed progression

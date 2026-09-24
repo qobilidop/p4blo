@@ -1,7 +1,7 @@
 # Assurance milestone 1
 
 Accepted 2026-09-23. This is the active completion boundary, superseding the
-open-ended proof/application expansion in `implementation.md` and
+open-ended proof/application expansion in the agent roadmap and
 `verification.md`. It does not change the v0 wire format or announce protobuf
 v1. Python and Lean remain the only authoring/interpreter packages in scope.
 

@@ -24,7 +24,7 @@ Each row has one of these statuses.
 - **elaborated**: the frontend rewrites the construct into in-constructs
   and its meaning survives. The column names the rewrite, and every
   rewrite here is one the project has performed or ruled on: an entry
-  in [decisions.md](decisions.md), a rule in [semantics.md](semantics.md)
+  in `.agents/decisions.md`, a rule in [semantics.md](semantics.md)
   or the schema, or an elaboration a corpus README records.
 - **excluded**: nothing in the IR represents the construct. The
   category is the design's ([design.md](design.md#scope)):
@@ -290,7 +290,7 @@ Each is where the architecture layer used to be.
 
 None. The sixteen rows that the first draft left undecided were ruled
 on 2026-09-22; the rulings and their reasons are in
-[decisions.md](decisions.md).
+`.agents/decisions.md`.
 
 ## How the corpus exercises the in-rows
 

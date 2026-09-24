@@ -12,19 +12,19 @@ Lean semantics validated against a runnable reference.
 **Current direction (2026-09-23):** this document records the original
 prototype. The accepted successor architecture is
 [notes/ir-spec-boundary.md](ir-spec-boundary.md), implemented through
-[implementation.md](implementation.md). It supersedes the original
+`.agents/roadmap.md`. It supersedes the original
 protobuf-as-abstract-syntax authority and single-Lean-package arrangement:
 Lean owns abstract syntax, validity and meaning; protobuf owns encoding;
 Python and a separate user-facing Lean package supply eDSL/interpreter APIs.
-Proof coverage remains scoped as recorded in [status.md](status.md).
+Proof coverage remains scoped as recorded in [evidence.md](evidence.md).
 
 That first sentence is the project. p4blo is a personal, educational
 prototype whose purpose is to make the sentence concrete enough to
 argue about, so that a serious version can later be proposed to the P4
 community as an RFC rather than built alone. This document records
 what p4blo is, what it claims, how the claims are tested, and what has
-been decided. Progress lives in [status.md](status.md), dated choices
-with their reasons in [decisions.md](decisions.md), the closed
+been decided. Progress lives in `.agents/status.md`, dated choices
+with their reasons in `.agents/decisions.md`, the closed
 behaviors in [semantics.md](semantics.md), and the construct table in
 [coverage.md](coverage.md).
 
@@ -378,7 +378,7 @@ outputs were produced by BMv2 and reviewed by the p4c maintainers,
 which gives oracle-grade vectors before any oracle runs here. The
 tutorial forwarder has no STF; its vectors start hand-written and are
 confirmed by the oracle later. The concrete picks are recorded in
-[status.md](status.md) when the eDSL step reaches them.
+`.agents/status.md` when the eDSL step reaches them.
 
 Each corpus program is rewritten in the eDSL, printed back to P4,
 checked to typecheck in P4-SpecTec, and then replayed on both sides.

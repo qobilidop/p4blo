@@ -1,12 +1,12 @@
 # Roadmap
 
 The research backlog beyond the completed finite scopes. Accepted
-2026-09-23 with the design in [ir-spec-boundary.md](ir-spec-boundary.md);
+2026-09-23 with the design in [ir-spec-boundary.md](../docs/ir-spec-boundary.md);
 Python and Lean only. Full architecture-independent P4 is the north star,
 not a completion criterion. Nothing here is active: assurance
-[milestone 1](milestone-1.md) and the [application collection](examples.md)
+[milestone 1](../docs/milestone-1.md) and the [application collection](../docs/examples.md)
 are complete, and an item below becomes work only when the user scopes it.
-Landed results are summarized in [evidence.md](evidence.md) and
+Landed results are summarized in [evidence.md](../docs/evidence.md) and
 `lean/ASSURANCE.md`; the step-by-step record is in git.
 
 Work autonomously in small reviewed increments. Record uncertain decisions

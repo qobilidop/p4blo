@@ -4,7 +4,7 @@ This is a navigation map for [milestone 1](milestone-1.md), not a claim of
 exhaustive testing. The [profile](profile.md) defines the supported domain.
 The matrix identifies independent expectations and actual cross-language
 comparisons separately; a blank proof/oracle boundary is not silently filled
-by a test. Latest executed gates and exact revisions are in [status](status.md).
+by a test. Latest executed gates and exact revisions are in `.agents/status.md`.
 
 Paths in the table are repository-relative. `test_lean_agrees` tests are
 discovered by the required real-Lean gate; the similarly named native/Python
@@ -28,7 +28,7 @@ in `tests/test_vlan_gateway.py` has independent expected packets, architecture
 diagnostics and complete admission-counter state, checked in Python and Lean.
 Its STF vector runs on both P4 oracles, which observe packets only. No
 whole-gateway proof or Lean-authored source is claimed. Current checks and
-the source-mapped website walkthrough are recorded in [status](status.md).
+the source-mapped website walkthrough are recorded in `.agents/status.md`.
 
 The checked theorem inventories are [IR audit](../ir/ProofAudit.lean),
 [codec audit](../ir/CodecProofAudit.lean) and

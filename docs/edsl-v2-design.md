@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Implemented 2026-09-22; deviations recorded in decisions.md |
+| Status | Implemented 2026-09-22; deviations recorded in `.agents/decisions.md` |
 | Inputs | `notes/edsl-prior-art-own.md` (pakeles, p4py), `notes/edsl-prior-art-survey.md` (HDL and compiler eDSLs) and the pyright probes under `notes/probes/`, all archived in git |
 
 ## The problem
@@ -270,7 +270,7 @@ weaker. Static checking is a second, earlier line.
 ## Recommendations
 
 Each choice below is the one I recommend, with the prior art that
-decides it. Bili may overrule any of them in `decisions.md`.
+decides it. Bili may overrule any of them in `.agents/decisions.md`.
 
 1. **Two static types for values: `Var[W]` for things that can be
    assigned, `Bits[W]` for any value.** Fields, locals and `out`/`inout`

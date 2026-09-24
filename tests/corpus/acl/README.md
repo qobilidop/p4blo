@@ -3,7 +3,7 @@
 p4c's `ternary2-bmv2`, the corpus ACL: five ternary tables with runtime
 entries and overlapping priorities, a parser loop over a header stack, and
 a dispatch on which action a table ran. It is the program that fixes the
-priority convention (see [decisions.md](../../../docs/decisions.md), "Entry
+priority convention (see [decisions.md](../../../.agents/decisions.md), "Entry
 priority") and the first with vectors produced by BMv2 and reviewed by the
 p4c maintainers.
 

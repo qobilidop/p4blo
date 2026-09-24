@@ -184,7 +184,7 @@ behavior is resolved by adding it to the doc, not by patching one side.
 `docs/coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
-Record the decision in `docs/decisions.md`.
+Record the decision in `.agents/decisions.md`.
 
 **A corpus program.** Create `tests/corpus/<name>/` with `<name>.py` (the
 source, in the typed eDSL `p4blo.edsl`; `tests/corpus/forwarder/forwarder.py`
@@ -219,7 +219,7 @@ program whose vectors observe the extern.
 `run(loaded, entries, ingress_port, packet)` method, no P4 in it; the
 contract vocabulary is the table in `docs/design.md`, and the rules
 every architecture follows are in the same section and in
-`docs/decisions.md` ("Architecture rules", "Port rules"). If the Lean
+`.agents/decisions.md` ("Architecture rules", "Port rules"). If the Lean
 switch must follow, change `ir/P4bloIR/Switch.lean` in the same commit.
 
 ## Application development
@@ -255,7 +255,7 @@ commit. There is no line-count quota. Guidance:
 [review criteria](https://google.github.io/eng-practices/review/reviewer/looking-for.html),
 and [Git's logical steps](https://git-scm.com/docs/gitworkflows).
 
-At each checkpoint, update `docs/status.md` (including Open threads), the
+At each checkpoint, update `.agents/status.md` (including Open threads), the
 acceptance checklist and any changed decisions. Record the current iteration,
 unresolved findings, active branch/worktree, durable evidence and next action.
 Update `AGENTS.md` when scope or navigation changes. Another agent should be
@@ -270,13 +270,13 @@ integrator merges branches on `main`, reruns the gates, and removes the
 worktree. After each build step an independent, read-only review agent
 looks for confirmed defects with reproducers; its report is kept under
 `docs/notes/reviews/` and its findings are fixed on `main`. Every
-non-obvious choice becomes a dated entry in `docs/decisions.md`;
-progress and open threads live in `docs/status.md`.
+non-obvious choice becomes a dated entry in `.agents/decisions.md`;
+progress and open threads live in `.agents/status.md`.
 
 ## Resuming
 
-Read, in this order: `docs/status.md` (where things stand, open
-threads), `docs/decisions.md` (what was decided and why), `docs/design.md`
+Read, in this order: `.agents/status.md` (where things stand, open
+threads), `.agents/decisions.md` (what was decided and why), `docs/design.md`
 (what the project is), then this file. The write-up in
 `docs/writeup.md` is the narrative version. Nothing needed to continue
 the work lives outside the repository.

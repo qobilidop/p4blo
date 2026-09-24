@@ -1,6 +1,6 @@
 # Parked application proof drafts
 
-2026-09-23. The user-approved finite [milestone 1](../milestone-1.md)
+2026-09-23. The user-approved finite [milestone 1](../../docs/milestone-1.md)
 does not require these additional application proofs. Preserve the drafts;
 do not resume them automatically or present them as landed guarantees.
 The tracked plans describe the intended mathematics independently of these

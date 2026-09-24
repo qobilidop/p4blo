@@ -11,11 +11,11 @@ complete, and no next implementation step is authorized by them.
 
 | Scope | Result | Revision | Evidence |
 |---|---|---|---|
-| Assurance milestone 1 | complete 2026-09-23 | `3148a52` (code gate) | [completion report](evidence/milestone-1-completion.md), [evidence map](evidence.md) |
-| Python application collection: router, firewall, load balancer | complete 2026-09-24 | `c94336d` | [examples.md](examples.md); checks below |
+| Assurance milestone 1 | complete 2026-09-23 | `3148a52` (code gate) | [completion report](../docs/evidence/milestone-1-completion.md), [evidence map](../docs/evidence.md) |
+| Python application collection: router, firewall, load balancer | complete 2026-09-24 | `c94336d` | [examples.md](../docs/examples.md); checks below |
 | Project website with the VLAN gateway walkthrough | published | `38d740e` | <https://qobilidop.github.io/p4blo/> |
 
-The four claims of [design.md](design.md):
+The four claims of [design.md](../docs/design.md):
 
 | Claim | Status |
 |---|---|
@@ -59,7 +59,7 @@ scope from the user.
   remain intentionally; see [worktree-cleanup.md](notes/worktree-cleanup.md)
   before treating any of them or the local archives as disposable.
 - **Research backlog** beyond the completed milestone is the
-  [roadmap](implementation.md): Lean surface and validator extensions,
+  [roadmap](roadmap.md): Lean surface and validator extensions,
   whole-program codecs, xdp-filter, flowlet switching, bounded Katran.
 - **Verification open items:** whole-program validity, soundness and
   termination; general assignment preservation; further extern contracts;

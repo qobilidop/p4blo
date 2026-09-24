@@ -6,7 +6,7 @@ metadata the control wrote: `drop` wins over everything, then `flood` sends
 the packet to every port but the one it arrived on, otherwise it goes to
 `egress_port` alone.
 
-Ports are `0` to `ports - 1` (docs/decisions.md, "Port rules"). A packet
+Ports are `0` to `ports - 1` (.agents/decisions.md, "Port rules"). A packet
 arriving on any other port is the caller's error, a `ValueError` before
 anything runs; a packet the control sends to any other port is dropped with
 a diagnostic, the same way a misaligned parse is. 511, BMv2's drop port, is

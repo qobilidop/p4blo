@@ -104,4 +104,4 @@ The implementation closes top-level Program/Export/Entries tests, rejected-
 host state preservation, the two-language quickstart and the finite acceptance
 command. Review exposed and closed two strict-type observer gaps and one broad
 oracle expected-failure marker. Further readback/ingress proofs remain parked
-as recorded in [parked-proofs.md](../notes/parked-proofs.md); they are not release work.
+as recorded in `.agents/notes/parked-proofs.md`; they are not release work.

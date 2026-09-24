@@ -27,7 +27,7 @@ in this repository and runs in CI.
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
-[`docs/status.md`](docs/status.md). Not claimed: performance, running
+[`.agents/status.md`](.agents/status.md). Not claimed: performance, running
 existing P4 source, P4Runtime, hardware, or a replacement for any tool.
 The first thing a community version would build is a p4c backend;
 [4ward](https://github.com/4ward-p4/4ward) shows the route.
@@ -87,7 +87,7 @@ claimed. See [its assurance note](docs/evidence/lean-firewall-port.md).
    `import P4blo` for users, `import P4bloIR` for the IR contract.
 6. [`docs/coverage.md`](docs/coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
-7. [`docs/decisions.md`](docs/decisions.md): every choice made while
+7. [`.agents/decisions.md`](.agents/decisions.md): every choice made while
    building, with its reason.
 8. [`docs/workflows.md`](docs/workflows.md): the gates, where every
    external input is pinned, and how to make each kind of change.

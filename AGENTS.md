@@ -11,7 +11,7 @@ independent Lean semantics validated against a runnable reference.
 
 ## Read first, in this order
 
-1. `docs/status.md`: where the work stands, per claim and per step, and
+1. `.agents/status.md`: where the work stands, per claim and per step, and
    the open threads. `docs/milestone-1.md` is the active finite definition
    of done; it supersedes older open-ended proof/application work lists.
    `docs/profile.md` and `docs/evidence.md` summarize its input domain and
@@ -20,7 +20,7 @@ independent Lean semantics validated against a runnable reference.
    `docs/examples.md` records the collection's scope and satisfied finite
    acceptance checklist. Read it before further application work; completion
    does not reopen the assurance milestone or parked proofs.
-2. `docs/decisions.md`: every choice made while building, dated, with
+2. `.agents/decisions.md`: every choice made while building, dated, with
    its reason. Overrule one by adding a new entry that says so.
 3. `docs/design.md`: what the project is, the four claims, how each is
    tested, what is out of scope.
@@ -92,7 +92,7 @@ so the required CI gate discovers them without a hand-maintained file list.
   Wire new checks into CI explicitly. Preserve upstream regression programs
   in `tests/corpus/`.
 - **Every decision the design does not settle** becomes a dated entry
-  in `docs/decisions.md`. `docs/status.md` is updated at every
+  in `.agents/decisions.md`. `.agents/status.md` is updated at every
   checkpoint, including its "Open threads". Record the exact checks run,
   skipped gates, remaining obligations and next concrete step. A fresh
   agent must be able to resume from the repository alone; conversation
@@ -126,9 +126,9 @@ so the required CI gate discovers them without a hand-maintained file list.
   explicitly rather than presenting skips as successful checks.
 - **Continue autonomously within the requested direction.** Make scoped
   design decisions without waiting for feedback and record their reasons
-  in `docs/decisions.md` for later review. Record confidence and a revisit
+  in `.agents/decisions.md` for later review. Record confidence and a revisit
   trigger for uncertain choices. Follow `docs/milestone-1.md` for current
-  acceptance (Python and Lean only); `docs/implementation.md` also contains
+  acceptance (Python and Lean only); `.agents/roadmap.md` also contains
   future work, not mandatory completion criteria. Prefer reversible steps
   to waiting for feedback. Complete the finite acceptance checklist, then
   stop; do not automatically add every next possible proof. Universal Python

@@ -2,7 +2,7 @@
 
 Historical prototype write-up: paths, names and counts below describe that
 checkpoint. Current architecture and evidence are in [design.md](design.md),
-[implementation.md](implementation.md) and [status.md](status.md).
+`.agents/roadmap.md` and `.agents/status.md`.
 
 A post for P4 spec, compiler and architecture people, to decide whether
 the proposal below deserves an RFC. Every number in it comes from a file
@@ -96,7 +96,7 @@ same elaboration. That is what keeps the Lean semantics free of type
 inference.
 
 Three decisions shape the schema, each logged with its reason in
-`docs/decisions.md`.
+`.agents/decisions.md`.
 
 Names, not ids. The first draft used global integer ids. It was switched
 the same day, on a pointer to ONNX and on 4ward's stated principle,
@@ -315,7 +315,7 @@ models of `register`, `counter` and `checksum16`, pinned to the Python
 ones. `Switch.lean` is the Lean twin of the Python switch, so that the
 pipe compares whole packets in and out. `lake test` runs 181 checks on
 the decoder, the index, every interpreter rule, the extern models and
-the forwarder's vectors (`docs/status.md`).
+the forwarder's vectors (`.agents/status.md`).
 
 Differential random testing is `python/p4blo/drt/`. A generator walks
 the parser symbolically so that random packets reach deep states,
@@ -328,7 +328,7 @@ are equal as sequences of port and bytes, or when both report an error;
 anything else is a divergence that prints as a replayable STF vector.
 
 The recorded sweep is 18,000 random cases over nine programs with
-zero divergences, before the tenth was added (`docs/status.md`); CI runs 200 per program on every
+zero divergences, before the tenth was added (`.agents/status.md`); CI runs 200 per program on every
 push (`.github/workflows/lean.yml`, `tests/test_drt.py`). One slice,
 reproduced while writing this:
 
@@ -472,7 +472,7 @@ twice by an independent, read-only agent: after step 1, kept at
 fixed on main and the rulings it forced written into
 `docs/semantics.md`; and after step 5, over everything that landed
 since, kept beside it. Every choice the design did not already settle is a
-dated entry with its reason in `docs/decisions.md`, and a survey preceded
+dated entry with its reason in `.agents/decisions.md`, and a survey preceded
 each pick: `docs/prior-art-ir.md` for the schema,
 `docs/corpus-candidates.md` for the corpus.
 
@@ -491,5 +491,5 @@ The reading order from `README.md`.
 5. `lean/P4blo/`: the same semantics in Lean, normative for meaning.
 6. `docs/coverage.md`: every construct of P4-SpecTec's elaborated IL and
    its status in p4blo.
-7. `docs/decisions.md`: every choice made while building, with its
+7. `.agents/decisions.md`: every choice made while building, with its
    reason.

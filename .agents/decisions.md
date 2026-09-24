@@ -5,7 +5,7 @@ date it was made. This is a register, not a diary: an entry that is
 superseded is rewritten in place with the new date and reason, and an
 entry whose subject no longer exists is removed. The full chronological
 log up to the last compaction is in git at tag `agents-archive/2026-09-24`
-(`docs/decisions.md` there). A decision the design document already
+(`.agents/decisions.md` there). A decision the design document already
 settles is not repeated here.
 
 ## Environment and tooling

@@ -51,4 +51,4 @@ the parser put there. Two of these vectors therefore diverge on BMv2 and
 are carried as a known divergence in `tests/test_oracle_bmv2.py`. P4
 leaves an out-of-range register access implementation-defined, p4blo's
 choice is written in `docs/semantics.md` and implemented twice, and the
-divergence is documented rather than resolved; see `docs/decisions.md`.
+divergence is documented rather than resolved; see `.agents/decisions.md`.

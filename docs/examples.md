@@ -27,7 +27,7 @@ The router uses a guarded fixed-header IPv4 profile. The firewall uses exact,
 SYN-created TCP pinholes in sixteen direct-mapped slots; collisions reject
 without eviction, policy applies on every packet and state lasts until reload.
 Each README defines the supported profile and explicit limitations. Scoped
-choices and their reasons are recorded in [decisions.md](decisions.md).
+choices and their reasons are recorded in `.agents/decisions.md`.
 The load balancer dispatches UDP requests through service and group/bucket
 tables, preserving IP addresses, UDP fields and payload, and assuming backends
 share the VIP.
@@ -93,7 +93,7 @@ replace intended-behavior checks.
 
 All three applications met these criteria on 2026-09-24 at implementation
 revision `c94336d`, with clean independent reviews (archived in git) and
-all required gates passing; [status.md](status.md) records the checks.
+all required gates passing; `.agents/status.md` records the checks.
 Additional applications and broader research remain backlog.
 Evidence-driven improvements to the eDSL, diagnostics, runtime or
 verification infrastructure are in scope for future application work;

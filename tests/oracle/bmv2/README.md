@@ -27,7 +27,7 @@ programmers actually run, and the two disagree in useful ways.
   verbatim. This is the main reason the second oracle exists.
 - **`const entries` priorities.** `priority/table_entries_priority.stf`
   replays entries the printer emits in descending IR priority
-  (`docs/decisions.md`, "Printed ternary entries are not const"), and
+  (`.agents/decisions.md`, "Printed ternary entries are not const"), and
   BMv2 picks the winner by its own rule rather than by anything this
   repository wrote.
 - **Runtime ternary priorities.** `acl/ternary2.stf` installs
@@ -70,7 +70,7 @@ in [`Dockerfile`](Dockerfile).
 
 Both images are pinned by the digest of their multi-architecture index,
 so amd64 and arm64 both resolve natively; the official p4c image is
-amd64 only and crashed under emulation (`docs/decisions.md`, "p4c and
+amd64 only and crashed under emulation (`.agents/decisions.md`, "p4c and
 BMv2 from Bili's multi-arch builds"). The p4c image carries the
 compiler, the BMv2 image the switch, and `COPY --from` grafts the
 second's `/usr/local` onto the first. The BMv2 image ships
@@ -114,7 +114,7 @@ has to change on the way:
 - **Ternary priorities are inverted as `10000 - priority`**, p4c's own
   inversion in `backends/bmv2/bmv2stf.py`, because STF and p4blo have
   the larger priority winning and BMv2 the smaller
-  (`docs/corpus-candidates.md`, section 0; `docs/decisions.md`,
+  (`docs/corpus-candidates.md`, section 0; `.agents/decisions.md`,
   "Entry priority: larger wins, everywhere in the IR"). The CLI takes a
   priority exactly on a table whose BMv2 match type is `ternary`, which
   is exactly when p4blo requires one, and a priority above 10000 is an

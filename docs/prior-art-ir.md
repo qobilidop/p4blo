@@ -668,7 +668,7 @@ makes at p4c's midend, minus P4Info.
    principle is the opposite of the design's "names are ids", chosen for
    readability of the raw proto. The design already answers this
    (readability through the printer), but should say so in
-   `decisions.md` citing 4ward, and should acknowledge that the hand-written
+   `.agents/decisions.md` citing 4ward, and should acknowledge that the hand-written
    forwarder in build step 1 will be the least readable artifact of the
    project for exactly this reason.
 2. **Packet and header operations as method calls versus as statements.**

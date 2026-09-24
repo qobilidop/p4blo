@@ -278,7 +278,7 @@ arguments and its call sites.
   something P4 leaves open, the choice is a closed behavior like any
   other: a `register` read at or beyond its size yields zero and a write
   there is ignored. BMv2 ignores the write too but leaves the read's
-  destination untouched; `docs/decisions.md` records why that divergence
+  destination untouched; `.agents/decisions.md` records why that divergence
   stands.
 - **Builtin family names** use the segment before the first dot: `register.8`
   and `register` bind the same service, subject to the declaration's shape.

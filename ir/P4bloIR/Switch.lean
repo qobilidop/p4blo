@@ -19,7 +19,7 @@ The rules, all from docs/design.md:
   bytes after the ones the parser consumed;
 - `drop` wins; then `flood` sends to every port but the ingress one; else
   the packet goes to `egress_port`;
-- ports are `0` to `ports - 1` (docs/decisions.md, "Port rules"): an
+- ports are `0` to `ports - 1` (.agents/decisions.md, "Port rules"): an
   ingress port outside them is the caller's error, before anything runs;
   an `egress_port` outside them drops the packet with a diagnostic. 511,
   BMv2's drop port, is just an out-of-range port here.

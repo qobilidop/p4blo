@@ -47,7 +47,7 @@ The design note's contract, kept here because no single module carries the
 whole of it: `values` has the value rules, `views` the field rules,
 `blocks` the block rules. A row marked (*) is one of the four deviations
 from the note that the type checker forced; each is accepted and recorded
-in `docs/decisions.md`, and each holds its run-time side.
+in `.agents/decisions.md`, and each holds its run-time side.
 
 Checked statically:
 

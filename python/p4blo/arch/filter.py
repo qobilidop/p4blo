@@ -9,7 +9,7 @@ merely go unseen.
 
 The filter has no port count: any `bit<9>` egress port passes through, and
 an ingress port that does not fit `bit<9>` is the caller's error, a
-`ValueError` before anything runs (docs/decisions.md, "Port rules").
+`ValueError` before anything runs (.agents/decisions.md, "Port rules").
 """
 
 from __future__ import annotations
