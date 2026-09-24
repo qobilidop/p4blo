@@ -1,7 +1,8 @@
 # Python application examples
 
-Accepted 2026-09-24. The router is implemented and independently reviewed;
-integration checks are recorded in `status.md`. The other two remain pending.
+Accepted 2026-09-24. The router and firewall are implemented and independently
+reviewed; integration checks are recorded in `status.md`. Load-balancer
+integration and final collection checks remain pending.
 This workstream follows completed assurance milestone 1 without reopening its
 frozen acceptance criteria. Current execution status lives in [status.md](status.md).
 Agent instructions remain in [AGENTS.md](../AGENTS.md); engineering procedures
@@ -24,11 +25,11 @@ firewall and load balancer are parallel conceptual next steps, each runnable
 independently. Familiarity and a compact, honest behavioral contract matter
 more than reusing existing implementations or maximizing feature counts.
 
-The firewall's protocol subset, state capacity, expiration policy and state
-representation are not yet selected. The existing Bloom firewall does not
-decide those choices. Router input validation and load-balancer rewrite and
-configuration-change policies also need explicit contracts before coding.
-Record scoped choices and their reasons in [decisions.md](decisions.md).
+The router uses a guarded fixed-header IPv4 profile. The firewall uses exact,
+SYN-created TCP pinholes in sixteen direct-mapped slots; collisions reject
+without eviction, policy applies on every packet and state lasts until reload.
+Each README defines the supported profile and explicit limitations. Scoped
+choices and their reasons are recorded in [decisions.md](decisions.md).
 
 ## Accepted organization
 
@@ -53,8 +54,8 @@ tests/
 
 The intended repository-root invocation is
 `nix develop -c uv run python -m examples.router.demo`, with corresponding
-firewall and load-balancer modules. The router command is available; the others
-are planned. Examples use the existing project environment, with no separate package
+firewall and load-balancer modules. Router and firewall commands are available;
+load-balancer integration is pending. Examples use the existing environment, with no separate package
 or dependency set per application.
 
 Each program keeps headers, parser, actions, tables, control and deparser
@@ -89,7 +90,8 @@ Agreement between implementations does not replace intended-behavior checks.
 
 - [x] Router meets the application criteria above; see
   [its independent review](notes/reviews/example-router.md) and checkpoint.
-- [ ] Stateful firewall meets the application criteria above.
+- [x] Stateful firewall meets the application criteria above; see
+  [its independent review](notes/reviews/example-firewall.md).
 - [ ] Flow-affine load balancer meets the application criteria above.
 - [ ] All three are discovered by applicable repository/CI gates, including
   the shared real-Lean fixture and `test_lean_agrees` naming convention.

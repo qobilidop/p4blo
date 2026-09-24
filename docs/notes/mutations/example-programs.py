@@ -16,6 +16,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 FAULTS = {
+    "firewall": {
+        "tuple-mismatch-admitted": (
+            "with self.if_(self.resident == self.record):",
+            "with self.if_(self.resident != self.record):",
+        ),
+        "collision-evicts-resident": (
+            "& (self.resident == 0)", "& (self.resident >= 0)",
+        ),
+        "policy-bypassed": (
+            "with self.if_(self.meta.permitted):",
+            "with self.if_(self.meta.ingress_port > 0):",
+        ),
+    },
     "router": {
         "ttl-wrap": ("& (ip.ttl > 1)", "& (ip.ttl >= 0)"),
         "stale-checksum": (

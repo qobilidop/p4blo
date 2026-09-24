@@ -1320,3 +1320,13 @@ one that says so.
   packet answers, both interpreters/oracles and fresh-reader review. Revisit
   payload-envelope validation if architecture packet-length metadata becomes
   an actual requirement; do not imply complete IPv4 conformance now.
+- **Use exact bounded pinholes for the educational firewall.** A transparent
+  two-zone IPv4/TCP filter records a full normalized tuple plus occupancy bit
+  in one of sixteen CRC-indexed slots. Only an allowed outbound SYN can open
+  an empty slot; collisions reject without eviction. Check service policy on
+  every packet so removal revokes access immediately while retaining records.
+  No aging, handshake/sequence tracking or FIN/RST deletion is implied; reload
+  resets state. Confidence: high after full-cell known answers, both
+  interpreters/oracles, fault sensitivity and independent usability review.
+  Revisit capacity/lifetime when a concrete application needs more than this
+  deliberately bounded teaching contract. Preserve the upstream Bloom fixture.

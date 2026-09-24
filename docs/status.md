@@ -13,6 +13,16 @@ The active new workstream is the three Python application examples in
 
 ## Latest checked checkpoint
 
+**Firewall integration (2026-09-24).** Candidate `f874b6f` adds the public
+exact-pinhole TCP filter. Independent [review](notes/reviews/example-firewall.md)
+has no confirmed defects. Its 890-request sequence checks packets and all
+sixteen cells in both interpreters; both real P4 oracles pass its exact
+nine-packet vector. Author focused checks: 12 passed, full Ruff/Pyright pass.
+Three isolated program faults each fail both expected-answer tests, with
+passing baseline/restoration. Shared source/test interfaces are committed at
+`ca6ab6b`. Next: integrate the load balancer and the review-requested group-zero
+miss regression, then run collection-wide acceptance and final gates.
+
 **Router implementation (2026-09-24, checked).** The first
 public application is in `examples/router/`, with separate verification in
 `tests/examples/router/`. Its guarded fixed-header IPv4 contract is documented
@@ -475,10 +485,10 @@ The application collection is active. Milestone 1 is complete; the other
 older plans below are deliberately parked, not automatic continuation tasks.
 
 - **Python application collection:** autonomous implementation is authorized;
-  follow [examples.md](examples.md). Current iteration: router reviewed and
-  checked on `main`; firewall/load-balancer workers prepare independent
-  applications in the worktrees named above. Next: commit router integration,
-  then give workers the committed shared interfaces.
+  follow [examples.md](examples.md). Current iteration: router and firewall
+  reviewed/checked; load-balancer review requests one additional group-zero
+  service-miss regression. Next: integrate that checked application, run the
+  final collection gates, record completion and remove task-owned worktrees.
   Keep the finite checklist and review findings current as each advances.
 
 - **Project website:** the requested Python gateway walkthrough is published,
