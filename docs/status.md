@@ -23,6 +23,9 @@ fault campaigns with passing restored baselines (three router faults, three
 firewall faults, four load-balancer faults). The eDSL and interpreter semantics
 needed no changes. Shared discovery, typing, exact vector checks and oracle
 inventory guards are the reusable engineering improvements from this work.
+An additional reviewed fidelity pass gives the firewall demo valid TCP checksums
+and SYN-ACK acknowledgment, with a test of the actual packet fixtures; eight
+focused firewall tests pass and the program/STF remain unchanged.
 Next: combined full gates and final evidence/cleanup; do not count completion
 until the remaining checkbox in [examples.md](examples.md) is satisfied.
 

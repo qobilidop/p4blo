@@ -25,3 +25,10 @@ Baseline and restored runs each pass both tests. Reproducible recipe:
 `docs/notes/mutations/example-programs.py`; local evidence:
 `.artifacts/examples-mutations/firewall/`. These are program faults evaluated
 under unchanged interpreters; no new interpreter-mutation claim is made.
+
+A later demonstration-fidelity pass replaced the demo's deliberately unchecked
+TCP checksum placeholders with valid SYN/SYN-ACK packets, including acknowledgment
+one. A test checks the actual demo fixtures' IPv4 lengths/checksums, TCP
+pseudoheader checksums, reversed endpoints and flags. The independent reviewer
+confirmed those properties and unchanged demo output. Eight focused firewall
+tests pass in the integrated tree. Program source, golden and STF are unchanged.

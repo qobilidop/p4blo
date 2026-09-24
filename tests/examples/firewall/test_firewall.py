@@ -3,13 +3,14 @@
 import struct
 from pathlib import Path
 
+from examples.firewall.demo import REPLY, SYN
 from examples.firewall.program import build
 from p4blo import ir, stf
 from p4blo.drt.case import Case
 from p4blo.drt.run import Outcome
 from p4blo.drt.state import Observation
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.examples.packets import ipv4_frame
+from tests.examples.packets import internet_checksum, ipv4_frame
 from tests.examples.support import check_lean, check_python
 
 type Flow = tuple[int, int, int, int]
@@ -204,3 +205,17 @@ def test_lean_agrees_firewall_independent_packets(lean_binary: Path, tmp_path: P
 
 def test_crc_known_answer() -> None:
     assert crc16(b"123456789") == 0xBB3D
+
+
+def test_demo_packets_have_valid_checksums_and_acknowledgement() -> None:
+    for frame in (SYN, REPLY):
+        ip, tcp = frame[14:34], frame[34:]
+        assert int.from_bytes(ip[2:4], "big") == len(frame) - 14
+        assert internet_checksum(ip) == 0
+        pseudoheader = ip[12:20] + struct.pack("!BBH", 0, 6, len(tcp))
+        assert internet_checksum(pseudoheader + tcp) == 0
+    assert SYN[47] == 0x02
+    assert REPLY[47] == 0x12
+    assert int.from_bytes(REPLY[42:46], "big") == int.from_bytes(SYN[38:42], "big") + 1
+    assert SYN[26:34] == REPLY[30:34] + REPLY[26:30]
+    assert SYN[34:38] == REPLY[36:38] + REPLY[34:36]
