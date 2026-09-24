@@ -213,6 +213,45 @@ every architecture follows are in the same section and in
 `docs/decisions.md` ("Architecture rules", "Port rules"). If the Lean
 switch must follow, change `ir/P4bloIR/Switch.lean` in the same commit.
 
+## Application development
+
+The accepted collection and finite completion criteria are in
+[examples.md](examples.md). Work one complete router through this loop before
+replicating the structure for firewall and load-balancer applications:
+
+1. Specify the application story, packet profile, host assumptions and failure
+   behavior. Establish independent expected outcomes before relying on replay.
+2. Build the smallest complete runnable scenario through public APIs. Record
+   concrete authoring, configuration, inspection and diagnostic difficulties.
+3. Challenge correctness with boundary and persistent-sequence tests,
+   Python/Lean comparison, applicable oracles and targeted deliberate faults.
+   Preserve reproducers and distinguish setup failures from detected faults.
+4. Obtain independent read-only correctness and usability review after each
+   build step. The reviewer runs the documented demo and tries a small policy
+   modification using scratch copies or local configuration overrides in
+   their isolated worktree, without editing canonical sources.
+   Retain the report under `docs/notes/reviews/` and resolve confirmed findings.
+5. Improve the responsible layer: application, eDSL, diagnostics, runtime or
+   test infrastructure. Validate a reusable change with concrete usage. Record
+   speculative opportunities as backlog rather than expanding acceptance.
+6. Repeat affected checks/review, run required integration gates, and record
+   the resulting revision, exact commands, skips and outstanding obligations.
+
+A commit represents a coherent improvement that can be reviewed on its own
+and leaves the project working. Keep behavior with its tests and explanation;
+separate mechanical moves and reusable API changes from application policy.
+Avoid both incomplete file-by-file commits and a collection-wide omnibus
+commit. There is no line-count quota. Guidance:
+[Google's small changes](https://google.github.io/eng-practices/review/developer/small-cls.html),
+[review criteria](https://google.github.io/eng-practices/review/reviewer/looking-for.html),
+and [Git's logical steps](https://git-scm.com/docs/gitworkflows).
+
+At each checkpoint, update `docs/status.md` (including Open threads), the
+acceptance checklist and any changed decisions. Record the current iteration,
+unresolved findings, active branch/worktree, durable evidence and next action.
+Update `AGENTS.md` when scope or navigation changes. Another agent should be
+able to resume from these files without chat history or temporary worktrees.
+
 ## Working with agents
 
 Each sub-agent gets its own git worktree (`git worktree add`), owns a
@@ -232,3 +271,5 @@ threads), `docs/decisions.md` (what was decided and why), `docs/design.md`
 (what the project is), then this file. The write-up in
 `docs/writeup.md` is the narrative version. Nothing needed to continue
 the work lives outside the repository.
+For active application work, also read `docs/examples.md` for the accepted
+scope, remaining acceptance criteria and next implementation step.

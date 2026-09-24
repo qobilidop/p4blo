@@ -16,6 +16,10 @@ independent Lean semantics validated against a runnable reference.
    of done; it supersedes older open-ended proof/application work lists.
    `docs/profile.md` and `docs/evidence.md` summarize its input domain and
    exact evidence boundaries; do not infer broader guarantees from counts.
+   Milestone 1 is complete. The accepted new application workstream is
+   `docs/examples.md`: three Python examples, with its own finite acceptance
+   checklist. Read it before starting application work; it does not reopen
+   the completed assurance milestone or parked proofs.
 2. `docs/decisions.md`: every choice made while building, dated, with
    its reason. Overrule one by adding a new entry that says so.
 3. `docs/design.md`: what the project is, the four claims, how each is
@@ -60,6 +64,9 @@ so the required CI gate discovers them without a hand-maintained file list.
 
 ## Conventions
 
+- **Agent instructions live in `AGENTS.md` alone.** Never create `CLAUDE.md`
+  or `CLAUDE.local.md`; Claude-specific notes belong in `.claude/rules/`.
+  Keep this entry point current when the active scope or workflow changes.
 - **Pure Python.** No dependency of the `p4blo` package may ship
   native code, and nothing newer than Python 3.13 is used.
 - **Generated code is committed.** `python/p4blo/v0/*_pb2.py*` come
@@ -77,12 +84,20 @@ so the required CI gate discovers them without a hand-maintained file list.
   new ones up by itself. Sources are written in the typed eDSL
   (`p4blo.edsl`), are type-checked by pyright in CI, and must rebuild
   their golden byte for byte.
+- **Public application examples** follow `docs/examples.md`, with canonical
+  Python source under `examples/` and verification assets under
+  `tests/examples/`. This layout is accepted but not yet implemented; wire
+  discovery and CI explicitly rather than assuming existing corpus gates
+  discover it. Preserve upstream regression programs in `tests/corpus/`.
 - **Every decision the design does not settle** becomes a dated entry
   in `docs/decisions.md`. `docs/status.md` is updated at every
   checkpoint, including its "Open threads". Record the exact checks run,
   skipped gates, remaining obligations and next concrete step. A fresh
   agent must be able to resume from the repository alone; conversation
   history and temporary files are not handoff documentation.
+  For application work, also maintain the acceptance checklist in
+  `docs/examples.md`. Record the current iteration, unresolved review findings,
+  relevant worktree/branch and evidence locations, and the next concrete step.
 - **Commits** follow the usual git conventions (Chris Beams' seven
   rules; the kernel's "describe your changes"). One logical change per
   commit: if the subject wants an "and" or a semicolon, split it. The
@@ -99,6 +114,9 @@ so the required CI gate discovers them without a hand-maintained file list.
   `"${CODEX_HOME:-$HOME/.codex}/bin/coauthor"` in the active session and
   append its output unchanged. If it fails, stop and report the failure;
   never guess or hard-code the model.
+  Size commits by a coherent, independently reviewable outcome, not a line
+  quota or one file per commit. Include related tests and documentation;
+  separate mechanical moves and reusable API changes from application policy.
 - **Commit and push autonomously.** The user authorizes committing and
   pushing completed, checked work without a separate permission prompt.
   Inspect the branch and remote first, preserve unrelated changes, and

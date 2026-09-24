@@ -8,8 +8,24 @@ checkpoint. To resume the work, read this, then
 Last updated: 2026-09-24. The accepted Python/Lean architecture and bounded
 assurance milestone 1 are complete. Broader research remains backlog;
 [verification.md](verification.md) is not an open-ended release requirement.
+The active new workstream is the three Python application examples in
+[examples.md](examples.md); the user authorized autonomous implementation.
 
 ## Latest checked checkpoint
+
+**Application collection planning (2026-09-24).** Accepted three familiar
+applications: IPv4 router, stateful firewall and flow-affine load balancer.
+Canonical source/demo/docs will live under `examples/`, verification under
+`tests/examples/`; upstream corpus fixtures retain their existing contracts.
+The finite plan is [examples.md](examples.md), with the iterative engineering
+loop in [workflows.md](workflows.md#application-development) and navigation in
+`AGENTS.md`. Implementation has not started. Next: specify the router profile
+and independent expected outcomes, then build its complete runnable scenario.
+This checkpoint changes documentation only; no new runtime evidence is claimed.
+Independent [planning review](notes/reviews/examples-plan.md) found no blocking
+issues; both navigation/review-wording suggestions are resolved. `git diff
+--check` and a one-off check of headings and 39 local link targets pass.
+Runtime gates were not rerun for this documentation-only change.
 
 **Python gateway walkthrough (2026-09-24, published).** At the user's
 request, replace the website's short Python/Lean excerpts with a complete
@@ -420,8 +436,16 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 
 ## Open threads
 
-Future and deliberately parked work. Milestone 1 is complete; these older
-plans are not active acceptance requirements or automatic continuation tasks.
+The application collection is active. Milestone 1 is complete; the other
+older plans below are deliberately parked, not automatic continuation tasks.
+
+- **Python application collection:** autonomous implementation is authorized;
+  follow [examples.md](examples.md). Current iteration: planning, on `main`.
+  Next: router contract and first complete implementation. Firewall protocol,
+  capacity/expiration and load-balancer configuration policies remain design
+  decisions; existing corpus behavior does not settle them. No implementation
+  or fresh runtime checks yet. Keep the finite checklist and review findings
+  current as each application advances.
 
 - **Project website:** the requested Python gateway walkthrough is published,
   checked and independently reviewed at

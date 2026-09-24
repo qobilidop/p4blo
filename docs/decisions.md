@@ -1291,3 +1291,23 @@ one that says so.
   tested demo, with no browser interpreter implied. Confidence: high in the
   source mapping and bounded implementation; visual choices remain open to
   user feedback. Revisit when a live playground is actually requested.
+- **Build a minimal familiar Python application collection.** The user
+  accepted an IPv4 router, stateful firewall and flow-affine load balancer,
+  selected for familiarity to packet-processor programmers and distinct
+  lessons. Build the router first; the other two are independent next steps.
+  Public source/demo/docs belong under `examples/`, verification assets under
+  `tests/examples/`. This extends the earlier shared-verification layout:
+  published application sources now have a separate audience, while test
+  infrastructure and faithful upstream fixtures remain under `tests/`.
+  Preserve existing contracts and website content. Confidence: high in the
+  agreed scope; revisit individual designs through concrete correctness and
+  usability evidence, not inherited implementation convenience. Exact profiles
+  remain to be designed. Scope and finite acceptance: `examples.md`.
+- **Iterate applications as users of the project.** The user accepted coherent
+  reviewable commits, independent correctness/usability review and changes to
+  the eDSL or supporting infrastructure when examples expose real problems.
+  Maintain agent navigation, decisions, acceptance and resumable checkpoints
+  in the repository. Autonomous implementation is authorized. Confidence:
+  high; refine the workflow after the router, and defer speculative expansion.
+  Procedures: `workflows.md#application-development`. This work does not reopen
+  completed assurance milestone 1 or require additional application proofs.
