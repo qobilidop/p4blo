@@ -30,4 +30,15 @@ packet-shape/direction cases, and original-source comparisons. SpecTec's
 known odd-byte CRC32 bug permutes these register indices consistently, so
 packet-only examples can pass despite wrong state. See
 `docs/notes/crc-contract.md` and `docs/notes/firewall-port.md` for assurance
-limits. This increment is not a Lean-authored example or a correctness proof.
+limits.
+
+The independent [Lean source](../../../lean/P4blo/TutorialFirewall.lean)
+constructs the same complete IR without reading the golden. Its fixed-program
+runner preserves register state across requests and is tested against all
+8,192 cells as well as packet outputs. Follow the
+[quickstart](../../../docs/quickstart.md) to author and run either version.
+The [Lean port](../../../docs/notes/lean-firewall-port.md),
+[initialization](../../../docs/notes/lean-firewall-proof.md) and
+[Bloom insertion](../../../docs/notes/firewall-bloom.md) notes distinguish
+tested execution from scoped proofs. Complete raw IR assembly is not a
+verified frontend, and no whole-firewall correctness proof is claimed.
