@@ -538,7 +538,13 @@ for name in ['target', 'operands', 'order', 'empty']:
         print(view_path.relative_to(root), hashlib.sha256(view_path.read_bytes()).hexdigest())
     print(name, 'rows', len(artifact['rows']), 'bytes', len(data), 'sha256', hashlib.sha256(data).hexdigest())
 for path in ['ir/P4bloIR/Json.lean', 'ir/P4bloIR/ParserCodecLaws.lean', 'ir/Tests/ParserCodec.lean', 'tests/test_codec_parser.py', 'ir/P4bloIR.lean', 'ir/CodecProofAudit.lean']:
-    assert (root / path).read_bytes() == (fault / path).read_bytes(), path
+    historical = subprocess.run(['git', '-C', str(root), 'show', f'e4c8402:{path}'], check=True, capture_output=True).stdout
+    assert historical == (fault / path).read_bytes(), path
+    current = (root / path).read_bytes()
+    if current != historical:
+        assert path in ['ir/P4bloIR.lean', 'ir/CodecProofAudit.lean'], path
+        reviewed = subprocess.run(['git', '-C', str(root), 'show', f'b0c31425:{path}'], check=True, capture_output=True).stdout
+        assert current == reviewed, path
     print('restored', path, hashlib.sha256((root / path).read_bytes()).hexdigest())
 print('live observations', count, 'distinct requests', len(seen), 'both restored endpoints agree')
 ```
@@ -578,3 +584,15 @@ protobuf outputs, and checked all forty live raw/view pairs (34 unique inputs),
 all five reconstructed mutations and six restored source pairs. The report
 distinguishes the proof-order caveat and paired-observer false assurances.
 No binary consumers remain at handoff.
+
+### Later Action/Block registration provenance
+
+At main integration `7bfdcca`, only the public root and codec audit differ
+from the restored final parser tree. The recipe above checks its six sources
+against final parser checkpoint `e4c8402`, then checks the two legitimate
+current registration additions against reviewed `b0c31425`. Both endpoints
+pass all 231 baseline rows and 40 live observations (34 distinct requests).
+Old source identities and artifact bytes remain unchanged. For main replay,
+set the recipe's `root` to the main checkout; `fault` remains the historical
+restored tree. The finite milestone runner separately removes dependence on
+such historical worktrees for its selected acceptance catalogue.

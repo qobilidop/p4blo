@@ -14,14 +14,14 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 **Active goal:** complete [assurance milestone 1](milestone-1.md), accepted by
 the user after explicitly declining universal Python correctness as a resource
-goal. Integrate already-reviewed Action/Block work, close top-level interchange
-tests, audit/consolidate evidence, and finish usable clean-checkout acceptance.
+goal. Action/Block work is integrated; close top-level interchange tests,
+audit/consolidate evidence, and finish usable clean-checkout acceptance.
 Further application proof expansion is parked; the older open threads below
 are backlog unless required by that finite checklist. No milestone completion
 is claimed yet.
 
-Combined local code integration at `9a12253` plus the reviewed oracle selector
-at `529475f`, including total Expr/LValue/Stmt codec proofs,
+Combined local code integration at `7bfdcca`, including reviewed Action/Block
+laws and the oracle selector at `529475f`, total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -152,7 +152,12 @@ mismatches. Independent review and final combined restoration checks pass.
 The Action/Block baseline adds 28 native anchors and 518 Python checks; all
 498 exact raw rows and 114 public protobuf outputs replay against eighteen
 historical source identities. The separate shared-helper extraction preserves
-all four Table statements and old bytes. Actual Action/Block laws remain work.
+all four Table statements and old bytes. Two actual Action/Block roundtrip
+laws now add three default audits, an all-kind mixed kernel witness and twenty
+overflow exclusions. Five compiling codec faults distinguish proof rejection
+from roundtrip-preserving mapping/default/error-order mistakes. Paired faulty
+observers can fool direct comparisons but not the independent native anchors.
+All 86 retained raw observations (78 distinct requests) replay restored.
 The owned printer lifecycle fix adds fifteen deterministic regressions;
 all actual printer goldens pass without skips and independent review is clear.
 Required real-Lean DRT: **2700 passed**, no skips. Full gate:
@@ -178,7 +183,7 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `forwarder-tables.md`, `parser-codec.md`, `firewall-bloom.md`,
 `block-codec-next.md`, `block-codec-baseline.md`, `codec-object-helpers.md`
 and `printer-lifecycle.md`, `forwarder-apply.md`, `forwarder-apply-ci.md`
-and `firewall-readback-next.md`.
+and `firewall-readback-next.md`, `block-codec.md`, `milestone-1-scope.md`.
 
 All five remote workflows pass for `425fbc9`. At pushed `ff47066`, CI, Oracle
 and BMv2 plus Lean pass. XDP run `35949452182` failed before compilation:
@@ -200,11 +205,11 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Twenty retained execution-fault bundles and 169 raw codec
+Twenty retained execution-fault bundles and 255 raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
 All twenty execution bundles replay successfully on this integration
-(twenty-seven requests), as do all 169 raw codec observations. The real
+(twenty-seven requests), as do all 255 raw codec observations. The real
 forwarder's new TTL0 bundle matches its current authored Program, tracked
 edge input and fixed configuration. The new
 statement campaigns contribute 25 observations of 20 distinct requests;
@@ -212,9 +217,11 @@ these counts are not independent-input counts. Declaration campaigns add 24
 observations of 24 distinct requests; harness views are not additional inputs.
 Table campaigns add 56 observations of 52 distinct requests, with 56 matching
 harness views. Parser campaigns add 40 observations of 34 distinct requests,
-with 40 matching harness views. The table campaign's historical registration
-sources remain pinned at `661c8d8`; current parser-only registration additions
-are checked separately at `75a36af`, without rewriting old artifacts.
+with 40 matching harness views. Action/Block campaigns add 86 observations
+over 78 distinct requests and 86 matching harness views. Historical Table and
+Parser registration layers remain pinned at `661c8d8` and `e4c8402`; current
+Action/Block registration additions are checked separately at `b0c31425`,
+without rewriting old artifacts.
 The later reviewed Table helper relocation is checked independently at
 `707fb3f`, retaining the original proof identity at `228b76b`.
 The fixed-firewall reset transcript lives separately under

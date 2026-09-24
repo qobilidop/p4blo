@@ -463,7 +463,7 @@ for path in ['ir/P4bloIR/Json.lean', 'ir/P4bloIR/TableCodecLaws.lean', 'ir/Tests
     assert historical == (fault / path).read_bytes(), path
     current = (root / path).read_bytes()
     if current != historical:
-        checkpoint = '707fb3f' if path == 'ir/P4bloIR/TableCodecLaws.lean' else '75a36af'
+        checkpoint = '707fb3f' if path == 'ir/P4bloIR/TableCodecLaws.lean' else 'b0c31425'
         assert path in ['ir/P4bloIR/TableCodecLaws.lean', 'ir/P4bloIR.lean', 'ir/CodecProofAudit.lean'], path
         reviewed_current = subprocess.run(['git', '-C', str(root), 'show', f'{checkpoint}:{path}'], check=True, capture_output=True).stdout
         assert current == reviewed_current, path
@@ -527,3 +527,12 @@ proof separately at `707fb3f`; all other restored-source checks remain.
 `block-codec.md` supplies the complementary exact helper hashes, unchanged
 public-statement check and independent extraction review. This is proof-only
 relocation, not changed codec behavior or recaptured historical evidence.
+
+### Later Action/Block registration provenance
+
+At main integration `7bfdcca`, the two public/audit registration files match
+the reviewed Action/Block checkpoint `b0c31425`. The recipe above now pins
+those current files there, still checking every historical table-fault source
+at `661c8d8` and the moved Table proof at `707fb3f`. Both restored endpoints
+pass all 181 baseline rows and 56 live observations (52 distinct requests).
+No production codec or frozen artifact changed.

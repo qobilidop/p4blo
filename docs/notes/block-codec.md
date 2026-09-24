@@ -898,3 +898,25 @@ reconstructed all five actual Json edits and both paired observer hashes,
 verified all 86 views and historical source layers, replayed baseline/live
 rows against both restored endpoints, and checked all eight restored source
 pairs. No active consumers or rebuilds remain before the scoped commits.
+
+## Main integration
+
+Integrated the three reviewed commits at `7bfdcca`, preserving the separate
+main baseline replay recipe above. Both Lean package gates/default audits
+pass with 595 spec checks. Required real-Lean conformance passes 2700 tests
+without skips. The combined full Python/schema gate also exits 0: 4512 passed,
+five strict expected discrepancies and the one explicit missing-local-XDP
+skip; formatting, lint, types, generated-code drift and workflow checks pass.
+Main copies of the four live bundles are byte-identical to
+the inventory above; all 498 baseline rows, 114 public protobuf successes
+and 86 source-matched observations (78 distinct requests) replay against main
+and the restored fault endpoint. Use the restoration recipe with `root` set
+to the main checkout for this check. Actual source pairs remain identical.
+
+The older Table/Parser replays retain their historical source layers while
+checking the new public/audit registrations separately at `b0c31425`; those
+reviewed additions do not rewrite historical evidence. Their full replays
+also pass. The finite milestone does not require replaying all historical
+experiments from their old worktrees; its selected clean-checkout command is
+a separate closeout deliverable. No Export/Program or host-entry proof follows
+from these Action/Block laws.

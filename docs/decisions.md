@@ -1194,3 +1194,11 @@ one that says so.
   never an excuse to reopen the milestone. Revisit scope only for a concrete
   acceptance gap or a new user-approved milestone; this is not a wire-version
   migration and does not disable existing XDP CI.
+- **Close reviewed Block laws without extending the proof ladder.** Integrate
+  the existing Action/Block laws with independent wire/error observations;
+  roundtrip-preserving enum faults and paired observers justify retaining both
+  evidence kinds. Confidence: high within the stated representability profile,
+  not whole-program validity. Historical Table/Parser replay hashes remain
+  fixed; newer public/audit registrations are checked at their own reviewed
+  checkpoint. Export/Program and host-entry testing are the finite next task,
+  not an automatic requirement for every additional theorem.
