@@ -1,4 +1,5 @@
 import P4blo.Scalar
+import P4blo.ForwarderTables
 import P4blo.HeaderFields
 import P4blo.ScalarCommands
 import P4blo.Fields
@@ -654,3 +655,39 @@ not guarantee that a theorem expresses its intended property. -/
 /-- info: 'P4blo.CommandPrefixTests.prefix_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.CommandPrefixTests.prefix_correct
+
+/-- info: 'P4blo.ForwarderTables.installed_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.installed_built
+
+/-- info: 'P4blo.ForwarderTables.installed_index' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.installed_index
+
+/-- info: 'P4blo.ForwarderTables.installed_entries' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.installed_entries
+
+/-- info: 'P4blo.ForwarderTables.installed_default' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.installed_default
+
+/-- info: 'P4blo.ForwarderTables.installed_other_entries' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.installed_other_entries
+
+/-- info: 'P4blo.ForwarderTables.installed_other_defaults' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.installed_other_defaults
+
+/-- info: 'P4blo.ForwarderTables.lookup_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.lookup_correct
+
+/-- info: 'P4blo.ForwarderTables.restore_default' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.restore_default
+
+/-- info: 'P4blo.ForwarderTables.order_independent' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderTables.order_independent
