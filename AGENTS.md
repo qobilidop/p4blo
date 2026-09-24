@@ -29,7 +29,7 @@ Documentation is split by what it describes, not by who reads it:
 | `.agents/roadmap.md` | the research backlog beyond the completed scopes |
 | `.agents/notes/` | live working notes: parked-work inventories, plans they cite, campaign recipes |
 | `.agents/reviews/` | independent review reports for the current work, until the next compaction |
-| `.agents/skills/` | Agent Skills (`<name>/SKILL.md`), the cross-agent location; `.claude/skills` is a symlink to it |
+| `.agents/skills/` | Agent Skills (`<name>/SKILL.md`), the cross-agent location; `.claude/skills` is a symlink to it, which Claude Code loads through but `claude plugin validate` does not, so validate the real path |
 
 `.agents/` is a hidden directory. Searches with `rg`, `fd` and similar
 tools skip it unless told to include hidden files; `git grep` does not.
