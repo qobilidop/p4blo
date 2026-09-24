@@ -26,7 +26,7 @@ from tests.oracle import firewall  # noqa: E402
 from tests.oracle import run as oracle_run  # noqa: E402
 
 CORPUS = ROOT / "tests" / "corpus"
-VECTORS = sorted(CORPUS.glob("*/*.stf"))
+VECTORS = sorted([*CORPUS.glob("*/*.stf"), *(ROOT / "tests/examples").glob("*/*.stf")])
 
 
 def program_of(vector: Path) -> Path:

@@ -1311,3 +1311,12 @@ one that says so.
   high; refine the workflow after the router, and defer speculative expansion.
   Procedures: `workflows.md#application-development`. This work does not reopen
   completed assurance milestone 1 or require additional application proofs.
+- **Give the educational router an explicit guarded IPv4 profile.** Admit
+  complete fixed 20-byte headers with version 4, canonical checksum, total
+  length at least 20, TTL greater than one, and no fragmentation/reserved flag.
+  Configure both interface and next-hop MACs in the route action. Preserve
+  opaque payload, including any length-field mismatch, which this profile
+  deliberately delegates to its caller. Confidence: high after independent
+  packet answers, both interpreters/oracles and fresh-reader review. Revisit
+  payload-envelope validation if architecture packet-length metadata becomes
+  an actual requirement; do not imply complete IPv4 conformance now.

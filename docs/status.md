@@ -13,6 +13,41 @@ The active new workstream is the three Python application examples in
 
 ## Latest checked checkpoint
 
+**Router implementation (2026-09-24, checked).** The first
+public application is in `examples/router/`, with separate verification in
+`tests/examples/router/`. Its guarded fixed-header IPv4 contract is documented
+in the README. Shared discovery checks goldens, exact vectors, demo output
+and generated Lean comparisons; Pyright and both oracle catalogs now include
+public examples. Existing upstream corpus contracts are unchanged.
+
+Independent [review](notes/reviews/example-router.md) has no confirmed defects.
+Both Lean packages/audits pass (`nix develop -c scripts/check-lean.sh`), as do
+all 10 selected router/discovery/oracle tests, including both actual oracles.
+Sixty independent packet outcomes run under Python and Lean. Three isolated
+source faults each fail both independent-answer tests; baseline/restored
+runs pass. Recipe: `notes/mutations/example-programs.py`; local logs:
+`.artifacts/examples-mutations/router/`. The full required `scripts/check.sh`
+run reported 4817 passed, one optional local XDP-image skip, five existing
+precise expected discrepancies and one layout-assertion failure: the old guard
+required oracle catalogs to contain only corpus vectors. Updated that guard
+to require the exact corpus-plus-examples inventory and nonempty examples.
+The corrected layout plus all example tests then pass (12 tests), along with
+fresh Ruff format/lint, full Pyright, buf lint/generation drift and actionlint.
+Both commands exit as recorded: full initial run 1, focused correction plus
+remaining gates 0. No application/runtime source changed after the broad run.
+Logs: `.artifacts/examples-router-check.log` and
+`.artifacts/examples-router-fix-check.log`. A final combined full run remains
+due after integrating the other two applications.
+
+Root owns integration on `main`. Isolated workers own only their respective
+`examples/<name>/` and `tests/examples/<name>/` trees on branches
+`codex/example-firewall` and `codex/example-load-balancer`, in sibling worktrees
+`/Users/qobilidop/my/work/p4blo-example-firewall` and
+`/Users/qobilidop/my/work/p4blo-example-load-balancer`. They begin program design
+against committed eDSL interfaces; shared router/test interfaces must be
+committed and integrated before they depend on them. Next: commit this checked
+router baseline, then complete and independently review those applications.
+
 **Application collection planning (2026-09-24).** Accepted three familiar
 applications: IPv4 router, stateful firewall and flow-affine load balancer.
 Canonical source/demo/docs will live under `examples/`, verification under
@@ -440,12 +475,11 @@ The application collection is active. Milestone 1 is complete; the other
 older plans below are deliberately parked, not automatic continuation tasks.
 
 - **Python application collection:** autonomous implementation is authorized;
-  follow [examples.md](examples.md). Current iteration: planning, on `main`.
-  Next: router contract and first complete implementation. Firewall protocol,
-  capacity/expiration and load-balancer configuration policies remain design
-  decisions; existing corpus behavior does not settle them. No implementation
-  or fresh runtime checks yet. Keep the finite checklist and review findings
-  current as each application advances.
+  follow [examples.md](examples.md). Current iteration: router reviewed and
+  checked on `main`; firewall/load-balancer workers prepare independent
+  applications in the worktrees named above. Next: commit router integration,
+  then give workers the committed shared interfaces.
+  Keep the finite checklist and review findings current as each advances.
 
 - **Project website:** the requested Python gateway walkthrough is published,
   checked and independently reviewed at

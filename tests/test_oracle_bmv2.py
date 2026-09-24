@@ -30,7 +30,7 @@ from tests.oracle import firewall  # noqa: E402
 from tests.oracle.bmv2 import run as bmv2_run  # noqa: E402
 
 CORPUS = ROOT / "tests" / "corpus"
-VECTORS = sorted(CORPUS.glob("*/*.stf"))
+VECTORS = sorted([*CORPUS.glob("*/*.stf"), *(ROOT / "tests/examples").glob("*/*.stf")])
 
 # A vector p4blo and BMv2 genuinely disagree about, with the reason. Strict,
 # so that a vector that starts passing fails here and the entry is removed

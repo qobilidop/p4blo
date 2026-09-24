@@ -46,6 +46,10 @@ stateful program in production Python and checks its claimed result with
 a Lean checker whose acceptance theorem is proved. Its compiled runtime
 and observation adapter remain explicit trust boundaries.
 
+Start with the [public Python applications](examples/README.md), beginning
+with the [IPv4 router](examples/router/README.md). Each has a complete eDSL
+program, a runnable host-side demo and independent verification assets.
+
 The [VLAN access gateway](tests/corpus/vlan_gateway/README.md) is the compact
 Python example behind the [homepage walkthrough](https://qobilidop.github.io/p4blo/#examples):
 parse a tag, apply a host policy, remove the tag and count the admission.
@@ -71,10 +75,10 @@ claimed. See [its assurance note](docs/notes/lean-firewall-port.md).
    [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto) defines
    its wire syntax. Read them with
    [`docs/semantics.md`](docs/semantics.md), the closed behaviors.
-3. [`tests/corpus/forwarder/`](tests/corpus/forwarder/): the tutorial forwarder as a
-   p4blo program, authored in the typed Python eDSL and checked by
-   pyright, with its IR golden and test vectors. Every corpus directory
-   has a README naming what was elaborated away.
+3. [`examples/router/`](examples/router/): a complete typed Python application
+   with a runnable demonstration and explicit packet profile. The faithful
+   upstream ports and focused semantic fixtures remain in
+   [`tests/corpus/`](tests/corpus/), each with its own provenance and contract.
 4. [`python/p4blo/interp/`](python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
 5. [`ir/P4bloIR/`](ir/P4bloIR/): the same semantics in Lean, normative
@@ -127,6 +131,8 @@ typechecked with p4c through Docker when it is available.
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
 | `lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
 | `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
+| `examples/` | public Python applications, runnable demos and behavioral contracts |
+| `tests/examples/` | application goldens, packet vectors and independent behavior checks |
 | `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, semantics, coverage, status, decisions, notes |
 | `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |

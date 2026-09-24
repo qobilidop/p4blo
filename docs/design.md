@@ -440,7 +440,9 @@ p4blo/
     externs/                        registry and the corpus externs
     arch/                           filter.py, switch.py
   lean/                             Lake package p4blo, user-facing P4blo/
+  examples/<application>/           public Python program, demo and README
   tests/                            unit, validator, conformance tests
+    examples/<application>/         application goldens, vectors and tests
     corpus/<program>/               program.py, program.txtpb,
                                     program.p4, *.stf
     oracle/                         original programs and oracle drivers
@@ -454,6 +456,10 @@ replay vectors. The package still lives at `python/p4blo`. Shared tests,
 corpus programs and external oracle infrastructure live under `tests/`;
 package-local Lean tests stay with their Lake package. The two Lean packages
 share a pinned toolchain and depend only from user library to specification.
+Public Python applications live under `examples/`, with their verification
+assets under `tests/examples/`; see [examples.md](examples.md) for the accepted
+collection and its separate completion boundary. Faithful upstream ports
+and focused semantic fixtures remain in `tests/corpus/`.
 Directories for later steps are created when their step arrives, not as
 placeholders. This layout reflects the accepted successor architecture;
 the rest of this original design retains its historical context.

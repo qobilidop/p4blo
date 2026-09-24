@@ -1,6 +1,7 @@
 # Python application examples
 
-Accepted 2026-09-24. Planning is complete; implementation has not started.
+Accepted 2026-09-24. The router is implemented and independently reviewed;
+integration checks are recorded in `status.md`. The other two remain pending.
 This workstream follows completed assurance milestone 1 without reopening its
 frozen acceptance criteria. Current execution status lives in [status.md](status.md).
 Agent instructions remain in [AGENTS.md](../AGENTS.md); engineering procedures
@@ -52,8 +53,8 @@ tests/
 
 The intended repository-root invocation is
 `nix develop -c uv run python -m examples.router.demo`, with corresponding
-firewall and load-balancer modules. These commands are planned, not available
-yet. Examples use the existing project environment, with no separate package
+firewall and load-balancer modules. The router command is available; the others
+are planned. Examples use the existing project environment, with no separate package
 or dependency set per application.
 
 Each program keeps headers, parser, actions, tables, control and deparser
@@ -63,11 +64,12 @@ results and source. Tests and any website excerpts use the canonical source.
 Start without an examples framework or shared protocol library; extract
 abstractions only when concrete usage demonstrates a readability benefit.
 
-Existing corpus discovery, differential and oracle harnesses assume
-`tests/corpus/`; Pyright currently includes only `python` and `tests`.
-Adding directories alone supplies no coverage. Extend discovery, typing and
-CI selection explicitly, guard against empty discovery, and retain all
-existing cases and exact known-oracle discrepancy classifications.
+The shared example suite discovers `examples/*/program.py`, requires matching
+test assets and checks goldens, exact vectors, demos and generated real-Lean
+cases. Pyright includes `examples`; both existing oracle catalogs also discover
+`tests/examples/*/*.stf`. Existing corpus cases and exact known-oracle
+discrepancy classifications are preserved. New application-specific comparisons
+use the shared `check_lean` helper and required fixture/name convention.
 
 The upstream forwarder and tutorial firewall remain regression fixtures with
 their original contracts. The live VLAN gateway remains the website example
@@ -85,7 +87,8 @@ review that runs and modifies the example without conversation context.
 Failures from setup or compilation do not count as semantic fault detection.
 Agreement between implementations does not replace intended-behavior checks.
 
-- [ ] Router meets the application criteria above.
+- [x] Router meets the application criteria above; see
+  [its independent review](notes/reviews/example-router.md) and checkpoint.
 - [ ] Stateful firewall meets the application criteria above.
 - [ ] Flow-affine load balancer meets the application criteria above.
 - [ ] All three are discovered by applicable repository/CI gates, including
@@ -103,7 +106,7 @@ follow the semantics-first, paired-interpreter procedure in the workflow.
 
 ## Next step
 
-Write the router's packet/configuration contract and independent demonstration
-expectations, then build the smallest complete runnable version and its test
-integration. Use that experience to refine the workflow before building the
-other applications. No application implementation was added during planning.
+Integrate the checked router baseline into the firewall and load-balancer
+worktrees, then build them against the committed example interfaces. Their
+directories can be developed independently. Shared wire helpers belong only
+to tests; each public program and demo remains readable on its own.

@@ -86,9 +86,10 @@ so the required CI gate discovers them without a hand-maintained file list.
   their golden byte for byte.
 - **Public application examples** follow `docs/examples.md`, with canonical
   Python source under `examples/` and verification assets under
-  `tests/examples/`. This layout is accepted but not yet implemented; wire
-  discovery and CI explicitly rather than assuming existing corpus gates
-  discover it. Preserve upstream regression programs in `tests/corpus/`.
+  `tests/examples/`. Shared checks discover canonical sources and require
+  goldens, vectors and demos; both oracle catalogs include example vectors.
+  Wire new checks into CI explicitly. Preserve upstream regression programs
+  in `tests/corpus/`.
 - **Every decision the design does not settle** becomes a dated entry
   in `docs/decisions.md`. `docs/status.md` is updated at every
   checkpoint, including its "Open threads". Record the exact checks run,

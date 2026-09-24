@@ -56,8 +56,10 @@ def test_shared_corpus_discovery_is_not_empty() -> None:
     assert all(p.with_suffix(".py").is_file() for p in programs)
     assert test_corpus.PROGRAMS == sorted(p.parent for p in programs)
     assert test_corpus.VECTORS == vectors
-    assert test_oracle.VECTORS == vectors
-    assert test_oracle_bmv2.VECTORS == vectors
+    example_vectors = sorted((ROOT / "tests/examples").glob("*/*.stf"))
+    assert example_vectors, "public application vectors must reach both oracles"
+    assert test_oracle.VECTORS == sorted(vectors + example_vectors)
+    assert test_oracle_bmv2.VECTORS == sorted(vectors + example_vectors)
     assert "register_bounds/bounds.stf" in test_oracle_bmv2.KNOWN_DIVERGENCES
     assert not (ROOT / "corpus").exists()
     assert not (ROOT / "oracle").exists()
