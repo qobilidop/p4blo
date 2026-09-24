@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `61dc681`, including total Expr/LValue/Stmt codec proofs,
+Combined local integration at `783cbba`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -92,8 +92,15 @@ The independent table baseline adds 20 native and 235 Python checks, with
 181 exact raw transcripts (82 protobuf successes / 99 errors). Production
 codec bytes and all old inventories remain unchanged. The new firewall plan
 and review are documentation only; no firewall application proof is claimed.
-Required real-Lean DRT: **1295 passed**, no skips. Full gate:
-**2985 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+The actual selected forwarder action adds eleven audited roots, 48 independent
+native outcomes / 144 queue boundaries and 76 Python checks. It proves real
+literal binding, the complete field policy and exact normal layer restoration,
+not table selection or the surrounding pipeline. Review-discovered temporary
+sibling corruption and bool/int-equality gaps in auxiliary write probes are
+closed. Five compiling model faults fail the proofs; the actual Python
+destination-write fault reuses the existing TTL0 bundle. All source restoration
+and byte identities pass. Required real-Lean DRT: **1345 passed**, no skips. Full gate:
+**3061 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -109,9 +116,9 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `guarded-control-call.md`, `stmt-codec.md`, `action-root-writes.md` and
 `lean-forwarder.md`, `declaration-codec-baseline.md`, `field-action-writes.md`,
 `declaration-codec.md`, `table-codec-next.md`, `table-codec-baseline.md` and
-`lean-firewall-next.md`.
+`lean-firewall-next.md` and `forwarder-action.md`.
 
-All five remote workflows pass for `78aa246`; newer CI must be checked
+All five remote workflows pass for `a7d795e`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -430,17 +437,23 @@ Things a resuming agent should know are in motion or deliberately left.
   has a new saved live/restored corpus mismatch. Evidence/review:
   `notes/lean-forwarder.md` and its matching report. Ordinary parser/action/
   table/extern assembly remains explicitly unverified; no full-pipeline
-  theorem is implied. Next work is active in `work/forwarder-action`, based
-  on committed `f1493d8`. The target-only unshadowed field adapter is now
+  theorem is implied. The target-only unshadowed field adapter is now
   integrated from `0da36db` at `77b9890`, preserving other modeled
   action-shadowed roots and the old APIs. Its four audited roots, mixed-layer
   witness and narrow false-conclusion challenge are independently reviewed:
   `notes/field-action-writes.md` and its matching report.
-  The reviewed next plan `notes/forwarder-action-next.md` targets actual
-  selected table-action execution: an unshadowed block-write bridge, exact
-  old-destination/TTL-wrap policy, and action-layer restoration in eleven
-  transitions. Implement it against the committed real port interface;
-  it does not prove table selection, checksum or complete forwarding.
+  Actual selected table-action execution is integrated from `539fe00` and
+  `105e234` at `783cbba`: independent complete field policy, literal binding,
+  ten transitions with normal return pending and the eleventh restoring only
+  action layers. The relation is unindexed; exact counts are anchored by the
+  explicit derivation and 144 native queue boundaries. Eleven audited roots
+  and 76 focused Python checks pass; review fixed two auxiliary write-observer
+  survivors with strict complete-state checks after each write. Five compiling
+  model faults fail proofs; a real Python destination-write fault reuses the
+  existing TTL0 bundle, not a new distinct witness. Scope and CLEAR review:
+  `notes/forwarder-action.md` and its matching report. Selected table lookup,
+  checksum and complete forwarding remain open. Next bounded table work is
+  in `work/forwarder-table-next`, based on committed `783cbba`.
   The small operational root prerequisite is independently reviewed and
   committed at `01d8b09`: actual active-map absence permits a block write
   without dropping action storage; action-hit reads/writes prefer and change

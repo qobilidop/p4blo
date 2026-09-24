@@ -120,8 +120,16 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   no-action command API are unchanged. The target-only unshadowed field
   adapter is now integrated with mixed-layer witnesses and four default-audited
   roots; it preserves other action-shadowed roots without broadening source
-  permissions. The next selected-action trace follows
-  `notes/forwarder-action-next.md`; that application proof remains pending.
+  permissions. The actual selected-action proof is now integrated, with
+  independent complete-field policy, actual literal binding and normal return,
+  constructive scope/initialization and arbitrary pending-work preservation.
+  Eleven audited roots, 48 native answers / 144 queue boundaries and 76 Python
+  checks include two reviewer-found strict-state observer regressions. Five
+  compiling model faults are proof-rejected; a real Python destination-write
+  fault reuses the existing TTL0 replay input. Scope: `notes/forwarder-action.md`
+  and its independent review. Selected-table lookup and the surrounding
+  checksum/control continuation remain open; their next bounded interface is
+  being investigated in `work/forwarder-table-next` at `783cbba`.
 
 ## Application milestones
 

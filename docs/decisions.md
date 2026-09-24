@@ -1034,3 +1034,16 @@ one that says so.
   replacement separate from constant-rule BMv2 evidence. Scoped Bloom
   properties follow; exact connection tracking and whole-pipeline equivalence
   are not claimed. Plan and review: `notes/lean-firewall-next.md`.
+- **Prove actual selected-action completion before table composition.**
+  Use the real literal table-action entry, complete independent field policy,
+  exact ordered block-map updates and action-only layer restoration. Keep
+  arbitrary continuation pending and derive public normal completion from the
+  existing execution relation. Confidence: high in this fixed boundary after
+  constructive witnesses, standard audits and five compiled model faults;
+  medium in direct four-assignment composition as a reusable frontend API.
+  Revisit for a second action needing parameter mutation or out/inout copyback.
+  Strengthen auxiliary observers after each individual mutation: Boolean/int
+  equality and a subsequent repairing write each hid an actual transient
+  fault. The existing TTL0 input also catches a different destination-write
+  fault; count it once, not as a new witness. Scope and independent review:
+  `notes/forwarder-action.md`.
