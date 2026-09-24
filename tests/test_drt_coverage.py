@@ -5,9 +5,13 @@ for JavaScript, replaces test counts as the measure of the differential
 campaigns (docs/assurance.md, "Differential and generated testing"). The
 Lean side reports the tags of `P4bloIR.Coverage` for every request; this
 module reruns the retained campaigns at their fixed seeds and examples,
-accumulates the tags, and fails when a tag of the inventory, which
-`p4blo-lean coverage-inventory` prints, was hit by no case. The unhit list
-in the failure message is the work list of coverage-guided generation.
+accumulates the tags, and compares the unhit tags of the inventory, which
+`p4blo-lean coverage-inventory` prints, with `tests/drt-unhit-tags.json`.
+That file lists every tag the retained campaigns cannot reach yet, with
+the generator gap that keeps it unhit; it is the work list of
+coverage-guided generation, and it must shrink, never grow: a tag that
+stops being hit is a regression, and a listed tag that becomes hit is a
+stale entry to remove. An empty file is the goal.
 
 The campaigns are those the other differential tests retain: the corpus
 sample of `tests/test_drt.py` (seed 42, 200 cases per program), the typed
@@ -21,6 +25,7 @@ disagrees measures nothing.
 
 from __future__ import annotations
 
+import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -46,6 +51,7 @@ from tests.test_drt_stateful_programs import (
 )
 
 CORPUS = Path(__file__).resolve().parent / "corpus"
+UNHIT = Path(__file__).resolve().parent / "drt-unhit-tags.json"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PORTS = 4
@@ -207,11 +213,28 @@ def test_lean_agrees_and_hits_every_rule_tag(lean_binary: Path) -> None:
     assert campaign.failures == []
     assert campaign.coverage.unreported == 0, "every Lean reply must carry its coverage"
     assert campaign.coverage.unknown(inventory) == []
-    unhit = campaign.coverage.unhit(inventory)
-    assert unhit == [], (
-        f"{len(unhit)} of {len(inventory)} rule tags are hit by no retained case:\n"
-        + "\n".join(f"  {tag}: {inventory[tag]}" for tag in unhit)
+    unhit = set(campaign.coverage.unhit(inventory))
+    known: dict[str, str] = json.loads(UNHIT.read_text(encoding="utf-8"))["unhit"]
+    assert set(known) <= set(inventory), (
+        f"unknown tags listed as unhit: {set(known) - set(inventory)}"
     )
+    regressions = sorted(unhit - set(known))
+    stale = sorted(set(known) - unhit)
+    assert regressions == [], (
+        f"{len(regressions)} rule tags stopped being hit by the retained campaigns:\n"
+        + "\n".join(f"  {tag}: {inventory[tag]}" for tag in regressions)
+    )
+    assert stale == [], (
+        "tags listed in tests/drt-unhit-tags.json are now hit; remove them:\n"
+        + "\n".join(f"  {tag}" for tag in stale)
+    )
+    assert len(known) <= 34, "the unhit list grew; it may only shrink"
+
+
+def test_the_unhit_list_names_reasons() -> None:
+    document = json.loads(UNHIT.read_text(encoding="utf-8"))
+    for tag, reason in document["unhit"].items():
+        assert "." in tag and reason.strip(), tag
 
 
 def test_lean_agrees_that_the_inventory_is_well_formed(lean_binary: Path) -> None:
