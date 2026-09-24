@@ -133,9 +133,7 @@ def malformed() -> list[tuple[ProgramCodecKind, object, str]]:
     result.append(("export", {"role": False, "block": False}, "leaf.role: expected a string"))
     for first, second in zip(ORDER, ORDER[1:], strict=False):
         what = "a string" if first in STRINGS else "an array"
-        result.append(
-            ("program", {first: False, second: False}, f"leaf.{first}: expected {what}")
-        )
+        result.append(("program", {first: False, second: False}, f"leaf.{first}: expected {what}"))
     # Selected inherited bounds: each declaration family plus every numeric family in Block.
     bound = 2**32
     nested: list[tuple[str, dict[str, object], str]] = [
