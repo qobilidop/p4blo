@@ -37,6 +37,7 @@ interpreter, `buf`, `protoc` or `elan`.
 scripts/check.sh                                   # every Python and schema check CI runs
 scripts/check-lean.sh                              # both Lean packages, audits and tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
+uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
 nix develop .#oracle -c tests/oracle/build.sh            # the P4-SpecTec oracle, once
 uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
 docker build -t p4blo-bmv2 tests/oracle/bmv2             # the BMv2 oracle image, once

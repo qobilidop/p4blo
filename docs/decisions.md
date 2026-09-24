@@ -1212,3 +1212,13 @@ one that says so.
   or untrusted-input hardening. Revisit only when a real producer needs another
   accepted form. The reviewed profile also removes stale totality/termination
   implications and maps evidence without numerical correctness claims.
+- **Make the adversarial acceptance finite and reconstructible.** Reuse ten
+  reviewed Python/observer regressions and three pinned complete inputs, then
+  compile actual Lean CRC and paired codec/observer faults in a fresh source
+  copy. Require the precise semantic disagreements, independent native
+  detections, byte restoration and saved-input replays. Confidence: high in
+  this bounded sensitivity evidence, not exhaustive fault coverage. A shared
+  wrong observer that survives equality is explicitly demonstrated, then
+  rejected by independent literal anchors. Revisit the catalogue for a changed
+  input/API or a concrete survivor, not to extend this milestone indefinitely.
+  The command and evidence boundaries are in `notes/milestone-adversarial.md`.

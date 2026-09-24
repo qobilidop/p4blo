@@ -76,6 +76,28 @@ transitive axiom sets of advertised theorems; `sorry`, custom axioms and
 native-evaluation escapes cannot silently replace those proofs. Update an
 audit expectation only after reviewing the changed trust boundary.
 
+The milestone's finite adversarial acceptance command is:
+
+```sh
+nix develop -c uv sync --locked
+nix develop -c scripts/check-lean.sh
+nix develop -c uv run python scripts/check-assurance.py
+```
+
+Run these sequentially from an unchanged checkout. The last command rebuilds
+a fresh spec source copy, reconstructs three pinned complete inputs, runs ten
+selected Python/observer regressions, and challenges actual Lean runtime and
+codec behavior before restoring and replaying. It does not need old ignored
+artifacts or exploratory worktrees. It creates a new evidence directory under
+`.artifacts/assurance/`; `--output /absolute/new/directory` selects another new
+location. Preserve `result.json` and its logs. Only exit 0 with status `passed`
+is acceptance; build failures, skips, unexpected failures and incomplete
+restoration fail the command. Do not edit sources or rebuild the checkout's
+executables while it runs. The exact inventory, intentional observer survivor
+and independent detector are in [the catalogue](notes/milestone-adversarial.md).
+This supplements the ordinary gates; it is not a universal equivalence proof
+or a requirement to rerun every historical mutation experiment.
+
 The fixed execution-claim experiment is in [certificates.md](certificates.md).
 `python -m p4blo.drt.certificate create` executes production Python and
 writes a claim; `verify` asks the compiled Lean checker to accept or reject
