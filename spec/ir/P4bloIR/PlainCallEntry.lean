@@ -40,6 +40,26 @@ theorem argument_out (run : Run) (paramName : String) (ty : Ty) (arg : Arg) (val
   rw [h]
   rfl
 
+/-- Copying in an `in` expression reads it and keeps the argument. -/
+theorem copyIn_in (run : Run) (name paramName : String) (ty : Ty) (value : Value)
+    (h : run.frame.read? name = some value) :
+    (copyIn ⟨paramName, ty, .in⟩ (.expr (.var name))).run run =
+      (.ok (value, .expr (.var name)), run) := by
+  have no : (Direction.in == Direction.out) = false := rfl
+  have ni : (Direction.in == Direction.inout) = false := rfl
+  simp [copyIn, resolveArg, no, ni, run_map, argument_in run name paramName ty value h]
+
+/-- Resolution is the identity on a variable, so copying in an `inout`
+variable reads it and keeps the argument that copy-back writes through. -/
+theorem copyIn_inout (run : Run) (name paramName : String) (ty : Ty) (value : Value)
+    (h : run.frame.read? name = some value) :
+    (copyIn ⟨paramName, ty, .inout⟩ (.lvalue (.var name))).run run =
+      (.ok (value, .lvalue (.var name)), run) := by
+  have io : (Direction.inout == Direction.out) = false := rfl
+  have ii : (Direction.inout == Direction.inout) = true := rfl
+  simp [copyIn, resolveArg, resolveLValue, io, ii, run_map,
+    argument_inout run name paramName ty value h]
+
 private theorem run_get (run : Run) : (get : M Run).run run = (.ok run, run) := rfl
 
 private theorem run_modify (f : Run → Run) (run : Run) :
@@ -57,10 +77,10 @@ theorem dispatch_entry (run : Run) (name : String) (block : Block) (zero : Frame
       (.ok [.runBlock block, .blockReturn run.frame block.params args],
        { run with frame := boundFrame zero hdr metadata route observer }) := by
   simp only [dispatch, run_bind, getIndex, run_get, run_pure, hb]
-  have ah := argument_inout run "source_hdr" "hdr" (.struct "Headers") hdr hh
-  have am := argument_inout run "source_meta" "meta" (.struct "Metadata") metadata hm
-  have ar := argument_in run "source_route" "route" (.struct "Route") route hr
-  have ao := argument_inout run "hdr" "observer" (.struct "H") observer ho
+  have ah := copyIn_inout run "source_hdr" "hdr" (.struct "Headers") hdr hh
+  have am := copyIn_inout run "source_meta" "meta" (.struct "Metadata") metadata hm
+  have ar := copyIn_in run "source_route" "route" (.struct "Route") route hr
+  have ao := copyIn_inout run "hdr" "observer" (.struct "H") observer ho
   simp [hp, params, args, hz, liftExcept, List.foldlM, run_bind, run_map, run_get, run_modify,
     ah, am, ar, ao, getFrame, setFrame, boundFrame]
 

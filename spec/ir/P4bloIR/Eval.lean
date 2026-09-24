@@ -16,7 +16,8 @@ invariant. Values are immutable, so a write rebuilds the containers on the
 path from the variable to the field; Python mutates them in place. The
 index expression of an `LIndex` on that path is evaluated once on the way
 down and once on the way up; evaluation has no effect but a `lookahead`
-peek, so that is invisible.
+peek, so that is invisible. `resolveLValue` fixes those indices when a call
+must write later through the lvalue it saw at copy-in.
 -/
 
 namespace P4bloIR
@@ -256,5 +257,19 @@ def writeLValue : LValue → Value → M Unit
       let (t, valid, fields) ← expectHeader value
       writeLValue base (.stack headerType (elements.set i.value (.header t valid fields)) nextIndex)
   | .next _, _ => throwInterp "hs.next is only the target of an extract"
+
+/-- `lv` with the index expression of every `.index` on its path evaluated
+now and replaced by its literal: the storage reference that a call keeps
+from copy-in to copy-back (docs/ir-semantics.md, "Copy-back target"). The
+identity on index-free lvalues. `hs.next` stays symbolic, as SpecTec
+keeps it, because only `extract` resolves it. -/
+def resolveLValue : LValue → M LValue
+  | .var name => pure (.var name)
+  | .member base field => do pure (.member (← resolveLValue base) field)
+  | .index base idx => do
+    let base ← resolveLValue base
+    let i ← expectBits (← evaluate idx)
+    pure (.index base (.literal (.bits i.width i.value)))
+  | .next stack => pure (.next stack)
 
 end P4bloIR
