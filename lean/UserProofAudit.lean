@@ -1,5 +1,6 @@
 import P4blo.Scalar
 import P4blo.ForwarderTables
+import P4blo.ForwarderApply
 import P4blo.HeaderFields
 import P4blo.ScalarCommands
 import P4blo.Fields
@@ -744,3 +745,51 @@ not guarantee that a theorem expresses its intended property. -/
 /-- info: 'P4blo.ForwarderTables.order_independent' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.ForwarderTables.order_independent
+
+/-- info: 'P4blo.ForwarderApply.key_identity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.key_identity
+
+/-- info: 'P4blo.ForwarderApply.key_evaluate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.key_evaluate
+
+/-- info: 'P4blo.ForwarderApply.dispatch_table' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.dispatch_table
+
+/-- info: 'P4blo.ForwarderApply.drop_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.drop_steps
+
+/-- info: 'P4blo.ForwarderApply.no_action_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.no_action_steps
+
+/-- info: 'P4blo.ForwarderApply.before_hit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.before_hit
+
+/-- info: 'P4blo.ForwarderApply.source_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.source_steps
+
+/-- info: 'P4blo.ForwarderApply.run_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.run_correct
+
+/-- info: 'P4blo.ForwarderApply.result_matches' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.result_matches
+
+/-- info: 'P4blo.ForwarderApply.changes_only_vars' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.changes_only_vars
+
+/-- info: 'P4blo.ForwarderApply.preserves_outside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.preserves_outside
+
+/-- info: 'P4blo.ForwarderApply.populated_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderApply.populated_correct
