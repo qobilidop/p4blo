@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Both Lake packages, including all default proof audit targets and tests.
+# All three Lake packages, in dependency order, including every default proof
+# audit target and each package's tests: the IR specification, the reference
+# architecture specification, and the user library.
 set -euo pipefail
 repo_root="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+cmp "$repo_root/spec/ir/lean-toolchain" "$repo_root/spec/arch/lean-toolchain"
 cmp "$repo_root/spec/ir/lean-toolchain" "$repo_root/impl/lean/lean-toolchain"
 toolchain="$(<"$repo_root/spec/ir/lean-toolchain")"
-lake "+$toolchain" -d "$repo_root/spec/ir" build
-# Lake's -d selects configuration but does not change the test process cwd.
-# Each test driver resolves its fixtures relative to its package root.
-(cd "$repo_root/spec/ir" && lake "+$toolchain" test)
-lake "+$toolchain" -d "$repo_root/impl/lean" build
-(cd "$repo_root/impl/lean" && lake "+$toolchain" test)
+for package in spec/ir spec/arch impl/lean; do
+  lake "+$toolchain" -d "$repo_root/$package" build
+  # Lake's -d selects configuration but does not change the test process cwd.
+  # Each test driver resolves its fixtures relative to its package root.
+  (cd "$repo_root/$package" && lake "+$toolchain" test)
+done

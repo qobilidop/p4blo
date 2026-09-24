@@ -1,4 +1,5 @@
 import P4blo.FieldCommandExamples
+import P4bloArch.Externs
 
 namespace P4blo.FieldCommandTests
 
@@ -105,9 +106,7 @@ def run : IO Unit := do
         after.packet.any (fun p => p.data == ⟨#[0xde, 0xad, 0xbe, 0xef]⟩ && p.value == 0xdeadbeef && p.cursor == 3) &&
         after.emitter.any (fun e => e.width == 3 && e.value == 5) &&
         after.entries.any (fun e => e.defaults[("untouched", "table")]? == some (some ⟨"action", []⟩)) &&
-        (after.externs.instances["untouched-register"]?).any (fun state => match state with
-          | .register width cells => width == 8 && cells == #[3, 9, 27]
-          | _ => false) && after.visits[("parser", "state")]? == some 13 do
+        (after.externs.instances["untouched-register"]?).any (fun state => state.register? == some (8, #[3, 9, 27])) && after.visits[("parser", "state")]? == some 13 do
       throw (IO.userError s!"field command unrelated Run state: {c.name}")
   let (outcome, _) := (P4bloIR.Execution.run faultingContinuation).run
     (initial (store 64 true true true))

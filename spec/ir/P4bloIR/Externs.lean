@@ -2,18 +2,22 @@ import Std.Data.HashMap
 import P4bloIR.Value
 
 /-!
-# Extern models
+# Externs as contracts
 
-The Lean side of the corpus externs, pinned to `impl/python/p4blo/arch/externs/` by
-vectors (docs/design.md, "Externs"). An extern is state owned by the caller
-(docs/ir-semantics.md, "Externs"): `Externs` holds one `ExternState` per
-instance, every call returns the state after it, and the caller threads it
-through the three block runs and across packets.
+An extern is state owned by the caller (docs/ir-semantics.md, "Externs").
+The IR says only an extern type's method signatures, an instance's
+constructor arguments and the call sites; which families exist and what a
+call does to their state is the architecture's decision, supplied at load
+as an `ExternRegistry`. `Externs` holds
+the logical state of every instance and the model that interprets calls;
+every call returns the state after it, and the caller threads it through
+the three block runs and across packets.
 
-Binding mirrors `impl/python/p4blo/arch/externs/__init__.py`: an instance's extern
-type name selects the model, and the declaration is checked against the
-model's `Shape`, where a width may be a variable such as `"T"` that the
-declaration binds consistently. The error sentences are the Python ones.
+Binding mirrors `impl/python/p4blo/arch/externs/__init__.py`: an instance's
+family, the segment of its extern type name before the first dot, selects
+the model, and the declaration is checked against the model's `Shape`,
+where a width may be a variable such as `"T"` that the declaration binds
+consistently. The error sentences are the Python ones.
 -/
 
 namespace P4bloIR
@@ -99,110 +103,37 @@ def matchShape (decl : ExternType) (shape : Shape) : Except String Bindings := d
   pure b
 
 -- ---------------------------------------------------------------------------
--- The models
+-- State and models
 -- ---------------------------------------------------------------------------
 
-/-- The state of one extern instance. -/
-inductive ExternState
-  /-- `register(bit<32> size)` with `read(out T result, in bit<32> index)`
-  and `write(in bit<32> index, in T value)`: `size` cells of width
-  `width`, each starting at zero. A read at or beyond `size` gives zero and
-  a write there is ignored. -/
-  | register (width : Nat) (cells : Array Nat)
-  /-- `counter(bit<32> size)` with `count(in bit<32> index)`: how often each
-  index was counted; a count at or beyond `size` is ignored. -/
-  | counter (counts : Array Nat)
-  /-- `checksum16()` with `bit<16> compute(in bit<D> data)`: stateless. -/
-  | checksum16
-  /-- Full byte-aligned CRC, remembering the monomorphic input width. -/
-  | crc16 (dataWidth : Nat)
-  | crc32 (dataWidth : Nat)
-  deriving Repr, Inhabited
+/-- The logical state of one extern instance, as the IR carries it: the
+family's kind name, an optional cell width, optional natural cells, and
+configuration the model needs but observers do not report. This is what a
+differential observation reports and what a proof about persistent state
+inspects; the model that interprets a call on it is the architecture's. -/
+structure ExternState where
+  kind : String
+  width : Option Nat := none
+  cells : Option (Array Nat) := none
+  config : List Nat := []
+  deriving Repr, BEq, DecidableEq, Inhabited
 
-/-- The shape of `register`. -/
-def registerShape : Shape :=
-  { constructor := [.fixed 32],
-    methods := [("read", { params := [⟨.out, .var "T"⟩, ⟨.«in», .fixed 32⟩] }),
-                ("write", { params := [⟨.«in», .fixed 32⟩, ⟨.«in», .var "T"⟩] })] }
+/-- What a model does on a method call: the state after it and the result. -/
+structure ExternModel where
+  call : ExternState → String → List Value → Except String (ExternState × ExternResult)
 
-/-- The shape of `counter`. -/
-def counterShape : Shape :=
-  { constructor := [.fixed 32], methods := [("count", { params := [⟨.«in», .fixed 32⟩] })] }
+/-- No model: every call is an error. -/
+def ExternModel.none : ExternModel :=
+  ⟨fun s method _ => throw s!"no extern model for {s.kind}.{method}"⟩
 
-/-- The shape of `checksum16`. -/
-def checksum16Shape : Shape :=
-  { constructor := [], methods := [("compute", { params := [⟨.«in», .var "D"⟩], returns := some (.fixed 16) })] }
+instance : Inhabited ExternModel := ⟨.none⟩
 
-/-- A stateless full-width CRC over a monomorphic bit string. -/
-def crcShape (outputWidth : Nat) : Shape :=
-  { constructor := [], methods := [("compute", { params := [⟨.«in», .var "D"⟩], returns := some (.fixed outputWidth) })] }
-
-/-- Reflect exactly `width` low bits. -/
-def reflectBits (width value : Nat) : Nat :=
-  (List.range width).foldl (fun acc i => (acc <<< 1) ||| ((value >>> i) &&& 1)) 0
-
-/-- Forward-polynomial CRC with explicitly reflected input bytes and output.
-Unlike Python's reflected byte lookup, this shifts a bounded register left
-one input bit at a time. Only the extern binding advertises supported widths. -/
-def fullCRC (outputWidth polynomial initial finalXor dataWidth value : Nat) : Nat :=
-  let mask := 2 ^ outputWidth - 1
-  let bytes := dataWidth / 8
-  let result := (List.range bytes).foldl (fun crc i =>
-    let byte := (value >>> (8 * (bytes - 1 - i))) &&& 255
-    (List.range 8).foldl (fun crc bit =>
-      let feedback := ((crc >>> (outputWidth - 1)) ^^^ (byte >>> bit)) &&& 1
-      let shifted := (crc <<< 1) &&& mask
-      if feedback == 1 then shifted ^^^ polynomial else shifted) crc) initial
-  reflectBits outputWidth result ^^^ finalXor
-
-def crc16 (dataWidth value : Nat) : Nat := fullCRC 16 0x8005 0 0 dataWidth value
-def crc32 (dataWidth value : Nat) : Nat :=
-  fullCRC 32 0x04c11db7 0xffffffff 0xffffffff dataWidth value
-
-/-- Fold the carries of a one's-complement sum until it fits in 16 bits. -/
-def foldCarry (total : Nat) : Nat :=
-  if h : total / 65536 = 0 then total
-  else foldCarry (total % 65536 + total / 65536)
-termination_by total
-decreasing_by omega
-
-/-- The 16-bit words of `value`, which spans `words` words, most significant
-first. -/
-def words16 (value : Nat) : Nat → List Nat
-  | 0 => []
-  | n + 1 => ((value >>> (16 * n)) % 65536) :: words16 value n
-
-/-- RFC 1071 over `value` as a bit string of `width` bits, zero-padded at
-the end to a multiple of 16: the one's complement of the one's-complement
-sum of the 16-bit words. -/
-def internetChecksum (width value : Nat) : Nat :=
-  let words := (width + 15) / 16
-  let padded := value <<< (words * 16 - width)
-  let total := (words16 padded words).foldl (· + ·) 0
-  65535 - foldCarry total
-
-/-- Call `method` on a model with `args`, one value per parameter in order,
-the current value for `out` and `inout` parameters. Called after the shape
-check, so the argument shapes are trusted; anything else is an error. -/
-def ExternState.call : ExternState → String → List Value → Except String (ExternState × ExternResult)
-  | .register width cells, "read", [_, .bits index] =>
-    let value := if h : index.value < cells.size then cells[index.value] else 0
-    pure (.register width cells, { outs := [.bits (Bits.wrap width value)] })
-  | .register width cells, "write", [.bits index, .bits value] =>
-    let cells := if index.value < cells.size then cells.set! index.value value.value else cells
-    pure (.register width cells, {})
-  | .counter counts, "count", [.bits index] =>
-    let counts := if h : index.value < counts.size then counts.set index.value (counts[index.value] + 1) else counts
-    pure (.counter counts, {})
-  | .checksum16, "compute", [.bits data] =>
-    pure (.checksum16, { returns := some (.bits (Bits.wrap 16 (internetChecksum data.width data.value))) })
-  | .crc16 width, "compute", [.bits data] => do
-    if data.width != width then throw "crc16: call does not fit bound width"
-    pure (.crc16 width, { returns := some (.bits (Bits.wrap 16 (P4bloIR.crc16 width data.value))) })
-  | .crc32 width, "compute", [.bits data] => do
-    if data.width != width then throw "crc32: call does not fit bound width"
-    pure (.crc32 width, { returns := some (.bits (Bits.wrap 32 (P4bloIR.crc32 width data.value))) })
-  | state, method, args => throw s!"bad extern call {method} with {args.length} arguments on {repr state}"
+/-- What an architecture supplies for binding: the shape each family
+accepts, the initial state of an instance, and the model. -/
+structure ExternRegistry where
+  shapeOf : String → Option Shape
+  make : ExternType → Bindings → List Value → Except String ExternState
+  model : ExternModel
 
 /-- The value of a literal. -/
 def Literal.toValue : Literal → Value
@@ -219,47 +150,23 @@ def Value.fits : Value → Ty → Bool
   | .error _, .error => true
   | _, _ => false
 
-/-- The extern state of one run: one model per extern instance, by name. -/
+/-- The extern state of one run: the model that interprets calls and one
+logical state per extern instance, by name. -/
 structure Externs where
+  model : ExternModel := .none
   instances : HashMap String ExternState := {}
   deriving Inhabited
 
 namespace Externs
 
-/-- The model of the extern type `name`, if there is one. -/
-def shapeOf : String → Option Shape
-  | "register" => some registerShape
-  | "counter" => some counterShape
-  | "checksum16" => some checksum16Shape
-  | "crc16" => some (crcShape 16)
-  | "crc32" => some (crcShape 32)
-  | _ => none
-
-/-- The initial state of an instance of `decl` with constructor `args`. -/
-private def make (decl : ExternType) (bindings : Bindings) (args : List Value) :
-    Except String ExternState :=
-  match (decl.name.splitOn ".").head!, args with
-  | "register", [.bits size] => do
-    let some width := bindings["T"]? | throw "register: T is unbound"
-    pure (.register width (Array.replicate size.value 0))
-  | "counter", [.bits size] => pure (.counter (Array.replicate size.value 0))
-  | "checksum16", [] => pure .checksum16
-  | "crc16", [] | "crc32", [] => do
-    let family := (decl.name.splitOn ".").head!
-    let some width := bindings["D"]? | throw s!"{family}: D is unbound"
-    if width == 0 || width % 8 != 0 then
-      throw s!"{family}: data width must be a positive multiple of 8"
-    pure (if family == "crc16" then .crc16 width else .crc32 width)
-  | name, _ => throw s!"{name}: constructor arguments do not fit"
-
-/-- One model per extern instance of the program, as `Registry.bind` does:
-an error on a declaration without a model or with a mismatched shape, and
-on constructor arguments that do not fit. -/
-def bind (index : Index) : Except String Externs := do
+/-- One state per extern instance of the program, under `registry`, as the
+Python `Registry.bind` does: an error on a declaration without a model or
+with a mismatched shape, and on constructor arguments that do not fit. -/
+def bind (registry : ExternRegistry) (index : Index) : Except String Externs := do
   let mut instances : HashMap String ExternState := {}
   for inst in index.program.externInstances do
     let some decl := index.externTypes[inst.externType]? | throw s!"unknown extern type '{inst.externType}'"
-    let some shape := shapeOf (decl.name.splitOn ".").head!
+    let some shape := registry.shapeOf (decl.name.splitOn ".").head!
       | throw s!"no implementation for extern type '{decl.name}'"
     let bindings ← matchShape decl shape
     let args := inst.args.map Literal.toValue
@@ -267,15 +174,16 @@ def bind (index : Index) : Except String Externs := do
       throw s!"{inst.name}: constructor takes {decl.constructorParams.length} arguments"
     for ((param, value), i) in (decl.constructorParams.zip args).zipIdx do
       if !value.fits param.type then throw s!"{inst.name}: constructor arg {i} does not fit"
-    instances := instances.insert inst.name (← make decl bindings args)
-  pure { instances }
+    instances := instances.insert inst.name (← registry.make decl bindings args)
+  pure { model := registry.model, instances }
 
-/-- Call `method` on instance `inst`; the result and the externs after. -/
+/-- Call `method` on instance `inst` under the model; the result and the
+externs after. -/
 def call (e : Externs) (inst method : String) (args : List Value) :
     Except String (Externs × ExternResult) := do
   let some state := e.instances[inst]? | throw s!"extern instance '{inst}' is not bound"
-  let (state, result) ← state.call method args
-  pure ({ instances := e.instances.insert inst state }, result)
+  let (state, result) ← e.model.call state method args
+  pure ({ e with instances := e.instances.insert inst state }, result)
 
 end Externs
 

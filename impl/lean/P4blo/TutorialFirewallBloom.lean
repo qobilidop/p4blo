@@ -1,4 +1,5 @@
 import P4blo.TutorialFirewallProof
+import P4bloArch.Externs
 
 /-! Exact actual Bloom insertion, not hash computation or the full firewall.
 One-valued membership is monotone; arbitrary natural cell values are not. -/
@@ -30,8 +31,8 @@ theorem selected_cell (cells : Array Nat) (position : Nat) (h : position < cells
     (cellsAfter cells position)[position]? = some 1 := by simp [cell_answer, h]
 
 def writeResult (run : Run) (name : String) (cells : Array Nat) (position : Nat) : Run :=
-  { run with externs := ⟨run.externs.instances.insert name
-    (.register 1 (cellsAfter cells position))⟩ }
+  { run with externs := { run.externs with
+      instances := run.externs.instances.insert name (.register 1 (cellsAfter cells position)) } }
 
 def result (run : Run) (one two : Array Nat) (p q : Nat) : Run :=
   writeResult (writeResult run "bloom_filter_1" one p) "bloom_filter_2" two q
@@ -47,7 +48,7 @@ private theorem type_register : index.externTypes["register"]? = some registerTy
 
 private theorem write_call (run : Run) (name localName : String)
     (position : Fin (2 ^ 32)) (cells : Array Nat)
-    (hi : run.index = index)
+    (hi : run.index = index) (hm : run.externs.model = P4bloArch.model)
     (hn : index.externInstances[name]? = some ⟨name, "register", [.bits 32 4096]⟩)
     (hp : run.frame.read? localName = some (.bits ⟨32, position.val, position.isLt⟩))
     (he : run.externs.instances[name]? = some (.register 1 cells)) :
@@ -59,12 +60,13 @@ private theorem write_call (run : Run) (name localName : String)
   simp [callExtern, ScalarTyping.run_bind, get_run, modify_run, getIndex,
     getFrame, hi, hn, type_register, registerType, argumentValue, din, dinout,
     evaluate, readVar, hp, literalValue, Literal.toValue, Bits.wrap,
-    Externs.call, ExternState.call, he, P4bloIR.liftExcept, writeResult, cellsAfter]
+    Externs.call, hm, P4bloArch.model, P4bloArch.call, ExternState.register, he,
+    P4bloIR.liftExcept, writeResult, cellsAfter]
   rw [← hi]
   rfl
 
 theorem first_call (run : Run) (position : Fin (2 ^ 32)) (cells : Array Nat)
-    (hi : run.index = index)
+    (hi : run.index = index) (hm : run.externs.model = P4bloArch.model)
     (hp : run.frame.read? "reg_pos_one" = some (.bits ⟨32, position.val, position.isLt⟩))
     (he : run.externs.instances["bloom_filter_1"]? = some (.register 1 cells)) :
     (callExtern "bloom_filter_1" "write"
@@ -72,10 +74,10 @@ theorem first_call (run : Run) (position : Fin (2 ^ 32)) (cells : Array Nat)
       (.ok (), writeResult run "bloom_filter_1" cells position.val) := by
   have path : regPosOne.expr = .var "reg_pos_one" := by cbv
   rw [path]
-  exact write_call _ _ _ _ _ hi instance_one hp he
+  exact write_call _ _ _ _ _ hi hm instance_one hp he
 
 theorem second_call (run : Run) (position : Fin (2 ^ 32)) (cells : Array Nat)
-    (hi : run.index = index)
+    (hi : run.index = index) (hm : run.externs.model = P4bloArch.model)
     (hp : run.frame.read? "reg_pos_two" = some (.bits ⟨32, position.val, position.isLt⟩))
     (he : run.externs.instances["bloom_filter_2"]? = some (.register 1 cells)) :
     (callExtern "bloom_filter_2" "write"
@@ -83,7 +85,7 @@ theorem second_call (run : Run) (position : Fin (2 ^ 32)) (cells : Array Nat)
       (.ok (), writeResult run "bloom_filter_2" cells position.val) := by
   have path : regPosTwo.expr = .var "reg_pos_two" := by cbv
   rw [path]
-  exact write_call _ _ _ _ _ hi instance_two hp he
+  exact write_call _ _ _ _ _ hi hm instance_two hp he
 
 /-- The actual body, including both distinct targets and write order. -/
 theorem body_identity : insertBloom = [
@@ -94,7 +96,7 @@ theorem body_identity : insertBloom = [
 
 /-- The first actual statement leaves arbitrary subsequent work pending. -/
 theorem first_step (run : Run) (p : Fin (2 ^ 32)) (one : Array Nat) (rest : List Work)
-    (hi : run.index = index)
+    (hi : run.index = index) (hm : run.externs.model = P4bloArch.model)
     (hp : run.frame.read? "reg_pos_one" = some (.bits ⟨32, p.val, p.isLt⟩))
     (h1 : run.externs.instances["bloom_filter_1"]? = some (.register 1 one)) :
     step { work := .statement insertBloom[0]! :: rest, run } =
@@ -103,7 +105,7 @@ theorem first_step (run : Run) (p : Fin (2 ^ 32)) (one : Array Nat) (rest : List
       (.ok [], writeResult run "bloom_filter_1" one p.val) := by
     change ((fun _ => ([] : List Work)) <$> callExtern "bloom_filter_1" "write"
       [.expr regPosOne.expr, .expr (.literal (.bits 1 1))] none).run run = _
-    rw [ScalarTyping.run_map, first_call run p one hi hp h1]
+    rw [ScalarTyping.run_map, first_call run p one hi hm hp h1]
   simp only [step, dispatchOne, List.nil_append]
   rfl
 
@@ -140,7 +142,7 @@ theorem profile_cells (one two : Array Nat) (p q : Fin 4096)
 /-- Entire actual two-statement execution. The read premises permit action
 shadowing and arbitrary unused frame/shared state, not only fresh frames. -/
 theorem insertion (run : Run) (p q : Fin (2 ^ 32)) (one two : Array Nat)
-    (hi : run.index = index)
+    (hi : run.index = index) (hm : run.externs.model = P4bloArch.model)
     (hp : run.frame.read? "reg_pos_one" = some (.bits ⟨32, p.val, p.isLt⟩))
     (hq : run.frame.read? "reg_pos_two" = some (.bits ⟨32, q.val, q.isLt⟩))
     (h1 : run.externs.instances["bloom_filter_1"]? = some (.register 1 one))
@@ -150,14 +152,15 @@ theorem insertion (run : Run) (p q : Fin (2 ^ 32)) (one two : Array Nat)
   have nextRegister : middle.externs.instances["bloom_filter_2"]? =
       some (.register 1 two) := by
     simpa [middle, writeResult, Std.HashMap.getElem?_insert] using h2
-  have second := second_call middle q two hi hq nextRegister
+  have middleModel : middle.externs.model = P4bloArch.model := hm
+  have second := second_call middle q two hi middleModel hq nextRegister
   have dispatchTwo : (dispatch (.statement insertBloom[1]!)).run middle =
       (.ok [], result run one two p.val q.val) := by
     change ((fun _ => ([] : List Work)) <$> callExtern "bloom_filter_2" "write"
       [.expr regPosTwo.expr, .expr (.literal (.bits 1 1))] none).run middle = _
     rw [ScalarTyping.run_map, second]
     rfl
-  have stepOne := first_step run p one [.statements [insertBloom[1]!]] hi hp h1
+  have stepOne := first_step run p one [.statements [insertBloom[1]!]] hi hm hp h1
   have stepTwo : step { work := [.statement insertBloom[1]!, .statements []], run := middle } =
       .inr { work := [.statements []], run := result run one two p.val q.val } := by
     simp only [step, dispatchTwo, List.nil_append]
@@ -168,19 +171,19 @@ theorem insertion (run : Run) (p q : Fin (2 ^ 32)) (one two : Array Nat)
   exact trace.sound
 
 def initializedRun (one two : Array Nat) : Run :=
-  { index, frame := initialFrame, externs := ⟨
+  { index, frame := initialFrame, externs := P4bloArch.externs (
     (({} : Std.HashMap String ExternState).insert "bloom_filter_1" (.register 1 one)).insert
-      "bloom_filter_2" (.register 1 two)⟩ }
+      "bloom_filter_2" (.register 1 two)) }
 
 /-- Constructive nonvacuity from the actual initialized frame. The register
 arrays are caller-supplied state, not a claim about startup sizes or validity. -/
 theorem initialized_insertion (one two : Array Nat) :
     (execute insertBloom).run (initializedRun one two) =
       (.ok (), result (initializedRun one two) one two 0 0) := by
-  apply insertion _ ⟨0, by decide⟩ ⟨0, by decide⟩ _ _ rfl
+  apply insertion _ ⟨0, by decide⟩ ⟨0, by decide⟩ _ _ rfl rfl
   · simpa [initializedRun, Frame.read?, frame_no_action.2] using frame_locals_zero.1
   · simpa [initializedRun, Frame.read?, frame_no_action.2] using frame_locals_zero.2.1
-  · simp [initializedRun, Std.HashMap.getElem_insert]
-  · simp [initializedRun]
+  · simp [initializedRun, P4bloArch.externs, Std.HashMap.getElem_insert]
+  · simp [initializedRun, P4bloArch.externs]
 
 end P4blo.TutorialFirewall.Bloom

@@ -149,9 +149,10 @@ typechecked with p4c through Docker when it is available.
 
 | Path | What |
 |---|---|
-| `spec/ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
+| `spec/ir/` | the IR specification: Lean syntax, semantics, codecs and scoped proofs, with the wire schema |
+| `spec/arch/` | the reference architecture specification: the contract, the switch, the extern families, and the `p4blo-lean` endpoint |
 | `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
-| `impl/lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
+| `impl/lean/` | user-facing `P4blo`, depending on `P4bloIR` and `P4bloArch`; verified typed scalar authoring under explicit frame premises and reference execution API |
 | `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
 | `tests/examples/` | application goldens, packet vectors and independent behavior checks |

@@ -1,13 +1,27 @@
-{"version": "1.2.0",
+{
+ "version": "1.2.0",
  "packagesDir": ".lake/packages",
- "packages":
- [{"type": "path",
+ "packages": [
+  {
+   "type": "path",
    "scope": "",
    "name": "«p4blo-ir»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
    "dir": "../../spec/ir",
-   "configFile": "lakefile.toml"}],
+   "configFile": "lakefile.toml"
+  },
+  {
+   "type": "path",
+   "scope": "",
+   "name": "«p4blo-arch»",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "../../spec/arch",
+   "configFile": "lakefile.toml"
+  }
+ ],
  "name": "p4blo",
  "lakeDir": ".lake",
- "fixedToolchain": false}
+ "fixedToolchain": false
+}

@@ -1,6 +1,7 @@
 import P4blo.GuardedCallPrefix
 import P4blo.GuardedForwardTests
 import P4blo.CallEntryTests
+import P4bloArch.Externs
 
 namespace P4blo.GuardedCallPrefixTests
 open P4bloIR P4bloIR.Execution P4bloIR.PlainCallEntry
@@ -91,12 +92,7 @@ def sameIndex (left right : Index) : Bool :=
     left.programNames.size == right.programNames.size && left.programNames.toList.all right.programNames.contains &&
     sameMap (· == ·) left.errors right.errors
 
-def sameExtern : ExternState → ExternState → Bool
-  | .register lw lc, .register rw rc => lw == rw && lc == rc
-  | .counter lc, .counter rc => lc == rc
-  | .checksum16, .checksum16 => true
-  | .crc16 lw, .crc16 rw | .crc32 lw, .crc32 rw => lw == rw
-  | _, _ => false
+def sameExtern (left right : ExternState) : Bool := left == right
 
 def sameShared (left right : Run) : Bool :=
   sameIndex left.index right.index &&
@@ -201,9 +197,7 @@ def run : IO Unit := do
             m.run.entries.any (fun e => e.entries.size == 1 &&
               e.entries[("untouched", "table")]? == some #[⟨[], ⟨"sentinelEntry", []⟩, 7⟩] && e.defaults.size == 1 &&
               e.defaults[("untouched", "table")]? == some (some ⟨"sentinelAction", []⟩)) &&
-            (m.run.externs.instances["sentinel"]?).any (fun e => match e with
-              | .register width cells => width == 8 && cells == #[3, 9, 27]
-              | _ => false) && m.run.visits[("parser", "state")]? == some 13 do
+            (m.run.externs.instances["sentinel"]?).any (fun e => e.register? == some (8, #[3, 9, 27])) && m.run.visits[("parser", "state")]? == some 13 do
           throw (IO.userError "guarded call shared sentinels changed")
         if suffix == faultSuffix then
           let premature ← IO.ofExcept (advance 2 m)

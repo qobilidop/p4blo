@@ -1,7 +1,7 @@
-import Tests.Check
+import ArchTests.Check
 import P4bloIR.Observe
 
-open P4bloIR
+open P4bloIR P4bloArch
 
 namespace CRCTests
 
@@ -15,7 +15,7 @@ def bindOne (decl : ExternType) : Except String Externs := do
   let index ← Index.build { (default : Program) with
     externTypes := [decl]
     externInstances := [{ name := "hash", externType := decl.name, args := [] }] }
-  Externs.bind index
+  P4bloArch.bind index
 
 def tests : T Unit := do
   let vectors := [(104, 0x0a0000010a0000023039005006, 0x17c6, 0x7dd597c3),
@@ -39,15 +39,15 @@ def tests : T Unit := do
     checkError s!"{family} rejects wrong output width"
       (bindOne (declaration family 104 (outputWidth + 1))) "expected bit"
   checkError "CRC16 rejects mismatched bound width"
-    ((ExternState.crc16 8).call "compute" [.bits (Bits.wrap 16 1)]) "bound width"
+    (P4bloArch.call (.crc16 8) "compute" [.bits (Bits.wrap 16 1)]) "bound width"
   checkError "CRC32 rejects mismatched bound width"
-    ((ExternState.crc32 8).call "compute" [.bits (Bits.wrap 16 1)]) "bound width"
+    (P4bloArch.call (.crc32 8) "compute" [.bits (Bits.wrap 16 1)]) "bound width"
   checkOk "CRC16 call returns full answer and stateless observation"
-    ((ExternState.crc16 72).call "compute" [.bits (Bits.wrap 72 0x313233343536373839)])
+    (P4bloArch.call (.crc16 72) "compute" [.bits (Bits.wrap 72 0x313233343536373839)])
     (fun (s, result) => result.returns == some (.bits (Bits.wrap 16 0xbb3d)) &&
       s.observe == Lean.Json.mkObj [("kind", .str "crc16")])
   checkOk "CRC32 call returns full answer and stateless observation"
-    ((ExternState.crc32 72).call "compute" [.bits (Bits.wrap 72 0x313233343536373839)])
+    (P4bloArch.call (.crc32 72) "compute" [.bits (Bits.wrap 72 0x313233343536373839)])
     (fun (s, result) => result.returns == some (.bits (Bits.wrap 32 0xcbf43926)) &&
       s.observe == Lean.Json.mkObj [("kind", .str "crc32")])
 

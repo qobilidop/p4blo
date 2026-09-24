@@ -1,5 +1,6 @@
 import P4blo.CallEntryTests
 import P4bloIR.PlainCallReturn
+import P4bloArch.Externs
 
 namespace P4blo.CallReturnTests
 open P4bloIR P4bloIR.Execution P4bloIR.PlainCallEntry P4bloIR.PlainCallReturn
@@ -36,7 +37,7 @@ def current (ev iv : Bool) : Run :=
       entries := ({} : Std.HashMap TableRef (Array Entry)).insert ("untouched", "table")
         #[⟨[], ⟨"currentEntry", []⟩, 37⟩]
       defaults := ({} : Std.HashMap TableRef (Option ActionCall)).insert ("untouched", "table") (some ⟨"currentAction", []⟩) }
-    externs := { instances := ({} : Std.HashMap String ExternState).insert "sentinel" (.register 8 #[31, 19, 7]) }
+    externs := { model := P4bloArch.model, instances := ({} : Std.HashMap String ExternState).insert "sentinel" (.register 8 #[31, 19, 7]) }
     packet := some { data := ⟨#[0xde, 0xad, 0xbe, 0xef]⟩, value := 0xdeadbeef, cursor := 11 }
     emitter := some { value := 19, width := 5 }
     visits := ({} : Std.HashMap (String × String) Nat).insert ("parser", "state") 29 }
@@ -70,9 +71,9 @@ def frameJson (frame : Frame) : Lean.Json := Lean.Json.mkObj [
   ("action", Lean.toJson frame.action), ("actionVars", frame.actionVars.map (mapJson CallEntryTests.valueJson) |>.getD .null)]
 
 def runJson (run : Run) : Lean.Json :=
-  let externs := mapJson (fun state => match state with
-    | .register width cells => Lean.Json.mkObj [("register", Lean.toJson [Lean.toJson width, Lean.toJson cells])]
-    | _ => .null) run.externs.instances
+  let externs := mapJson (fun state => match state.register? with
+    | some (width, cells) => Lean.Json.mkObj [("register", Lean.toJson [Lean.toJson width, Lean.toJson cells])]
+    | none => .null) run.externs.instances
   let entries := run.entries.map (fun e => Lean.Json.mkObj [
     ("index", indexJson e.index),
     ("entries", Lean.Json.mkObj (e.entries.toList.map fun (key, values) =>

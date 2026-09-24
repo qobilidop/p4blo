@@ -11,7 +11,7 @@ is deliberately not supported.
 | Architecture | Where | What it is |
 |---|---|---|
 | filter | `impl/python/p4blo/arch/filter.py` | parser and control; the packet leaves as it came, or not at all |
-| switch | `impl/python/p4blo/arch/switch.py`, `spec/ir/P4bloIR/Switch.lean` | parser, control and deparser over a few ports, with drop, unicast and flood; the Lean twin is what the differential tests run |
+| switch | `impl/python/p4blo/arch/switch.py`, `spec/arch/P4bloArch/Switch.lean` | parser, control and deparser over a few ports, with drop, unicast and flood; the Lean twin is what the differential tests run |
 | v1model | `standard_metadata_binding` in `impl/python/p4blo/arch/v1model.py` | not an implementation: a printing shim that maps the contract onto `standard_metadata` so the P4 oracles can run printed programs |
 | PSA, PNA, TNA and other P4 architectures | none | see [Not supported](#not-supported) |
 
@@ -103,7 +103,7 @@ The switch runs all three blocks over `ports` ports numbered from zero.
 Ports are `0` to `ports - 1`; `511`, BMv2's drop port, is just an
 out-of-range port here, so a program that writes it without `drop` is
 dropped by this architecture for that reason and by BMv2 for its own.
-The Lean switch in `spec/ir/P4bloIR/Switch.lean` follows the same rules line
+The Lean switch in `spec/arch/P4bloArch/Switch.lean` follows the same rules line
 for line and is what `p4blo-lean run` executes, so the differential tests
 compare whole packets in and out under one architecture on both sides.
 

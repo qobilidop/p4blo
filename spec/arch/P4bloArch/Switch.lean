@@ -3,13 +3,13 @@ import P4bloIR.Interp
 /-!
 # The switch architecture
 
-Ordinary code outside the IR (docs/design.md, "Architectures"): given an
+Ordinary code outside the IR (docs/arch-supports.md, "The switch"): given an
 ingress port and a packet, run the exported parser, control and deparser,
 and return the packets that leave. It is the Lean twin of the Python switch
 so that the differential-testing pipe (`p4blo-lean run`) compares whole
 packets in and out.
 
-The rules, all from docs/design.md:
+The rules, all from docs/arch-supports.md:
 - the metadata starts as the zero value of `M` with `ingress_port` set;
 - the control runs after a parser rejection too, over the partial headers,
   with `parser_error` set when the program declares it;
@@ -25,14 +25,16 @@ The rules, all from docs/design.md:
   BMv2's drop port, is just an out-of-range port here.
 
 The metadata contract fields are each optional and only checked when
-present, by name and type (docs/design.md, "Metadata contract"). As in
+present, by name and type (docs/arch-supports.md, "The metadata contract"). As in
 `impl/python/p4blo/arch/contract.py`, an undeclared field reads as its zero
 value and ignores writes: a program without `egress_port` unicasts to
 port 0. The deparser runs before the fate is read, as in
 `impl/python/p4blo/arch/switch.py`, so its extern calls happen on a drop too.
 -/
 
-namespace P4bloIR
+namespace P4bloArch
+
+open P4bloIR
 
 /-- The position of a contract field in `M`. -/
 structure MetaField where
@@ -141,4 +143,4 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat) (pack
 
 end Switch
 
-end P4bloIR
+end P4bloArch

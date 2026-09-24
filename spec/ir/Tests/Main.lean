@@ -1,16 +1,11 @@
 import Tests.Check
 import Tests.Interp
-import Tests.Forwarder
 import Tests.ScalarTyping
 import Tests.ScalarStatements
 import Tests.FieldLaws
 import Tests.FieldTyping
 import Tests.Execution
-import Tests.ExecutionCertificate
-import Tests.CertificateWire
-import Tests.CRC
 import Tests.CodecLaws
-import Tests.ExternFamilies
 import Tests.FrameInitialization
 import Tests.PlainCallEntry
 import Tests.PlainCallReturn
@@ -23,8 +18,9 @@ import Tests.EntriesCodec
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
-from the `spec/ir/` directory (the fixture paths may also be given as
-arguments: the program JSON, then the vectors JSON).
+from the `spec/ir/` directory (the fixture path may also be given as an
+argument). The vector replay under the switch is an architecture test and
+lives in `spec/arch/ArchTests/`.
 
 `Tests/forwarder.json` is `p4blo.ir.dump_json` of
 `tests/corpus/forwarder/forwarder.txtpb`; regenerate it from the repository root
@@ -190,9 +186,7 @@ def negativeTests : T Unit := do
 
 def main (args : List String) : IO UInt32 := do
   let fixture := args.head?.getD "Tests/forwarder.json"
-  let vectors := (args.drop 1).head?.getD "Tests/forwarder_vectors.json"
   let text ← IO.FS.readFile fixture
-  let vectorsText ← IO.FS.readFile vectors
   let ((), failures) ← (do
     match Program.fromJsonString text with
     | .ok p =>
@@ -200,7 +194,6 @@ def main (args : List String) : IO UInt32 := do
       forwarderTests p
       roundtripTests p
       indexTests p
-      forwarderReplayTests p vectorsText
     | .error e =>
       IO.println s!"     got: {e}"
       check "fixture decodes" false
@@ -210,8 +203,6 @@ def main (args : List String) : IO UInt32 := do
     ScalarStatementTests.tests
     FieldLawTests.tests
     ExecutionTests.tests
-    ExecutionCertificateTests.tests
-    CRCTests.tests
     CodecLawTests.tests
     DeclarationCodecTests.tests
     TableCodecTests.tests
@@ -219,11 +210,9 @@ def main (args : List String) : IO UInt32 := do
     BlockCodecTests.tests
     ProgramCodecTests.tests
     EntriesCodecTests.tests
-    ExternFamiliesTests.tests
     FrameInitializationTests.tests
     PlainCallEntryTests.tests
-    PlainCallReturnTests.tests
-    certificateWireTests).run []
+    PlainCallReturnTests.tests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0

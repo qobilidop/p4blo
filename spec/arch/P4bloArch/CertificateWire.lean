@@ -1,4 +1,4 @@
-import P4bloIR.ExecutionCertificate
+import P4bloArch.Certificate
 import P4bloIR.Json
 import P4bloIR.Hex
 
@@ -6,15 +6,17 @@ import P4bloIR.Hex
 # Wire boundary for the fixed stateful certificate experiment
 
 The artifact carries the actual program, canonical initial values, budget,
-and tagged observation. Only `ExecutionCertificate.Example.program` is
+and tagged observation. Only `P4bloArch.Certificate.Example.program` is
 accepted; this is not a general program or switch verifier. Decoding and
 the compiled runtime remain outside `ExecutionCertificate.check_sound`.
 -/
 
-namespace P4bloIR.CertificateWire
+namespace P4bloArch.CertificateWire
+
+open P4bloIR
 
 open Lean (Json)
-open ExecutionCertificate
+open P4bloIR.ExecutionCertificate P4bloArch.Certificate
 
 private def pair (j : Json) : Except String (Json × Json) := do
   let values ← j.getArr?
@@ -84,4 +86,4 @@ def verify (artifact : Json) : Except String String := do
   | .exhausted => pure "exhausted"
   | .finished _ => pure "mismatch"
 
-end P4bloIR.CertificateWire
+end P4bloArch.CertificateWire

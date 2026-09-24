@@ -1,8 +1,8 @@
-import Tests.Check
+import ArchTests.Check
 
 /-!
 End-to-end replay of the forwarder's five STF vectors under the switch
-architecture (`P4bloIR.Switch`), the same rules the Python driver in
+architecture (`P4bloArch.Switch`), the same rules the Python driver in
 `tests/test_corpus_forwarder.py` implements.
 
 `Tests/forwarder_vectors.json` holds, per vector file, one run per `packet`
@@ -38,7 +38,7 @@ with
 and must be regenerated whenever the STF files change.
 -/
 
-open P4bloIR
+open P4bloIR P4bloArch
 open Lean (Json)
 
 /-- One `expect` line: `mask` has `f` nibbles where the vector wrote a hex
@@ -90,7 +90,7 @@ def StfVector.decodeAll (text : String) : Except String (List StfVector) := do
 /-- Replay one vector file: the outputs of each run must be exactly, and in
 order, what its `expect` lines claim. -/
 def replay (sw : Switch) (v : StfVector) : T Unit := do
-  let mut externs ← match Externs.bind sw.index with
+  let mut externs ← match P4bloArch.bind sw.index with
     | .ok e => pure e
     | .error e => do
       IO.println s!"     bind: {e}"
@@ -120,7 +120,7 @@ on the Python switch: an ingress port outside `[0, ports)` is the caller's
 error before anything runs, an egress port outside it drops the packet with
 a diagnostic, and 511 is just such a port. -/
 def portRuleTests (sw : Switch) : T Unit := do
-  let some externs := (Externs.bind sw.index).toOption | check "port rules: externs bind" false
+  let some externs := (P4bloArch.bind sw.index).toOption | check "port rules: externs bind" false
   let some packet := hexToBytes? "0000000001010000000000010800\
     4500001a00010000401100000a0001010a000202deadbeefcafe" |>.toOption
     | check "port rules: packet decodes" false

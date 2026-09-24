@@ -1,5 +1,6 @@
 import P4blo.TutorialFirewallBloom
 import P4blo.TutorialFirewallTests
+import P4bloArch.Externs
 
 namespace P4blo.TutorialFirewallBloomTests
 open P4bloIR P4bloIR.Execution TutorialFirewall
@@ -32,8 +33,9 @@ def initial (one two : Array Nat) (p q : Nat) (overlay : Bool) : Run := Id.run d
       actionVars := some (Std.HashMap.ofList [
         ("reg_pos_one", bits 32 p), ("reg_pos_two", bits 32 q), ("sibling", bits 13 99)]) }
     else { base.frame with vars }
-  return { base with frame, externs := ⟨(base.externs.instances.insert "bloom_filter_1"
-    (.register 1 one)).insert "bloom_filter_2" (.register 1 two)⟩ }
+  let instances := (base.externs.instances.insert "bloom_filter_1" (.register 1 one)).insert
+    "bloom_filter_2" (.register 1 two)
+  return { base with frame, externs := { base.externs with instances } }
 
 def run : IO Unit := do
   let arrays := [(#[], #[]), (#[0], #[0]), (#[1], #[1]),
@@ -48,10 +50,10 @@ def run : IO Unit := do
     for (p, q) in positions do
       for overlay in [false, true] do
         let before := initial one two p q overlay
-        let firstExpected := { before with externs := ⟨before.externs.instances.insert
-          "bloom_filter_1" (.register 1 (expected one p))⟩ }
-        let finalExpected := { firstExpected with externs := ⟨firstExpected.externs.instances.insert
-          "bloom_filter_2" (.register 1 (expected two q))⟩ }
+        let firstInstances := before.externs.instances.insert "bloom_filter_1" (.register 1 (expected one p))
+        let firstExpected := { before with externs := { before.externs with instances := firstInstances } }
+        let finalInstances := firstExpected.externs.instances.insert "bloom_filter_2" (.register 1 (expected two q))
+        let finalExpected := { firstExpected with externs := { firstExpected.externs with instances := finalInstances } }
         -- This extra statement must stay pending; it faults if executed.
         let tail : List Work := [.statement (.callAction "missing-sentinel" [])]
         match step { work := .statement insertBloom[0]! :: tail, run := before } with

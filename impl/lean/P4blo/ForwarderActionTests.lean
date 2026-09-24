@@ -1,6 +1,7 @@
 import P4blo.ForwarderAction
 import P4blo.GuardedCallPrefixTests
 import P4blo.CallReturnTests
+import P4bloArch.Externs
 
 namespace P4blo.ForwarderActionTests
 open P4bloIR P4bloIR.Execution P4bloIR.ScalarStatements Fields ForwarderAction
@@ -41,7 +42,7 @@ def initial (c : Case) : Run :=
         ("MyIngress", "ipv4_lpm") #[⟨[.lpm 0x0a000200 24], ⟨"drop", []⟩, 7⟩]
       defaults := ({} : Std.HashMap (String × String) (Option ActionCall)).insert
         ("MyIngress", "ipv4_lpm") (some ⟨"NoAction", []⟩) }
-    externs := { instances := (({} : Std.HashMap String ExternState).insert
+    externs := { model := P4bloArch.model, instances := (({} : Std.HashMap String ExternState).insert
       "sentinel" (.register 8 #[3, 9, 27])) }
     packet := some ⟨ByteArray.mk #[0xde, 0xad, 0xbe, 0xef], 0xdeadbeef, 3⟩
     emitter := some ⟨5, 3⟩

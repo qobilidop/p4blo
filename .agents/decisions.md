@@ -56,11 +56,30 @@ settles is not repeated here.
   own proofs, not a guarantee the organization supplies. The direction and
   its boundaries are in `docs/design.md`; the accepted plan is archived
   in git as `docs/notes/ir-spec-boundary.md`. (2026-09-23)
-- **Two Lake packages.** `spec/ir/` is the specification `P4bloIR` (package
-  `p4blo-ir`) with the wire schema beside it; `impl/lean/` is the user library
-  `P4blo` (package `p4blo`), importing the specification one way. The
-  `p4blo-lean` executable and all wire identities are preserved. (2026-09-23,
-  supersedes the temporary `P4bloLean` name.)
+- **Three Lake packages, specifications under `spec/` and implementations
+  under `impl/`.** `spec/ir/` is the IR specification `P4bloIR` (package
+  `p4blo-ir`) with the wire schema beside it and nothing architectural in
+  it; `spec/arch/` is the reference architecture specification `P4bloArch`
+  (package `p4blo-arch`), depending on the IR, with the switch, the extern
+  families, the certificate example and the `p4blo-lean` endpoint;
+  `impl/lean/` is the user library `P4blo` (package `p4blo`), depending on
+  both. The Python package lives under `impl/python/`. Wire identities and
+  the endpoint's protocol are preserved. (2026-09-24, supersedes the
+  two-package layout of 2026-09-23 and the temporary `P4bloLean` name.)
+- **The IR carries extern state as data and takes the model as a
+  function.** `ExternState` is a kind name with optional width, optional
+  natural cells and private configuration; `Externs` pairs the instances
+  with an `ExternModel` whose `call` the architecture supplies at load.
+  This keeps `Run` unparameterized, so no proof signature changes, and
+  keeps state first-order, so proofs and tests inspect register cells
+  directly. A closure-carrying instance was rejected because its
+  state-threading conversion is not a total definition Lean can reason
+  about; a type parameter through every execution definition and theorem
+  was rejected as invasive for no gain in what is expressible. The
+  representation commits the IR to what the differential observations
+  already report (kind, width, values). Confidence: high in the boundary,
+  medium in the representation; revisit if an extern family needs
+  structured state that cells cannot carry. (2026-09-24)
 - **Generated protobuf code is committed** at `impl/python/p4blo/v0/`, where the
   proto package path and the Python import path coincide. CI regenerates
   and fails on drift. (2026-09-22)

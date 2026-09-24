@@ -6,7 +6,7 @@ import P4bloIR.Hex
 /-! A fixed authored Program, not a wrapper that reads a golden or caller Program.
 The extern state returned by each public API call persists for the next request. -/
 
-open P4bloIR
+open P4bloIR P4bloArch
 
 private def request (line : String) : Except String (Entries × Nat × ByteArray) := do
   let json ← Lean.Json.parse line

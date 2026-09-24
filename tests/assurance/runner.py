@@ -360,7 +360,7 @@ def execute(run: Run) -> None:
     selected = inputs()
     check_inputs(selected)
     baseline_known_answers(selected)
-    binary = ROOT / "spec/ir/.lake/build/bin/p4blo-lean"
+    binary = ROOT / "spec/arch/.lake/build/bin/p4blo-lean"
     for path in (
         binary,
         *(
@@ -369,7 +369,9 @@ def execute(run: Run) -> None:
         ),
     ):
         require(path.is_file(), f"missing {path}; run scripts/check-lean.sh first")
-    tracked = subprocess.check_output(["git", "-C", str(ROOT), "ls-files", "-z", "spec/ir"])
+    tracked = subprocess.check_output(
+        ["git", "-C", str(ROOT), "ls-files", "-z", "spec/ir", "spec/arch"]
+    )
     paths = [Path(p.decode()) for p in tracked.split(b"\0") if p]
     require(
         bool(paths) and all(".lake" not in p.parts and not p.is_absolute() for p in paths),
@@ -380,7 +382,11 @@ def execute(run: Run) -> None:
     (run.output / "mutations.json").write_text(
         json.dumps(
             {
-                "crc": {"file": "spec/ir/P4bloIR/Externs.lean", "old": CRC_OLD, "new": CRC_NEW},
+                "crc": {
+                    "file": "spec/arch/P4bloArch/Externs.lean",
+                    "old": CRC_OLD,
+                    "new": CRC_NEW,
+                },
                 "kind": {"file": "spec/ir/P4bloIR/Json.lean", "old": KIND_OLD, "new": KIND_NEW},
                 "observer": {
                     "file": "spec/ir/Tests/BlockCodec.lean",
@@ -398,15 +404,19 @@ def execute(run: Run) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / path, destination)
     spec = scratch / "spec/ir"
+    arch = scratch / "spec/arch"
     toolchain = (spec / "lean-toolchain").read_text().strip()
     lake = ["lake", "+" + toolchain, "build"]
     run.command(
         "scratch-baseline-build",
-        [*lake, "p4blo-lean", "ProofAudit", "CodecProofAudit", "codec-leaves"],
+        [*lake, "ProofAudit", "CodecProofAudit", "codec-leaves"],
         cwd=spec,
     )
+    # The endpoint belongs to the architecture package, whose scratch copy
+    # depends on the scratch IR copy by relative path.
+    run.command("scratch-endpoint-build", [*lake, "p4blo-lean"], cwd=arch)
     native = spec / ".lake/build/bin/codec-leaves"
-    scratch_binary = spec / ".lake/build/bin/p4blo-lean"
+    scratch_binary = arch / ".lake/build/bin/p4blo-lean"
     run.command("scratch-native-baseline", [str(native), "--self-test"], cwd=spec)
     for item in selected:
         run.compare("baseline-" + item.name, item, scratch_binary)
@@ -426,12 +436,12 @@ def execute(run: Run) -> None:
         timeout=240,
     )
     check_junit(run.output / "pytest.xml")
-    externs = spec / "P4bloIR/Externs.lean"
+    externs = arch / "P4bloArch/Externs.lean"
     with mutate(externs, CRC_OLD, CRC_NEW):
         run.phases.append({"name": "crc-source", "sha256": digest(externs.read_bytes())})
-        run.command("crc-runtime-build", [*lake, "p4blo-lean"], cwd=spec)
+        run.command("crc-runtime-build", [*lake, "p4blo-lean"], cwd=arch)
         run.compare("crc-runtime-fault", selected[2], scratch_binary, fault=True)
-    run.command("crc-restored-build", [*lake, "p4blo-lean"], cwd=spec)
+    run.command("crc-restored-build", [*lake, "p4blo-lean"], cwd=arch)
     run.compare("crc-restored", selected[2], scratch_binary)
     restored_fault = replay.replay(run.output / "crc-runtime-fault.json", [scratch_binary])
     require(restored_fault.passed and restored_fault.cases == 4, restored_fault.summary())

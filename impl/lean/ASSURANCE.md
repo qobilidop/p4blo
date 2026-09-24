@@ -271,7 +271,7 @@ the root after the development setup. Then run `lake test` in `impl/lean/` for
 the source known answers or required `uv run pytest 'tests/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`
 (substitute `read-add` for experiment 3). The direct differential check in
 experiment 4 uses the fixture's validated `read-x` program,
-`Case(pb.Entries(), 0, b"")`, four ports and `spec/ir/.lake/build/bin/p4blo-lean`;
+`Case(pb.Entries(), 0, b"")`, four ports and `spec/arch/.lake/build/bin/p4blo-lean`;
 it bypasses the preceding independent expected-output assertion solely to
 demonstrate differential detection. Restore each edit before the next.
 
@@ -292,7 +292,7 @@ from p4blo.drt.run import compare_program
 from p4blo.v0 import p4blo_pb2 as pb
 
 root = Path('/Users/qobilidop/my/work/p4blo-frame-mutants')
-binary = root / 'spec/ir/.lake/build/bin/p4blo-lean'
+binary = root / 'spec/arch/.lake/build/bin/p4blo-lean'
 fixture = runpy.run_path(str(root / 'tests/test_lean_edsl.py'))['authored_expressions']
 program = fixture.__wrapped__(binary)['read-x']
 report = compare_program(program, [Case(pb.Entries(), 0, b'')], 4, [binary])

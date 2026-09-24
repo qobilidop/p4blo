@@ -8,6 +8,10 @@ testDriver = "userTests"
 name = "p4blo-ir"
 path = "../../spec/ir"
 
+[[require]]
+name = "p4blo-arch"
+path = "../../spec/arch"
+
 [[lean_lib]]
 name = "P4blo"
 

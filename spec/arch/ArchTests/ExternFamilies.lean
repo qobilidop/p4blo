@@ -1,4 +1,4 @@
-import Tests.Check
+import ArchTests.Check
 
 open P4bloIR
 
@@ -14,7 +14,7 @@ def bindChecksum (name : String) (width : Nat := 16) : Except String Nat := do
   let index ← Index.build { (default : Program) with
     externTypes := [declaration]
     externInstances := [{ name := "sum", externType := name, args := [] }] }
-  let externs ← Externs.bind index
+  let externs ← P4bloArch.bind index
   let (_, result) ← externs.call "sum" "compute" [.bits (Bits.wrap width 1)]
   match result.returns with
   | some (.bits value) => pure value.value

@@ -287,12 +287,21 @@ kinds.
 
 ### The Lean packages
 
-Two Lake packages with a one-way dependency. `spec/ir/` is the specification,
-package `p4blo-ir` imported as `P4bloIR`: the abstract IR, its executable
-semantics with explicit extern state and parser errors, the JSON codecs,
-the scoped proofs and their axiom audits, and the `p4blo-lean` executable
-that the differential tests drive. `impl/lean/` is the user library, package
-`p4blo` imported as `P4blo`: a typed source language whose expressions
+Three Lake packages with one-way dependencies, mirroring the split
+between the IR and the architectures that run it. `spec/ir/` is the IR
+specification, package `p4blo-ir` imported as `P4bloIR`: the abstract IR,
+its executable semantics with parser errors and an abstract extern state,
+the JSON codecs, the scoped proofs and their axiom audits. It holds
+nothing architectural: no ports, no packet fate, no concrete extern. An
+extern instance's logical state is a kind name with optional width and
+cells, and the model that interprets a call on it is a function the
+architecture supplies at load, so the IR's proofs never see a register.
+`spec/arch/` is the reference architecture specification, package
+`p4blo-arch` imported as `P4bloArch`, depending on the IR: the switch, the
+five extern families with their arithmetic and closed behaviors, the
+execution-certificate example, and the `p4blo-lean` endpoint that the
+differential tests drive. `impl/lean/` is the user library, package
+`p4blo` imported as `P4blo`, depending on both: a typed source language whose expressions
 and commands have independent denotations, lowering to the IR with
 semantic-preservation theorems under explicit frame and declaration
 premises, complete Lean-authored programs (the forwarder and the tutorial
@@ -427,10 +436,14 @@ p4blo/
                                     coverage, assurance,
                                     quickstart, workflows
   .agents/                          agent working state: status, decisions, roadmap
-  spec/ir/                               Lake package p4blo-ir (P4bloIR)
+  spec/ir/                          Lake package p4blo-ir (P4bloIR): the IR
     P4bloIR/                        abstract IR, semantics, codecs, proofs
     proto/p4blo/v0/p4blo.proto      versioned wire encoding
-  impl/lean/                             Lake package p4blo (P4blo): typed source
+  spec/arch/                        Lake package p4blo-arch (P4bloArch): the
+    P4bloArch/                      reference architecture: switch, extern
+                                    families, certificate example
+    Main.lean                       the p4blo-lean conformance endpoint
+  impl/lean/                        Lake package p4blo (P4blo): typed source
                                     language, authored programs, execution API
   impl/python/p4blo/                     the Python package
     v0/                             generated protobuf code, committed

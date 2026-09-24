@@ -1,10 +1,10 @@
-import Tests.Check
+import ArchTests.Check
 
 open P4bloIR
 
 namespace ExecutionCertificateTests
 
-open ExecutionCertificate
+open ExecutionCertificate P4bloArch.Certificate
 
 private def expected : Example.Observation := {
   completion := .success, register := some (8, [42]), counter := some [10], localValue := some (8, 42) }

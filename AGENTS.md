@@ -102,9 +102,12 @@ so the required CI gate discovers them without a hand-maintained file list.
   from `buf generate`. Never edit them; edit the schema and regenerate.
   CI fails on drift.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
-  The spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`). The
-  `impl/lean/` user package (`p4blo`, imports `P4blo`) imports it, never the
-  reverse. Whole-program validity and codec proofs remain work in progress,
+  The IR spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`)
+  and holds nothing architectural: no ports, no packet fate, no concrete
+  externs. The reference architecture spec `spec/arch/` (`p4blo-arch`,
+  imports `P4bloArch`) depends on it and supplies the switch, the extern
+  families and the `p4blo-lean` endpoint. The `impl/lean/` user package
+  (`p4blo`, imports `P4blo`) depends on both, never the reverse. Whole-program validity and codec proofs remain work in progress,
   not guarantees supplied by this organization. A closed behavior is
   written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both

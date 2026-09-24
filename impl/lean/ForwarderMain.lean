@@ -6,7 +6,7 @@ import P4bloIR.Hex
 /-! Export authored syntax, or execute that SAME in-memory Program through
 the public user API. Run mode decodes requests only, never a Program. -/
 
-open P4bloIR
+open P4bloIR P4bloArch
 
 private def request (line : String) : Except String (Entries × Nat × ByteArray) := do
   let json ← Lean.Json.parse line

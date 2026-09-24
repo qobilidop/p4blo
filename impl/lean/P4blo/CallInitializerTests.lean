@@ -1,5 +1,6 @@
 import P4blo.CallInitializers
 import P4blo.CallEntryTests
+import P4bloArch.Externs
 
 namespace P4blo.CallInitializerTests
 open P4bloIR P4bloIR.Execution P4bloIR.PlainCallEntry
@@ -85,9 +86,7 @@ def run : IO Unit := do
               after.run.entries.any (fun e => e.entries.size == 0 && e.defaults.size == 1 &&
                 e.defaults[("untouched", "table")]? == some (some ⟨"sentinelAction", []⟩)) &&
               after.run.externs.instances.size == 1 &&
-              (after.run.externs.instances["sentinel"]?).any (fun state => match state with
-                | .register width cells => width == 8 && cells == #[3, 9, 27]
-                | _ => false) && after.run.visits.size == 1 &&
+              (after.run.externs.instances["sentinel"]?).any (fun state => state.register? == some (8, #[3, 9, 27])) && after.run.visits.size == 1 &&
               after.run.visits[("parser", "state")]? == some 13 do
             throw (IO.userError "initializer changed non-value sentinels")
           if !trailing.isEmpty then

@@ -1,4 +1,5 @@
 import P4blo.GuardedForwardPolicy
+import P4bloArch.Externs
 
 namespace P4blo.GuardedForwardTests
 
@@ -83,9 +84,7 @@ def run : IO Unit := do
           final.frame.action.isNone && final.frame.actionVars.isNone &&
           final.entries.any (fun e => e.defaults[("untouched", "table")]? ==
             some (some ⟨"action", []⟩)) &&
-          (final.externs.instances["untouched-register"]?).any (fun state => match state with
-            | .register width cells => width == 8 && cells == #[3, 9, 27]
-            | _ => false) do
+          (final.externs.instances["untouched-register"]?).any (fun state => state.register? == some (8, #[3, 9, 27])) do
         throw (IO.userError s!"guarded unrelated state: {c.name}")
   IO.println "64 guarded forwarding policy/source/runtime complete-state answers passed"
 

@@ -1,6 +1,7 @@
 # Lean user library
 
-The independent `p4blo` Lake package imports `p4blo-ir` from `../../spec/ir`.
+The independent `p4blo` Lake package imports `p4blo-ir` from `../../spec/ir`
+and `p4blo-arch` from `../../spec/arch`.
 Import `P4blo` for the user API. Reference definitions remain under
 `P4bloIR`; frontend/library definitions use `P4blo` to avoid collisions.
 

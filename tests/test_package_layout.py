@@ -11,21 +11,36 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_specification_executable_location() -> None:
-    assert default_lean_binary().parent == ROOT / "spec/ir/.lake/build/bin"
+    assert default_lean_binary().parent == ROOT / "spec/arch/.lake/build/bin"
     assert not (ROOT / "proto").exists()
 
 
 def test_lean_package_dependency_is_one_way() -> None:
     spec = tomllib.loads((ROOT / "spec/ir/lakefile.toml").read_text())
+    arch = tomllib.loads((ROOT / "spec/arch/lakefile.toml").read_text())
     library = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert spec["name"] == "p4blo-ir"
+    assert arch["name"] == "p4blo-arch"
     assert library["name"] == "p4blo"
+    # The IR spec depends on nothing; the architecture spec on the IR; the
+    # user library on both. Nothing architectural lives in the IR spec.
     assert not spec.get("require")
-    assert library["require"] == [{"name": "p4blo-ir", "path": "../../spec/ir"}]
+    assert arch["require"] == [{"name": "p4blo-ir", "path": "../ir"}]
+    assert library["require"] == [
+        {"name": "p4blo-ir", "path": "../../spec/ir"},
+        {"name": "p4blo-arch", "path": "../../spec/arch"},
+    ]
     assert "P4bloIR" in {lib["name"] for lib in spec["lean_lib"]}
+    assert "P4bloArch" in {lib["name"] for lib in arch["lean_lib"]}
     assert "P4blo" in {lib["name"] for lib in library["lean_lib"]}
     assert "P4bloIR" in spec["defaultTargets"]
+    assert "P4bloArch" in arch["defaultTargets"]
     assert "P4blo" in library["defaultTargets"]
+    assert "p4blo-lean" not in {exe["name"] for exe in spec["lean_exe"]}
+    assert {exe["name"]: exe["root"] for exe in arch["lean_exe"]}["p4blo-lean"] == "Main"
+    assert not (ROOT / "spec/ir/P4bloIR/Switch.lean").exists()
+    assert (ROOT / "spec/arch/P4bloArch/Switch.lean").is_file()
+    assert (ROOT / "spec/arch/P4bloArch/Externs.lean").is_file()
     assert (ROOT / "spec/ir/P4bloIR.lean").is_file()
     assert (ROOT / "spec/ir/P4bloIR/IR.lean").is_file()
     assert (ROOT / "impl/lean/P4blo.lean").is_file()
@@ -43,10 +58,11 @@ def test_lean_package_dependency_is_one_way() -> None:
         "Tests.CodecLeaves"
     )
     assert spec["testDriver"]
+    assert arch["testDriver"]
     assert library["testDriver"]
-    assert (ROOT / "spec/ir/lean-toolchain").read_bytes() == (
-        ROOT / "impl/lean/lean-toolchain"
-    ).read_bytes()
+    toolchain = (ROOT / "spec/ir/lean-toolchain").read_bytes()
+    assert (ROOT / "spec/arch/lean-toolchain").read_bytes() == toolchain
+    assert (ROOT / "impl/lean/lean-toolchain").read_bytes() == toolchain
 
 
 def test_schema_descriptor_identity_survives_move() -> None:

@@ -489,13 +489,14 @@ def compare_program(
 def default_lean_binary() -> Path:
     """Where `lake build` leaves the executable, relative to this checkout.
 
-    This file is impl/python/p4blo/drt/run.py, four levels below the root.
+    This file is impl/python/p4blo/drt/run.py, four levels below the root; the
+    endpoint belongs to the reference architecture package.
     """
     root = Path(__file__).resolve().parents[4]
     return (
         root
         / "spec"
-        / "ir"
+        / "arch"
         / ".lake"
         / "build"
         / "bin"

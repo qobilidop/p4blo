@@ -1,5 +1,6 @@
 import P4blo.CallEntry
 import P4bloIR.Json
+import P4bloArch.Externs
 
 namespace P4blo.CallEntryTests
 open P4bloIR P4bloIR.Execution P4bloIR.PlainCallEntry
@@ -34,7 +35,7 @@ def initial (ev iv : Bool) : Run :=
       index := CallEntry.index
       defaults := ({} : Std.HashMap TableRef (Option ActionCall)).insert ("untouched", "table")
         (some ⟨"sentinelAction", []⟩) }
-    externs := { instances := ({} : Std.HashMap String ExternState).insert "sentinel" (.register 8 #[3, 9, 27]) }
+    externs := { model := P4bloArch.model, instances := ({} : Std.HashMap String ExternState).insert "sentinel" (.register 8 #[3, 9, 27]) }
     packet := some { data := ⟨#[0xde, 0xad, 0xbe, 0xef]⟩, value := 0xdeadbeef, cursor := 3 }
     emitter := some { value := 5, width := 3 }
     visits := ({} : Std.HashMap (String × String) Nat).insert ("parser", "state") 13 }
@@ -85,8 +86,8 @@ def snapshot (ev iv : Bool) : Lean.Json := Id.run do
         ("callerSize", Lean.toJson c.vars.size), ("callerActionNone", Lean.toJson (c.action.isNone && c.actionVars.isNone)),
         ("caller", bindingsJson c ["source_hdr", "source_meta", "source_route", "hdr", "caller_only"])]
     | _ => .null
-  let externState := match r.externs.instances["sentinel"]? with
-    | some (.register w cells) => Lean.toJson [Lean.toJson w, Lean.toJson cells]
+  let externState := match r.externs.instances["sentinel"]?.bind (·.register?) with
+    | some (w, cells) => Lean.toJson [Lean.toJson w, Lean.toJson cells]
     | _ => .null
   return Lean.Json.mkObj [
     ("ev", Lean.toJson ev), ("iv", Lean.toJson iv), ("faultNone", Lean.toJson result.fault.isNone),

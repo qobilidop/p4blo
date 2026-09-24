@@ -1,5 +1,6 @@
 import P4blo.TutorialFirewallProof
 import P4blo.GuardedCallPrefixTests
+import P4bloArch.Externs
 
 namespace P4blo.TutorialFirewallTests
 open P4bloIR TutorialFirewall
@@ -44,7 +45,7 @@ def initial (ev drop overlay dirty : Bool) (tcpShape : Nat) : Run := Id.run do
       entries := Std.HashMap.ofList [( ("MyIngress", "ipv4_lpm"),
         #[⟨[.lpm 0x0a000200 24], ⟨"drop", []⟩, 0⟩])]
       defaults := Std.HashMap.ofList [( ("MyIngress", "ipv4_lpm"), some ⟨"NoAction", []⟩)] }
-    externs := { instances := Std.HashMap.ofList [
+    externs := { model := P4bloArch.model, instances := Std.HashMap.ofList [
       ("bloom_filter_1", .register 1 #[1, 0, 1]),
       ("bloom_filter_2", .register 1 #[0, 1]),
       ("csum", .checksum16), ("hash16", .crc16 104), ("hash32", .crc32 104),

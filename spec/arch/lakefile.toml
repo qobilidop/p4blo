@@ -1,0 +1,33 @@
+# The reference architecture specification: the metadata contract, the
+# switch, the extern families the supplied architectures provide, the
+# execution-certificate example and the p4blo-lean conformance endpoint.
+# Depends one way on the IR specification. Lean core only; no Mathlib.
+name = "p4blo-arch"
+version = "0.1.0"
+defaultTargets = ["P4bloArch", "p4blo-lean"]
+moreLeanArgs = ["-DwarningAsError=true"]
+testDriver = "archTests"
+
+[[require]]
+name = "p4blo-ir"
+path = "../ir"
+
+[[lean_lib]]
+name = "P4bloArch"
+
+# The pipe endpoint for differential testing: loads a program under the
+# switch with the reference extern families and answers packet requests.
+[[lean_exe]]
+name = "p4blo-lean"
+root = "Main"
+
+# The test modules under ArchTests/, so that the test driver can import them.
+[[lean_lib]]
+name = "ArchTests"
+globs = ["ArchTests.+"]
+
+# `lake test` runs this against ../ir/Tests/forwarder.json and
+# ../ir/Tests/forwarder_vectors.json.
+[[lean_exe]]
+name = "archTests"
+root = "ArchTests.Main"

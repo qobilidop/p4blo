@@ -1,4 +1,5 @@
 import P4blo.FieldCommands
+import P4bloArch.Externs
 
 namespace P4blo.FieldCommandExamples
 
@@ -110,7 +111,7 @@ def initial (source : Store roots) : P4bloIR.Run :=
     emitter := some { value := 5, width := 3 },
     entries := some { index, defaults := (({} : Std.HashMap P4bloIR.TableRef (Option P4bloIR.ActionCall)).insert
       ("untouched", "table") (some ⟨"action", []⟩)) },
-    externs := { instances := (({} : Std.HashMap String P4bloIR.ExternState).insert
+    externs := { model := P4bloArch.model, instances := (({} : Std.HashMap String P4bloIR.ExternState).insert
       "untouched-register" (.register 8 #[3, 9, 27])) },
     visits := ({} : Std.HashMap (String × String) Nat).insert ("parser", "state") 13 }
 

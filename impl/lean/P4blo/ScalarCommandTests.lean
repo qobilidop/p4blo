@@ -1,4 +1,5 @@
 import P4blo.ScalarCommandExamples
+import P4bloArch.Externs
 
 namespace P4blo.ScalarCommandTests
 
@@ -41,7 +42,7 @@ private def initial (env : Env context) : P4bloIR.Run :=
     emitter := some { value := 5, width := 3 }
     entries := some { index, defaults := (({} : Std.HashMap P4bloIR.TableRef (Option P4bloIR.ActionCall)).insert
       ("untouched", "table") (some ⟨"action", []⟩)) }
-    externs := { instances := (({} : Std.HashMap String P4bloIR.ExternState).insert
+    externs := { model := P4bloArch.model, instances := (({} : Std.HashMap String P4bloIR.ExternState).insert
       "untouched-register" (.register 8 #[3, 9, 27])) }
     visits := ({} : Std.HashMap (String × String) Nat).insert ("parser", "state") 13 }
 
@@ -99,9 +100,7 @@ def run : IO Unit := do
         after.packet.any (fun p => p.data == ⟨#[0xab, 0xcd]⟩ && p.value == 0xabcd && p.cursor == 3) &&
         after.emitter.any (fun e => e.width == 3 && e.value == 5) &&
         after.entries.any (fun e => e.defaults[("untouched", "table")]? == some (some ⟨"action", []⟩)) &&
-        (after.externs.instances["untouched-register"]?).any (fun state => match state with
-          | .register width cells => width == 8 && cells == #[3, 9, 27]
-          | _ => false) &&
+        (after.externs.instances["untouched-register"]?).any (fun state => state.register? == some (8, #[3, 9, 27])) &&
         after.visits[("parser", "state")]? == some 13 do
       throw (IO.userError s!"statement noninterference failed: {c.name}")
   -- Exercise real Index.build/Frame.forBlock rather than only the custom

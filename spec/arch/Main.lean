@@ -1,6 +1,6 @@
 import P4bloIR
+import P4bloArch
 import P4bloIR.Observe
-import P4bloIR.CertificateWire
 
 /-!
 `p4blo-lean`: the pipe endpoint for differential testing.
@@ -19,7 +19,8 @@ import P4bloIR.CertificateWire
         code 1.
 
     p4blo-lean run [--ports N] <program.json>
-        Load the program under the switch architecture (`P4bloIR.Switch`)
+        Load the program under the switch architecture (`P4bloArch.Switch`)
+        with the reference extern families (`P4bloArch.Externs`)
         and answer requests read from stdin, one JSON object per line:
 
             {"entries": <Entries>, "ingress_port": n, "packet": "<hex>"}
@@ -38,7 +39,7 @@ import P4bloIR.CertificateWire
         from `P4bloIR.Observe`, including when the request cannot run.
 -/
 
-open P4bloIR
+open P4bloIR P4bloArch
 
 /-- The one-line summary of a program. -/
 def summary (p : Program) (index : Index) : String :=
@@ -117,7 +118,7 @@ def runMode (args : List String) : IO UInt32 := do
     IO.eprintln s!"error: {e}"
     return 1
   | .ok (_, index) =>
-    match Switch.load index ports, Externs.bind index with
+    match Switch.load index ports, P4bloArch.bind index with
     | .ok sw, .ok externs =>
       serve sw externs
       return 0
@@ -128,7 +129,7 @@ def runMode (args : List String) : IO UInt32 := do
 def main (args : List String) : IO UInt32 := do
   match args with
   | ["certificate-example-program"] =>
-    IO.println (Lean.toJson ExecutionCertificate.Example.program).compress
+    IO.println (Lean.toJson Certificate.Example.program).compress
     return 0
   | ["check-example-certificate", path] =>
     let text ← if path == "-" then (← IO.getStdin).readToEnd else IO.FS.readFile path

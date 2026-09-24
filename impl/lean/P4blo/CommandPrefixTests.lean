@@ -1,4 +1,5 @@
 import P4blo.CommandBlockTests
+import P4bloArch.Externs
 
 namespace P4blo.CommandPrefixTests
 
@@ -74,9 +75,7 @@ def run : IO Unit := do
             after.run.emitter.any (fun e => e.width == 3 && e.value == 5) &&
             after.run.entries.any (fun e =>
               e.defaults[("untouched", "table")]? == some (some ⟨"action", []⟩)) &&
-            (after.run.externs.instances["untouched-register"]?).any (fun state => match state with
-              | .register width cells => width == 8 && cells == #[3, 9, 27]
-              | _ => false) && after.run.visits[("parser", "state")]? == some 13 do
+            (after.run.externs.instances["untouched-register"]?).any (fun state => state.register? == some (8, #[3, 9, 27])) && after.run.visits[("parser", "state")]? == some 13 do
           throw (IO.userError s!"prefix changed non-variable Run state: {name}")
         -- A real negative control: the pending work does fault if executed.
         -- For the nonempty suffix it first overwrites scratch; it must not

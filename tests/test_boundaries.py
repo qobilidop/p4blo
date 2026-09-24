@@ -63,3 +63,34 @@ def test_architecture_support_lives_under_arch() -> None:
     assert (PACKAGE / "arch/v1model.py").is_file()
     for old in ("externs", "printer.py"):
         assert not (PACKAGE / old).exists(), old
+
+
+LEAN_IR_SPEC = ROOT / "spec/ir/P4bloIR"
+# Words that name an architecture's decisions or a concrete extern family.
+# The IR specification may not mention them; the reference architecture
+# package does.
+ARCHITECTURAL = (
+    "Switch",
+    "egress",
+    "ingress_port",
+    "standard_metadata",
+    "P4bloArch",
+    '"register"',
+    '"counter"',
+    '"checksum16"',
+    '"crc16"',
+    '"crc32"',
+)
+
+
+def test_ir_specification_holds_nothing_architectural() -> None:
+    offenders = [
+        f"{path.relative_to(ROOT)}: {word}"
+        for path in sorted(LEAN_IR_SPEC.rglob("*.lean"))
+        for word in ARCHITECTURAL
+        if word in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []
+    for old in ("Switch.lean", "CertificateWire.lean"):
+        assert not (LEAN_IR_SPEC / old).exists()
+    assert not (ROOT / "spec/ir/Main.lean").exists()

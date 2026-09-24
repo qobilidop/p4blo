@@ -1,6 +1,7 @@
 import P4blo.ForwarderProof
 import P4blo.GuardedCallPrefixTests
 import P4bloIR.Hex
+import P4bloArch.Externs
 
 namespace P4blo.ForwarderTests
 open P4bloIR Forwarder
@@ -23,7 +24,7 @@ def initial (valid drop : Bool) (port ttl : Nat) : Run :=
         ("MyIngress", "ipv4_lpm") #[⟨[.lpm 0x0a000200 24], ⟨"drop", []⟩, 0⟩]
       defaults := ({} : Std.HashMap (String × String) (Option ActionCall)).insert
         ("MyIngress", "ipv4_lpm") (some ⟨"NoAction", []⟩) }
-    externs := { instances := (({} : Std.HashMap String ExternState).insert "csum" .checksum16).insert "sentinel" (.counter #[7, 9]) }
+    externs := { model := P4bloArch.model, instances := (({} : Std.HashMap String ExternState).insert "csum" .checksum16).insert "sentinel" (.counter #[7, 9]) }
     packet := some ⟨ByteArray.mk #[0xde, 0xad, 0xbe, 0xef], 0xdeadbeef, 3⟩
     emitter := some ⟨0x1234, 13⟩
     visits := ({} : Std.HashMap (String × String) Nat).insert ("sentinel", "state") 13 }
