@@ -50,5 +50,22 @@ def tests : T Unit := do
   check "host later nested first error"
     (Entries.fromJsonString "{\"tables\":[{}, {\"entries\":[{}, {\"priority\":4294967296}]}]}" matches
       .error "tables[1].entries[1].priority: 4294967296 does not fit in uint32")
+  -- Actual host installation must reject before an independently observable
+  -- missing-parser trap. This is operational precedence, not global validity.
+  let indexed := Index.build { (default : Program) with structTypes := [⟨"M", []⟩] }
+  match indexed with
+  | .error _ => check "host trap index builds" false
+  | .ok index => do
+    let sw : Switch := {
+      index, parser := "PacketEntryTrap", control := "", deparser := ""
+      metadataType := "M", ingressPort := none, parserError := none
+      egressPort := none, drop := none, flood := none, ports := 4 }
+    let externs : Externs := { instances := Std.HashMap.ofList [("sentinel", .counter #[7, 0, 19])] }
+    check "host trap control reaches actual packet entry"
+      (sw.run externs ⟨[]⟩ 0 ByteArray.empty matches .error "unknown block 'PacketEntryTrap'")
+    for host in [Entries.mk [⟨"C", "Missing", [], some ⟨"NoAction", []⟩⟩],
+        Entries.mk [⟨"C", "Missing", [⟨[], ⟨"NoAction", []⟩, 0⟩], none⟩]] do
+      check "host rejection precedes actual packet entry"
+        (sw.run externs host 0 ByteArray.empty matches .error "no table 'Missing' in block 'C'")
 
 end EntriesCodecTests
