@@ -1081,3 +1081,28 @@ one that says so.
   Extract private object helpers only at the demonstrated Block reuse seam.
   Preserve permissive defaults and error ordering without semantic validation
   premises. Plan/review: `notes/program-codec-completion.md`.
+- **Prove firewall initialization separately from unused-state preservation.**
+  The actual nine-root initialization is constructive, while invalid-body
+  identity requires only the built index and actual action-first header read.
+  Do not narrow the latter theorem to pristine locals or block-only frames.
+  Confidence: high after thirteen audited roots, independent full-state tests
+  and compiling source/Python faults. A local mutation invisible to generic
+  packet/extern DRT is evidence for a stronger Env observer, not a fabricated
+  divergent packet bundle. Scope/review: `notes/lean-firewall-proof.md`.
+- **Anchor parser wire syntax before advertising its universal laws.**
+  Preserve the unchanged production decoder and permissive semantic domains;
+  retain 231 exact source-pinned transcripts before proof witnesses change
+  the test sources. Independent constructor observations, error precedence
+  and actual public-protobuf outputs supplement roundtrip equations.
+  Confidence: high in this finite baseline, not a complete Program guarantee.
+  Revisit any unobserved field without recapturing old provenance. Scope and
+  review: `notes/parser-codec.md`.
+- **Advance firewall proof through exact two-write Bloom insertion.**
+  Preserve complete runtime state, both full arrays and the first-write
+  boundary. Prove one-valued membership preservation, not false numeric
+  monotonicity for arbitrary natural cells. Keep noncanonical Lean-only cells
+  distinct from representable Python one-bit values. Confidence: high in the
+  semantic boundary after independent first-call feasibility review; medium
+  in reusable API placement. Start application-specific; revisit extraction
+  for readback or a second client. Hash bounds, reverse-flow inputs and actual
+  table/SYN composition follow separately. Scope: `notes/firewall-bloom-next.md`.

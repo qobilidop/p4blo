@@ -71,8 +71,10 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   error order. Production bytes remain unchanged. Scope: `notes/table-codec.md`.
   The reviewed staged completion plan in `notes/program-codec-completion.md`
   takes five parser codecs, then Action/Block, then Export/Program; host entries
-  remain separate. Baseline-first parser work is active in `work/parser-codecs`
-  at `1c1b08e`, with an independently checked unregistered five-law probe.
+  remain separate. Parser baseline `9d68d7d` is integrated at `fd708e6`, with
+  27 independent native anchors, 283 focused Python checks and 231 exact raw
+  rows. Five production laws and adversarial evidence follow in
+  `work/parser-codecs`; the earlier five-law probe remains unregistered.
   Full Program codecs, text parsing, resource limits and version policy
   remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
@@ -159,9 +161,14 @@ mutation evidence, and an IR-minimality review. See the design for details.
   fault campaigns. Independent review closed a fixed-server retention gap;
   its raw protocol evidence is distinct from ordinary IR DRT. No new distinct
   corpus input is claimed. Scope: `notes/lean-firewall-port.md` and review.
-  Next initialization/invalid-body proof work remains in `work/lean-firewall`;
-  it must separate the actual seven-local initialization from arbitrary unused
-  state in the body theorem. Bloom properties remain subsequent obligations.
+  Actual initialization and invalid-body proof commits `a8480fb`/`50bd31c` are
+  integrated at `a74f691`: thirteen audits, all nine initialized roots, 48
+  native whole-state profiles and 58 Python checks. The body theorem preserves
+  arbitrary unused state under the actual index/invalid-header read premises.
+  Next is exact two-write Bloom insertion and one-valued membership, following
+  the reviewed `notes/firewall-bloom-next.md`; its first-call probe is not the
+  full insertion theorem. Readback, hash bounds and control composition remain
+  separate later obligations; no exact-conntrack or full-pipeline claim.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.

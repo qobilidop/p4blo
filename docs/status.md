@@ -12,13 +12,13 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local code integration at `634a21a` (later plan-only merges through
-`1c1b08e` do not change binaries), including total Expr/LValue/Stmt codec proofs,
+Combined local code integration at `fd708e6` (the later Bloom plan-only merge
+does not change binaries), including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
 prefixes and actual body-bearing plain-root call entry: both Lean package gates and default audits pass, with
-**540 spec checks**, all existing scalar/context/
+**567 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -110,9 +110,17 @@ collisions and changing policies. Compiling source/server/Python faults are
 caught; review closed fixed-server retention and diagnostic-observer gaps.
 The separate 331679-byte reset transcript replays to all four restored answers;
 both it and the register-write challenge reuse existing four-packet input.
-Initialization and invalid-body proofs remain the next application checkpoint.
-Required real-Lean DRT: **1468 passed**, no skips. Full gate:
-**3189 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+The firewall initialization and invalid-body proofs are now integrated:
+thirteen default-audited roots, nine independently observed initialized roots,
+48 native whole-state profiles and 58 Python checks. Both actual guard faults
+are proof-rejected; a real Python local-write fault survives packet/extern DRT
+but fails the complete Env observer after normal completion. This adds no
+new divergent packet bundle. The parser-codec baseline adds 27 native anchors
+and 283 Python checks, preserving all actual codec bytes. Its 231 frozen raw
+rows, 76 actual public-protobuf outputs and thirteen historical source hashes
+all replay exactly. Universal parser-codec laws remain the next codec stage.
+Required real-Lean DRT: **1757 passed**, no skips. Full gate:
+**3530 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -129,9 +137,10 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `lean-forwarder.md`, `declaration-codec-baseline.md`, `field-action-writes.md`,
 `declaration-codec.md`, `table-codec-next.md`, `table-codec-baseline.md` and
 `lean-firewall-next.md` and `forwarder-action.md`, `table-codec.md`,
-`lean-firewall-port.md`, `forwarder-table-next.md` and `program-codec-completion.md`.
+`lean-firewall-port.md`, `forwarder-table-next.md`, `program-codec-completion.md`,
+`lean-firewall-proof.md`, `parser-codec-baseline.md` and `firewall-bloom-next.md`.
 
-All five remote workflows pass for `d7f487d`; newer CI must be checked
+All five remote workflows pass for `7fba846`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -164,7 +173,8 @@ command metadata is never executed. Reconstruction recipes survive losing
 local ignored artifacts and temporary logs. The 247 declaration baseline
 transcripts additionally retain exact bytes, independent source-matched answers
 and historical hashes at `21b0fec`; the 181 table baseline transcripts have
-historical hashes at `9640523`. Neither baseline is counted as fault evidence.
+historical hashes at `9640523`. The parser baseline's 231 rows have historical
+hashes at `9d68d7d`. None of these baselines is counted as fault evidence.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -175,7 +185,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 540 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt and foundational declaration codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 567 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt and foundational declaration codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -514,8 +524,18 @@ Things a resuming agent should know are in motion or deliberately left.
   A native-server reset survives generic IR DRT but fails the strengthened
   dedicated transcript observer. The Python register-write fault reuses the
   existing `firewall-crc32.json`, not a new distinct input. Scope and review:
-  `notes/lean-firewall-port.md`. Root-owned initialization/invalid-body proof
-  work continues in `work/lean-firewall`; it is not yet integrated or claimed.
+  `notes/lean-firewall-port.md`. Initialization/invalid-body proof commits
+  `a8480fb`/`50bd31c` are integrated at `a74f691`, independently reviewed CLEAR.
+  All nine initialized roots are proved; the body theorem needs only the
+  actual index and action-first invalid-IPv4 read, preserving arbitrary unused
+  state and overlays. Thirteen audits, 48 native profiles and 58 Python checks
+  pass, with two compiling source proof rejections and a packet-invisible
+  actual Python local-write fault. Scope: `notes/lean-firewall-proof.md`.
+  Next: exact actual Bloom insertion and one-valued membership preservation,
+  followed separately by readback and hash/control composition. Reviewed plan
+  and first-call-only probe: `notes/firewall-bloom-next.md`; root worktree
+  `/Users/qobilidop/my/work/p4blo-firewall-bloom-next`, `work/firewall-bloom-next`.
+  The unregistered probe is not a completed two-statement theorem.
 
   Four validator-accepted wrong ports fail both engines. Subsequent actual
   Python/Lean CRC XOR-one mutations pass packet-only gates but produce three
@@ -684,9 +704,12 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/table-codec.md` and its matching report. Preserve the frozen baseline.
   The reviewed `notes/program-codec-completion.md` stages parser syntax,
   Action/Block and Export/Program, with host entries separate. Its six-root
-  parser probe is unregistered feasibility only. Baseline-first parser work
-  now uses `work/parser-codecs` at `/Users/qobilidop/my/work/p4blo-parser-codecs`,
-  based on `1c1b08e`; full Program remains a later obligation.
+  parser probe is unregistered feasibility only. The reviewed parser baseline
+  `9d68d7d` is now integrated at `fd708e6`: 27 native anchors, 283 focused
+  checks and 231 source-pinned raw rows (76 successes / 155 errors).
+  Five universal laws and their adversarial campaign are being implemented in
+  `work/parser-codecs` at `/Users/qobilidop/my/work/p4blo-parser-codecs`.
+  Preserve the historical baseline; full Program remains a later obligation.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 
