@@ -16,8 +16,13 @@ Veil, then explicitly requested GitHub Pages publication. The responsive
 static design is in `website/`, with rationale in
 [website-design.md](notes/website-design.md) and a CLEAR independent
 [review](notes/reviews/website-design.md). The `Website` workflow publishes
-only that directory on relevant `main` pushes or manual dispatch. Deployment
-and public-URL verification are the next concrete step at this checkpoint.
+only that directory on relevant `main` pushes or manual dispatch. Published
+at <https://qobilidop.github.io/p4blo/> from `c44ee92`; Pages deployment
+[35964437831](https://github.com/qobilidop/p4blo/actions/runs/35964437831)
+completed successfully. The public page renders correctly in Chrome, its
+language switcher works and its error/warning log is empty. Pages uses
+workflow publishing with HTTPS enforced. This completes the requested
+website task; the next step is user feedback on the live design.
 
 Checks: `nix develop -c node --check website/main.js` passes; a one-off Nix
 Python HTML/source check passes for 17 unique IDs, all 26 link destinations,
@@ -341,9 +346,9 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 Future and deliberately parked work. Milestone 1 is complete; these older
 plans are not active acceptance requirements or automatic continuation tasks.
 
-- **Project website:** design and local browser checks are complete. Finish
-  the requested GitHub Pages deployment and verify the public project URL.
-  Future visual feedback is separate from the parked semantics/proof work.
+- **Project website:** published and verified at
+  <https://qobilidop.github.io/p4blo/>. The requested task is complete;
+  future visual feedback is separate from the parked semantics/proof work.
 
 - **Architecture implementation: milestone 1 complete.**
   Future extensions follow [implementation.md](implementation.md) and the agreed design in
