@@ -292,7 +292,7 @@ arguments and its call sites.
   retaining leading zeros; return the full result without range reduction.
   Calls must match the bound width. Non-byte inputs are rejected, not padded.
   The exact contract, known answers and pinned SpecTec padding discrepancy
-  are in `notes/crc-contract.md`; this profile does not adopt that discrepancy.
+  are in [crc-contract.md](crc-contract.md); this profile does not adopt that discrepancy.
 
 ## Decimal values at the JSON boundary
 

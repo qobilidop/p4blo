@@ -468,7 +468,7 @@ doing the building in isolated worktrees, 20 of which were merged back,
 and Claude Fable 5.1 named as co-author on the agent commits. Each build
 step ended with something that could fail, and the work was reviewed
 twice by an independent, read-only agent: after step 1, kept at
-`docs/notes/reviews/step1.md` with 14 reproducers, 8 confirmed defects
+`docs/notes/reviews/step1.md` (archived) with 14 reproducers, 8 confirmed defects
 fixed on main and the rulings it forced written into
 `docs/semantics.md`; and after step 5, over everything that landed
 since, kept beside it. Every choice the design did not already settle is a

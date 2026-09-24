@@ -20,7 +20,7 @@ The four claims of [design.md](../docs/design.md):
 | Claim | Status |
 |---|---|
 | 1. The core is small and post-elaboration | green: twelve corpus programs and three applications fit without a new core construct; coverage table published |
-| 2. Supports the tested real programs | green with explicit exceptions: every corpus and example vector passes both P4 oracles except one strict BMv2 register divergence and four exact pinned SpecTec CRC/mask discrepancies, all classified |
+| 2. Supports the tested real programs | green with explicit exceptions: every corpus and example vector passes both P4 oracles except one strict BMv2 register divergence; separate original-source CRC/mask probes expose four exact pinned SpecTec discrepancies, all classified |
 | 3. A block is a function; an architecture is ordinary code | green: filter 45 lines, switch 50, no P4 in either; every program runs under both |
 | 4. Mechanized and agrees with the reference | green within the stated profile: proof-visible Lean interpreter, audited scoped proofs, corpus and generated-program differential tests with extern-state comparison; no universal Python equivalence claim |
 

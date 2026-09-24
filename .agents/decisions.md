@@ -5,7 +5,7 @@ date it was made. This is a register, not a diary: an entry that is
 superseded is rewritten in place with the new date and reason, and an
 entry whose subject no longer exists is removed. The full chronological
 log up to the last compaction is in git at tag `agents-archive/2026-09-24`
-(`.agents/decisions.md` there). A decision the design document already
+(`docs/decisions.md` there). A decision the design document already
 settles is not repeated here.
 
 ## Environment and tooling
@@ -134,6 +134,22 @@ settles is not repeated here.
   envelope shapes are malformed and rejected before information is lost;
   semantically invalid IR remains representable for experiments. (2026-09-23)
 
+## Python eDSL
+
+- **The typed eDSL is type-safe by construction where pyright allows and
+  run-time checked where it does not.** The design is
+  `docs/edsl-v2-design.md`; as implemented it deviates from that note in
+  four places, each forced by the type checker: the width aliases `bitN`
+  are places (`Var[L[N]]`) and a typed literal `bitN(v)` types as a place
+  too, so a literal used as a target is caught at run time only; `Bool`,
+  `Enum` and `Error` targets have no static place split; an extern's `in`
+  parameters accept any value (`Val`) with the width checked at run time;
+  sub-block call arguments are run-time checked. `assign` is overloaded
+  over target kinds, so pyright reports a failed assignment as
+  `reportCallIssue`, and the must-fail fixtures say so. Everything else in
+  the note's table holds; `tests/test_pyright.py` guards the static rules.
+  (2026-09-22)
+
 ## Semantics rulings
 
 Rulings on behavior P4 leaves open are written in `docs/semantics.md`;
@@ -179,7 +195,9 @@ these entries record why.
   `expect` asserts no output; `expect` matches a prefix unless it ends in
   `$`; key names may index stacks; non-canonical entries are rejected with
   a line number; a hex or binary literal's written form fixes its width;
-  a table declared in two blocks is qualified. p4c vectors that write
+  a table declared in two blocks is qualified; a priority on a
+  non-ternary table is an error; an lpm key without `/n` is a full-width
+  prefix. p4c vectors that write
   `expect` before `packet` are reordered in the corpus copy, and
   per-table action copies name p4c's elaborated actions. (2026-09-22)
 - **Corpus programs come from p4c's test suite**, chosen by the survey in
@@ -189,7 +207,9 @@ these entries record why.
   longest-prefix rule, so `tests/oracle/run.py` turns each lpm `add` into a
   full-width wildcard with `priority = prefix length`; `no_packet` becomes a
   comment. It confirms outputs but does not independently check longest
-  prefix; BMv2 does. (2026-09-22)
+  prefix; BMv2 does. Known gap: printed const lpm entries carry no
+  priorities, so a program whose const lpm entries overlap fails on this
+  oracle until the printer adds them. (2026-09-22)
 - **BMv2 decides what SpecTec cannot**: real lpm, const-entry and runtime
   ternary priorities. Its runner prints `stack.last` rather than the index
   form p4c compiles differently. It cannot see `flood`, which no corpus
@@ -248,7 +268,10 @@ these entries record why.
   stateful programs with independent register and counter bounds, and
   generated host policy changes. Shrinking preserves types; invalid
   generated programs fail rather than being filtered. Failed programs are
-  retained under `.artifacts/drt/`. (2026-09-23)
+  retained under `.artifacts/drt/`. Host changes within one sequence are
+  Python/Lean-only evidence: the original BMv2 protocol cannot replace
+  rules mid-sequence, so revisit that limitation before claiming
+  original-oracle coverage of host changes. (2026-09-23)
 - **Proof trust is a build gate.** Warnings are errors; default
   `ProofAudit` targets check advertised theorems' transitive axioms, which
   catches imported axioms and native shortcuts that grepping for `sorry`

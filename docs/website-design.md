@@ -78,7 +78,7 @@ reduced-motion handling and a no-JavaScript fallback exposing every note.
 Narrow code scrolls inside its pane; mobile annotations disappear outside the
 walkthrough. Verification is in `.agents/status.md`; the original review is
 `docs/notes/reviews/website-design.md` and the gateway review is
-`docs/notes/reviews/vlan-gateway.md`.
+`docs/notes/reviews/vlan-gateway.md`; both are archived in git.
 The user subsequently requested publication to GitHub Pages. The `Website`
 workflow deploys only `website/`, on relevant pushes to `main` or manual
 dispatch on `main`. Official Pages actions are pinned by commit; Pages and

@@ -150,7 +150,7 @@ Final checks at this checkpoint (all exit 0):
   `/tmp/p4blo-assurance-full.log`. No new skip or expected divergence was added.
 
 Independent read-only review is **CLEAR**, recorded by the integrator at
-`docs/notes/reviews/milestone-adversarial.md`. The reviewer ran all 21 unit tests,
+`docs/notes/reviews/milestone-adversarial.md` (archived). The reviewer ran all 21 unit tests,
 checked exact JUnit/input identities, independently replayed all three baseline
 bundles (six requests) and the saved CRC fault after restoration (four requests),
 and inspected the actual compiler/native-failure evidence. Those checks are

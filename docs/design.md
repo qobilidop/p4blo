@@ -11,7 +11,7 @@ Lean semantics validated against a runnable reference.
 
 **Current direction (2026-09-23):** this document records the original
 prototype. The accepted successor architecture is
-[notes/ir-spec-boundary.md](ir-spec-boundary.md), implemented through
+[ir-spec-boundary.md](ir-spec-boundary.md), implemented through
 `.agents/roadmap.md`. It supersedes the original
 protobuf-as-abstract-syntax authority and single-Lean-package arrangement:
 Lean owns abstract syntax, validity and meaning; protobuf owns encoding;
@@ -613,7 +613,7 @@ testing table logic in pytest, until a p4c bridge exists.
   typed schema is the grammar the Lean side decodes.
 
 A construct-by-construct survey of the P4 IRs is in
-[notes/prior-art-ir.md](prior-art-ir.md).
+[prior-art-ir.md](prior-art-ir.md).
 
 ## Appendix: naming
 

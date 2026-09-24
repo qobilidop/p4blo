@@ -45,5 +45,6 @@ still reports `InstalledEntries.defaults` at line 484 of
 `tests/test_lean_forwarder_ingress.py` (the actual field is `default_actions`).
 There is no final independent review. Do not count draft Python cases or the
 unmerged proof as accepted evidence. The local plan is
-`docs/notes/forwarder-ingress.md`; landed application prerequisites and their
-scope are documented in `forwarder-apply.md` on main.
+`docs/notes/forwarder-ingress.md` in that worktree; the landed application
+prerequisites and their scope were documented in `docs/notes/forwarder-apply.md`,
+now archived (`git show agents-archive/2026-09-24:docs/notes/forwarder-apply.md`).

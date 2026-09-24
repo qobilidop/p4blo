@@ -47,7 +47,7 @@ it is the next composable one.
   behavior, error categories, resource limits and exclusions. An unproved
   validator or parser is labeled, not presented as a proved guarantee.
   Delivered in `profile.md` and independently reviewed in
-  `notes/reviews/milestone-profile.md`; this checks the scope document, not
+  `notes/reviews/milestone-profile.md` (archived); this checks the scope document, not
   the remaining implementation/release criteria.
 - [x] **Whole-program interchange:** direct independent Export/Program and
   host TableEntries/Entries fixtures cover complete fields, actual public
@@ -59,7 +59,7 @@ it is the next composable one.
   Finish Export/Program proof composition only if straightforward; a difficult
   theorem cannot reopen this milestone or replace independent tests.
   Delivered in `test_codec_program.py`, `test_codec_entries.py` and native
-  anchors, reviewed in `notes/reviews/milestone-interchange.md`. Strict raw
+  anchors, reviewed in `notes/reviews/milestone-interchange.md` (archived). Strict raw
   state/configuration regressions close the two observed equality survivors.
 - [x] **Evidence coverage:** a compact feature-to-evidence matrix maps each
   current semantic family to independent tests, generated comparisons,
@@ -74,14 +74,14 @@ it is the next composable one.
   failures are classified separately. Do not require rerunning every historical
   exploratory fault or invent a numerical mutation-score guarantee.
   Delivered by `scripts/check-assurance.py`, its tracked catalogue and
-  `notes/reviews/milestone-adversarial.md`. Owner end-to-end acceptance passes;
+  `notes/reviews/milestone-adversarial.md` (archived). Owner end-to-end acceptance passes;
   the final combined independent run also passes in release evidence below.
 - [x] **Usable authoring paths:** clean-checkout documented commands let a
   new user author/run the two flagship examples in both languages. Review
   diagnostics, imports and API claims; repair concrete rough edges, not a
   speculative syntax redesign or complete frontend verification.
   Delivered in `quickstart.md`, exercised by its six snippet/API tests and
-  reviewed in `notes/reviews/milestone-usability.md`. Final combined release
+  reviewed in `notes/reviews/milestone-usability.md` (archived). Final combined release
   gates are recorded separately below.
 - [x] **Final release evidence:** required Python/schema, both Lean/default
   audits/conformance and applicable P4-oracle gates pass on the final revision.
@@ -89,8 +89,8 @@ it is the next composable one.
   old temporary logs/worktrees. Record exact commands, revisions, reviewed
   exceptions and unresolved external availability separately in a short
   completion report. A skipped required check is not a pass.
-  Delivered in `notes/milestone-1-completion.md`, independently reviewed in
-  `notes/reviews/milestone-release.md`. All five remote workflows pass at
+  Delivered in [the completion report](evidence/milestone-1-completion.md),
+  independently reviewed in `notes/reviews/milestone-release.md` (archived). All five remote workflows pass at
   the exact frozen code revision; completion bookkeeping is documentation-only.
 
 The XDP compile-only experiment stays visible with its existing CI checks and
