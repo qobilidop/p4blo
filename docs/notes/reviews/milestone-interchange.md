@@ -59,3 +59,98 @@ discarded intermediate execution; the planned native parser trap addresses
 the explicit first-error boundary. The paired codec fault and actual host
 side-effect fault also remain pending. Final milestone closure must not treat
 this baseline clearance as clearance of those later obligations.
+
+## Host slice: structural and executable checks clear
+
+The host candidate adds 14 decode/install rejection profiles with a valid /
+rejected / valid sequence, independent complete two-counter answers, actual
+packet-entry call counts, startup decode/validation negatives, and actual
+Lean missing-parser trap controls. Native traps are correctly described as
+operational error precedence, not a theorem that no discarded work can occur.
+
+Root's first concrete observer finding is fixed in the inspected draft:
+logical counter serialization turns both `1` and `True` into `"0x1"`; raw
+strict `freeze(loaded.externs)` now rejects that mutation, with a retained
+single-hit survivor/strong-observer regression.
+
+Reviewer found a second concrete type-confusion survivor in the remaining
+ordinary metadata equality. In an isolated Python process, a wrapper delegates
+actual `Loaded.entries`, catches `InstallError`, then changes
+`loaded.metadata.contract.fields[0].provided` from `True` to integer `1`
+using `object.__setattr__`. The full `observe_rejected_host(target)` completed
+successfully, with exactly one hook hit. The frozen dataclass/dictionary
+comparison accepted equal numeric contents of different types. Owner and
+root received the exact recipe; strict detached config snapshots and a
+retained negative are requested before final clearance. No candidate source
+or runtime was edited by the reviewer. An earlier attempted slot-zero probe
+had zero hits because this small fixture has no metadata slots, and is
+explicitly excluded as evidence.
+
+Finding resolved: the owner replaced index, metadata, roles and installed
+configuration comparisons with strict detached `freeze` snapshots, retaining
+the extern check. The added metadata regression restores the shared contract
+in `finally`, including on assertion failure. Reviewer independently retried
+the original delegating one-hit fault: it now rejects with the exact
+`rejected host changed metadata configuration` assertion.
+
+Against the released final source/binaries, reviewer independently ran the
+two codec test modules: **239 passed**, exit 0
+(`/tmp/p4blo-interchange-review-host-focused.log`). The endpoint self-test
+also exits 0 with **193** anchors, including the three actual host/parser-trap
+controls (`/tmp/p4blo-interchange-review-host-native.log`). No additional
+source finding; final sensitivity/restoration note inspection remains pending.
+
+## Final host and sensitivity disposition: CLEAR
+
+The later sections supersede the chronological pending statuses above. Final
+source, recorded campaigns and restored execution have now been inspected;
+no remaining correction is requested. Ordinary required/combined integration
+gates remain the owner's/root's responsibility, not implied by this review.
+
+The paired real Program decoder/encoder swap compiled successfully. Inspected
+ordinary test logs show five failures / 122 passes and two native anchor
+failures, with genuine wrong decoded nominal slots and first-error order.
+The minimal retained object has unchanged encoded JSON but the wrong decoded
+headers/metadata slots; this demonstrates independent observation beyond a
+roundtrip. This is a compiled codec fault, not a theorem rejection or setup
+failure. Mutating the actual Python `Loaded.entries` rejection branch to
+increment unused ticks[1] also compiled; 12 installation profiles fail while
+two decode-only controls pass. The strict-source repeat is the same fault
+and request, not another input/campaign.
+
+Reviewer independently ran the note's complete read-only restoration recipe
+after inspecting it. Exit 0 (`/tmp/p4blo-interchange-review-final-replay.log`):
+
+- all 22 historical baseline source hashes resolve at `e03cd7a`, preserving
+  the pre-formatting baseline instead of silently repinning it;
+- current fixture request/answer identities match all 165 historical rows;
+  both restored endpoints produce byte-exact historical replies;
+- both source mutations reconstruct in memory to their recorded mutant
+  hashes without editing production files;
+- representative field and host artifacts match tracked fixtures, complete
+  Program/config/packet inputs, raw replies/state and expected errors;
+- restored field decoding gives the independent answer on both endpoints;
+  restored host rejection preserves state and the subsequent valid packet
+  advances exactly to the second independent full-array answer;
+- all six candidate/fault-tree source pairs are byte-identical, and production
+  Json/loader files have no candidate diff.
+
+Independently checked final artifact hashes/sizes:
+
+- paired field: 1366 bytes,
+  `f5b5cf7ce22e6be04f4805a49a57caef85041bf44273429aa659ec3d8deadcef`;
+- strict host: 10573 bytes,
+  `ca3cf93868c5936598b286463c0b3a512fce0b31c4e495d72081300e6742e682`.
+
+The superseded pre-strict host capture is explicitly not extra evidence.
+Host evidence is accurately labeled a direct rejected-request state witness,
+not fabricated as a packet DRT divergence. The finite fixture does not claim
+global validator equivalence, rollback after execution faults, hardened JSON
+acceptance or universal Python correctness. No optional proof work is needed
+for this closeout slice. Reviewer has no active candidate consumers.
+
+Final owner gate addendum: inspected the completed post-review required-gate
+log, **2882 passed / 1875 deselected**, exit 0 (190.33 seconds), at
+`/tmp/p4blo-milestone-required-final.log`. The implementation note now records
+that result and final static/restored checks; no pending owner-result line
+remains. Root still owns the final combined main/release gate.
