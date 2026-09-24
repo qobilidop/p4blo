@@ -1,8 +1,87 @@
 import Tests.DeclarationCodec
+import P4bloIR.TableCodecLaws
 
 open Lean P4bloIR
 
 namespace TableCodecTests
+
+def wireCall : ActionCall := ⟨"Missing", [.bits 0 (10 ^ 100 + 7), .boolean false,
+  .enumMember "" "", .error "", .bits (2 ^ 32 - 1) 0]⟩
+def wireKey : Key := ⟨.slice (.lookahead (.stack "Missing" 0)) 0 (2 ^ 32 - 1), .lpm, ""⟩
+def wireEntry : Entry := ⟨[.exact (10 ^ 100), .lpm 99 (2 ^ 32 - 1), .ternary 73 2],
+  wireCall, 2 ^ 32 - 1⟩
+def wireTable (flag : Bool) (default : Option ActionCall) : Table := ⟨"",
+  [wireKey, ⟨.literal (.bits 0 77), .exact, "same"⟩, ⟨.var "missing", .ternary, "same"⟩],
+  ["", "same", "same", "Missing"], default, flag,
+  [wireEntry, ⟨[], ⟨"", []⟩, 0⟩, ⟨[.ternary (10 ^ 100) 0], ⟨"same", [.boolean true]⟩, 2⟩], 0⟩
+
+/-- All four laws have constructive, kernel-checked wire-only instances. -/
+theorem tables_roundtrip (path : String) (flag : Bool) :
+    Key.decode path wireKey.toJson = .ok wireKey ∧
+    ActionCall.decode path wireCall.toJson = .ok wireCall ∧
+    Entry.decode path wireEntry.toJson = .ok wireEntry ∧
+    Table.decode path (wireTable flag none).toJson = .ok (wireTable flag none) ∧
+    Table.decode path (wireTable flag (some ⟨"", []⟩)).toJson =
+      .ok (wireTable flag (some ⟨"", []⟩)) ∧
+    Table.decode path (wireTable flag (some wireCall)).toJson =
+      .ok (wireTable flag (some wireCall)) := by
+  refine ⟨CodecLaws.key_roundtrip _ _ ?_, CodecLaws.actionCall_roundtrip _ _ ?_,
+    CodecLaws.entry_roundtrip _ _ ?_, CodecLaws.table_roundtrip _ _ ?_,
+    CodecLaws.table_roundtrip _ _ ?_, CodecLaws.table_roundtrip _ _ ?_⟩
+  all_goals simp [wireKey, wireCall, wireEntry, wireTable, CodecLaws.KeyRepresentable,
+    CodecLaws.ActionCallRepresentable, CodecLaws.EntryRepresentable,
+    CodecLaws.TableRepresentable, CodecLaws.ExprRepresentable, CodecLaws.TypeRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.KeyValueRepresentable, CodecLaws.UInt32]
+
+-- An absent default adds no premise; neither names nor const flags impose validation.
+example (name : String) (actions : List String) (flag : Bool) (size : Nat) :
+    CodecLaws.TableRepresentable ⟨name, [], actions, none, flag, [], size⟩ ↔
+      CodecLaws.UInt32 size := by simp [CodecLaws.TableRepresentable]
+
+-- Every embedded numeric wire bound remains necessary, including through Table.
+example : ¬ CodecLaws.KeyRepresentable ⟨.literal (.bits (2 ^ 32) 0), .exact, ""⟩ := by
+  simp [CodecLaws.KeyRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeyRepresentable ⟨.lookahead (.bits (2 ^ 32)), .lpm, ""⟩ := by
+  simp [CodecLaws.KeyRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeyRepresentable ⟨.lookahead (.stack "" (2 ^ 32)), .ternary, ""⟩ := by
+  simp [CodecLaws.KeyRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeyRepresentable ⟨.slice (.var "") (2 ^ 32) 0, .exact, ""⟩ := by
+  simp [CodecLaws.KeyRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeyRepresentable ⟨.slice (.var "") 0 (2 ^ 32), .exact, ""⟩ := by
+  simp [CodecLaws.KeyRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.ActionCallRepresentable ⟨"", [.bits (2 ^ 32) 0]⟩ := by
+  simp [CodecLaws.ActionCallRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.EntryRepresentable ⟨[.lpm 0 (2 ^ 32)], ⟨"", []⟩, 0⟩ := by
+  simp [CodecLaws.EntryRepresentable, CodecLaws.KeyValueRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.EntryRepresentable ⟨[], ⟨"", [.bits (2 ^ 32) 0]⟩, 0⟩ := by
+  simp [CodecLaws.EntryRepresentable, CodecLaws.ActionCallRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.EntryRepresentable ⟨[], ⟨"", []⟩, 2 ^ 32⟩ := by
+  simp [CodecLaws.EntryRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TableRepresentable ⟨"", [], [], none, false, [], 2 ^ 32⟩ := by
+  simp [CodecLaws.TableRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TableRepresentable
+    ⟨"", [⟨.lookahead (.bits (2 ^ 32)), .exact, ""⟩], [], none, false, [], 0⟩ := by
+  simp [CodecLaws.TableRepresentable, CodecLaws.KeyRepresentable,
+    CodecLaws.ExprRepresentable, CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TableRepresentable
+    ⟨"", [], [], some ⟨"", [.bits (2 ^ 32) 0]⟩, false, [], 0⟩ := by
+  simp [CodecLaws.TableRepresentable, CodecLaws.ActionCallRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TableRepresentable
+    ⟨"", [], [], none, false, [⟨[.lpm 0 (2 ^ 32)], ⟨"", []⟩, 0⟩], 0⟩ := by
+  simp [CodecLaws.TableRepresentable, CodecLaws.EntryRepresentable,
+    CodecLaws.KeyValueRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TableRepresentable
+    ⟨"", [], [], none, false, [⟨[], ⟨"", [.bits (2 ^ 32) 0]⟩, 0⟩], 0⟩ := by
+  simp [CodecLaws.TableRepresentable, CodecLaws.EntryRepresentable,
+    CodecLaws.ActionCallRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TableRepresentable
+    ⟨"", [], [], none, false, [⟨[], ⟨"", []⟩, 2 ^ 32⟩], 0⟩ := by
+  simp [CodecLaws.TableRepresentable, CodecLaws.EntryRepresentable, CodecLaws.UInt32]
 
 /-- Direct constructor observation, independent of the shared wire table. -/
 def matchKindValue : MatchKind → String
