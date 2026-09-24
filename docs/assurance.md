@@ -264,6 +264,38 @@ aggregate copies, sub-block calls and changing host policies, all with
 type-preserving shrinking; invalid generated programs fail rather than
 being filtered away.
 
+The adequacy criterion is coverage of the semantics' own rules, not test
+counts. `P4bloIR.Coverage` names 157 rules: one per case of the
+evaluator, the statement executor, the parser's transitions, table
+matching and calls, and one per closed behavior of
+[ir-semantics.md](ir-semantics.md) that a machine step can observe.
+`p4blo-lean run` reports, in every reply, the rules the request
+exercised. An observer in the architecture package steps the
+proof-visible machine and classifies each configuration before its step,
+reusing the real evaluator for operand values and never an outcome;
+`Execution.Finishes.sound` guarantees that such a trace determines the
+runner's result, and the reply itself still comes from the runner.
+`tests/test_drt_coverage.py` reruns the retained campaigns at fixed seeds
+and compares the unhit rules with `tests/drt-unhit-tags.json`, which
+lists every rule the generators cannot reach yet with the gap behind it;
+a rule that stops being hit fails the test, and the list may only shrink.
+Validator-only rules, installation checks, extern families and the
+architecture's own rules are outside this inventory. An independent
+review of the observer is under the agent reviews; its confirmed
+defects are being fixed and witness pairs added.
+
+### Checked against P4-SpecTec
+
+Every closed behavior of the semantics page cites the SpecTec rule that
+decides it at the pinned commit and is classed *same*, *refines
+undefined*, *deviates* or *not representable*; `tests/test_ledger.py`
+and `tests/test_spectec_rules.py` check the shape, the names and the
+classes. Separately, [p4-spec-coverage.md](p4-spec-coverage.md#rule-coverage-on-p4-spectec)
+records which of SpecTec's architecture-free rules the corpus and
+examples make the pinned simulator fire, with every unhit in-scope rule
+excluded by hand with a reason or listed as reachable and not yet
+exercised. A hit rule is exercised, not verified equivalent.
+
 ## Known disagreements with the oracles
 
 Every known disagreement is a strict expected failure restricted to a
@@ -301,6 +333,19 @@ on SpecTec, yet simple packet sequences pass on both, because a consistent
 wrong hash preserves collision relationships. That is why primitive known
 answers and complete register observations are required, and why BMv2 is
 the CRC authority until upstream resolves the padding.
+
+**Pinned P4-SpecTec: shift amounts above 2048.** The rule `$bin_shl` is
+unbounded, but the simulator's builtins stop with "shift amount too
+large" for any amount over 2048, where the IR's shift gives zero. This is
+a limit of the simulator, not a rule disagreement; generated programs on
+SpecTec must keep shift amounts within it or classify the error.
+
+**Pinned P4-SpecTec: header equality and `pop_front`.** SpecTec's
+`$bin_eq` on headers ignores the validity bit, and its `pop_front(n)`
+sets `nextIndex` to `S - n`; both contradict the P4 specification
+(§8.17, §8.18) and are recorded as deviations in the semantics page,
+where p4blo follows the specification. They are candidates for upstream
+reports.
 
 **Pinned P4-SpecTec: LPM and ternary mask construction.** Its
 [table interface](https://github.com/kaist-plrg/p4-spectec/blob/2730cfd9e74048bb5439da0f8afcef124079a064/spec/9-arch/9.1-table-interface.watsup)
