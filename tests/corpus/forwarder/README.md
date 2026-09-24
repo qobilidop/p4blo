@@ -19,9 +19,13 @@ prints it, after the leading comment.
 
 The independent Lean source builds exactly the same complete IR, and its
 in-memory `Program` runs these same vectors through the public Lean switch
-API. This is not a verified whole frontend or pipeline; the current proof
-is limited to unchanged control state for invalid IPv4 inputs. See the
-[port and assurance note](../../../docs/notes/lean-forwarder.md).
+API. The [quickstart](../../../docs/quickstart.md) runs both authored versions.
+Scoped proofs cover the invalid-IPv4 identity, the actual selected forwarding
+action, and bounded installed-table lookup/application families. These are
+not a verified whole frontend or pipeline; see the
+[port](../../../docs/notes/lean-forwarder.md),
+[action](../../../docs/notes/forwarder-action.md) and
+[application](../../../docs/notes/forwarder-apply.md) assurance notes.
 
 ## Elaborated away
 

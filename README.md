@@ -29,9 +29,11 @@ existing P4 source, P4Runtime, hardware, or a replacement for any tool.
 The first thing a community version would build is a p4c backend;
 [4ward](https://github.com/4ward-p4/4ward) shows the route.
 
-The current development focus is a stronger Lean specification and stronger
-evidence that Python implements it. [The verification program](docs/verification.md)
-states the milestones, acceptance criteria, and limits of each guarantee.
+The current development focus is the bounded
+[Milestone 1](docs/milestone-1.md): useful Python and Lean authoring, a strong
+specification, and tested implementation conformance. The broader
+[verification program](docs/verification.md) records longer-term directions,
+not additional requirements for finishing this milestone.
 The tests compare persistent extern state as well as packets. Recorded
 mutation campaigns challenge both implementations; failing experiments
 retain concrete replay bundles. These are layered evidence, not a proof of
@@ -46,8 +48,11 @@ Bloom-filter false positives and compares all 8,192 register cells against
 unchanged original P4 on BMv2. Stronger probes exposed pinned SpecTec CRC32
 padding and table-mask defects that simpler packet sequences missed. They
 remain strict, precisely classified expected discrepancies—not model changes
-to manufacture agreement. The Lean-authored firewall and its application
-proofs remain open.
+to manufacture agreement. The independent
+[Lean-authored firewall](lean/P4blo/TutorialFirewall.lean) now runs the complete
+program with persistent state. Initialization and Bloom-insertion properties
+are proved under explicit premises; a complete firewall pipeline proof is not
+claimed. See [its assurance note](docs/notes/lean-firewall-port.md).
 
 ## Reading order
 
@@ -89,7 +94,11 @@ Three tiers, from most to least reproducible.
    checker, but not the schema tools or Lean.
 3. **Devcontainer.** Not provided yet; open an issue if you need one.
 
-Then:
+To author and run the complete forwarder and persistent firewall in either
+language, follow the [tested quickstart](docs/quickstart.md). It uses the
+existing APIs and executables; no Docker or P4 oracle is needed.
+
+For repository checks:
 
 ```
 scripts/check.sh              # every Python and schema check CI runs

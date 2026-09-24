@@ -9,6 +9,13 @@ checks, not complete validation. `runSwitch` and the block entry points reuse
 the reference functions. Pass returned extern state to the next call. There
 is no independent optimized engine or new correctness claim in these aliases.
 
+The [quickstart](../docs/quickstart.md) shows how to edit and run the complete
+[forwarder](P4blo/Forwarder.lean) and persistent
+[tutorial firewall](P4blo/TutorialFirewall.lean), plus a small verified typed
+fragment. The full examples mix checked fragments with explicit raw IR
+declarations; their tested complete executions are not proofs of a complete
+frontend or pipeline.
+
 ## Verified scalar authoring
 
 ```lean
@@ -206,8 +213,10 @@ mode/declaration agreement, exact initial values and no active action layer.
 path laws discharge the generic read/write assumptions internally.
 
 The body fragment permits only scalar-leaf assignments and conditionals.
-It does not parse packets, inspect validity, perform routing-table lookup,
-recompute checksums, change header validity or copy whole aggregates. The
+Read-only header validity is available through `HeaderRef.isValid` and the
+unified `Fields.Read` family. The fragment does not parse packets, perform
+routing-table lookup, recompute checksums, change header validity or copy
+whole aggregates. The
 forwarding fixture assumes its inputs are already parsed and route-selected;
 it is not a verified router. Kernel negatives and actual `Index.build`/
 `Frame.forBlock` tests check selected initialization and permission cases,
