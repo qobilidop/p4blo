@@ -33,6 +33,23 @@ def test_malformed_replies_cannot_be_coerced_to_agreement(reply: str) -> None:
         parse_reply(json.dumps({**json.loads(reply), "state": {}}))
 
 
+@pytest.mark.parametrize("coverage", ['"a"', "[1]", "[null]", "{}", "null"])
+def test_malformed_coverage_is_a_protocol_error(coverage: str) -> None:
+    with pytest.raises(ProtocolError, match="coverage"):
+        parse_reply('{"outputs": [], "state": {}, "coverage": ' + coverage + "}")
+
+
+def test_coverage_is_optional_and_never_part_of_agreement() -> None:
+    """An older peer sends no list; a list never changes agreement."""
+    older = parse_reply('{"outputs": [], "state": {}}')
+    newer = parse_reply('{"outputs": [], "state": {}, "coverage": ["stmt.emit"]}')
+    assert older.coverage is None
+    assert newer.coverage == frozenset({"stmt.emit"})
+    assert older == newer and older.agrees_with(newer)
+    error = parse_reply('{"error": "x", "state": {}, "coverage": []}')
+    assert error.coverage == frozenset()
+
+
 @pytest.mark.parametrize("packet_size", [1, 1_000_000])
 def test_unresponsive_peer_times_out_even_when_it_does_not_read(
     tmp_path: Path, packet_size: int

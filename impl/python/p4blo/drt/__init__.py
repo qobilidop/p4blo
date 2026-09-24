@@ -9,7 +9,7 @@ speaking a line protocol; there is no FFI.
     case.py       a Case and its rendering as an STF vector
     generate.py   random cases from a seed, shaped by the program
     run.py        run a case on Python, on Lean over the pipe, and compare
-    coverage.py   which parser states a packet reaches on Python
+    coverage.py   Lean rule tags over a campaign; parser states reached on Python
     fake_lean.py  a stand-in for `p4blo-lean run`, backed by Python
     __main__.py   `python -m p4blo.drt`
 """
@@ -17,6 +17,7 @@ speaking a line protocol; there is no FFI.
 from __future__ import annotations
 
 from p4blo.drt.case import Case, case_to_stf
+from p4blo.drt.coverage import RuleCoverage, rule_inventory
 from p4blo.drt.generate import Generator, generate
 from p4blo.drt.run import (
     Divergence,
@@ -37,9 +38,11 @@ __all__ = [
     "Outcome",
     "ProtocolError",
     "Report",
+    "RuleCoverage",
     "case_to_stf",
     "compare",
     "compare_cases",
     "generate",
+    "rule_inventory",
     "run_python",
 ]
