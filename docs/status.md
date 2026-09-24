@@ -12,7 +12,8 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local code integration at `25064ab`, including total Expr/LValue/Stmt codec proofs,
+Combined local code integration at `9a12253` plus the reviewed oracle selector
+at `529475f`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -126,7 +127,15 @@ roots, 270 native cases and 50 Python checks. Its independent numeric policy
 covers every IPv4 query and fitting payload for five installation shapes.
 A compiling shortest-prefix fault is rejected; the actual Python fault also
 produces a retained, live/restored packet mismatch on a new two-route input.
-Actual table application and the surrounding control remain separate work.
+Actual table application now adds twelve audited roots, 270 native applications,
+810 queue boundaries and 24 hit/error controls, plus 320 Python checks.
+It composes actual key evaluation, installed selection, action completion and
+normal restoration while retaining arbitrary continuation and explicit hit
+timing. The new default-skip fault reuses TTL0 packet bytes under a distinct
+no-route configuration; complete source-matched replay agrees after restoration.
+Both overlapping-route orders and three default profiles pass immutable BMv2.
+Dedicated oracle CI now explicitly selects that exact test without Lean
+fixtures. The surrounding guarded ingress/checksum remains separate work.
 Exact Bloom insertion now adds thirteen default audits, 84 native profiles
 and 79 Python checks, including the repaired runtime-read-coupling observer.
 Seven actual compiling Lean source/runtime faults fail proofs; a real Python
@@ -138,8 +147,8 @@ historical source identities. The separate shared-helper extraction preserves
 all four Table statements and old bytes. Actual Action/Block laws remain work.
 The owned printer lifecycle fix adds fifteen deterministic regressions;
 all actual printer goldens pass without skips and independent review is clear.
-Required real-Lean DRT: **2382 passed**, no skips. Full gate:
-**4192 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Required real-Lean DRT: **2700 passed**, no skips. Full gate:
+**4512 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -160,11 +169,17 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `lean-firewall-proof.md`, `parser-codec-baseline.md`, `firewall-bloom-next.md`,
 `forwarder-tables.md`, `parser-codec.md`, `firewall-bloom.md`,
 `block-codec-next.md`, `block-codec-baseline.md`, `codec-object-helpers.md`
-and `printer-lifecycle.md`.
+and `printer-lifecycle.md`, `forwarder-apply.md`, `forwarder-apply-ci.md`
+and `firewall-readback-next.md`.
 
-All five remote workflows pass for `23b1ced`. At pushed `425fbc9`, CI, Lean,
-Oracle and BMv2 pass; XDP is still building, not a completed gate. Newer CI
-must be checked separately. This closes the earlier macOS CI run `35922311964` failure at
+All five remote workflows pass for `425fbc9`. At pushed `ff47066`, CI, Oracle
+and BMv2 plus Lean pass. XDP run `35949452182` failed before compilation:
+Ubuntu's pinned snapshot returned HTTP 503 for noble-security/InRelease.
+Attempt 2 also failed before compilation with HTTP 503 on all three pinned
+InRelease indexes, in both build/runtime stages. No further immediate retry
+or infrastructure change is made; pins/checks remain unchanged. This is not
+a completed XDP gate or a code fix. Newer CI must be checked separately.
+This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
 at `5871da8`, attempts cleanup once, retains bounded reaping and fails closed
@@ -173,11 +188,11 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Nineteen retained execution-fault bundles and 169 raw codec
+Twenty retained execution-fault bundles and 169 raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All nineteen execution bundles replay successfully on this integration
-(twenty-six requests), as do all 169 raw codec observations. The real
+All twenty execution bundles replay successfully on this integration
+(twenty-seven requests), as do all 169 raw codec observations. The real
 forwarder's new TTL0 bundle matches its current authored Program, tracked
 edge input and fixed configuration. The new
 statement campaigns contribute 25 observations of 20 distinct requests;
@@ -521,8 +536,11 @@ Things a resuming agent should know are in motion or deliberately left.
   fitting payloads for five shapes, nine audits, 270 native cases and 50
   Python checks. Independent numeric expected selection and a new two-route
   mismatch supplement the actual lookup proofs. Scope/review:
-  `notes/forwarder-tables.md`. Actual application is active in
-  `work/forwarder-apply` at `/Users/qobilidop/my/work/p4blo-forwarder-apply`;
+  `notes/forwarder-tables.md`. Actual application is integrated at `9a12253`,
+  with twelve audits, 270 native cases, 810 queue boundaries, 24 hit/error
+  controls and 320 Python checks. Scope/review: `notes/forwarder-apply.md`.
+  The next actual first ingress conditional with checksum pending is active
+  in `work/forwarder-ingress` at `/Users/qobilidop/my/work/p4blo-forwarder-ingress`;
   checksum and complete forwarding remain separate obligations.
   The small operational root prerequisite is independently reviewed and
   committed at `01d8b09`: actual active-map absence permits a block write
@@ -580,6 +598,11 @@ Things a resuming agent should know are in motion or deliberately left.
   Scope, reconstruction and CLEAR review: `notes/firewall-bloom.md`.
   Next: actual two-read prefix before the decision, then drop/no-op composition,
   hash bounds and control composition. No exact-connection-tracking claim.
+  Reviewed plan `b3defb4` is integrated at `279ed03`:
+  `notes/firewall-readback-next.md`. Root's active implementation worktree is
+  `/Users/qobilidop/my/work/p4blo-firewall-readback`, `work/firewall-readback`.
+  The unregistered actual two-call prefix and preservation/witness compile;
+  native/Python observations, audits and fault campaigns remain in progress.
 
   Four validator-accepted wrong ports fail both engines. Subsequent actual
   Python/Lean CRC XOR-one mutations pass packet-only gates but produce three

@@ -145,8 +145,13 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   checks, for arbitrary IPv4 queries and fitting payloads over five shapes.
   The numeric policy is independent of actual lookup. A new two-route packet
   input retains an actual Python shortest-prefix mismatch and restored replay.
-  Scope: `notes/forwarder-tables.md`. Actual table application is active in
-  `work/forwarder-apply`; checksum/control continuation remains separate.
+  Scope: `notes/forwarder-tables.md`. Actual table application is integrated at
+  `9a12253`: twelve audits, complete source policy, actual action completion
+  and hit timing, 270 native cases and 320 Python tests, plus a new no-route
+  replay and explicit dedicated BMv2 CI selection. Scope/review:
+  `notes/forwarder-apply.md`. The real guarded first ingress conditional with
+  checksum pending is active in `work/forwarder-ingress`; complete checksum/
+  control execution remains separate.
 
 ## Application milestones
 
@@ -182,6 +187,10 @@ mutation evidence, and an IR-minimality review. See the design for details.
   Scope and review: `notes/firewall-bloom.md`. Actual two-read prefix, decision/
   drop composition, hash bounds and control branching remain separate later
   obligations; no exact-conntrack or full-pipeline claim.
+  The reviewed exact two-read plan is integrated at `279ed03`; implementation
+  is active in `work/firewall-readback`. Its unregistered read/copy-back and
+  four-transition prefix compile, but final observations/audits/campaigns
+  remain required before advertising that assurance checkpoint.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.

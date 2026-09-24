@@ -1157,3 +1157,28 @@ one that says so.
   measured slow-host failures. Keep the differently secured XDP helper
   separate until there is a real shared policy. Scope/review:
   `notes/printer-lifecycle.md`.
+- **Compose actual forwarding actions before the guarded ingress prefix.**
+  The table application law preserves the exact success-only hit write and
+  arbitrary pending continuation. Defaults may forward while remaining misses;
+  applying to an invalid header uses its stored key, with no invented guard.
+  Confidence: high after twelve audits, complete-state tests and actual
+  runtime/source faults; medium in the small Effect API pending its next
+  ingress client. The 270 cases cycle 24 state profiles, not a 6480-case
+  Cartesian sweep. A new no-route request reuses old TTL0 packet bytes but
+  differs from all 26 prior requests in full configuration. Scope/review:
+  `notes/forwarder-apply.md`.
+- **Explicitly select application oracles in dedicated CI.** The new
+  five-vector forwarding BMv2 profile was not discovered by existing corpus/
+  firewall selectors. Add its exact node with availability preflight and
+  independently verify it needs no Lean fixtures. Confidence: high in this
+  scoped selector; a general no-skip mechanism remains distinct. Revisit
+  discovery when another application adds a separate original-oracle test.
+  Scope/review: `notes/reviews/forwarder-apply-ci.md`.
+- **Retain pinned XDP inputs during upstream snapshot failure.** At
+  `ff47066`, XDP run `35949452182` and its single retry fail before compilation
+  with Ubuntu snapshot HTTP 503 responses. The preceding `425fbc9` XDP job
+  passes. Confidence: high in the observed external download failure, not
+  its duration or upstream cause. Keep all pins, TLS and required checks;
+  do not count the failed run as assurance or immediately loop retries.
+  Recheck on the next normal checkpoint run before considering a separately
+  reviewed availability fix.

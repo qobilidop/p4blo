@@ -238,3 +238,43 @@ checkpoint capture: 82350 bytes, SHA-256
 The new complete-state application exporter is 49719204 bytes, SHA-256
 `aab4a8f59ec967c1f499a5f2b85c496370acc656c64f5ed00254f28075daeb97`;
 capture `/tmp/p4blo-forwarder-apply-final-export.json`.
+
+## Integrated checkpoint
+
+Actual application is integrated at `9a12253`; reviewed `529475f` explicitly
+selects its BMv2 profile in the dedicated oracle workflow after an availability
+preflight. Both complete Lean gates pass, **595 spec checks**, all twelve new
+audits and native profiles. Required comparisons pass **2700**, no skips;
+the full gate passes **4512 / 5 strict expected discrepancies / 1 local-XDP
+skip**, including all static/schema/workflow checks. The exact new BMv2 node
+also passes separately, one test covering five vectors, without Lean fixtures.
+Logs: `/tmp/p4blo-apply-integrated-{lean,required,check,replay}.log` and
+`/tmp/p4blo-apply-bmv2-selection.log`. Every command exited 0.
+
+All twenty retained execution bundles (27 requests) and 169 raw codec fault
+observations replay successfully. The new bundle is source-matched and its
+complete exporter is byte-identical to the reviewed candidate capture. The
+following durable read-only check does not require that temporary capture:
+
+```sh
+nix develop -c uv run python - <<'PY'
+from pathlib import Path
+import hashlib,subprocess
+from p4blo import ir
+from p4blo.drt import replay
+from tests.test_lean_forwarder_apply import application_packet
+root=Path('/Users/qobilidop/my/work/p4blo')
+bundle=root/'.artifacts/drt/forwarder-apply-empty-drop-false.json'
+data=bundle.read_bytes()
+assert len(data)==26918 and hashlib.sha256(data).hexdigest()=='39b7ebeeb12760cd89e0b408117d7bf9ba1eb8f8589c7fe3d9baf001a70bcc81'
+program,cases,ports,seed=replay.load(bundle)
+assert program==ir.load_text(root/'tests/corpus/forwarder/forwarder.txtpb')
+assert cases==[application_packet('empty/drop/false')] and (ports,seed)==(4,0)
+report=replay.replay(bundle,[root/'ir/.lake/build/bin/p4blo-lean'])
+assert report.passed and report.agreed==1 and report.both_errored==0
+run=subprocess.run([str(root/'lean/.lake/build/bin/forwarderApply')],capture_output=True,timeout=60)
+assert run.returncode==0 and run.stderr==b''
+assert len(run.stdout)==49719204 and hashlib.sha256(run.stdout).hexdigest()=='aab4a8f59ec967c1f499a5f2b85c496370acc656c64f5ed00254f28075daeb97'
+print('source-matched new default-drop input restored agreement; exact complete application exporter')
+PY
+```
