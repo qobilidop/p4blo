@@ -542,7 +542,7 @@ def test_lean_agrees_host_rejection_state(
     assert result.returncode == 0 and result.stderr == "", (result.returncode, result.stderr)
     replies = [loads(line) for line in result.stdout.splitlines()]
     # Every reply also carries its rule coverage; the exact comparison is about the rest.
-    assert all(isinstance(r.pop("coverage"), list) for r in replies)
+    assert all(isinstance(r, dict) and isinstance(r.pop("coverage"), list) for r in replies)
     expected = [
         {"outputs": [[0, "2aabcd"]], "state": expected_host_state(1)},
         {"error": case.lean_error, "state": expected_host_state(1)},
