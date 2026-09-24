@@ -19,7 +19,18 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
 LeafKind = Literal["literal", "type", "key"]
-CodecKind = LeafKind | Literal["expr", "lvalue", "arg", "stmt"]
+DeclarationKind = Literal[
+    "field",
+    "header_type",
+    "struct_type",
+    "enum_type",
+    "var",
+    "param",
+    "method",
+    "extern_type",
+    "extern_instance",
+]
+CodecKind = LeafKind | DeclarationKind | Literal["expr", "lvalue", "arg", "stmt"]
 
 
 @dataclass(frozen=True)
