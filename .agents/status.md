@@ -29,7 +29,7 @@ The four claims of [design.md](../docs/design.md):
 At implementation revision `c94336d`, sequentially in the pinned
 environment, each exiting 0:
 
-- `scripts/check-lean.sh`: both Lean packages, proof audits, native/API checks.
+- `scripts/check-lean.sh`: the Lean packages, proof audits, native/API checks.
 - `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: 4837 passed, one skipped (the
   optional local XDP image), five xfailed (the classified oracle
   discrepancies); Ruff, Pyright, schema drift and actionlint pass.
@@ -54,6 +54,23 @@ source beyond path strings in comments. `scripts/check.sh` passes at
 `2a5638d` with 4839 passed, the same one skip and five xfails, plus the
 new link test; the later review-fix commits touch Markdown only. The Lean
 gate was not rerun: its only change is a doc comment in `Switch.lean`.
+
+**IR and architecture separation (2026-09-24).** The repository is now
+`spec/ir/` (the IR specification, nothing architectural), `spec/arch/`
+(the reference architecture: switch, extern families, certificate
+example, the `p4blo-lean` endpoint), `impl/lean/` and `impl/python/`
+(with `p4blo.arch` holding the extern families and the v1model printer);
+`docs/ir-semantics.md` describes the IR alone and `docs/arch-supports.md`
+what the supplied architectures decide. The IR carries extern state as
+data and takes the model from the architecture at load. No golden, wire
+byte or protocol message changed. At `d2c9400`: `scripts/check-lean.sh`
+passes all three packages with their audits and tests;
+`scripts/check.sh` passes with 4843 tests, the same one skip and five
+xfails; `scripts/check-assurance.py` passes all 28 phases with the split
+scratch builds. The independent review is
+`reviews/spec-split-2026-09-24.md`; its two runner findings are fixed.
+The two parked draft worktrees predate the layout and need rebasing
+before use, as `notes/parked-proofs.md` now says.
 
 A second pass the same day reduced `docs/` to six reference files
 (design, semantics, coverage, assurance, quickstart, workflows), folding
