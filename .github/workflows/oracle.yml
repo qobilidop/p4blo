@@ -32,8 +32,9 @@ jobs:
         with:
           path: |
             ~/.cache/p4blo/p4-spectec
+            ~/.cache/p4blo/spectec-coverage-probe
             ~/.opam
-          key: oracle-${{ runner.os }}-${{ steps.pin.outputs.commit }}-${{ hashFiles('tests/oracle/build.sh') }}
+          key: oracle-${{ runner.os }}-${{ steps.pin.outputs.commit }}-${{ hashFiles('tests/oracle/build.sh', 'tests/oracle/coverage.py') }}
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
       - uses: nix-community/cache-nix-action@135667ec418502fa5a3598af6fb9eb733888ce6a # v6
         with:
@@ -50,3 +51,7 @@ jobs:
         run: nix develop -c uv run pytest tests/test_crc.py -k spectec -v
       - name: Check original firewall sequences and mask discrepancy
         run: nix develop -c uv run pytest tests/test_firewall.py -k spectec -v
+      - name: Build the SpecTec coverage probe
+        run: nix develop .#oracle -c python3 tests/oracle/coverage.py build
+      - name: Check SpecTec rule coverage against the pinned simulator
+        run: nix develop -c uv run pytest tests/test_spectec_coverage.py -v
