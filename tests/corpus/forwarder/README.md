@@ -10,11 +10,18 @@ an escape hatch.
 | Source | [p4lang/tutorials](https://github.com/p4lang/tutorials) `exercises/basic/solution/basic.p4` |
 | IR | `forwarder.txtpb`, generated from the eDSL |
 | eDSL | `forwarder.py` |
+| Lean authoring | [`P4blo/Forwarder.lean`](../../../lean/P4blo/Forwarder.lean), checked field paths plus explicit ordinary IR assembly |
 | Vectors | `forward.stf`, `miss.stf`, `non_ipv4.stf`, `lpm_precedence.stf`, `too_short.stf` |
 
 The golden was written by hand for step 1 and is generated from the eDSL
 source since the checksum landed: `python tests/corpus/forwarder/forwarder.py`
 prints it, after the leading comment.
+
+The independent Lean source builds exactly the same complete IR, and its
+in-memory `Program` runs these same vectors through the public Lean switch
+API. This is not a verified whole frontend or pipeline; the current proof
+is limited to unchanged control state for invalid IPv4 inputs. See the
+[port and assurance note](../../../docs/notes/lean-forwarder.md).
 
 ## Elaborated away
 
