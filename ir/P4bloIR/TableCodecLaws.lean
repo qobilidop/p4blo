@@ -1,7 +1,5 @@
 import P4bloIR.CodecLaws
-import Std.Data.TreeMap.Raw.Lemmas
-import Std.Data.TreeMap.Raw.WF
-import Init.Data.List.Impl
+import P4bloIR.CodecObjectLaws
 
 /-!
 # Wire-only table declaration roundtrips
@@ -14,6 +12,7 @@ These are not table-selection, semantic-validation or Program codec theorems.
 
 namespace P4bloIR.CodecLaws
 open Lean
+open CodecObject
 
 def KeyRepresentable (key : Key) : Prop := ExprRepresentable key.expr
 def ActionCallRepresentable (call : ActionCall) : Prop :=
@@ -84,47 +83,6 @@ theorem entry_roundtrip (path : String) (entry : Entry) (h : EntryRepresentable 
     · simp only [zero, Bool.false_eq_true, ↓reduceIte, uint32_toJson _ _ h.2.2]
       rfl
 
--- Reduce actual object lookup through omitted groups independently, avoiding
--- a Cartesian split over every field's presence. This is the real TreeMap
--- lookup law, not another JSON decoder or an assumed successful callback.
-private def fieldLookup (key : String) (fields : Encode.Fields) : Option Json :=
-  fields.findSomeRev? (fun (name, value) => if compare name key = .eq then some value else none)
-
-private theorem fieldLookup_nil (key : String) : fieldLookup key [] = none := rfl
-
-private theorem fieldLookup_append (key : String) (xs ys : Encode.Fields) :
-    fieldLookup key (xs ++ ys) = (fieldLookup key ys).or (fieldLookup key xs) := by
-  simp [fieldLookup, List.findSomeRev?_eq_findSome?_reverse, List.findSome?_append]
-
-private def withoutNull : Option Json → Option Json
-  | none | some .null => none
-  | some value => some value
-
-private theorem get_mkObj (path key : String) (fields : Encode.Fields) :
-    Decode.get? path (Json.mkObj fields) key = .ok (withoutNull (fieldLookup key fields)) := by
-  have lookup : (Std.TreeMap.Raw.ofList fields : Std.TreeMap.Raw String Json)[key]? =
-      fieldLookup key fields := by
-    rw [Std.TreeMap.Raw.ofList_eq_insertMany_empty,
-      Std.TreeMap.Raw.getElem?_insertMany_list Std.TreeMap.Raw.WF.emptyc]
-    simp [fieldLookup]
-  simp only [Decode.get?, Json.mkObj, Std.TreeMap.Raw.get?_eq_getElem?, lookup]
-  cases fieldLookup key fields with
-  | none => rfl
-  | some v => cases v <;> rfl
-
-private theorem lookup_str (key name value : String) :
-    fieldLookup key (Encode.ofStr name value) =
-      if compare name key = .eq then
-        (if value.isEmpty then none else some (.str value)) else none := by
-  by_cases empty : value.isEmpty = true <;>
-    simp [fieldLookup, Encode.ofStr, empty]
-
-private theorem lookup_list (key name : String) (values : List Json) :
-    fieldLookup key (Encode.ofList name values) =
-      if compare name key = .eq then
-        (if values.isEmpty then none else some (.arr values.toArray)) else none := by
-  cases values <;> simp [fieldLookup, Encode.ofList]
-
 private theorem lookup_opt (key name : String) (value : Option Json) :
     fieldLookup key (Encode.ofOpt name value) =
       if compare name key = .eq then value else none := by
@@ -140,22 +98,6 @@ private theorem lookup_nat (key name : String) (value : Nat) :
       if compare name key = .eq then (if value == 0 then none else some (Lean.toJson value))
       else none := by
   by_cases zero : value == 0 <;> simp [fieldLookup, Encode.ofNat, zero]
-
-private theorem omitted_string (path value : String) :
-    (match withoutNull (if value = "" then none else some (.str value)) with
-     | none => Except.ok "" | some v => Decode.str path v) = .ok value := by
-  by_cases empty : value = ""
-  · subst value
-    rfl
-  · simp [empty, withoutNull, Decode.str]
-    rfl
-
-private theorem omitted_array (path : String) (xs : List β) (encode : β → Json)
-    (decode : String → Json → Decode.Dec α) :
-    (match withoutNull (if xs = [] then none else some (.arr (xs.map encode).toArray)) with
-     | none => Except.ok [] | some v => Decode.array path v decode) =
-      Decode.array path (.arr (xs.map encode).toArray) decode := by
-  cases xs <;> rfl
 
 private theorem optional_action (path : String) (action : Option ActionCall) :
     (match withoutNull (action.map ActionCall.toJson) with
@@ -205,6 +147,7 @@ theorem table_roundtrip (path : String) (table : Table) (h : TableRepresentable 
       have he := omitted_array (Decode.sub path "const_entries") constEntries Entry.toJson Entry.decode
       have hn := omitted_nat (Decode.sub path "size") size
       unfold omitted_string.match_1 at hs hk ha hd hb he hn
+      unfold optional_action.match_1 at hd hb hn
       rw [hs, hk, ha, hd, hb, he, hn]
       by_cases zero : size = 0 <;> simp [zero]
     have default_roundtrip : (defaultAction.map (fun a =>
