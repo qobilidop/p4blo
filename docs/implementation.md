@@ -101,9 +101,12 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   control call with actual semantic completion, full source/shared state and
   original caller preservation, under `notes/guarded-call-plan.md`. The
   existing observer statements and complete applications remain separate
-  obligations. The next real application is an exact-golden Lean forwarder
-  port with a bounded invalid-IPv4 control property, following
-  `notes/lean-forwarder-next.md`; raw assembly seams are explicitly unverified.
+  obligations. The exact-golden complete Lean forwarder is now integrated,
+  including direct public in-memory execution, existing vectors, independent
+  TTL/MAC/checksum answers and a bounded invalid-IPv4 whole-Run property.
+  Review's packet-invisible metadata fault is retained and rejected by strict
+  full-state checks. Scope: `notes/lean-forwarder.md`; raw assembly seams
+  remain explicitly unverified, as do the positive pipeline properties.
   Its positive-path prerequisite now has actual unshadowed block-write and
   action-hit read/write laws, with constructive active-frame witnesses and
   four compiled model faults rejected. Source permissions and the existing

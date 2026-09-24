@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `01d8b09`, including total Expr/LValue/Stmt codec proofs,
+Combined local integration at `f1493d8`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -67,8 +67,15 @@ The action-root prerequisite adds exact unshadowed block writes and action-hit
 read/write laws, preserving the old block API. Four new audits, a genuine
 active-frame kernel witness and eight native storage/error checks pass. Four
 isolated compiling Env faults are proof-rejected; the runtime is unchanged.
-Required real-Lean DRT: **822 passed**, no skips. Full gate:
-**2381 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+The complete Lean-authored corpus forwarder now exactly matches the Python
+builder and golden. Seven audited roots include actual initialization and
+the invalid-IPv4 body's whole-Run identity; 24 native state profiles, two
+post-drop checksum checks, four in-memory packet answers and 50 Python tests
+cover the explicitly bounded port. Review found a state-only Python fault
+surviving packet checks; strict complete-state checks now reject it. A new
+actual TTL-underflow fault is retained and replayed live/restored.
+Required real-Lean DRT: **867 passed**, no skips. Full gate:
+**2431 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -81,9 +88,10 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `guarded-forwarding.md`, `command-prefix.md`, `certificate-cleanup.md` and
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
 `plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
-`guarded-control-call.md`, `stmt-codec.md` and `action-root-writes.md`.
+`guarded-control-call.md`, `stmt-codec.md`, `action-root-writes.md` and
+`lean-forwarder.md`.
 
-All five remote workflows pass for `4328f8b`; newer CI must be checked
+All five remote workflows pass for `5708b82`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -93,11 +101,13 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Seventeen retained execution-fault bundles and forty-nine raw codec
+Eighteen retained execution-fault bundles and forty-nine raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All seventeen execution bundles replay successfully on this integration
-(twenty-four requests), as do all forty-nine raw codec observations. The new
+All eighteen execution bundles replay successfully on this integration
+(twenty-five requests), as do all forty-nine raw codec observations. The real
+forwarder's new TTL0 bundle matches its current authored Program, tracked
+edge input and fixed configuration. The new
 statement campaigns contribute 25 observations of 20 distinct requests;
 these counts are not independent-input counts. Header-read,
 guarded and initializer bundles match their current exporter/wrapper and exact request. All fifteen
@@ -134,7 +144,7 @@ reports and git history, not competing current instructions below.
 
 | Program | Source | Rewritten | Vectors | Oracle |
 |---|---|---|---|---|
-| forwarder | p4lang tutorial basic | eDSL source rebuilds the golden; checksum16 computes hdrChecksum, verify deferred | 5 hand-derived STF files with correct IPv4 checksums, passing | 5/5 pass on both oracles, checksum included |
+| forwarder | p4lang tutorial basic | Python and Lean sources equal the unchanged golden; direct Lean execution and invalid-control theorem; checksum16 computes hdrChecksum, verify deferred | 5 hand-derived STF files plus TTL0/1 and full invalid-control state checks, passing | 5/5 pass on both oracles, checksum included |
 | acl | p4c `ternary2-bmv2` | eDSL, landed | p4c STF, 6 adds, 4 packets, passing | 4/4 pass on both oracles |
 | stacks | p4c `header-stack-ops-bmv2` | eDSL, landed | p4c STF, 15 packets, all passing | 15/15 pass on both oracles |
 | subparser_stack | p4c `subparser-with-header-stack-bmv2` | eDSL, landed | p4c STF, 1 packet, passing | passes on both oracles |
@@ -382,18 +392,26 @@ Things a resuming agent should know are in motion or deliberately left.
   and its matching review. It keeps the observer parameter as
   pass-through but does not execute the seventeen observation assignments or
   claim parsing, lookup, checksum, architecture fate or full packet execution.
-  Next actual application work is active in `work/lean-forwarder`, based on
-  committed `7dbb4f0`, following `notes/lean-forwarder-next.md`. Preserve the
-  existing forwarder golden, including TTL wrap and old-destination MAC
-  semantics; it is not the guarded policy. Build an independently compared
-  complete Lean program with explicitly unverified assembly seams, direct
-  public API execution, existing vectors and a bounded invalid-IPv4 ingress
-  unchanged theorem. Actual action-frame/positive-path proofs remain later
-  obligations, not instances of the no-action BlockFrame command law.
+  Actual forwarder authoring (`0b157ff`/`2f92dad`) is independently reviewed
+  and integrated at `f1493d8`, following `notes/lean-forwarder-next.md`.
+  Complete Program equality preserves TTL wrap, old-destination MAC ordering,
+  default drop, post-drop checksum and non-IPv4 pass-through. Both decoded
+  DRT and direct public in-memory execution pass existing vectors and literal
+  edge answers. Actual initialization and whole-Run invalid-control identity
+  have seven default-audited roots. Review found a metadata-write survivor
+  under packet-only tests; 24 strict Python complete-state profiles and
+  permanent corruption controls now expose it. Four compiled wrong-intent
+  source changes fail identity, and actual saturating Python subtraction
+  has a new saved live/restored corpus mismatch. Evidence/review:
+  `notes/lean-forwarder.md` and its matching report. Ordinary parser/action/
+  table/extern assembly remains explicitly unverified; no full-pipeline
+  theorem is implied. Next work is active in `work/forwarder-action`, based
+  on committed `f1493d8`, starting with a target-only unshadowed field adapter
+  that preserves other modeled action-shadowed roots and the old APIs.
   The reviewed next plan `notes/forwarder-action-next.md` targets actual
   selected table-action execution: an unshadowed block-write bridge, exact
   old-destination/TTL-wrap policy, and action-layer restoration in eleven
-  transitions. Implement it only against the committed real port interface;
+  transitions. Implement it against the committed real port interface;
   it does not prove table selection, checksum or complete forwarding.
   The small operational root prerequisite is independently reviewed and
   committed at `01d8b09`: actual active-map absence permits a block write

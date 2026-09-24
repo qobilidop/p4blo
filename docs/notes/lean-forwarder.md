@@ -204,6 +204,18 @@ from that review; the final nonvacuity guard addendum is also CLEAR.
 
 ## Next limit
 
+Root integration at `f1493d8` passes both Lean packages/default/native gates
+(506 spec checks plus the expanded user suite), all **867 required** checks,
+and the full gate on the final files: **2431 passed / 5 strict expected
+discrepancies / 1 unavailable-local-XDP skip**, exit 0, 385.35 seconds.
+Static, schema/no-drift and workflow checks pass too. Logs:
+`/tmp/p4blo-forwarder-integrated-{lean,drt,check}.log`.
+The integrated exporter byte-matches the reviewed 6085-byte capture. Root
+checked the new bundle's exact hash, Program/edge-request/configuration identity
+and restored replay. All 17 earlier execution bundles (24 requests), 49
+codec fault observations and 59+69+79 raw codec baselines also pass. The new
+bundle makes 18 execution bundles / 25 requests; codec counts do not change.
+
 The next meaningful proof is the original `ipv4_forward` selected table action,
 with directionless action parameters and correct block/action-layer restore,
 not an application of the scalar block-only command theorem. Follow the

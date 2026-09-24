@@ -981,3 +981,13 @@ one that says so.
   baselines first, and challenge the shared Direction name table explicitly.
   Full Program, text/binary codecs and semantic validity remain separate.
   Plan and review: `notes/program-codec-next.md` and its matching report.
+- **Match runtime observations to the theorem's state boundary.** The real
+  forwarder's invalid-control theorem preserves the entire Run; packet tests
+  alone let an actual unintended ingress metadata write survive. Add direct,
+  detached exact-type state checks, retain the weak observer's demonstrated
+  survivor, and observe post-drop checksum separately. Confidence: high for
+  these finite profiles, not universal Python object observation. Keep
+  exact-golden authoring and public in-memory execution distinct from a
+  complete verified frontend. Revisit the small ordinary declaration helpers
+  on a second real client; add no macro or second AST prematurely. Scope and
+  independent review: `notes/lean-forwarder.md`.
