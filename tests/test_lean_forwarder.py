@@ -36,7 +36,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "tests/corpus/forwarder"
-EXPORTER = ROOT / "lean/.lake/build/bin/leanForwarder"
+EXPORTER = ROOT / "impl/lean/.lake/build/bin/leanForwarder"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 
@@ -127,7 +127,7 @@ def compare_and_save(program: pb.Program, cases: list[Case], lean_binary: Path, 
 
 
 def test_forwarder_default_target() -> None:
-    config = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
+    config = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert "leanForwarder" in config["defaultTargets"]
 
 

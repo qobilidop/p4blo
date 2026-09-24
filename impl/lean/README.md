@@ -1,6 +1,6 @@
 # Lean user library
 
-The independent `p4blo` Lake package imports `p4blo-ir` from `../ir`.
+The independent `p4blo` Lake package imports `p4blo-ir` from `../../spec/ir`.
 Import `P4blo` for the user API. Reference definitions remain under
 `P4bloIR`; frontend/library definitions use `P4blo` to avoid collisions.
 
@@ -9,7 +9,7 @@ checks, not complete validation. `runSwitch` and the block entry points reuse
 the reference functions. Pass returned extern state to the next call. There
 is no independent optimized engine or new correctness claim in these aliases.
 
-The [quickstart](../docs/quickstart.md) shows how to edit and run the complete
+The [quickstart](../../docs/quickstart.md) shows how to edit and run the complete
 [forwarder](P4blo/Forwarder.lean) and persistent
 [tutorial firewall](P4blo/TutorialFirewall.lean), plus a small verified typed
 fragment. The full examples mix checked fragments with explicit raw IR

@@ -37,7 +37,7 @@ CASES = [(False, False), (False, True), (True, False), (True, True)]
 @pytest.fixture(scope="module")
 def return_export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
-    exporter = ROOT / "lean/.lake/build/bin/callReturn"
+    exporter = ROOT / "impl/lean/.lake/build/bin/callReturn"
     assert exporter.is_file(), f"build {ROOT}/scripts/check-lean.sh first"
     return json.loads(
         subprocess.run(
@@ -47,7 +47,7 @@ def return_export(lean_binary: Path) -> dict[str, Any]:
 
 
 def test_call_return_exporter_is_a_default_target() -> None:
-    package = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
+    package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert {"UserProofAudit", "callReturn"} <= set(package["defaultTargets"])
 
 

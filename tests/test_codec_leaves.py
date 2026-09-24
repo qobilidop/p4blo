@@ -181,7 +181,7 @@ def assert_leaf(
 ) -> dict[str, object]:
     """Retain raw leaf JSON before an independent known answer can fail."""
     binary = lean_binary.with_name("codec-leaves")
-    assert binary.is_file(), f"missing test endpoint: {binary} (build ir/ default targets)"
+    assert binary.is_file(), f"missing test endpoint: {binary} (build spec/ir/ default targets)"
     request = {"kind": kind, "wire": wire}
     command = [str(binary)]
     failure: str | None = None

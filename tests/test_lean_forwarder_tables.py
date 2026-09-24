@@ -152,7 +152,7 @@ def checked_export(raw: Any) -> tuple[pb.Program, dict[str, dict[str, Any]]]:
 @pytest.fixture(scope="module")
 def export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
-    executable = ROOT / "lean/.lake/build/bin/forwarderTables"
+    executable = ROOT / "impl/lean/.lake/build/bin/forwarderTables"
     assert executable.is_file(), "build both Lean packages first"
     result = subprocess.run(
         [str(executable)], check=True, capture_output=True, text=True, timeout=30
@@ -202,7 +202,7 @@ def test_lean_agrees_forwarder_tables(
 
 
 def test_forwarder_tables_default_targets() -> None:
-    package = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
+    package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert {"UserProofAudit", "forwarderTables"} <= set(package["defaultTargets"])
 
 

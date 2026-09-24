@@ -186,10 +186,10 @@ def test_provenance_covers_both_engines_fixtures_and_tools() -> None:
     assert isinstance(hashes, dict)
     for file in [
         "impl/python/p4blo/interp/stmt.py",
-        "ir/P4bloIR/Json.lean",
+        "spec/ir/P4bloIR/Json.lean",
         "uv.lock",
         "flake.lock",
-        "ir/lean-toolchain",
+        "spec/ir/lean-toolchain",
         "tests/test_lean_firewall_bloom.py",
         "tests/assurance/runner.py",
         "scripts/check-assurance.py",

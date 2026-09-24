@@ -203,7 +203,7 @@ def pre_read_observer(program: pb.Program) -> pb.Program:
 
 def test_header_read_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
-    package = tomllib.loads((root / "lean/lakefile.toml").read_text())
+    package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
     assert {"UserProofAudit", "headerReads"} <= set(package["defaultTargets"])
 
 
@@ -211,7 +211,7 @@ def test_header_read_exporter_is_a_default_target() -> None:
 def authored_header_reads(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
-    exporter = root / "lean/.lake/build/bin/headerReads"
+    exporter = root / "impl/lean/.lake/build/bin/headerReads"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
     return exported_programs(exporter)
 

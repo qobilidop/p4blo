@@ -10,7 +10,7 @@ an escape hatch.
 | Source | [p4lang/tutorials](https://github.com/p4lang/tutorials) `exercises/basic/solution/basic.p4` |
 | IR | `forwarder.txtpb`, generated from the eDSL |
 | eDSL | `forwarder.py` |
-| Lean authoring | [`P4blo/Forwarder.lean`](../../../lean/P4blo/Forwarder.lean), checked field paths plus explicit ordinary IR assembly |
+| Lean authoring | [`P4blo/Forwarder.lean`](../../../impl/lean/P4blo/Forwarder.lean), checked field paths plus explicit ordinary IR assembly |
 | Vectors | `forward.stf`, `miss.stf`, `non_ipv4.stf`, `lpm_precedence.stf`, `too_short.stf` |
 
 The golden was written by hand for step 1 and is generated from the eDSL

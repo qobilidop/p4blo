@@ -53,7 +53,7 @@ def call_export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
     return json.loads(
         subprocess.run(
-            [str(ROOT / "lean/.lake/build/bin/guardedControlCall")],
+            [str(ROOT / "impl/lean/.lake/build/bin/guardedControlCall")],
             check=True,
             capture_output=True,
             text=True,
@@ -68,7 +68,7 @@ def guarded_body(lean_binary: Path) -> list[pb.Stmt]:
     records = [
         json.loads(line)
         for line in subprocess.run(
-            [str(ROOT / "lean/.lake/build/bin/guardedForward")],
+            [str(ROOT / "impl/lean/.lake/build/bin/guardedForward")],
             check=True,
             capture_output=True,
             text=True,
@@ -306,7 +306,7 @@ def observe_call(
 
 def test_control_call_is_default() -> None:
     assert {"guardedControlCall", "UserProofAudit"} <= set(
-        tomllib.loads((ROOT / "lean/lakefile.toml").read_text())["defaultTargets"]
+        tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())["defaultTargets"]
     )
 
 
@@ -476,7 +476,7 @@ def test_lean_agrees_after_whole_call_skipped_observer(
         original([p for p, _ in pairs], [a for _, a in pairs], values, caller)
 
     name = "guard-false-false-true-2"
-    programs = exported_programs(ROOT / "lean/.lake/build/bin/guardedForward")
+    programs = exported_programs(ROOT / "impl/lean/.lake/build/bin/guardedForward")
     bundle = tmp_path / f"lean-{name}.json"
     monkeypatch.setenv("P4BLO_DRT_FAILURE_DIR", str(tmp_path))
     with monkeypatch.context() as fault:

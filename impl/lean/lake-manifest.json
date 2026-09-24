@@ -6,7 +6,7 @@
    "name": "«p4blo-ir»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "../ir",
+   "dir": "../../spec/ir",
    "configFile": "lakefile.toml"}],
  "name": "p4blo",
  "lakeDir": ".lake",

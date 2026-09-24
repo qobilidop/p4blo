@@ -197,7 +197,7 @@ def checked_snapshots(raw: Any) -> tuple[pb.Program, dict[str, Any]]:
 def export(lean_binary: Path) -> Any:
     assert lean_binary.is_file()
     process = subprocess.run(
-        [str(ROOT / "lean/.lake/build/bin/forwarderApply")],
+        [str(ROOT / "impl/lean/.lake/build/bin/forwarderApply")],
         check=True,
         capture_output=True,
         text=True,
@@ -285,7 +285,7 @@ def test_lean_agrees_forwarder_apply(
 
 
 def test_forwarder_apply_default_targets() -> None:
-    package = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
+    package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert {"forwarderApply", "UserProofAudit"} <= set(package["defaultTargets"])
 
 

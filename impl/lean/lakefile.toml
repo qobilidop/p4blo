@@ -6,7 +6,7 @@ testDriver = "userTests"
 
 [[require]]
 name = "p4blo-ir"
-path = "../ir"
+path = "../../spec/ir"
 
 [[lean_lib]]
 name = "P4blo"

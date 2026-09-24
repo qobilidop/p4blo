@@ -13,8 +13,8 @@ This Lake package (`p4blo-ir`) does not import the user-facing Lean package.
 reference switch/extern models are explicit environment profiles, not claims
 that those services are part of architecture-independent P4.
 
-After the [development setup](../README.md#development), including `elan`,
+After the [development setup](../../README.md#development), including `elan`,
 run `scripts/check-lean.sh` from the repository root to build/test both
 packages and run their configured proof audit targets.
 Whole-program validation and termination remain open; see
-[`docs/assurance.md`](../docs/assurance.md#what-is-proved).
+[`docs/assurance.md`](../../docs/assurance.md#what-is-proved).

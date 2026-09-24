@@ -31,8 +31,8 @@ def snippet(name: str, language: str) -> str:
         assert header == "uv run python - <<'PY'"
         delimiter = "PY"
     else:
-        toolchain = (ROOT / "lean/lean-toolchain").read_text().strip()
-        assert header == f"lake +{toolchain} -d lean env lean --stdin <<'LEAN'"
+        toolchain = (ROOT / "impl/lean/lean-toolchain").read_text().strip()
+        assert header == f"lake +{toolchain} -d impl/lean env lean --stdin <<'LEAN'"
         delimiter = "LEAN"
     assert source.endswith("\n" + delimiter)
     return source.removesuffix("\n" + delimiter) + "\n"
@@ -64,9 +64,9 @@ def test_lean_agrees_quickstart_sources_and_persistence(lean_binary: Path) -> No
 def lean_fragment(source: str) -> subprocess.CompletedProcess[str]:
     lake = shutil.which("lake")
     assert lake is not None, "the documented Lean snippet needs the pinned Lake toolchain"
-    toolchain = (ROOT / "lean/lean-toolchain").read_text().strip()
+    toolchain = (ROOT / "impl/lean/lean-toolchain").read_text().strip()
     return subprocess.run(
-        [lake, f"+{toolchain}", "-d", str(ROOT / "lean"), "env", "lean", "--stdin"],
+        [lake, f"+{toolchain}", "-d", str(ROOT / "impl/lean"), "env", "lean", "--stdin"],
         cwd=ROOT,
         input=source,
         capture_output=True,
@@ -117,7 +117,7 @@ def test_python_quickstart_diagnostics() -> None:
 @pytest.mark.parametrize("name", ["leanForwarder", "leanTutorialFirewall"])
 def test_lean_agrees_quickstart_server_errors(lean_binary: Path, name: str) -> None:
     assert lean_binary.is_file()
-    command = [str(ROOT / "lean/.lake/build/bin" / name)]
+    command = [str(ROOT / "impl/lean/.lake/build/bin" / name)]
     usage = subprocess.run(command + ["unknown"], capture_output=True, text=True, timeout=30)
     assert usage.returncode == 2 and usage.stdout == ""
     assert usage.stderr == f"usage: {name} [run]\n"

@@ -11,7 +11,7 @@ scripts/check-lean.sh
 
 This builds **both** Lean packages, checks proof audits and runs native tests;
 the first build takes longer. `uv` does not install Lean or schema tools.
-The current Lean toolchain is recorded in `lean/lean-toolchain`.
+The current Lean toolchain is recorded in `impl/lean/lean-toolchain`.
 
 ## What to edit
 
@@ -22,8 +22,8 @@ examples below additionally have independently authored Lean counterparts.
 
 | Application | Python authoring | Lean authoring | First vector |
 |---|---|---|---|
-| IPv4 forwarder | [forwarder.py](../tests/corpus/forwarder/forwarder.py) | [Forwarder.lean](../lean/P4blo/Forwarder.lean) | [forward.stf](../tests/corpus/forwarder/forward.stf) |
-| Stateful Bloom firewall | [tutorial_firewall.py](../tests/corpus/tutorial_firewall/tutorial_firewall.py) | [TutorialFirewall.lean](../lean/P4blo/TutorialFirewall.lean) | [connection.stf](../tests/corpus/tutorial_firewall/connection.stf) |
+| IPv4 forwarder | [forwarder.py](../tests/corpus/forwarder/forwarder.py) | [Forwarder.lean](../impl/lean/P4blo/Forwarder.lean) | [forward.stf](../tests/corpus/forwarder/forward.stf) |
+| Stateful Bloom firewall | [tutorial_firewall.py](../tests/corpus/tutorial_firewall/tutorial_firewall.py) | [TutorialFirewall.lean](../impl/lean/P4blo/TutorialFirewall.lean) | [connection.stf](../tests/corpus/tutorial_firewall/connection.stf) |
 
 These are complete independently authored programs, not wrappers that read
 the goldens. Python `build()` and Lean `program` each construct an IR Program.
@@ -46,7 +46,7 @@ Lean's checked `Ref.named`, scalar expressions and command fragments have
 documented scoped proofs. Complete parser/table/action/extern declarations in
 these examples also use ordinary `P4bloIR` constructors. That explicit raw
 assembly is **not** a verified complete frontend. Complete execution is tested;
-only the individual properties listed in [the assurance notes](../lean/ASSURANCE.md)
+only the individual properties listed in [the assurance notes](../impl/lean/ASSURANCE.md)
 are proved. The [milestone](assurance.md) does not require a whole-pipeline
 proof or universal Python correctness.
 
@@ -103,7 +103,7 @@ they are separate from persistent extern state.
 After editing either Lean source, rebuild its existing executable:
 
 ```sh
-lake +leanprover/lean4:v4.34.0 -d lean build leanForwarder leanTutorialFirewall
+lake +leanprover/lean4:v4.34.0 -d impl/lean build leanForwarder leanTutorialFirewall
 ```
 
 With no arguments each executable exports its authored Program as JSON.
@@ -129,7 +129,7 @@ for name, executable, vector in [
     ("forwarder", "leanForwarder", "forward.stf"),
     ("tutorial_firewall", "leanTutorialFirewall", "connection.stf"),
 ]:
-    command = [str(root / "lean/.lake/build/bin" / executable)]
+    command = [str(root / "impl/lean/.lake/build/bin" / executable)]
     exported = subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
     assert not exported.stderr, exported.stderr
     index = ir.Index.build(ir.load_json(exported.stdout))
@@ -177,7 +177,7 @@ authoritative IR/specification.
 
 <!-- quickstart: lean-fragment -->
 ```sh
-lake +leanprover/lean4:v4.34.0 -d lean env lean --stdin <<'LEAN'
+lake +leanprover/lean4:v4.34.0 -d impl/lean env lean --stdin <<'LEAN'
 import P4blo
 open P4blo.Scalar
 open scoped P4blo.Scalar

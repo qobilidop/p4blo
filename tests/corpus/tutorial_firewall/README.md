@@ -4,7 +4,7 @@ Typed Python adaptation of Stephen Ibanez's Apache-2.0 tutorial solution,
 [`p4lang/tutorials@098ce0b7ae486f5b747a6b53ad1585f0d977b42e`](https://github.com/p4lang/tutorials/blob/098ce0b7ae486f5b747a6b53ad1585f0d977b42e/exercises/firewall/solution/firewall.p4).
 The unchanged original is pinned separately in `tests/oracle/firewall.p4`
 by `tests/oracle/firewall.py`; the repository's root LICENSE contains
-Apache-2.0. An independent [Lean source](../../../lean/P4blo/TutorialFirewall.lean)
+Apache-2.0. An independent [Lean source](../../../impl/lean/P4blo/TutorialFirewall.lean)
 constructs the same complete IR without reading the golden. Follow the
 [quickstart](../../../docs/quickstart.md) to author and run either version.
 
@@ -138,6 +138,6 @@ roots, whole-Run identity of the invalid-IPv4 body, and exact two-write
 Bloom insertion preserving both arrays and unrelated state. Not proved:
 readback, the drop decision, hash bounds, control composition or any
 whole-firewall correctness property. The theorems are stated in
-[`TutorialFirewallProof.lean`](../../../lean/P4blo/TutorialFirewallProof.lean)
-and [`TutorialFirewallBloom.lean`](../../../lean/P4blo/TutorialFirewallBloom.lean)
-and audited in [`lean/UserProofAudit.lean`](../../../lean/UserProofAudit.lean).
+[`TutorialFirewallProof.lean`](../../../impl/lean/P4blo/TutorialFirewallProof.lean)
+and [`TutorialFirewallBloom.lean`](../../../impl/lean/P4blo/TutorialFirewallBloom.lean)
+and audited in [`impl/lean/UserProofAudit.lean`](../../../impl/lean/UserProofAudit.lean).

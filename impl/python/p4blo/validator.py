@@ -3,7 +3,7 @@
 `validate` returns every problem it finds as a `Diagnostic`; `check` raises
 `ValidationError` on a non-empty list and otherwise hands back the `ir.Index`
 the interpreter and the printer build on. The rules are the contract stated
-in the header of ir/proto/p4blo/v0/p4blo.proto, made executable, so this module
+in the header of spec/ir/proto/p4blo/v0/p4blo.proto, made executable, so this module
 is meant to be read as that contract's fine print: one function per
 declaration, statement and expression kind, in the order of the schema.
 

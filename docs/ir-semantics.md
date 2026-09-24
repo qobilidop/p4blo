@@ -9,7 +9,7 @@ architecture that calls the blocks, and [arch-supports.md](arch-supports.md)
 records them for the architectures this repository supplies, together
 with the concrete externs they provide.
 
-The executable Lean specification in `ir/P4bloIR/` is normative; this file
+The executable Lean specification in `spec/ir/P4bloIR/` is normative; this file
 is commentary on it. The independent Python interpreter is tested against
 that specification, not proved equivalent to it. The current supported
 input domain and trust boundary are in [assurance.md](assurance.md#supported-profile).

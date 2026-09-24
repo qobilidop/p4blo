@@ -101,10 +101,10 @@ one intended authority:
 
 | Concern | Intended authority | Today |
 |---|---|---|
-| Abstract syntax: expressions, statements, declarations | Lean, `ir/P4bloIR/IR.lean` | in place |
+| Abstract syntax: expressions, statements, declarations | Lean, `spec/ir/P4bloIR/IR.lean` | in place |
 | Validity: types, scopes, widths, legal combinations | Lean | proved for closed scalar fragments; the Python validator is the tested executable counterpart, and whole-program validity in Lean is an open obligation |
-| Meaning: execution and observable behavior | Lean, `ir/P4bloIR/` | in place |
-| Serialization: messages, field numbers, encoding versions | the protobuf schema, `ir/proto/p4blo/v0/p4blo.proto` | in place |
+| Meaning: execution and observable behavior | Lean, `spec/ir/P4bloIR/` | in place |
+| Serialization: messages, field numbers, encoding versions | the protobuf schema, `spec/ir/proto/p4blo/v0/p4blo.proto` | in place |
 | Correspondence between wire values and abstract programs | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; Program and Export composition are open |
 
 The text form of the protobuf is the golden format; binary and JSON are
@@ -287,11 +287,11 @@ kinds.
 
 ### The Lean packages
 
-Two Lake packages with a one-way dependency. `ir/` is the specification,
+Two Lake packages with a one-way dependency. `spec/ir/` is the specification,
 package `p4blo-ir` imported as `P4bloIR`: the abstract IR, its executable
 semantics with explicit extern state and parser errors, the JSON codecs,
 the scoped proofs and their axiom audits, and the `p4blo-lean` executable
-that the differential tests drive. `lean/` is the user library, package
+that the differential tests drive. `impl/lean/` is the user library, package
 `p4blo` imported as `P4blo`: a typed source language whose expressions
 and commands have independent denotations, lowering to the IR with
 semantic-preservation theorems under explicit frame and declaration
@@ -427,10 +427,10 @@ p4blo/
                                     coverage, assurance,
                                     quickstart, workflows
   .agents/                          agent working state: status, decisions, roadmap
-  ir/                               Lake package p4blo-ir (P4bloIR)
+  spec/ir/                               Lake package p4blo-ir (P4bloIR)
     P4bloIR/                        abstract IR, semantics, codecs, proofs
     proto/p4blo/v0/p4blo.proto      versioned wire encoding
-  lean/                             Lake package p4blo (P4blo): typed source
+  impl/lean/                             Lake package p4blo (P4blo): typed source
                                     language, authored programs, execution API
   impl/python/p4blo/                     the Python package
     v0/                             generated protobuf code, committed
@@ -451,7 +451,7 @@ p4blo/
 
 One Python project is rooted at the repository root so that `uv run
 pytest` works from there. Python dependencies are locked by `uv`; Lean has
-matching `lean-toolchain` pins in `ir/` and `lean/` selected through
+matching `lean-toolchain` pins in `spec/ir/` and `impl/lean/` selected through
 `elan`; schema checks, oracles and other specialist gates have their own
 pinned tools. The README's development section is the single entry point
 for setup.

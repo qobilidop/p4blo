@@ -28,8 +28,8 @@ Python runtimes, compilers, JSON parsers or protobuf implementations.
 ## Supported profile
 
 The profile is the current v0 IR, not all P4 and not arbitrary hostile
-input. Lean's [abstract syntax](../ir/P4bloIR/IR.lean) and executable
-semantics are authoritative; the [protobuf schema](../ir/proto/p4blo/v0/p4blo.proto)
+input. Lean's [abstract syntax](../spec/ir/P4bloIR/IR.lean) and executable
+semantics are authoritative; the [protobuf schema](../spec/ir/proto/p4blo/v0/p4blo.proto)
 defines transport syntax; [semantics.md](ir-semantics.md) records the closed
 behaviors; [coverage.md](coverage.md) walks P4 construct by construct.
 
@@ -182,22 +182,22 @@ interchangeable confidence score.
 | `FrameInitialization`, `CallEntry`, `CallReturn`, the guarded control call | Actual frame creation over every scope entry, four-root call entry, fixed-profile normal return and one observer-free whole control call, as bounded named transitions | All calls, parser-fault unwinding, the observer statements, complete applications |
 | `ForwarderTables.lookup_correct`, `ForwarderApply.run_correct`, the selected action | Five installed route shapes, their actual application and hit timing, the forwarder's invalid-control identity | Parsing, checksum maintenance, architecture fate, other configurations |
 | `TutorialFirewall` initialization, invalid body and Bloom insertion | All nine initialized roots; whole-Run identity of the invalid-IPv4 body; exact two-write insertion preserving both arrays and unrelated state | Readback, drop composition, hash bounds, exact connection tracking |
-| `CodecLaws` through Action/Block | Production encoder/decoder left inverses over JSON values under v0 uint32 representability, checked by `ir/CodecProofAudit.lean` | Text parsing, protobuf correctness, semantic validity, version negotiation |
+| `CodecLaws` through Action/Block | Production encoder/decoder left inverses over JSON values under v0 uint32 representability, checked by `spec/ir/CodecProofAudit.lean` | Text parsing, protobuf correctness, semantic validity, version negotiation |
 | `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
 
-The checked theorem inventories are [`ir/ProofAudit.lean`](../ir/ProofAudit.lean),
-[`ir/CodecProofAudit.lean`](../ir/CodecProofAudit.lean) and
-[`lean/UserProofAudit.lean`](../lean/UserProofAudit.lean); their exact
+The checked theorem inventories are [`spec/ir/ProofAudit.lean`](../spec/ir/ProofAudit.lean),
+[`spec/ir/CodecProofAudit.lean`](../spec/ir/CodecProofAudit.lean) and
+[`impl/lean/UserProofAudit.lean`](../impl/lean/UserProofAudit.lean); their exact
 statements and premises, not the labels above, define what is proved.
 Warnings are errors in both Lean packages, and the audits check the
 transitive axiom sets of advertised theorems, so `sorry`, custom axioms
 and native-evaluation escapes cannot silently replace a proof. The exact
 obligations, exclusions and mutation experiments of the scalar and field
-authoring work are in [`lean/ASSURANCE.md`](../lean/ASSURANCE.md); the
+authoring work are in [`impl/lean/ASSURANCE.md`](../impl/lean/ASSURANCE.md); the
 forwarder, firewall and call theorems are stated in their modules under
-`lean/P4blo/` and audited in `lean/UserProofAudit.lean`.
+`impl/lean/P4blo/` and audited in `impl/lean/UserProofAudit.lean`.
 
 ## What is tested
 
@@ -217,7 +217,7 @@ Python unit suites are not automatically differential tests.
 | Scalars, operators, lazy branches | `tests/test_interp_expr.py`; `tests/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Scalar typing and lowering theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
 | Aggregates, fields, validity, stacks | `tests/test_drt_aggregate_copy.py`, `test_lean_edsl_field_commands.py`, `test_lean_edsl_header_reads.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
 | Calls, initialization, normal return | `tests/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; scoped entry and return suites compare full state and pending continuations | Bounded named transitions, not all calls or parser-fault unwinding. |
-| Packet, parser, deparser | `tests/test_interp_parser.py`, `test_interp_deparser.py`, `ir/Tests/Interp.lean`; corpus DRT, masked and range select in `test_drt.py`, byte cuts and persistent sequences in `test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
+| Packet, parser, deparser | `tests/test_interp_parser.py`, `test_interp_deparser.py`, `spec/ir/Tests/Interp.lean`; corpus DRT, masked and range select in `test_drt.py`, byte cuts and persistent sequences in `test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
 | Tables, actions, host installation | `tests/test_interp_tables.py`, generated configurations in `test_drt.py`, `test_lean_forwarder_tables.py`, `test_lean_forwarder_action.py`, `test_lean_forwarder_apply.py`; strict configuration, full-state and default-hit observations | Forwarder lookup and application laws for five shapes; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family. |
 | Persistent extern state | `tests/test_drt_stateful_programs.py` shrinking sequences, `test_drt_state.py`, `test_externs.py`, `test_extern_families.py`, `test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
 | Architecture outcomes and errors | `tests/test_drt.py` drop, flood, ports and error reasons; `test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
@@ -351,7 +351,7 @@ Recorded campaigns beyond the catalogue killed eager branches, state-only
 out-of-bounds and persistence faults, copy aliasing, skipped copyback,
 CRC XOR faults that preserve packets but permute register indices, and
 the application source faults above. The user-package proof experiments
-in `lean/ASSURANCE.md` distinguish proof rejection from compiled wrong
+in `impl/lean/ASSURANCE.md` distinguish proof rejection from compiled wrong
 intent from runtime mismatch.
 
 ## Execution certificates

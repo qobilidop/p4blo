@@ -142,12 +142,12 @@ def exported_programs(exporter: Path) -> dict[str, pb.Program]:
 @pytest.fixture(scope="module")
 def guarded_programs(lean_binary: Path) -> dict[str, pb.Program]:
     root = Path(__file__).resolve().parents[1]
-    return exported_programs(root / "lean/.lake/build/bin/guardedForward")
+    return exported_programs(root / "impl/lean/.lake/build/bin/guardedForward")
 
 
 def test_guarded_forward_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
-    package = tomllib.loads((root / "lean/lakefile.toml").read_text())
+    package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
     assert "guardedForward" in package["defaultTargets"]
 
 

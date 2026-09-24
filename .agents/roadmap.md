@@ -7,7 +7,7 @@ not a completion criterion. Nothing here is active: assurance
 [milestone 1](../docs/assurance.md) and the [application collection](../examples/README.md)
 are complete, and an item below becomes work only when the user scopes it.
 Landed results are summarized in [assurance.md](../docs/assurance.md) and
-`lean/ASSURANCE.md`; the step-by-step record is in git.
+`impl/lean/ASSURANCE.md`; the step-by-step record is in git.
 
 Work autonomously in small reviewed increments. Record uncertain decisions
 with confidence and a revisit trigger in `decisions.md`; prefer reversible
@@ -15,8 +15,8 @@ choices. Keep every gate green; a skipped oracle is not passing evidence.
 
 ## Foundation
 
-- [x] Lean semantics and wire schema in `ir/`; separate user package in
-  `lean/`; shared corpus and oracles under `tests/`; `P4blo` reserved for
+- [x] Lean semantics and wire schema in `spec/ir/`; separate user package in
+  `impl/lean/`; shared corpus and oracles under `tests/`; `P4blo` reserved for
   the user library.
 - [ ] Typed Lean construction language with independent source semantics,
   lowering-validity and semantic-preservation theorems. Landed: closed

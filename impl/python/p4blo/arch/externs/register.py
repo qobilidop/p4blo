@@ -9,7 +9,7 @@
 Elaborated to one extern type per width `T`. Semantics: `size` cells of
 width `T`, all zero at creation; `read` of an index at or beyond `size`
 yields zero and `write` there does nothing, which is what BMv2 does. A
-Lean model of the same lives under ir/ and the two are pinned by vectors.
+Lean model of the same lives under spec/ir/ and the two are pinned by vectors.
 """
 
 from __future__ import annotations

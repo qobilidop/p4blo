@@ -360,16 +360,16 @@ def execute(run: Run) -> None:
     selected = inputs()
     check_inputs(selected)
     baseline_known_answers(selected)
-    binary = ROOT / "ir/.lake/build/bin/p4blo-lean"
+    binary = ROOT / "spec/ir/.lake/build/bin/p4blo-lean"
     for path in (
         binary,
         *(
-            ROOT / "lean/.lake/build/bin" / name
+            ROOT / "impl/lean/.lake/build/bin" / name
             for name in ("forwarderApply", "forwarderTables", "leanTutorialFirewall")
         ),
     ):
         require(path.is_file(), f"missing {path}; run scripts/check-lean.sh first")
-    tracked = subprocess.check_output(["git", "-C", str(ROOT), "ls-files", "-z", "ir"])
+    tracked = subprocess.check_output(["git", "-C", str(ROOT), "ls-files", "-z", "spec/ir"])
     paths = [Path(p.decode()) for p in tracked.split(b"\0") if p]
     require(
         bool(paths) and all(".lake" not in p.parts and not p.is_absolute() for p in paths),
@@ -380,10 +380,10 @@ def execute(run: Run) -> None:
     (run.output / "mutations.json").write_text(
         json.dumps(
             {
-                "crc": {"file": "ir/P4bloIR/Externs.lean", "old": CRC_OLD, "new": CRC_NEW},
-                "kind": {"file": "ir/P4bloIR/Json.lean", "old": KIND_OLD, "new": KIND_NEW},
+                "crc": {"file": "spec/ir/P4bloIR/Externs.lean", "old": CRC_OLD, "new": CRC_NEW},
+                "kind": {"file": "spec/ir/P4bloIR/Json.lean", "old": KIND_OLD, "new": KIND_NEW},
                 "observer": {
-                    "file": "ir/Tests/BlockCodec.lean",
+                    "file": "spec/ir/Tests/BlockCodec.lean",
                     "old": OBSERVER_OLD,
                     "new": OBSERVER_NEW,
                 },
@@ -397,7 +397,7 @@ def execute(run: Run) -> None:
         destination = scratch / path
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / path, destination)
-    spec = scratch / "ir"
+    spec = scratch / "spec/ir"
     toolchain = (spec / "lean-toolchain").read_text().strip()
     lake = ["lake", "+" + toolchain, "build"]
     run.command(

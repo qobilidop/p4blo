@@ -15,8 +15,8 @@ build/
 result
 
 # Lean
-ir/.lake/
-lean/.lake/
+spec/ir/.lake/
+impl/lean/.lake/
 
 # Editors
 .vscode/

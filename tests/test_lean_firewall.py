@@ -38,7 +38,7 @@ from tests.test_lean_forwarder import freeze
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "tests/corpus/tutorial_firewall"
-EXPORTER = ROOT / "lean/.lake/build/bin/leanTutorialFirewall"
+EXPORTER = ROOT / "impl/lean/.lake/build/bin/leanTutorialFirewall"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 
@@ -157,7 +157,7 @@ def check_sequence(program: pb.Program, sequence: list[Step], lean_binary: Path)
 
 
 def test_firewall_default_target() -> None:
-    config = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
+    config = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert "leanTutorialFirewall" in config["defaultTargets"]
 
 

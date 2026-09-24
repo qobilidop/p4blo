@@ -19,7 +19,7 @@ one row per alternative.
 
 Each row has one of these statuses.
 
-- **in**: a message or field of `ir/proto/p4blo/v0/p4blo.proto` is the
+- **in**: a message or field of `spec/ir/proto/p4blo/v0/p4blo.proto` is the
   construct itself. The column names it.
 - **elaborated**: the frontend rewrites the construct into in-constructs
   and its meaning survives. The column names the rewrite, and every

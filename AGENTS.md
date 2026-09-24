@@ -53,7 +53,7 @@ an archived note is one command away:
    tested, what is out of scope.
 4. `docs/workflows.md`: the gates, where every external input is pinned,
    and how to make each kind of change.
-5. `docs/ir-semantics.md` and `ir/proto/p4blo/v0/p4blo.proto` when touching
+5. `docs/ir-semantics.md` and `spec/ir/proto/p4blo/v0/p4blo.proto` when touching
    meaning or syntax, `docs/arch-supports.md` when touching what an
    architecture or extern family decides; `docs/coverage.md` for what P4 constructs are in.
 
@@ -102,8 +102,8 @@ so the required CI gate discovers them without a hand-maintained file list.
   from `buf generate`. Never edit them; edit the schema and regenerate.
   CI fails on drift.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
-  The spec is the `ir/` Lake package (`p4blo-ir`, imports `P4bloIR`). The
-  `lean/` user package (`p4blo`, imports `P4blo`) imports it, never the
+  The spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`). The
+  `impl/lean/` user package (`p4blo`, imports `P4blo`) imports it, never the
   reverse. Whole-program validity and codec proofs remain work in progress,
   not guarantees supplied by this organization. A closed behavior is
   written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an

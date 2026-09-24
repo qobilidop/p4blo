@@ -16,7 +16,7 @@
             pkgs.uv
             pkgs.buf # schema lint and codegen driver
             pkgs.protobuf # protoc, used by buf's protoc_builtin plugins
-            pkgs.elan # Lean toolchain manager; ir/lean-toolchain pins the version
+            pkgs.elan # Lean toolchain manager; spec/ir/lean-toolchain pins the version
             pkgs.nodejs # runtime for the pyright wheel, so it never downloads its own
             pkgs.actionlint # the workflows are a gate too: a broken one never runs
           ];

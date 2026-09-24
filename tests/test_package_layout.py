@@ -11,26 +11,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_specification_executable_location() -> None:
-    assert default_lean_binary().parent == ROOT / "ir/.lake/build/bin"
+    assert default_lean_binary().parent == ROOT / "spec/ir/.lake/build/bin"
     assert not (ROOT / "proto").exists()
 
 
 def test_lean_package_dependency_is_one_way() -> None:
-    spec = tomllib.loads((ROOT / "ir/lakefile.toml").read_text())
-    library = tomllib.loads((ROOT / "lean/lakefile.toml").read_text())
+    spec = tomllib.loads((ROOT / "spec/ir/lakefile.toml").read_text())
+    library = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert spec["name"] == "p4blo-ir"
     assert library["name"] == "p4blo"
     assert not spec.get("require")
-    assert library["require"] == [{"name": "p4blo-ir", "path": "../ir"}]
+    assert library["require"] == [{"name": "p4blo-ir", "path": "../../spec/ir"}]
     assert "P4bloIR" in {lib["name"] for lib in spec["lean_lib"]}
     assert "P4blo" in {lib["name"] for lib in library["lean_lib"]}
     assert "P4bloIR" in spec["defaultTargets"]
     assert "P4blo" in library["defaultTargets"]
-    assert (ROOT / "ir/P4bloIR.lean").is_file()
-    assert (ROOT / "ir/P4bloIR/IR.lean").is_file()
-    assert (ROOT / "lean/P4blo.lean").is_file()
-    assert (ROOT / "lean/P4blo/Scalar.lean").is_file()
-    for old in ("ir/P4blo", "ir/P4blo.lean", "lean/P4bloLean", "lean/P4bloLean.lean"):
+    assert (ROOT / "spec/ir/P4bloIR.lean").is_file()
+    assert (ROOT / "spec/ir/P4bloIR/IR.lean").is_file()
+    assert (ROOT / "impl/lean/P4blo.lean").is_file()
+    assert (ROOT / "impl/lean/P4blo/Scalar.lean").is_file()
+    for old in (
+        "spec/ir/P4blo",
+        "spec/ir/P4blo.lean",
+        "impl/lean/P4bloLean",
+        "impl/lean/P4bloLean.lean",
+    ):
         assert not (ROOT / old).exists()
     assert {"ProofAudit", "CodecProofAudit", "codec-leaves"} <= set(spec["defaultTargets"])
     assert "CodecProofAudit" in {lib["name"] for lib in spec["lean_lib"]}
@@ -39,12 +44,14 @@ def test_lean_package_dependency_is_one_way() -> None:
     )
     assert spec["testDriver"]
     assert library["testDriver"]
-    assert (ROOT / "ir/lean-toolchain").read_bytes() == (ROOT / "lean/lean-toolchain").read_bytes()
+    assert (ROOT / "spec/ir/lean-toolchain").read_bytes() == (
+        ROOT / "impl/lean/lean-toolchain"
+    ).read_bytes()
 
 
 def test_schema_descriptor_identity_survives_move() -> None:
     assert pb.DESCRIPTOR.name == "p4blo/v0/p4blo.proto"
-    assert (ROOT / "ir/proto" / pb.DESCRIPTOR.name).is_file()
+    assert (ROOT / "spec/ir/proto" / pb.DESCRIPTOR.name).is_file()
 
 
 def test_shared_corpus_discovery_is_not_empty() -> None:

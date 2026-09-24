@@ -29,7 +29,7 @@ locally before pushing, and check exit codes, not output.
 A larger differential sweep, for a change to either interpreter:
 
 ```
-uv run python -m p4blo.drt tests/corpus/<program> 2000 --seed <n> --lean ir/.lake/build/bin/p4blo-lean
+uv run python -m p4blo.drt tests/corpus/<program> 2000 --seed <n> --lean spec/ir/.lake/build/bin/p4blo-lean
 ```
 
 Use `--save <directory>` to retain a failed experiment. Its JSON bundle
@@ -139,7 +139,7 @@ and maintenance boundaries are in `website/README.md`.
 |---|---|---|
 | Optional pinned development tools | [`flake.lock`](../flake.lock) | see [development setup](../README.md#development); review lock updates |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
-| Lean toolchain | `ir/lean-toolchain`, `lean/lean-toolchain` (must match) | edit both; user package depends on local `../ir`, manifests committed |
+| Lean toolchain | `spec/ir/lean-toolchain`, `impl/lean/lean-toolchain` (must match) | edit both; user package depends on local `../ir`, manifests committed |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it |
 | opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
@@ -172,14 +172,14 @@ translates the STF dialect. The build script creates the pinned OCaml switch;
 
 **A closed behavior.** Write it in `docs/ir-semantics.md` first, or in
 `docs/arch-supports.md` when an architecture or extern family owns it, then
-implement it in `impl/python/p4blo/interp/` and `ir/P4bloIR/` together, with a
+implement it in `impl/python/p4blo/interp/` and `spec/ir/P4bloIR/` together, with a
 test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
 
-**The schema.** Edit `ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
+**The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
-`ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules and
+`spec/ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules and
 `docs/coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
@@ -205,7 +205,7 @@ the current programs is archived in git as `docs/corpus-candidates.md`.
 
 **An extern.** Add its implementation under `impl/python/p4blo/arch/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
-`ir/P4bloIR/Externs.lean`, the printer's v1model form in
+`spec/ir/P4bloIR/Externs.lean`, the printer's v1model form in
 `impl/python/p4blo/arch/v1model.py`, and a typed family class in
 `impl/python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
@@ -219,7 +219,7 @@ program whose vectors observe the extern.
 contract vocabulary is the table in `docs/design.md`, and the rules
 every architecture follows are in the same section and in
 `.agents/decisions.md` ("Architecture rules", "Port rules"). If the Lean
-switch must follow, change `ir/P4bloIR/Switch.lean` in the same commit.
+switch must follow, change `spec/ir/P4bloIR/Switch.lean` in the same commit.
 
 ## Application development
 

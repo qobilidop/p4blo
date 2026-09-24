@@ -5,7 +5,7 @@
 // The IR is post-elaboration: every
 // width is resolved, every name is resolved, there are no generics, no
 // arbitrary-precision int, no implicit casts, no tuples. The meaning of a
-// program is given by the Lean interpreter under ir/, with the closed
+// program is given by the Lean interpreter under spec/ir/, with the closed
 // behaviors listed in docs/ir-semantics.md.
 //
 // Names. Declarations are referenced by name, as in ONNX, so that the text

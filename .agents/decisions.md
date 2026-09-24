@@ -56,8 +56,8 @@ settles is not repeated here.
   own proofs, not a guarantee the organization supplies. The direction and
   its boundaries are in `docs/design.md`; the accepted plan is archived
   in git as `docs/notes/ir-spec-boundary.md`. (2026-09-23)
-- **Two Lake packages.** `ir/` is the specification `P4bloIR` (package
-  `p4blo-ir`) with the wire schema beside it; `lean/` is the user library
+- **Two Lake packages.** `spec/ir/` is the specification `P4bloIR` (package
+  `p4blo-ir`) with the wire schema beside it; `impl/lean/` is the user library
   `P4blo` (package `p4blo`), importing the specification one way. The
   `p4blo-lean` executable and all wire identities are preserved. (2026-09-23,
   supersedes the temporary `P4bloLean` name.)
@@ -319,7 +319,7 @@ these entries record why.
 ## Lean authoring and proof boundaries
 
 The exact theorem statements, premises and exclusions are in
-`lean/ASSURANCE.md` and the audit files; these entries record the shape.
+`impl/lean/ASSURANCE.md` and the audit files; these entries record the shape.
 
 - **The first sound validity boundary is the closed scalar fragment**, and
   verified authoring starts with an independently meaningful scalar

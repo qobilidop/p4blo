@@ -494,6 +494,7 @@ def default_lean_binary() -> Path:
     root = Path(__file__).resolve().parents[4]
     return (
         root
+        / "spec"
         / "ir"
         / ".lake"
         / "build"

@@ -21,10 +21,10 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
+| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
 | The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/assurance.md`](docs/assurance.md#known-disagreements-with-the-oracles) |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch/) |
-| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `impl/python/p4blo/drt/` |
+| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`spec/ir/`](spec/ir/), `impl/python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
 [`.agents/status.md`](.agents/status.md). Not claimed: performance, running
@@ -57,7 +57,7 @@ unchanged original P4 on BMv2. Stronger probes exposed pinned SpecTec CRC32
 padding and table-mask defects that simpler packet sequences missed. They
 remain strict, precisely classified expected discrepancies—not model changes
 to manufacture agreement. The independent
-[Lean-authored firewall](lean/P4blo/TutorialFirewall.lean) now runs the complete
+[Lean-authored firewall](impl/lean/P4blo/TutorialFirewall.lean) now runs the complete
 program with persistent state. Initialization and Bloom-insertion properties
 are proved under explicit premises; a complete firewall pipeline proof is not
 claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
@@ -66,8 +66,8 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
 
 1. [`docs/design.md`](docs/design.md): what p4blo is, why, and how each
    claim is tested.
-2. [`ir/P4bloIR/IR.lean`](ir/P4bloIR/IR.lean): the abstract IR;
-   [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto) defines
+2. [`spec/ir/P4bloIR/IR.lean`](spec/ir/P4bloIR/IR.lean): the abstract IR;
+   [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto) defines
    its wire syntax. Read them with
    [`docs/ir-semantics.md`](docs/ir-semantics.md), the closed behaviors, and
    [`docs/arch-supports.md`](docs/arch-supports.md), what the supplied
@@ -78,8 +78,8 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
    [`tests/corpus/`](tests/corpus/), each with its own provenance and contract.
 4. [`impl/python/p4blo/interp/`](impl/python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
-5. [`ir/P4bloIR/`](ir/P4bloIR/): the same semantics in Lean, normative
-   for meaning. The independent [Lean user library](lean/README.md) imports
+5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR/): the same semantics in Lean, normative
+   for meaning. The independent [Lean user library](impl/lean/README.md) imports
    this specification and exposes verified scalar authoring and execution:
    `import P4blo` for users, `import P4bloIR` for the IR contract.
 6. [`docs/coverage.md`](docs/coverage.md): every construct of
@@ -149,9 +149,9 @@ typechecked with p4c through Docker when it is available.
 
 | Path | What |
 |---|---|
-| `ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
+| `spec/ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
 | `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
-| `lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
+| `impl/lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
 | `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
 | `tests/examples/` | application goldens, packet vectors and independent behavior checks |

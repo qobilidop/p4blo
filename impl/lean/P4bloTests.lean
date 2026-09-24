@@ -54,7 +54,7 @@ def main : IO Unit := do
   P4blo.ForwarderTableTests.run
   P4blo.TutorialFirewallBloomTests.run
   P4blo.ForwarderApplyTests.run
-  let source ← IO.FS.readFile "../ir/Tests/forwarder.json"
+  let source ← IO.FS.readFile "../../spec/ir/Tests/forwarder.json"
   let program ← IO.ofExcept (P4bloIR.Program.fromJsonString source)
   let (sw, externs) ← IO.ofExcept (P4blo.prepareSwitch program)
   let (result, _) ← IO.ofExcept (P4blo.runSwitch sw externs { tables := [] } 0 ByteArray.empty)
