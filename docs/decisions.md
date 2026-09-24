@@ -1022,3 +1022,15 @@ one that says so.
   default differs from absence. Freeze those independent answers before
   proofs; do not change the decoder to match an assumed presence rule.
   Scope, six kernel default anchors and review: `notes/table-codec-next.md`.
+- **Use the exact tutorial firewall as the next Lean application.** Reuse
+  existing source layouts and ordinary IR assembly without adding a firewall
+  primitive. First establish golden identity, persistent full-array replay,
+  actual initialization and a bounded invalid-IPv4 body identity. Confidence:
+  high in this application boundary, medium in retaining direct Forwarder
+  layout imports and the eventual effect/result surface. Revisit on a real
+  coupling problem or second client, not by changing application policy.
+  Keep arbitrary unused state separate from initialization, unchanged-program
+  boundaries separate from the parser-observer clone, and dynamic host-entry
+  replacement separate from constant-rule BMv2 evidence. Scoped Bloom
+  properties follow; exact connection tracking and whole-pipeline equivalence
+  are not claimed. Plan and review: `notes/lean-firewall-next.md`.

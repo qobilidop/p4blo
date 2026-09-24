@@ -66,6 +66,8 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   slice. Scope: `notes/declaration-codec.md` and its independent review.
   Next is the reviewed four-law table slice in `notes/table-codec-next.md`,
   with an unregistered feasibility probe and baseline-before-proof workflow.
+  Its independent baseline is integrated: 181 exact transcripts, 82 public
+  protobuf successes, 99 errors and 20 native anchors, without codec changes.
   Full Program codecs, text parsing, resource limits and version policy
   remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
@@ -136,7 +138,13 @@ mutation evidence, and an IR-minimality review. See the design for details.
   deliberate wrong-port detection. Exhaustive byte cuts of a fixed frame,
   valid-malformed-valid persistence, structured generated flow/policy changes
   and runtime state-only mutants extend the bounded evidence. Lean authoring/
-  application proofs and broader profiles remain open.
+  application proofs and broader profiles remain open. The independently
+  reviewed `notes/lean-firewall-next.md` now defines the exact-golden Lean
+  port, persistent in-memory execution and first invalid-IPv4 body identity.
+  It preserves double collisions and separates the actual seven-local
+  initialization witness from arbitrary unused-state identity premises.
+  Implementation starts in `work/lean-firewall`, based on `61dc681`;
+  Bloom monotonicity/reverse acceptance remain subsequent obligations.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.

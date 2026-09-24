@@ -12,12 +12,12 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `58bb072`, including total Expr/LValue/Stmt codec proofs,
+Combined local integration at `61dc681`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
 prefixes and actual body-bearing plain-root call entry: both Lean package gates and default audits pass, with
-**520 spec checks**, all existing scalar/context/
+**540 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -88,8 +88,12 @@ fixture/Lean-observer corruption survives direct Python checks but fails
 independent native anchors. All restored replays pass with reconstructed mutant
 source hashes. The standalone next-table probe also passes independently;
 it is unregistered and is not claimed as production Table coverage.
-Required real-Lean DRT: **1114 passed**, no skips. Full gate:
-**2750 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+The independent table baseline adds 20 native and 235 Python checks, with
+181 exact raw transcripts (82 protobuf successes / 99 errors). Production
+codec bytes and all old inventories remain unchanged. The new firewall plan
+and review are documentation only; no firewall application proof is claimed.
+Required real-Lean DRT: **1295 passed**, no skips. Full gate:
+**2985 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -104,9 +108,10 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
 `guarded-control-call.md`, `stmt-codec.md`, `action-root-writes.md` and
 `lean-forwarder.md`, `declaration-codec-baseline.md`, `field-action-writes.md`,
-`declaration-codec.md` and `table-codec-next.md`.
+`declaration-codec.md`, `table-codec-next.md`, `table-codec-baseline.md` and
+`lean-firewall-next.md`.
 
-All five remote workflows pass for `0d30fa0`; newer CI must be checked
+All five remote workflows pass for `78aa246`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -134,7 +139,8 @@ stdout/stderr and exit status. Artifact
 command metadata is never executed. Reconstruction recipes survive losing
 local ignored artifacts and temporary logs. The 247 declaration baseline
 transcripts additionally retain exact bytes, independent source-matched answers
-and historical hashes at `21b0fec`; they are not fault observations.
+and historical hashes at `21b0fec`; the 181 table baseline transcripts have
+historical hashes at `9640523`. Neither baseline is counted as fault evidence.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -145,7 +151,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 520 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt and foundational declaration codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 540 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt and foundational declaration codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -465,6 +471,12 @@ Things a resuming agent should know are in motion or deliberately left.
   Scope, pins, observer barrier, exclusions and authoring costs:
   `notes/firewall-port.md`, `notes/crc-contract.md`.
   Reviews: `notes/reviews/firewall-port.md`, `crc-externs.md`.
+  The next Lean application plan and independent review are now committed:
+  `notes/lean-firewall-next.md` and its matching report. Exact-golden authoring,
+  persistent complete-array execution and a first invalid-IPv4 body identity
+  are scoped separately from later Bloom properties. Root-owned implementation
+  starts in `work/lean-firewall` at `/Users/qobilidop/my/work/p4blo-lean-firewall`,
+  based on `61dc681`; no implementation result is claimed yet.
 
   Four validator-accepted wrong ports fail both engines. Subsequent actual
   Python/Lean CRC XOR-one mutations pass packet-only gates but produce three
@@ -626,7 +638,12 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/table-codec-next.md`, with an unregistered three-law feasibility
   probe and six actual missing/null/empty-action kernel anchors. It is active
   in `work/table-codec` at `/Users/qobilidop/my/work/p4blo-table-codec`, based
-  on `58bb072`; freeze independent baselines before the four production laws.
+  on `58bb072`. Baseline `9640523` is independently reviewed and integrated
+  at `a5ba464`: 181 exact raw transcripts, 82 public protobuf successes,
+  99 errors, direct MatchKind observation and 20 native anchors. All old
+  request labels/bytes remain unchanged. The four production laws and
+  actual-code adversarial campaigns are next; preserve this frozen baseline.
+  Scope/review: `notes/table-codec.md`, `notes/reviews/table-codec-baseline.md`.
   Full Program remains a later obligation.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
