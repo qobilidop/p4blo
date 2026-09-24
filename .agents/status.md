@@ -55,6 +55,14 @@ source beyond path strings in comments. `scripts/check.sh` passes at
 new link test; the later review-fix commits touch Markdown only. The Lean
 gate was not rerun: its only change is a doc comment in `Switch.lean`.
 
+A second pass the same day reduced `docs/` to six reference files
+(design, semantics, coverage, assurance, quickstart, workflows), folding
+the firewall notes into the corpus README and archiving the rest in git.
+`scripts/check.sh` passes at `093dc26` with the same counts; the two
+review-fix commits after it touch Markdown and a ruff exclusion only,
+rechecked with the link test and `ruff format --check`. The independent
+review is `reviews/docs-consolidation-2026-09-24.md`.
+
 ## Open threads
 
 These are parked or backlog, not tasks. Resuming any of them needs a new
