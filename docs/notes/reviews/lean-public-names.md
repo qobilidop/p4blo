@@ -41,16 +41,39 @@ produced no generated-file drift. This is not a wire-format change.
 The design's current-layout summary and implementation checklist now name
 the public packages; the write-up explicitly preserves its historical scope.
 
-## Clean-build verification still pending
+## Independent clean-build verification
 
-No build was run in the integrator's working tree while its gate was active.
-A fresh post-commit worktree with neither package's `.lake` directory must
-still build both packages, execute both audits/test drivers, run required
-cross-language conformance (including scalar authoring, CRC and suffix
-regressions), and check generated bindings. Existing build caches can retain
-old import modules, so source inspection and in-place success are not a
-substitute for that uncached reproduction. Its results will be recorded
-after the committed migration is available.
+Reproduced commit `411ba827706b6fc03128d4e90700718ba892b68b` in the fresh
+`p4blo-naming-review` worktree, with neither package's old build cache.
+No build was run in the integrator's worktree. All commands below exited
+zero; results were checked after completion, not inferred from partial logs.
+
+- `nix develop -c elan show`, from the repository root: **no active
+  toolchain**. The gate's explicit pinned toolchain is therefore necessary
+  and sufficient; this reproduction did not rely on a default selection.
+- `nix develop -c /Users/qobilidop/my/work/p4blo-naming-review/scripts/check-lean.sh`:
+  both packages built successfully (**49 and 39 jobs**), including fresh
+  `P4bloIR` and `P4blo` modules and both `ProofAudit`/`UserProofAudit`
+  targets. Both test drivers passed: **336 specification checks**, **13
+  eDSL known answers**, **6 negative typing checks**, and package API tests.
+- `P4BLO_REQUIRE_LEAN=1 nix develop -c uv run pytest tests -k lean_agrees`:
+  **114 passed, 959 deselected, no skips** (30.91 seconds). This includes
+  CRC, suffix dispatch, certificates, generated/stateful programs and all
+  13 scalar eDSL cross-language examples.
+- `nix develop -c uv run pytest tests/test_package_layout.py`:
+  **4 passed** (0.09 seconds).
+- `nix develop -c buf lint` and `nix develop -c buf generate`: passed;
+  `git diff --exit-code -- python/p4blo/v0` passed with **no binding drift**.
+  The full worktree status was clean before this report was updated.
+
+The Lean linker emitted the already known macOS static-library deployment
+target warnings (library minimum 15 versus link target 14); neither build
+nor test failed. This independent run did not repeat the expensive full
+Python/oracle suite; the integrator's **1070 passed / 3 strict expected
+discrepancies / no skips** result remains separately attributed evidence.
+
+The fresh build closes the stale-import/cache risk. No remaining blocking
+naming-migration finding was identified.
 
 Only this report was written by the reviewer, in the review worktree.
 No main-worktree edits or commits were made.
