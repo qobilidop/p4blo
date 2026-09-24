@@ -1,6 +1,6 @@
 name = "p4blo"
 version = "0.1.0"
-defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands", "fieldExpressions", "fieldCommands", "headerReads", "guardedForward", "callEntry", "callBodyEntry", "callReturn", "guardedCallPrefix", "guardedControlCall", "leanForwarder", "forwarderAction", "forwarderTables", "forwarderApply", "leanTutorialFirewall"]
+defaultTargets = ["P4blo", "UserProofAudit", "scalarExamples", "scalarCommands", "fieldExpressions", "fieldCommands", "headerReads", "guardedForward", "callEntry", "callBodyEntry", "callReturn", "guardedCallPrefix", "guardedControlCall", "leanForwarder", "forwarderAction", "forwarderTables", "forwarderApply", "forwarderIngress", "leanTutorialFirewall"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "userTests"
 
@@ -77,6 +77,10 @@ root = "ForwarderTablesMain"
 [[lean_exe]]
 name = "forwarderApply"
 root = "ForwarderApplyMain"
+
+[[lean_exe]]
+name = "forwarderIngress"
+root = "ForwarderIngressMain"
 
 [[lean_exe]]
 name = "leanTutorialFirewall"

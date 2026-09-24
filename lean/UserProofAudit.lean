@@ -1,6 +1,7 @@
 import P4blo.Scalar
 import P4blo.ForwarderTables
 import P4blo.ForwarderApply
+import P4blo.ForwarderIngress
 import P4blo.HeaderFields
 import P4blo.ScalarCommands
 import P4blo.Fields
@@ -793,3 +794,47 @@ not guarantee that a theorem expresses its intended property. -/
 /-- info: 'P4blo.ForwarderApply.populated_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.ForwarderApply.populated_correct
+
+/-- info: 'P4blo.ForwarderIngress.body_identity' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.body_identity
+
+/-- info: 'P4blo.ForwarderIngress.checksum_identity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.checksum_identity
+
+/-- info: 'P4blo.ForwarderIngress.guard_evaluate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.guard_evaluate
+
+/-- info: 'P4blo.ForwarderIngress.invalid_steps_header' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.invalid_steps_header
+
+/-- info: 'P4blo.ForwarderIngress.invalid_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.invalid_steps
+
+/-- info: 'P4blo.ForwarderIngress.valid_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.valid_steps
+
+/-- info: 'P4blo.ForwarderIngress.source_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.source_steps
+
+/-- info: 'P4blo.ForwarderIngress.result_matches' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.result_matches
+
+/-- info: 'P4blo.ForwarderIngress.changes_only_vars' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.changes_only_vars
+
+/-- info: 'P4blo.ForwarderIngress.preserves_outside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.preserves_outside
+
+/-- info: 'P4blo.ForwarderIngress.populated_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderIngress.populated_steps
