@@ -78,7 +78,8 @@ truncation of one frame and valid-malformed-valid persistence sequences;
 `tests/test_firewall_generated.py` adds generated flow and host-policy
 sequences with full-cell CRC expectations from independent GF(2) and zlib
 implementations. Host changes within one sequence are Python and Lean
-evidence only.
+evidence only. General fragment behavior and exhaustive TCP flag
+combinations are not exercised.
 
 ## On the oracles
 
@@ -136,5 +137,7 @@ Proved under explicit premises: successful initialization of all nine
 roots, whole-Run identity of the invalid-IPv4 body, and exact two-write
 Bloom insertion preserving both arrays and unrelated state. Not proved:
 readback, the drop decision, hash bounds, control composition or any
-whole-firewall correctness property. The exact theorem statements are in
-[`lean/ASSURANCE.md`](../../../lean/ASSURANCE.md).
+whole-firewall correctness property. The theorems are stated in
+[`TutorialFirewallProof.lean`](../../../lean/P4blo/TutorialFirewallProof.lean)
+and [`TutorialFirewallBloom.lean`](../../../lean/P4blo/TutorialFirewallBloom.lean)
+and audited in [`lean/UserProofAudit.lean`](../../../lean/UserProofAudit.lean).

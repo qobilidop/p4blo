@@ -15,7 +15,7 @@ static/run-time boundary (`bitN` aliases and typed literals type as places;
 parameters accept any `Val` with run-time width check; sub-block call
 arguments are run-time checked; failed `assign` reports as
 `reportCallIssue`). None of it was in the register, yet
-`docs/design.md:5` points at the register for the deviations. The
+`docs/edsl-v2-design.md:5` (since archived) points at the register for the deviations. The
 eDSL is unchanged, so the decision is load-bearing. Fixed: new "Python
 eDSL" section in the register.
 
@@ -33,10 +33,11 @@ eDSL" section in the register.
 - **M5.** `.agents/notes/parked-proofs.md` cited `forwarder-apply.md` "on
   main" after its deletion. Now names the archive command.
 - **M6.** Stale backticked paths in `docs/semantics.md` and
-  `docs/assurance.md`; deleted reviews named without the archived marker
-  in `docs/assurance.md`, `website/README.md`, `docs/writeup.md`,
-  `docs/assurance.md`; stale link text in
-  `docs/design.md`. Fixed.
+  `docs/milestone-1.md`; deleted reviews named without the archived marker
+  in `docs/milestone-1.md`, `docs/website-design.md`, `docs/writeup.md`,
+  `docs/evidence/milestone-adversarial.md`; stale link text in
+  `docs/design.md`. Fixed. (Paths as they were on 2026-09-24; the later
+  documentation consolidation archived several of these files.)
 - **M7.** `.agents/reviews/` did not exist. Created by this file.
 - **M8.** Status claim 2 read as if the four SpecTec discrepancies were
   corpus vectors; the "separate probes" qualifier is restored.

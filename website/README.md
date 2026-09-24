@@ -53,4 +53,4 @@ pytest additionally checks the actual rendered code text against the source.
 The gateway tests need the built Lean executable for required conformance;
 see `docs/workflows.md`. The adjacent corpus README documents the example's
 single-tag profile and the difference between admissions and transmissions.
-Keep assurance language aligned with `docs/assurance.md` and `docs/assurance.md`.
+Keep assurance language aligned with `docs/assurance.md`.

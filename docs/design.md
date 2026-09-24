@@ -95,15 +95,15 @@ these claims and no others; their current status is in
 ### One IR, three representations
 
 There is one p4blo IR with three representations, and each concern has
-one authority:
+one intended authority:
 
-| Concern | Authority |
-|---|---|
-| Abstract syntax: expressions, statements, declarations | Lean, `ir/P4bloIR/IR.lean` |
-| Validity: types, scopes, widths, legal combinations | Lean, with the Python validator as the tested executable counterpart |
-| Meaning: execution and observable behavior | Lean, `ir/P4bloIR/` |
-| Serialization: messages, field numbers, encoding versions | the protobuf schema, `ir/proto/p4blo/v0/p4blo.proto` |
-| Correspondence between wire values and abstract programs | codecs specified and proved in Lean on the representable domain |
+| Concern | Intended authority | Today |
+|---|---|---|
+| Abstract syntax: expressions, statements, declarations | Lean, `ir/P4bloIR/IR.lean` | in place |
+| Validity: types, scopes, widths, legal combinations | Lean | proved for closed scalar fragments; the Python validator is the tested executable counterpart, and whole-program validity in Lean is an open obligation |
+| Meaning: execution and observable behavior | Lean, `ir/P4bloIR/` | in place |
+| Serialization: messages, field numbers, encoding versions | the protobuf schema, `ir/proto/p4blo/v0/p4blo.proto` | in place |
+| Correspondence between wire values and abstract programs | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; Program and Export composition are open |
 
 The text form of the protobuf is the golden format; binary and JSON are
 transports. These are distinct contracts, and passing one does not
@@ -496,8 +496,8 @@ for setup.
   compiler IR for a future p4c, not an interchange format.
 - [HOL4P4](https://github.com/kth-step/HOL4P4): mechanized semantics with
   an executable derived inside the prover; no serialized IR.
-- [cedar-spec](https://github.com/cedar-policy/cedar-spec): the method.
-  A Lean model as the specification, a production implementation,
+- [cedar-spec](https://github.com/cedar-policy/cedar-spec), inspected at
+  `acb0db7d`: the method. A Lean model as the specification, a production implementation,
   differential random testing with typed generators, and retained
   regressions. p4blo adopts that and keeps the two models independently
   implemented: sharing semantic algorithms would weaken the comparison.
@@ -513,7 +513,8 @@ for setup.
   typed schema is the grammar the Lean side decodes.
 
 The construct-by-construct survey of these IRs that shaped the schema is
-archived in git (`docs/design.md` before 2026-09-24).
+archived in git as `docs/notes/prior-art-ir.md` at tag
+`agents-archive/2026-09-24`.
 
 ## Appendix: naming
 

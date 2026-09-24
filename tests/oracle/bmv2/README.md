@@ -165,7 +165,8 @@ registers are touched only by ingress. It is not a general quiescence
 proof: do not reuse the profile for recirculation, multiple ingress
 workers or asynchronous externs without a new completion argument.
 Missing or duplicate sentinels, extra diagnostics, truncated or duplicate
-arrays and invalid cells all fail.
+arrays and invalid cells all fail. The settling heuristic below remains
+relevant to output completeness even with the sentinel in place.
 
 ### pcap FIFOs and the settle heuristic
 

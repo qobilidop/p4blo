@@ -5,7 +5,8 @@ tests, external oracles and deliberate faults. Read this before inferring
 a guarantee from a test count or a theorem name. The finite assurance
 milestone closed on 2026-09-23 at code revision `3148a52`; the
 [release evidence](#release-evidence) at the end records exactly what
-ran. Later checkpoints are recorded in the agent status file, not here.
+ran then and at the application checkpoint that followed; later
+checkpoints are recorded in the agent status file.
 
 ## The claim
 
@@ -180,7 +181,7 @@ interchangeable confidence score.
 | `Fields.Ref.evaluate`, `write_matches`, `validities_set`, `Fields.lower_typed`, `evaluate_lower` | Exact aggregate-store correspondence for nested scalar reads and writes, validity and unrelated state, under nominal, index, frame and permission premises | A general aggregate checker, initialization, intended surface selection |
 | `FrameInitialization`, `CallEntry`, `CallReturn`, the guarded control call | Actual frame creation over every scope entry, four-root call entry, fixed-profile normal return and one observer-free whole control call, as bounded named transitions | All calls, parser-fault unwinding, the observer statements, complete applications |
 | `ForwarderTables.lookup_correct`, `ForwarderApply.run_correct`, the selected action | Five installed route shapes, their actual application and hit timing, the forwarder's invalid-control identity | Parsing, checksum maintenance, architecture fate, other configurations |
-| `TutorialFirewall` initialization and Bloom insertion | All nine initialized roots; exact two-write insertion preserving both arrays and unrelated state | Readback, drop composition, hash bounds, exact connection tracking |
+| `TutorialFirewall` initialization, invalid body and Bloom insertion | All nine initialized roots; whole-Run identity of the invalid-IPv4 body; exact two-write insertion preserving both arrays and unrelated state | Readback, drop composition, hash bounds, exact connection tracking |
 | `CodecLaws` through Action/Block | Production encoder/decoder left inverses over JSON values under v0 uint32 representability, checked by `ir/CodecProofAudit.lean` | Text parsing, protobuf correctness, semantic validity, version negotiation |
 | `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
@@ -193,8 +194,10 @@ statements and premises, not the labels above, define what is proved.
 Warnings are errors in both Lean packages, and the audits check the
 transitive axiom sets of advertised theorems, so `sorry`, custom axioms
 and native-evaluation escapes cannot silently replace a proof. The exact
-obligations, exclusions and mutation experiments of the user package are
-in [`lean/ASSURANCE.md`](../lean/ASSURANCE.md).
+obligations, exclusions and mutation experiments of the scalar and field
+authoring work are in [`lean/ASSURANCE.md`](../lean/ASSURANCE.md); the
+forwarder, firewall and call theorems are stated in their modules under
+`lean/P4blo/` and audited in `lean/UserProofAudit.lean`.
 
 ## What is tested
 
@@ -240,7 +243,7 @@ replayed on the Python interpreter, on Lean and on both oracles.
 | priority | p4c `table-entries-priority-bmv2` | p4c STF, 3 packets | both |
 | register_bounds | own program | 9 hand-derived packets | SpecTec; two packets diverge on BMv2 by the register rule [below](#known-disagreements-with-the-oracles) |
 | tutorial_firewall | pinned p4lang tutorial solution; Python and Lean sources equal the golden | connection and Bloom-collision vectors, byte cuts, generated host-policy sequences | original BMv2 packets and all 8192 register cells at 30 prefix boundaries; SpecTec controls pass, its CRC and mask defects are classified below |
-| vlan_gateway | original homepage example | one STF file with 11 packets; a 53-request packet, diagnostic and counter sequence in Python and Lean | both for packets; counters checked by independent expectations |
+| vlan_gateway (added after the milestone, at `38d740e`; no Lean-authored counterpart) | original homepage example | one STF file with 11 packets; a 53-request packet, diagnostic and counter sequence in Python and Lean | both for packets; counters checked by independent expectations |
 
 The public applications under `examples/` (router, stateful firewall,
 load balancer) each have goldens, vectors and independent expectations
@@ -380,8 +383,12 @@ needs explicit validity and observation contracts first.
 
 Milestone 1 closed at code revision `3148a52f2212238da00fe76ebe8eab81d86b6023`
 from a fresh detached checkout with no Python environment, Lean build
-directories or retained artifacts, in the pinned environment. P4-SpecTec
-was checked at commit `2730cfd9`; BMv2 used the immutable image
+directories or retained artifacts, in the pinned environment. Installed
+toolchains and external oracle caches were shared: this is a clean project
+checkout, not a claim that every external tool was rebuilt from source on
+a new machine. The corpus then had eleven programs. P4-SpecTec was checked
+at commit `2730cfd9` (executable SHA-256 `c75a2129…`); BMv2 used the
+immutable image
 `sha256:2b255b53…`. Builds finished before their consumers ran.
 
 | Gate | Result |

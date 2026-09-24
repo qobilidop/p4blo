@@ -294,7 +294,7 @@ on 2026-09-22; the rulings and their reasons are in
 
 ## How the corpus exercises the in-rows
 
-All eleven programs below are implemented, not planned. Their READMEs record
+All twelve programs below are implemented, not planned. Their READMEs record
 the precise source elaborations and bounded vectors. Syntax occurrence alone
 does not show that a vector executes a branch; use the current
 [evidence matrix](assurance.md#evidence-by-semantic-family) for semantic checks and qualifications.
@@ -312,6 +312,7 @@ does not show that a vector executes a branch; use the current
 | [verify_error](../tests/corpus/verify_error/README.md) | User errors, verify failure and parser-error observation |
 | [register_bounds](../tests/corpus/register_bounds/README.md) | Persistent read/write, wrapping and explicit out-of-bounds policy |
 | [tutorial_firewall](../tests/corpus/tutorial_firewall/README.md) | Direction/default policies, action calls, CRC16/32 and two persistent Bloom arrays; complete independent Python/Lean sources |
+| [vlan_gateway](../tests/corpus/vlan_gateway/README.md) | Single-tag VLAN parsing, exact match/action policy, header invalidation, a counter extern and deparsing; complete Python source with an independent packet/state sequence |
 
 Operators and execution paths not exercised by these fixed vectors have
 focused native/Python known answers and generated differential suites where

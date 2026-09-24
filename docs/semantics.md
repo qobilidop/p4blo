@@ -291,6 +291,8 @@ arguments and its call sites.
   multiple of eight. Consume exactly D/8 bytes, most-significant byte first,
   retaining leading zeros; return the full result without range reduction.
   Calls must match the bound width. Non-byte inputs are rejected, not padded.
+  The v1model printer expresses each as `hash` with base zero and maximum
+  2^W, which needs a width of W+1 so that 2^32 is not encoded as zero.
   The known answers and the pinned SpecTec padding discrepancy are in
   [assurance.md](assurance.md#known-disagreements-with-the-oracles); this
   profile does not adopt that discrepancy.
