@@ -43,21 +43,27 @@ partial def trace (ctx : P4bloIR.Coverage.Context) (m : Machine) (tags : Tags) :
   | .inl result => (result, tags.add (P4bloIR.Coverage.finalTags result.2))
   | .inr next => trace ctx next tags
 
-/-- The fresh activation of block `name` with `bindings` set, as the entry
-points of `P4bloIR.Interp` make it; `none` when the block is unknown. -/
-def activation (index : Index) (name : String) (bindings : List Value) :
-    Option (Block × Frame) := do
+/-- Block `name` when it is of `kind` with `arity` parameters, the check
+`runParser`, `runControl` and `runDeparser` make before they run anything;
+`none` otherwise, and then nothing is traced, since nothing ran. -/
+def blockOf? (index : Index) (name : String) (kind : BlockKind) (arity : Nat) : Option Block := do
   let decl ← index.blocks[name]?
+  if decl.kind != kind || decl.params.length != arity then none
+  pure decl
+
+/-- The fresh activation of `decl` with `bindings` set, as the entry
+points of `P4bloIR.Interp` make it; `none` when it has no frame. -/
+def activation (index : Index) (decl : Block) (bindings : List Value) : Option Frame := do
   let frame ← (Frame.forBlock index decl).toOption
   let vars := (decl.params.zip bindings).foldl
     (fun vars (p, v) => vars.insert p.name v) frame.vars
-  pure (decl, { frame with vars })
+  pure { frame with vars }
 
 /-- The traced outcome and tags of parser `name`, from the configuration
 `runParser` starts: the metadata bound, the headers at zero. -/
 def traceParser (index : Index) (name : String) (packet : ByteArray) (metadata : Value)
     (externs : Externs) (ctx : P4bloIR.Coverage.Context := {}) : Option Outcome × Tags :=
-  match index.blocks[name]? with
+  match blockOf? index name .parser 2 with
   | none => (none, {})
   | some decl =>
     -- `runParser` binds only the metadata; the headers keep their zero value.
@@ -78,23 +84,29 @@ def traceParser (index : Index) (name : String) (packet : ByteArray) (metadata :
 def traceControl (index : Index) (name : String) (headers metadata : Value)
     (entries : Installed) (externs : Externs) (ctx : P4bloIR.Coverage.Context := {}) :
     Option Outcome × Tags :=
-  match activation index name [headers, metadata] with
+  match blockOf? index name .control 2 with
   | none => (none, {})
-  | some (decl, frame) =>
-    let run : Run := { index, entries := some entries, externs, frame }
-    let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
-    (some outcome, tags)
+  | some decl =>
+    match activation index decl [headers, metadata] with
+    | none => (none, {})
+    | some frame =>
+      let run : Run := { index, entries := some entries, externs, frame }
+      let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
+      (some outcome, tags)
 
 /-- The traced outcome and tags of deparser `name`, from the configuration
 `runDeparser` starts. -/
 def traceDeparser (index : Index) (name : String) (headers : Value) (externs : Externs)
     (ctx : P4bloIR.Coverage.Context := {}) : Option Outcome × Tags :=
-  match activation index name [headers] with
+  match blockOf? index name .deparser 1 with
   | none => (none, {})
-  | some (decl, frame) =>
-    let run : Run := { index, externs, frame, emitter := some {} }
-    let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
-    (some outcome, tags)
+  | some decl =>
+    match activation index decl [headers] with
+    | none => (none, {})
+    | some frame =>
+      let run : Run := { index, externs, frame, emitter := some {} }
+      let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
+      (some outcome, tags)
 
 /-- The struct `m` with field `position` set, as `Switch` sets its contract
 fields. -/

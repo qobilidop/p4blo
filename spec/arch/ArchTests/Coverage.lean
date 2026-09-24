@@ -105,6 +105,13 @@ def tests (forwarder : Program) : T Unit := do
       ["parser.extract.tooShort"]
     checkOk "a rejected parse is not a shift" (tagsOf p ⟨[]⟩ (bytes [1]))
       (!·.contains "parser.target.accept")
+    -- Outside the validated domain: `runParser` refuses a parser with a
+    -- third parameter, so nothing runs and nothing may be reported.
+    let extra : Param := { name := "extra", type := .bits 8, direction := .«in» }
+    let widened := { p with blocks := p.blocks.map fun b =>
+      if b.name == "P" then { b with params := b.params ++ [extra] } else b }
+    checkOk "a parser the switch refuses to run reports no tags"
+      (tagsOf widened ⟨[]⟩ (bytes [5])) (·.isEmpty)
     for packet in [bytes [5], bytes [1], ByteArray.empty] do
       checkOk s!"traced blocks agree with the entry points on {packet.size} bytes"
         (tracesAgree p ⟨[]⟩ packet) id
