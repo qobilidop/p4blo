@@ -58,13 +58,16 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   all 79 old raw transcripts; independent answers catch paired tag/branch
   mappings, path-index changes and null-default faults that retain roundtrip
   proofs. Scope and review: `notes/stmt-codec.md` and its matching review.
-  The next accepted slice is nine foundational declaration codecs, following
-  `notes/program-codec-next.md`: reuse existing type/literal/list laws without
-  changing already-total decoders. An independent constructor/raw-error
-  baseline is integrated: 247 exact transcripts, independent constructor/error
-  answers and public protobuf wrappers. The nine laws/fault campaigns are
-  independently reviewed and queued for integration. Full Program codecs, text parsing, resource limits
-  and version policy remain open.
+  Nine foundational declaration laws are now integrated without changing
+  already-total decoders. All 247 frozen transcripts retain exact bytes;
+  independent answers and native anchors expose paired mappings/error order
+  and deliberately corrupted observers that roundtrips alone cannot catch.
+  Ten new audited roots and 24 retained fault observations accompany this
+  slice. Scope: `notes/declaration-codec.md` and its independent review.
+  Next is the reviewed four-law table slice in `notes/table-codec-next.md`,
+  with an unregistered feasibility probe and baseline-before-proof workflow.
+  Full Program codecs, text parsing, resource limits and version policy
+  remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
   Contextual scalar checking now has both proofs and rejects malformed

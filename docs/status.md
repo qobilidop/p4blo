@@ -12,7 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `77b9890`, including total Expr/LValue/Stmt codec proofs,
+Combined local integration at `58bb072`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -80,6 +80,14 @@ expectations and exact bytes; 102 successful outputs pass public protobuf
 wrappers. The action-layer field adapter adds four audited roots and a mixed
 shadowed/unshadowed witness, preserving the old block-only APIs. A rejected
 false theorem conclusion is not counted as a compiling runtime fault.
+Nine declaration roundtrip laws now add ten default-audited roots with
+constructive witnesses and overflow controls. All old bytes remain unchanged.
+One actual encoder fault is proof-rejected; paired mapping/error-order faults
+that preserve proofs produce 24 source-matched raw mismatches. Paired Python
+fixture/Lean-observer corruption survives direct Python checks but fails
+independent native anchors. All restored replays pass with reconstructed mutant
+source hashes. The standalone next-table probe also passes independently;
+it is unregistered and is not claimed as production Table coverage.
 Required real-Lean DRT: **1114 passed**, no skips. Full gate:
 **2750 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
@@ -95,7 +103,8 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
 `plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
 `guarded-control-call.md`, `stmt-codec.md`, `action-root-writes.md` and
-`lean-forwarder.md`, `declaration-codec-baseline.md` and `field-action-writes.md`.
+`lean-forwarder.md`, `declaration-codec-baseline.md`, `field-action-writes.md`,
+`declaration-codec.md` and `table-codec-next.md`.
 
 All five remote workflows pass for `0d30fa0`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
@@ -107,15 +116,17 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Eighteen retained execution-fault bundles and forty-nine raw codec
+Eighteen retained execution-fault bundles and seventy-three raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
 All eighteen execution bundles replay successfully on this integration
-(twenty-five requests), as do all forty-nine raw codec observations. The real
+(twenty-five requests), as do all seventy-three raw codec observations. The real
 forwarder's new TTL0 bundle matches its current authored Program, tracked
 edge input and fixed configuration. The new
 statement campaigns contribute 25 observations of 20 distinct requests;
-these counts are not independent-input counts. Header-read,
+these counts are not independent-input counts. Declaration campaigns add 24
+observations of 24 distinct requests; harness views are not additional inputs.
+Header-read,
 guarded and initializer bundles match their current exporter/wrapper and exact request. All fifteen
 Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
 69 LValue/Arg and 79 Stmt source-matched pre-refactor transcripts retain byte-identical
@@ -134,7 +145,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 520 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 520 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt and foundational declaration codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -601,11 +612,21 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/reviews/stmt-codec.md`. The next declaration slice has an accepted,
   independently checked plan/probe: `notes/program-codec-next.md` and its
   matching review, with `ir/DeclarationCodecProbe.lean` left unregistered.
-  Nine foundational declaration codecs are already total and need composition
-  proofs, not another decoder refactor. The separately reviewed baseline
-  `21b0fec` is integrated: 247 exact raw transcripts, 102 public protobuf
-  successes, 145 errors and 14 native anchors. Nine universal laws and fault
-  evidence are reviewed in `work/declaration-codec`, awaiting integration.
+  The separately reviewed baseline `21b0fec` is integrated: 247 exact raw
+  transcripts, 102 public protobuf successes, 145 errors and 14 native anchors.
+  Nine universal laws and ten audit roots are integrated at `20ce06f`, with
+  production codec bytes unchanged. A one-sided encoder reversal is rejected
+  by its law; three paired/order faults preserve all roundtrip proofs but
+  fail 24 independent raw observations. Deliberately corrupting either Python
+  expectations or the Lean observer hides the Direction fault from Python
+  checks, while independent native anchors still reject it. Faulty packet
+  preflight is explicitly not counted as direct codec detection. Scope and
+  final review: `notes/declaration-codec.md` and its matching report.
+  The next four-law table slice is independently planned/reviewed in
+  `notes/table-codec-next.md`, with an unregistered three-law feasibility
+  probe and six actual missing/null/empty-action kernel anchors. It is active
+  in `work/table-codec` at `/Users/qobilidop/my/work/p4blo-table-codec`, based
+  on `58bb072`; freeze independent baselines before the four production laws.
   Full Program remains a later obligation.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.

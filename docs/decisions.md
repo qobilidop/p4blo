@@ -1001,3 +1001,24 @@ one that says so.
   witnesses and the precisely labeled false-conclusion challenge are in
   `notes/field-action-writes.md`. The full selected-action theorem remains
   a separate obligation.
+- **Retain independent anchors when roundtrips and observers agree wrongly.**
+  Nine declaration laws now compose actual total codecs under wire bounds.
+  Shared Direction names and paired instance labels can preserve every law;
+  independently authored native anchors still reject paired test-fixture and
+  constructor-observer corruption that makes the Python checks pass.
+  Confidence: high in these scoped laws and demonstrated detections, not
+  universal wire-language or Python equivalence. Preserve exact old source
+  provenance and distinguish the direct codec campaign from failed packet
+  preflight. Revisit on any mapping/default/observer change. Evidence and
+  independent review: `notes/declaration-codec.md`.
+- **Compose table codecs next without semantic premises.** The reviewed
+  four-law slice covers Key, ActionCall, Entry and Table using existing
+  expression/literal/key-value/list laws. A checked unregistered probe proves
+  the first three; Table composition remains work. Confidence: high for
+  these prerequisites, medium-high for the complete composition and medium
+  for the lasting file split. Revisit when Block/Program composition exposes
+  reuse needs. Review corrected an important distinction: Entry action
+  absence/null/empty all accept an empty call, but a present-empty Table
+  default differs from absence. Freeze those independent answers before
+  proofs; do not change the decoder to match an assumed presence rule.
+  Scope, six kernel default anchors and review: `notes/table-codec-next.md`.
