@@ -140,7 +140,7 @@ and maintenance boundaries are in `website/README.md`.
 | Optional pinned development tools | [`flake.lock`](../flake.lock) | see [development setup](../README.md#development); review lock updates |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
 | Lean toolchain | `spec/ir/lean-toolchain`, `spec/arch/lean-toolchain`, `impl/lean/lean-toolchain` (must match) | edit all three; user package depends on local `../ir`, manifests committed |
-| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it |
+| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracle/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/test_spectec_rules.py`) |
 | opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
