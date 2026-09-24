@@ -31,7 +31,10 @@ DeclarationKind = Literal[
     "extern_instance",
 ]
 TableKind = Literal["table_key", "action_call", "entry", "table"]
-CodecKind = LeafKind | DeclarationKind | TableKind | Literal["expr", "lvalue", "arg", "stmt"]
+ParserKind = Literal["target", "key_set", "select_case", "transition", "state"]
+CodecKind = (
+    LeafKind | DeclarationKind | TableKind | ParserKind | Literal["expr", "lvalue", "arg", "stmt"]
+)
 
 
 @dataclass(frozen=True)
