@@ -23,7 +23,7 @@ direction table hits. There is no connection timeout, FIN deletion or
 aging; this is not exact connection tracking.
 
 The port introduces no IR construct and no extern beyond the byte-aligned
-CRC16 and CRC32 services of [semantics.md](../../../docs/semantics.md#externs).
+CRC16 and CRC32 services of [arch-supports.md](../../../docs/arch-supports.md#extern-families).
 Masking each CRC by 4095 implements the original base-zero modulo-4096
 hash range. The empty verify and egress stages are erased and checksum
 computation runs last in the one control, as in the forwarder.

@@ -9,7 +9,7 @@ docs/design.md:
 
 None of them mutates its arguments; each returns fresh values. Externs are
 the only state a block can touch, and they are passed in by the caller.
-Everything the interpreter decides is written down in docs/semantics.md.
+Everything the interpreter decides is written down in docs/ir-semantics.md.
 
 The package reads as one explanation, bottom up:
 

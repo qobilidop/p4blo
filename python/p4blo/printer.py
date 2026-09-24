@@ -16,7 +16,7 @@ Conventions of the output, chosen for correctness over readability:
 
 - every non-leaf operand is parenthesized, so precedence never matters;
 - literals carry their width, `8w255`;
-- scalar locals get their zero initializer (docs/semantics.md, uninitialized
+- scalar locals get their zero initializer (docs/ir-semantics.md, uninitialized
   variables), so p4c does not warn and the oracle starts where the reference
   interpreter does;
 - a table with a ternary key prints non-const `entries` with
@@ -693,7 +693,7 @@ class _ProgramPrinter:
         return f"{decl} = {init};" if init is not None else f"{decl};"
 
     def _zero(self, t: pb.Type) -> str | None:
-        """The zero value of a scalar type, as docs/semantics.md defines it;
+        """The zero value of a scalar type, as docs/ir-semantics.md defines it;
         None for a compound type, which P4 cannot initialize inline."""
         match t.WhichOneof("kind"):
             case "bits":

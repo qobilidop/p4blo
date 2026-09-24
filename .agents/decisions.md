@@ -154,7 +154,8 @@ settles is not repeated here.
 
 ## Semantics rulings
 
-Rulings on behavior P4 leaves open are written in `docs/semantics.md`;
+Rulings on behavior P4 leaves open are written in `docs/ir-semantics.md`,
+or in `docs/arch-supports.md` when an architecture or extern family decides them;
 these entries record why.
 
 - **The parser loop bound is the no-consumption revisit rule**, not fuel,

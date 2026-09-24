@@ -248,7 +248,7 @@ def describe(t: pb.Type | None) -> str:
 
 
 # Literal-typed: the types a literal or a select key can have. Table keys are
-# bits only (docs/semantics.md, "Keys are bits").
+# bits only (docs/ir-semantics.md, "Keys are bits").
 _SCALAR_KINDS = frozenset({"bits", "boolean", "enum_type", "error"})
 
 _DECIMAL = re.compile(r"[0-9]+")
@@ -775,7 +775,7 @@ class _Validator:
             # The IR has no implicit declarations, so a program's NoAction is
             # an ordinary action; the name is reserved for the one core.p4
             # means, which every P4 reader and the printer's shim assume
-            # (docs/semantics.md, "Tables").
+            # (docs/ir-semantics.md, "Tables").
             self.report(NOACTION_RESERVED, "NoAction must have no body and no parameters", path)
         self.check_params(action.params, _ACTION_PARAM_DIRECTIONS, f"{path}.params", "action")
         inner = Scope(scope.block, scope.path, scope.names, action)
@@ -815,7 +815,7 @@ class _Validator:
     def check_call_graph(self) -> None:
         """No cycle among CallBlock edges, so every run terminates. Actions
         are checked the same way per block, so the call graph of blocks and
-        actions together is acyclic (docs/semantics.md, "Controls")."""
+        actions together is acyclic (docs/ir-semantics.md, "Controls")."""
         self.report_cycles(self.idx.blocks, self.calls, "block")
 
     def report_cycles(
@@ -1000,7 +1000,7 @@ class _Validator:
         `in` argument is copied in before anything is written back, so its
         overlapping an out argument changes nothing (§6.8). Two out or inout
         arguments that may alias are an error, so copy-back order never
-        matters (docs/semantics.md, "Block calls").
+        matters (docs/ir-semantics.md, "Block calls").
         """
         if len(args) != len(params):
             self.report(ARG_COUNT, f"expected {len(params)} arguments, got {len(args)}", path)
@@ -1048,7 +1048,7 @@ class _Validator:
 
     def check_extract(self, stmt: pb.Extract, scope: Scope, path: str) -> None:
         """The target is a header lvalue, or `stack.next`, which is allowed
-        nowhere else (docs/semantics.md, "Header stacks")."""
+        nowhere else (docs/ir-semantics.md, "Header stacks")."""
         target = stmt.target
         if target.WhichOneof("kind") == "next":
             self.expect_lvalue(
@@ -1289,7 +1289,7 @@ class _Validator:
             self.report(PARSER_ONLY, "lookahead is allowed only in a parser", path)
         if not self.check_type(expr.type, f"{path}.type"):
             return None
-        # What has a packet width: bool is one bit (docs/semantics.md, "lookahead").
+        # What has a packet width: bool is one bit (docs/ir-semantics.md, "lookahead").
         if not (is_bits(expr.type) or is_boolean(expr.type) or is_header(expr.type)):
             self.report(
                 TYPE_MISMATCH,

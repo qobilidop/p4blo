@@ -3,7 +3,7 @@
 The headers value starts at zero, the metadata is copied in, and the states
 run from `start_state` (see `stmt.run_states`). A raised error or an
 explicit `reject` stops the run; the outcome then carries the headers and
-metadata as they were at that moment (docs/semantics.md, "Parsers").
+metadata as they were at that moment (docs/ir-semantics.md, "Parsers").
 """
 
 from __future__ import annotations

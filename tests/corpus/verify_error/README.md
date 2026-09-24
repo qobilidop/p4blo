@@ -17,7 +17,7 @@ wire.
 ## Elaborated away
 
 - **`error { ... }`.** The four errors are declared after core.p4's seven,
-  in the source's order, as [semantics.md](../../../docs/semantics.md)
+  in the source's order, as [semantics.md](../../../docs/ir-semantics.md)
   ("Errors") fixes the list.
 - **Two `verify(false, ...)`.** Written as two `verify` statements. The
   first raises `IPv4BadPacket` and the parser stops there, so the second

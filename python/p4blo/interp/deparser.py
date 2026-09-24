@@ -1,7 +1,7 @@
 """The deparser entry point: `H -> Packet`.
 
 The headers are copied in as the `in` parameter and every `emit` appends to
-one bit buffer, which is padded to a byte at the end (docs/semantics.md,
+one bit buffer, which is padded to a byte at the end (docs/ir-semantics.md,
 "Deparsers"). The caller appends the payload it kept after parsing.
 """
 

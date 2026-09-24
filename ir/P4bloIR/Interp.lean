@@ -19,7 +19,7 @@ parse error is an outcome, not a failure.
 
 namespace P4bloIR
 
-/-- What a parser run produced (docs/semantics.md, "Parsers"). Rejection
+/-- What a parser run produced (docs/ir-semantics.md, "Parsers"). Rejection
 and error are separate: `accept` gives `accepted` with `NoError`; an
 explicit `reject` gives not accepted with `NoError`; a raised error gives
 not accepted with that error. -/

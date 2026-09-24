@@ -1,5 +1,5 @@
 """Expression evaluation: one hand-computed case per operator, then
-Hypothesis properties, per docs/semantics.md, "Values"."""
+Hypothesis properties, per docs/ir-semantics.md, "Values"."""
 
 from __future__ import annotations
 

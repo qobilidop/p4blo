@@ -1,5 +1,5 @@
 """Parsers: extract, select, errors, the revisit rule, sub-parsers, per
-docs/semantics.md, "Parsers" and "Header stacks"."""
+docs/ir-semantics.md, "Parsers" and "Header stacks"."""
 
 from __future__ import annotations
 

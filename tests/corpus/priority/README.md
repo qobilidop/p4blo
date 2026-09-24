@@ -38,7 +38,7 @@ frontend's mapping from p4c's convention onto the IR's.
 - **Canonical ternary values.** `0x1111 &&& 0xF` is stored as value `0x1`
   under mask `0xF` and `0x1181 &&& 0xF00F` as `0x1001` under `0xF00F`,
   since an entry value may set no bit outside its mask
-  ([semantics.md](../../../docs/semantics.md), "Tables"); the plain `0x1181`
+  ([semantics.md](../../../docs/ir-semantics.md), "Tables"); the plain `0x1181`
   is a full mask.
 - **`standard_meta.egress_spec`.** The source's `Meta_t` is empty; the
   program's has the one contract field the source writes, `egress_port`,

@@ -170,7 +170,8 @@ translates the STF dialect. The build script creates the pinned OCaml switch;
 
 ## Changing things
 
-**A closed behavior.** Write it in `docs/semantics.md` first, then
+**A closed behavior.** Write it in `docs/ir-semantics.md` first, or in
+`docs/arch-supports.md` when an architecture or extern family owns it, then
 implement it in `python/p4blo/interp/` and `ir/P4bloIR/` together, with a
 test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open

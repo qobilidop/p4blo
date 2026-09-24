@@ -1,6 +1,6 @@
 """Full CRC-16/ARC and CRC-32/ISO-HDLC over positive byte-aligned bits.
 
-See the Externs section of docs/semantics.md. The reflected byte-table implementation is
+See docs/arch-supports.md, "Extern families". The reflected byte-table implementation is
 independent of Lean's forward-polynomial, explicitly reflected bit fold.
 """
 

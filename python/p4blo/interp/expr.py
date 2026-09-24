@@ -1,6 +1,6 @@
 """Expressions and lvalues.
 
-`evaluate` has one function per `Expr` kind and implements docs/semantics.md,
+`evaluate` has one function per `Expr` kind and implements docs/ir-semantics.md,
 "Values". `read_lvalue` and `write_lvalue` implement "Headers" and "Header
 stacks": a read of an invalid header returns its stored fields, a read past a
 stack's end returns a zero invalid header, and a write past its end does
@@ -95,7 +95,7 @@ def zero_header(type_name: str, index: Index) -> Header:
 
 def header_from_bits(type_name: str, raw: int, index: Index) -> Header:
     """A valid header whose fields hold `raw`, first field in the high bits
-    (docs/semantics.md, "Extract sets the target valid")."""
+    (docs/ir-semantics.md, "Extract sets the target valid")."""
     fields: list[Value] = []
     remaining = width_of(pb.Type(header=type_name), index)
     for f in index.header_types[type_name].fields:
@@ -172,7 +172,7 @@ def evaluate(expr: pb.Expr, env: Env) -> Value:
 
 def field_of(container: Value, field: str, index: Index) -> Value:
     """Field `field` of a header or struct; an invalid header's stored
-    fields are returned as they are (docs/semantics.md, "Headers")."""
+    fields are returned as they are (docs/ir-semantics.md, "Headers")."""
     if not isinstance(container, Header | Struct):
         raise InterpError(f"{type(container).__name__} has no fields")
     return container.fields[index.field_index(container.type_name, field)]
@@ -184,7 +184,7 @@ def member(m: pb.Member, env: Env) -> Value:
 
 def element_of(stack: Stack, i: int, index: Index) -> Header:
     """`hs[i]`; past the end, a zero invalid header not stored anywhere
-    (docs/semantics.md, "Index out of range")."""
+    (docs/ir-semantics.md, "Index out of range")."""
     if i < len(stack.elements):
         return stack.elements[i]
     return zero_header(stack.header_type, index)
@@ -234,7 +234,7 @@ def binary(b: pb.Binary, env: Env) -> Value:
 
 
 def bits_binary(op: int, x: Bits, y: Bits) -> Value:
-    """The `bit<N>` operators of docs/semantics.md, "Values"."""
+    """The `bit<N>` operators of docs/ir-semantics.md, "Values"."""
     n = x.width
     match op:
         case pb.BINARY_OP_ADD:
@@ -275,7 +275,7 @@ def bits_binary(op: int, x: Bits, y: Bits) -> Value:
 
 def cast(c: pb.Cast, env: Env) -> Value:
     """Bits to bits truncates or zero-extends; `bool` and `bit<1>` map onto
-    each other (docs/semantics.md, "Casts")."""
+    each other (docs/ir-semantics.md, "Casts")."""
     operand = evaluate(c.operand, env)
     match c.to.WhichOneof("kind"):
         case "bits":
@@ -304,7 +304,7 @@ def mux(m: pb.Mux, env: Env) -> Value:
 
 def lookahead(la: pb.Lookahead, env: Env) -> Value:
     """Read `width(T)` bits without moving the cursor; a header result is
-    valid (docs/semantics.md, "lookahead")."""
+    valid (docs/ir-semantics.md, "lookahead")."""
     packet = env.require_packet()
     raw = packet.peek(width_of(la.type, env.index))
     return value_from_bits(la.type, raw, env.index)

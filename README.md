@@ -69,7 +69,9 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
 2. [`ir/P4bloIR/IR.lean`](ir/P4bloIR/IR.lean): the abstract IR;
    [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto) defines
    its wire syntax. Read them with
-   [`docs/semantics.md`](docs/semantics.md), the closed behaviors.
+   [`docs/ir-semantics.md`](docs/ir-semantics.md), the closed behaviors, and
+   [`docs/arch-supports.md`](docs/arch-supports.md), what the supplied
+   architectures and extern families decide.
 3. [`examples/router/`](examples/router/): a complete typed Python application
    with a runnable demonstration and explicit packet profile. The faithful
    upstream ports and focused semantic fixtures remain in
@@ -154,7 +156,7 @@ typechecked with p4c through Docker when it is available.
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
 | `tests/examples/` | application goldens, packet vectors and independent behavior checks |
 | `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
-| `docs/` | design, semantics, coverage, assurance, quickstart, workflows |
+| `docs/` | design, IR semantics, architecture support, coverage, assurance, quickstart, workflows |
 | `.agents/` | agent state: current status, decisions register, roadmap, live notes and skills; `AGENTS.md` is the entry point |
 | `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |
 

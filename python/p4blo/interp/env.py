@@ -2,7 +2,7 @@
 
 Names are block-scoped (proto header, "Names"), so each activation of a block
 has its own store of parameters and locals, created at their zero values
-(docs/semantics.md, "Uninitialized variables"). While an action runs, its
+(docs/ir-semantics.md, "Uninitialized variables"). While an action runs, its
 parameters are layered on top of the block's store, because an action body
 sees both. The packet, the emitter, the installed entries, the extern
 bindings and the parser's revisit bookkeeping belong to the run and are

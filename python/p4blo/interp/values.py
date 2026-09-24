@@ -1,7 +1,7 @@
 """Run-time values.
 
 A value carries everything the semantics needs: a `Bits` knows its width, a
-`Header` its validity, a `Stack` its next index. See docs/semantics.md,
+`Header` its validity, a `Stack` its next index. See docs/ir-semantics.md,
 "Values", for the rules these types implement.
 """
 
@@ -110,7 +110,7 @@ def copy(value: Value) -> Value:
 
 
 def equal(a: Value, b: Value) -> bool:
-    """Equality as docs/semantics.md defines it for every type."""
+    """Equality as docs/ir-semantics.md defines it for every type."""
     match a, b:
         case Header(_, va, fa), Header(_, vb, fb):
             if va != vb:

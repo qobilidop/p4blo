@@ -5,7 +5,7 @@ import P4bloIR.Widths
 # Expressions and lvalues
 
 Mirrors `python/p4blo/interp/expr.py`. `evaluate` has one case per `Expr`
-kind and implements docs/semantics.md, "Values". `readLValue` and
+kind and implements docs/ir-semantics.md, "Values". `readLValue` and
 `writeLValue` implement "Headers" and "Header stacks": a read of an invalid
 header returns its stored fields, a read past a stack's end returns a zero
 invalid header, and a write past its end does nothing. `hs.next` is only
@@ -59,7 +59,7 @@ def fieldFromBits (f : Field) (width chunk : Nat) : Value :=
   if f.type == .boolean then .bool (chunk == 1) else .bits (Bits.wrap width chunk)
 
 /-- A valid header of `typeName` whose fields hold `raw`, first field in
-the high bits (docs/semantics.md, "Extract sets the target valid"). -/
+the high bits (docs/ir-semantics.md, "Extract sets the target valid"). -/
 def headerFromBits (typeName : String) (raw : Nat) (index : Index) : Except String Value := do
   let some decl := index.headerTypes[typeName]? | throw s!"unknown header type '{typeName}'"
   let widths ← decl.fields.mapM fun f => widthOf f.type index
@@ -92,7 +92,7 @@ def valueFromBits (ty : Ty) (raw : Nat) (index : Index) : Except String Value :=
 -- ---------------------------------------------------------------------------
 
 /-- Field `field` of a header or struct; an invalid header's stored fields
-are returned as they are (docs/semantics.md, "Headers"). -/
+are returned as they are (docs/ir-semantics.md, "Headers"). -/
 def fieldOf (container : Value) (field : String) : M Value := do
   let (typeName, fields) ← match container with
     | .header t _ fields => pure (t, fields)
@@ -104,7 +104,7 @@ def fieldOf (container : Value) (field : String) : M Value := do
   | none => throwInterp s!"{typeName}.{field}"
 
 /-- `container` with `field` set to `value`; validity is untouched
-(docs/semantics.md, "Writing a field of an invalid header"). -/
+(docs/ir-semantics.md, "Writing a field of an invalid header"). -/
 def setField (container : Value) (field : String) (value : Value) : M Value := do
   let (typeName, fields, rebuild) ← match container with
     | .header t valid fields => pure (t, fields, fun fs => Value.header t valid fs)
@@ -114,7 +114,7 @@ def setField (container : Value) (field : String) (value : Value) : M Value := d
   pure (rebuild (fields.set i value))
 
 /-- `hs[i]`; past the end, a zero invalid header not stored anywhere
-(docs/semantics.md, "Index out of range"). -/
+(docs/ir-semantics.md, "Index out of range"). -/
 def elementOf (headerType : String) (elements : List Value) (i : Nat) : M Value := do
   match elements[i]? with
   | some h => pure h
@@ -124,7 +124,7 @@ def elementOf (headerType : String) (elements : List Value) (i : Nat) : M Value 
 -- Expressions
 -- ---------------------------------------------------------------------------
 
-/-- The `bit<N>` operators of docs/semantics.md, "Values": wrapping and
+/-- The `bit<N>` operators of docs/ir-semantics.md, "Values": wrapping and
 saturating arithmetic, bitwise operators, shifts that give `0` at the width
 or more, concatenation with the left operand high, unsigned comparison. -/
 def bitsBinary (op : BinaryOp) (x y : Bits) : M Value :=
@@ -148,7 +148,7 @@ def bitsBinary (op : BinaryOp) (x y : Bits) : M Value :=
   | .eq | .ne | .and | .or => throwInterp "binary operator is not a bits operator"
 
 /-- Bits to bits truncates or zero-extends; `bool` and `bit<1>` map onto
-each other (docs/semantics.md, "Casts"). -/
+each other (docs/ir-semantics.md, "Casts"). -/
 def castValue (to : Ty) (operand : Value) : M Value :=
   match to, operand with
   | .bits n, .bool b => pure (.bits (Bits.wrap n (if b then 1 else 0)))
@@ -157,7 +157,7 @@ def castValue (to : Ty) (operand : Value) : M Value :=
   | t, _ => throwInterp s!"no cast to {repr t}"
 
 /-- Read `width(T)` bits without moving the cursor; a header result is
-valid (docs/semantics.md, "lookahead"). -/
+valid (docs/ir-semantics.md, "lookahead"). -/
 def lookaheadValue (ty : Ty) : M Value := do
   let packet ← requirePacket
   let index ← getIndex
@@ -226,7 +226,7 @@ def evaluate : Expr → M Value
 -- ---------------------------------------------------------------------------
 
 /-- The value an lvalue currently denotes. `hs.next` is only ever the
-target of an `extract`, which handles it itself (docs/semantics.md,
+target of an `extract`, which handles it itself (docs/ir-semantics.md,
 "`hs.next`"); anywhere else it is invalid input. -/
 def readLValue : LValue → M Value
   | .var name => readVar name

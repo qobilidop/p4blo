@@ -53,8 +53,9 @@ an archived note is one command away:
    tested, what is out of scope.
 4. `docs/workflows.md`: the gates, where every external input is pinned,
    and how to make each kind of change.
-5. `docs/semantics.md` and `ir/proto/p4blo/v0/p4blo.proto` when touching
-   meaning or syntax; `docs/coverage.md` for what P4 constructs are in.
+5. `docs/ir-semantics.md` and `ir/proto/p4blo/v0/p4blo.proto` when touching
+   meaning or syntax, `docs/arch-supports.md` when touching what an
+   architecture or extern family decides; `docs/coverage.md` for what P4 constructs are in.
 
 ## Environment
 
@@ -105,7 +106,8 @@ so the required CI gate discovers them without a hand-maintained file list.
   `lean/` user package (`p4blo`, imports `P4blo`) imports it, never the
   reverse. Whole-program validity and codec proofs remain work in progress,
   not guarantees supplied by this organization. A closed behavior is
-  written in `docs/semantics.md` first and implemented in both
+  written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
+  architecture or extern family owns it) and implemented in both
   interpreters second.
 - **Corpus programs** live under `tests/corpus/<name>/` with their eDSL
   source, golden, README and STF vectors; `tests/test_corpus.py` picks

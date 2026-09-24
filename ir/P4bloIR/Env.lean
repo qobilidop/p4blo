@@ -8,7 +8,7 @@ import P4bloIR.Externs
 
 Mirrors `python/p4blo/interp/env.py`. Names are block-scoped (proto header,
 "Names"), so each activation of a block has its own `Frame` of parameters
-and locals, created at their zero values (docs/semantics.md, "Uninitialized
+and locals, created at their zero values (docs/ir-semantics.md, "Uninitialized
 variables"). While an action runs, its parameters are layered on top of the
 block's store, because an action body sees both. The packet, the emitter,
 the installed entries, the extern state and the parser's revisit
@@ -31,7 +31,7 @@ inductive Fault
   rejected. A validated program never produces one. -/
   | interp (msg : String)
   /-- `ParseError`: the parser rejects with this error name; `"NoError"`
-  for an explicit transition to `reject` (docs/semantics.md, "Parsers"). -/
+  for an explicit transition to `reject` (docs/ir-semantics.md, "Parsers"). -/
   | parse (error : String)
   deriving Repr, BEq, Inhabited
 

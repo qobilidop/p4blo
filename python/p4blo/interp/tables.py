@@ -1,6 +1,6 @@
 """Installed table entries and the match algorithm.
 
-See docs/semantics.md, "Tables": exact, longest prefix, and largest priority
+See docs/ir-semantics.md, "Tables": exact, longest prefix, and largest priority
 among ternary matches; const entries first; the default action on a miss.
 Tables are block-scoped, so they are addressed by `(block, table)` names.
 """
@@ -208,7 +208,7 @@ def check_key_value(key: pb.Key, kv: pb.KeyValue, width: int) -> None:
 
 def check_literal(literal: pb.Literal, type: pb.Type, what: str) -> None:
     """`literal` is a constant of `type`: the same kind, and for bits the
-    declared width and a decimal value that fits (docs/semantics.md,
+    declared width and a decimal value that fits (docs/ir-semantics.md,
     "Entries name their action")."""
     match literal.WhichOneof("value"), type.WhichOneof("kind"):
         case "bits", "bits":

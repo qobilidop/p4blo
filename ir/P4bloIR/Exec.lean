@@ -9,7 +9,7 @@ schema allows (proto, "Where each statement may appear"), so they live
 together; the parser's states are here too because a sub-parser call is a
 statement that walks states.
 
-Calls follow docs/semantics.md, "Controls": `in` arguments are copied in,
+Calls follow docs/ir-semantics.md, "Controls": `in` arguments are copied in,
 `out` parameters start at zero, `out` and `inout` arguments are copied back
 in parameter order. Every entry of a block or action binds by name in a
 fresh activation (see `Env`).
@@ -29,14 +29,14 @@ namespace P4bloIR
 -- ---------------------------------------------------------------------------
 
 /-- `setValid` and `setInvalid` touch only the validity bit
-(docs/semantics.md, "Headers"). -/
+(docs/ir-semantics.md, "Headers"). -/
 def setValidity (lv : LValue) (valid : Bool) : M Unit := do
   let (t, _, fields) ← expectHeader (← readLValue lv)
   writeLValue lv (.header t valid fields)
 
 /-- Shift elements up by `n`, discarding the last `n`; the first `n`
 become invalid zero headers; `nextIndex` grows by `n` up to the size
-(docs/semantics.md, "Header stacks"). `n` above the size acts as the size. -/
+(docs/ir-semantics.md, "Header stacks"). `n` above the size acts as the size. -/
 def pushFront (stack : Value) (n : Nat) (index : Index) : Except String Value := do
   let (headerType, elements, nextIndex) ← stack.expectStack
   let size := elements.length
@@ -69,7 +69,7 @@ def packetRead (n : Nat) : M Nat := do
 
 The target is resolved first, so a full stack raises `StackOutOfBounds`
 before the packet is looked at; a short packet raises `PacketTooShort` and
-consumes nothing (docs/semantics.md, "Parsers"). Into `hs.next`, the
+consumes nothing (docs/ir-semantics.md, "Parsers"). Into `hs.next`, the
 element at `nextIndex` is filled and `nextIndex` incremented. -/
 def extract (target : LValue) : M Unit := do
   let _ ← requirePacket
@@ -103,7 +103,7 @@ def verify (condition : Expr) (error : String) : M Unit := do
 
 mutual
 /-- Emit a header if valid, a struct's fields in order, or a stack's
-elements from 0 to S - 1 (docs/semantics.md, "Deparsers"). -/
+elements from 0 to S - 1 (docs/ir-semantics.md, "Deparsers"). -/
 def emitValue : Value → M Unit
   | .header _ valid fields => do
     if valid then
@@ -140,7 +140,7 @@ def keySetMatches (ks : KeySet) (key : Value) : M Bool :=
   | .dontCare => pure true
 
 /-- Evaluate the keys once; the first case whose every set matches wins;
-none raises `NoMatch` (docs/semantics.md, "select"). -/
+none raises `NoMatch` (docs/ir-semantics.md, "select"). -/
 def select (keys : List Expr) (cases : List SelectCase) : M Target := do
   let values ← keys.mapM evaluate
   for c in cases do
@@ -155,7 +155,7 @@ def transition : Transition → M Target
 
 /-- The no-consumption revisit rule: entering a state again with the
 cursor where it was at the last entry raises `ParserTimeout`
-(docs/semantics.md, "Parser loop bound"). -/
+(docs/ir-semantics.md, "Parser loop bound"). -/
 def enterState (state : State) : M Unit := do
   let key := ((← currentBlock).name, state.name)
   let cursor := (← requirePacket).cursor
@@ -195,7 +195,7 @@ def withAction (name : String) (params : Std.HashMap String Value) (body : List 
   pure inner
 
 /-- Call a method on an extern instance, then copy the `out` and `inout`
-results and the return value back (docs/semantics.md, "Externs"). -/
+results and the return value back (docs/ir-semantics.md, "Externs"). -/
 def callExtern (inst method : String) (args : List Arg) (result : Option LValue) :
     M Unit := do
   let index ← getIndex

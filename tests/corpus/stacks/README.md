@@ -7,7 +7,7 @@ one; the control then records which slots are valid in `h1.h2_valid_bits`,
 so that the vectors can read the stack's state off the output packet. The
 fifteen vectors were produced by BMv2 and reviewed by the p4c maintainers,
 and they exercise exactly the rules under "Header stacks" in
-[semantics.md](../../../docs/semantics.md): `push_front` and `pop_front` on
+[semantics.md](../../../docs/ir-semantics.md): `push_front` and `pop_front` on
 full, partial and empty stacks, holes left by `setValid` and what `emit`
 does with them, and `next` advancing through the parser and travelling
 with the stack through a sub-control's `inout` argument (the STF's "Note

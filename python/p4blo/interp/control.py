@@ -1,7 +1,7 @@
 """The control entry point: `H x M x Entries -> H x M`.
 
 Both parameters are `inout`: copied in, the body run once, copied out. The
-control has no other effect (docs/semantics.md, "Controls"); tables read
+control has no other effect (docs/ir-semantics.md, "Controls"); tables read
 the installed entries, and externs are the state the caller passed in.
 """
 

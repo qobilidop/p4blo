@@ -5,7 +5,7 @@ three block kinds where the schema allows (proto, "Where each statement may
 appear"), so they live together; the parser's states are here too because a
 sub-parser call is a statement that walks states.
 
-Calls follow docs/semantics.md, "Controls": `in` arguments are copied in,
+Calls follow docs/ir-semantics.md, "Controls": `in` arguments are copied in,
 `out` parameters start at zero, `out` and `inout` arguments are copied back
 in parameter order. Every entry of a block or action binds by name in a
 fresh activation (see `env.py`).
@@ -106,14 +106,14 @@ def conditional(i: pb.If, env: Env) -> None:
 
 def set_validity(lv: pb.LValue, valid: bool, env: Env) -> None:
     """`setValid` and `setInvalid` touch only the validity bit
-    (docs/semantics.md, "Headers")."""
+    (docs/ir-semantics.md, "Headers")."""
     expect_header(read_lvalue(lv, env)).valid = valid
 
 
 def push_front(stack: Stack, n: int, index: Index) -> None:
     """Shift elements up by `n`, discarding the last `n`; the first `n`
     become invalid zero headers; `nextIndex` grows by `n` up to the size
-    (docs/semantics.md, "Header stacks")."""
+    (docs/ir-semantics.md, "Header stacks")."""
     size = len(stack.elements)
     n = min(n, size)
     fresh = [zero_header(stack.header_type, index) for _ in range(n)]
@@ -157,7 +157,7 @@ def copy_back(params: Iterable[pb.Param], args: Iterable[pb.Arg], values: Env, e
 def call_block(cb: pb.CallBlock, env: Env) -> None:
     """Run a sub-parser or sub-control. If a sub-parser raises, its
     arguments are copied back first, so the outcome shows what it had
-    already written (docs/semantics.md, "Parsers")."""
+    already written (docs/ir-semantics.md, "Parsers")."""
     block = env.index.blocks[cb.block]
     if len(cb.args) != len(block.params):
         raise InterpError(f"block {block.name!r} takes {len(block.params)} arguments")
@@ -243,7 +243,7 @@ def call_extern(ce: pb.CallExtern, env: Env) -> None:
 
 def apply(ap: pb.Apply, env: Env) -> None:
     """Evaluate the keys once, look them up, run the chosen action, then
-    record `hit` (docs/semantics.md, "Tables")."""
+    record `hit` (docs/ir-semantics.md, "Tables")."""
     table = env.scope.tables[ap.table]
     keys = [expect_bits(evaluate(k.expr, env)) for k in table.keys]
     match = env.require_entries().lookup((env.block.name, table.name), keys)
@@ -263,7 +263,7 @@ def extract(ex: pb.Extract, env: Env) -> None:
 
     The target is resolved first, so a full stack raises `StackOutOfBounds`
     before the packet is looked at; a short packet raises `PacketTooShort`
-    and consumes nothing (docs/semantics.md, "Parsers"). `hs.next`, the
+    and consumes nothing (docs/ir-semantics.md, "Parsers"). `hs.next`, the
     one place the validator allows it, fills `hs[nextIndex]` and then
     increments `nextIndex` ("Header stacks").
     """
@@ -297,7 +297,7 @@ def verify(v: pb.Verify, env: Env) -> None:
 
 def emit_value(value: Value, emitter: Emitter) -> None:
     """Emit a header if valid, a struct's fields in order, or a stack's
-    elements from 0 to S - 1 (docs/semantics.md, "Deparsers")."""
+    elements from 0 to S - 1 (docs/ir-semantics.md, "Deparsers")."""
     match value:
         case Header():
             if value.valid:
@@ -339,7 +339,7 @@ def run_states(block: pb.Block, env: Env) -> None:
 def enter_state(state: pb.State, env: Env) -> None:
     """The no-consumption revisit rule: entering a state again with the
     cursor where it was at the last entry raises `ParserTimeout`
-    (docs/semantics.md, "Parser loop bound")."""
+    (docs/ir-semantics.md, "Parser loop bound")."""
     key = (env.block.name, state.name)
     cursor = env.require_packet().cursor
     if env.visits.get(key) == cursor:
@@ -359,7 +359,7 @@ def transition(t: pb.Transition, env: Env) -> pb.Target:
 
 def select(s: pb.Select, env: Env) -> pb.Target:
     """Evaluate the keys once; the first case whose every set matches wins;
-    none raises `NoMatch` (docs/semantics.md, "select")."""
+    none raises `NoMatch` (docs/ir-semantics.md, "select")."""
     keys = [evaluate(k, env) for k in s.keys]
     for case in s.cases:
         if all(key_set_matches(ks, k) for ks, k in zip(case.sets, keys, strict=True)):

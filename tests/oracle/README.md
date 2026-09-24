@@ -162,7 +162,7 @@ program, and passes everything else through verbatim:
   key and no ternary key, `run.py` writes the prefix length as the
   entry's priority, which is also what p4testgen's vectors do. This
   means the oracle confirms the forwarder's outputs but does not
-  independently check the longest-prefix rule of `docs/semantics.md`;
+  independently check the longest-prefix rule of `docs/ir-semantics.md`;
   the translation supplies it. BMv2, whose lpm tables are real, would.
 - **Action arguments are written in decimal** and key values at full
   width in hex, or binary where a ternary mask is not nibble-aligned;
@@ -230,7 +230,7 @@ about four seconds.
   a stateful program's register state can only be observed through
   packets.
 - **Ternary priorities.** The simulator takes the `add` priority with
-  larger winning, the convention `docs/semantics.md` fixed and the one
+  larger winning, the convention `docs/ir-semantics.md` fixed and the one
   p4c's runner has; unverified on a real ternary table until the acl
   program lands.
 - **Unchecked constructs.** Only what the forwarder uses has been run:

@@ -217,7 +217,7 @@ class Expr:
         """`self << other` or `self >> other`, typed as the left operand.
 
         The shift amount is any `bit<M>` and its width does not affect the
-        result (docs/semantics.md, "Shifts"), so an int amount takes the
+        result (docs/ir-semantics.md, "Shifts"), so an int amount takes the
         left operand's width when it fits, as any other int operand would,
         and otherwise the smallest width that holds it: `bit<2> x << 4` is
         the P4 expression it looks like, with `4` a `bit<3>`, and is 0.

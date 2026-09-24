@@ -6,7 +6,7 @@
 // width is resolved, every name is resolved, there are no generics, no
 // arbitrary-precision int, no implicit casts, no tuples. The meaning of a
 // program is given by the Lean interpreter under ir/, with the closed
-// behaviors listed in docs/semantics.md.
+// behaviors listed in docs/ir-semantics.md.
 //
 // Names. Declarations are referenced by name, as in ONNX, so that the text
 // format reads like the program it encodes. Names are resolved, never
@@ -32,7 +32,7 @@
 //   - tables with a ternary key require priorities; entries fit their keys;
 //   - block calls form no cycle; extern instances match their types;
 //   - the error list begins with core.p4's errors in the fixed order given
-//     in docs/semantics.md.
+//     in docs/ir-semantics.md.
 //
 // Field numbers 100 and above are reserved in every message for
 // non-semantic annotations such as source positions, so that a reader can

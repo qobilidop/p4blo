@@ -211,7 +211,7 @@ r.write((bit<32>) hdr.h.idx, x + hdr.h.val);
 r.read(hdr.h.got, (bit<32>) hdr.h.idx);
 ```
 
-p4blo's closed behavior (`docs/semantics.md`, "Externs";
+p4blo's closed behavior (`docs/arch-supports.md`, "Extern families";
 `python/p4blo/externs/register.py`; `ir/P4bloIR/Externs.lean`) is that a
 read at or beyond `size` **yields zero** and a write there is ignored.
 BMv2 agrees about the write and not about the read: in
@@ -236,6 +236,6 @@ out-of-bounds `register` access implementation-defined, and p4blo's
 choice is a closed behavior written down and implemented twice. What the
 oracle does correct is `tests/corpus/register_bounds/README.md`, which says
 the vectors assert "p4blo's, which is BMv2's": they are not BMv2's. That
-file and `docs/semantics.md` are outside this directory's scope; the
+file and `docs/ir-semantics.md` are outside this directory's scope; the
 divergence is carried here and in `tests/test_oracle_bmv2.py` as a
 strict `xfail`, so the day either side changes, the test says so.

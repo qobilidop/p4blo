@@ -6,7 +6,7 @@ import P4bloIR.Value
 
 The Lean side of the corpus externs, pinned to `python/p4blo/externs/` by
 vectors (docs/design.md, "Externs"). An extern is state owned by the caller
-(docs/semantics.md, "Externs"): `Externs` holds one `ExternState` per
+(docs/ir-semantics.md, "Externs"): `Externs` holds one `ExternState` per
 instance, every call returns the state after it, and the caller threads it
 through the three block runs and across packets.
 

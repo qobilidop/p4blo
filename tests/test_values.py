@@ -1,4 +1,4 @@
-"""Run-time values: zero, copy and equality per docs/semantics.md, "Values"."""
+"""Run-time values: zero, copy and equality per docs/ir-semantics.md, "Values"."""
 
 from __future__ import annotations
 

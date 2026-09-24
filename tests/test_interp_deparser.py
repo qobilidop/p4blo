@@ -1,5 +1,5 @@
 """Deparsers: emit of headers, structs and stacks, and bit padding, per
-docs/semantics.md, "Deparsers"."""
+docs/ir-semantics.md, "Deparsers"."""
 
 from __future__ import annotations
 

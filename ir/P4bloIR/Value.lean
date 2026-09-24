@@ -5,7 +5,7 @@ import P4bloIR.Index
 
 Mirrors `python/p4blo/interp/values.py`. A value carries everything the
 semantics needs: a `Bits` knows its width, a header its validity, a stack
-its next index (docs/semantics.md, "Values"). Values are immutable, so the
+its next index (docs/ir-semantics.md, "Values"). Values are immutable, so the
 Python `copy` is the identity here and is not written.
 -/
 
@@ -15,7 +15,7 @@ namespace P4bloIR
 -- Bits
 -- ---------------------------------------------------------------------------
 
-/-- An unsigned value of `width` bits (docs/semantics.md, "Values"). The
+/-- An unsigned value of `width` bits (docs/ir-semantics.md, "Values"). The
 invariant `value < 2^width` is a field, so it holds by construction; every
 arithmetic result goes through `Bits.wrap`. -/
 structure Bits where
@@ -130,7 +130,7 @@ def zeroWith (index : Index) : Nat → Ty → Except String Value
 
 /-- The initial value of a type: zero bits, `false`, member 0, `NoError`,
 invalid headers with zero fields, and stacks with `nextIndex` 0
-(docs/semantics.md, "Uninitialized variables"). -/
+(docs/ir-semantics.md, "Uninitialized variables"). -/
 def zero (ty : Ty) (index : Index) : Except String Value :=
   zeroWith index (index.headerTypes.size + index.structTypes.size + 2) ty
 
@@ -143,7 +143,7 @@ def zeroHeader (typeName : String) (index : Index) : Except String Value :=
 -- ---------------------------------------------------------------------------
 
 mutual
-/-- `==` as docs/semantics.md, "Comparison", defines it: by value on bits and
+/-- `==` as docs/ir-semantics.md, "Comparison", defines it: by value on bits and
 booleans, by member on enums and errors, on headers by validity and then
 fieldwise (two invalid headers are equal whatever their fields), on structs
 fieldwise, on stacks elementwise. -/

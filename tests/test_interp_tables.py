@@ -1,5 +1,5 @@
 """Installed entries: matching, precedence, and installation errors, per
-docs/semantics.md, "Tables"."""
+docs/ir-semantics.md, "Tables"."""
 
 from __future__ import annotations
 

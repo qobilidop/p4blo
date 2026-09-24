@@ -11,7 +11,7 @@
 #   4 bytes                         45 00 00 1a, the start of an IPv4 header
 #
 # In parse_ipv4 the extract of hdr.ipv4 needs 160 bits and 32 remain.
-# docs/semantics.md, "Parsers": the extract raises PacketTooShort, consumes
+# docs/ir-semantics.md, "Parsers": the extract raises PacketTooShort, consumes
 # nothing, and leaves the target as it was, which is invalid. The parser
 # stops there with 14 bytes consumed and the error set; hdr.ethernet keeps
 # what parse_ethernet put in it.

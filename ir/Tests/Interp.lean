@@ -1,7 +1,7 @@
 import Tests.Check
 
 /-!
-Unit tests for the interpreter's primitives, per docs/semantics.md: bits
+Unit tests for the interpreter's primitives, per docs/ir-semantics.md: bits
 arithmetic, casts, slices, concatenation, comparison, header stacks, the
 parser (extract, select, errors, the revisit rule, sub-parsers), the
 deparser, tables and the extern models. The cases mirror the Python

@@ -2,7 +2,7 @@
 # The packet under a parser and the buffer of a deparser
 
 Mirrors `python/p4blo/interp/packet.py`. Both work in bits, most significant
-first, because headers need not be byte aligned (docs/semantics.md,
+first, because headers need not be byte aligned (docs/ir-semantics.md,
 "Parsers" and "Deparsers"). Neither raises: a read past the end returns
 `none`, and the interpreter turns that into `PacketTooShort`.
 -/
@@ -47,7 +47,7 @@ def read? (p : Packet) (n : Nat) : Option (Nat × Packet) := do
   let v ← p.peek? n
   pure (v, { p with cursor := p.cursor + n })
 
-/-- The cursor moved by `n` bits; `none` past the end (docs/semantics.md,
+/-- The cursor moved by `n` bits; `none` past the end (docs/ir-semantics.md,
 "advance"). -/
 def advance? (p : Packet) (n : Nat) : Option Packet :=
   if n > p.remainingBits then none else some { p with cursor := p.cursor + n }
@@ -67,7 +67,7 @@ def write (e : Emitter) (width value : Nat) : Emitter :=
   { value := (e.value <<< width) ||| value, width := e.width + width }
 
 /-- Every bit written so far, then zero bits up to a byte boundary
-(docs/semantics.md, "Bit alignment"). -/
+(docs/ir-semantics.md, "Bit alignment"). -/
 def toBytes (e : Emitter) : ByteArray :=
   let padding := (8 - e.width % 8) % 8
   natToBytes (e.value <<< padding) ((e.width + padding) / 8)

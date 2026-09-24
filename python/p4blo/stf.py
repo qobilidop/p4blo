@@ -25,7 +25,7 @@ component is matched, against the unqualified name in the program.
 the program's key expression reads: `hdr.ipv4.dstAddr`.
 
 `<priority>` is required on a table with a ternary key and rejected on one
-without. Larger wins, as docs/semantics.md says.
+without. Larger wins, as docs/ir-semantics.md says.
 
 `<port>` is a decimal number that fits `bit<9>`, the width of a port in the
 metadata contract; whether it is a port of the architecture replaying the
@@ -552,7 +552,7 @@ def _key_value(key: pb.Key, width: int, written: Key, line: int) -> pb.KeyValue:
             prefix = width if written.prefix_len is None else written.prefix_len
             if prefix > width:
                 raise StfError(f"line {line}: prefix /{prefix} exceeds the {width}-bit key")
-            # Entries are canonical (docs/semantics.md, "Tables"): a set bit
+            # Entries are canonical (docs/ir-semantics.md, "Tables"): a set bit
             # below the prefix would be rejected at installation, where the
             # line is gone, so it is rejected here.
             if written.value & ((1 << (width - prefix)) - 1):

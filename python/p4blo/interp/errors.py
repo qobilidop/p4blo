@@ -1,7 +1,7 @@
 """Parse errors, raised to stop a parser run.
 
 A parser stops at the first raised error with the headers and metadata as
-they were (docs/semantics.md, "Parsers"). Inside the interpreter that is an
+they were (docs/ir-semantics.md, "Parsers"). Inside the interpreter that is an
 exception; `run_parser` catches it and reports the error in the outcome, so
 it never escapes to a caller.
 """

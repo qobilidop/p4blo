@@ -5,7 +5,7 @@
 #   10.0.0.0/16 -> port 1, dstAddr 00:00:00:00:ff:10
 #   10.0.2.0/24 -> port 2, dstAddr 00:00:00:00:ff:18
 #
-# docs/semantics.md, "Tables": among the entries whose prefix covers the key
+# docs/ir-semantics.md, "Tables": among the entries whose prefix covers the key
 # value, the longest prefix wins. The order the entries are installed in
 # must not matter, so the /16 is installed first and still loses.
 #

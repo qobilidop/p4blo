@@ -8,7 +8,9 @@ whose purpose is to make the sentence concrete enough to argue about, so
 that a serious version can later be proposed to the P4 community as an
 RFC rather than built alone. This document records what p4blo is, what
 it claims, how it is built and what is out of scope. The closed behaviors
-are in [semantics.md](semantics.md), the construct table in
+are in [ir-semantics.md](ir-semantics.md), what the supplied architectures
+and extern families decide in [arch-supports.md](arch-supports.md), the
+construct table in
 [coverage.md](coverage.md), and what is proved, tested and checked
 against which oracle in [assurance.md](assurance.md).
 
@@ -217,8 +219,8 @@ to load on any mismatch. Every extern a corpus program uses ships twice,
 a Python implementation and a Lean model, pinned to each other by
 vectors and by independent known answers; that pair is corpus material,
 not spec material. The builtin families are register, counter,
-checksum16 and the byte-aligned CRC16 and CRC32 services whose contracts
-are in semantics.md.
+checksum16 and the byte-aligned CRC16 and CRC32 services, specified in
+[arch-supports.md](arch-supports.md#extern-families).
 
 ### Architectures
 
@@ -233,6 +235,8 @@ the program declares it, as v1model does; the payload is the bytes after
 the ones the parser consumed, and a parse that ends off a byte boundary
 drops the packet with a diagnostic; the output packet is the deparser's
 bytes followed by the payload. Lean's `Switch` follows the same rules.
+The contract, the rules, each supplied architecture, the extern families
+and the v1model shim are specified in [arch-supports.md](arch-supports.md).
 
 ### Python eDSL
 
@@ -419,7 +423,8 @@ digests and the GitHub Actions, is pinned and listed in
 ```
 p4blo/
   README.md, AGENTS.md              the front door; the agents' entry point
-  docs/                             design, semantics, coverage, assurance,
+  docs/                             design, ir-semantics, arch-supports,
+                                    coverage, assurance,
                                     quickstart, workflows
   .agents/                          agent working state: status, decisions, roadmap
   ir/                               Lake package p4blo-ir (P4bloIR)

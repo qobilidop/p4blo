@@ -32,7 +32,7 @@ eDSL" section in the register.
   table is an error; lpm key without `/n` is full-width). Restored.
 - **M5.** `.agents/notes/parked-proofs.md` cited `forwarder-apply.md` "on
   main" after its deletion. Now names the archive command.
-- **M6.** Stale backticked paths in `docs/semantics.md` and
+- **M6.** Stale backticked paths in `docs/ir-semantics.md` and
   `docs/milestone-1.md`; deleted reviews named without the archived marker
   in `docs/milestone-1.md`, `docs/website-design.md`, `docs/writeup.md`,
   `docs/evidence/milestone-adversarial.md`; stale link text in

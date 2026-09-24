@@ -1,5 +1,5 @@
 """Controls: statements, calls of every kind, and the header and stack
-rules of docs/semantics.md, "Headers", "Header stacks" and "Controls"."""
+rules of docs/ir-semantics.md, "Headers", "Header stacks" and "Controls"."""
 
 from __future__ import annotations
 

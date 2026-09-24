@@ -37,7 +37,7 @@ VECTORS = sorted([*CORPUS.glob("*/*.stf"), *(ROOT / "tests/examples").glob("*/*.
 # rather than left to rot.
 KNOWN_DIVERGENCES = {
     "register_bounds/bounds.stf": (
-        "an out-of-range register read yields zero in p4blo (docs/semantics.md, "
+        "an out-of-range register read yields zero in p4blo (docs/arch-supports.md, "
         '"Externs") and leaves the destination field untouched in BMv2 '
         "(targets/simple_switch/primitives.cpp, `register_read`); see "
         "tests/oracle/bmv2/README.md"

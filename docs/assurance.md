@@ -30,7 +30,7 @@ Python runtimes, compilers, JSON parsers or protobuf implementations.
 The profile is the current v0 IR, not all P4 and not arbitrary hostile
 input. Lean's [abstract syntax](../ir/P4bloIR/IR.lean) and executable
 semantics are authoritative; the [protobuf schema](../ir/proto/p4blo/v0/p4blo.proto)
-defines transport syntax; [semantics.md](semantics.md) records the closed
+defines transport syntax; [semantics.md](ir-semantics.md) records the closed
 behaviors; [coverage.md](coverage.md) walks P4 construct by construct.
 
 ### Surface

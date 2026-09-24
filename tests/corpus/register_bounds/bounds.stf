@@ -1,6 +1,6 @@
 # register_bounds: reads and writes beyond the end of a register.
 #
-# Our own vectors, for the closed behavior of docs/semantics.md and
+# Our own vectors, for the closed behavior of docs/arch-supports.md and
 # python/p4blo/externs/register.py: a read at or beyond `size` yields zero
 # and a write there is ignored. The register has 4 cells, bit<8> each, and
 # the file replays on a fresh load, so r is all zero at the first packet

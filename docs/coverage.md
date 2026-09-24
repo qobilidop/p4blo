@@ -24,7 +24,7 @@ Each row has one of these statuses.
 - **elaborated**: the frontend rewrites the construct into in-constructs
   and its meaning survives. The column names the rewrite, and every
   rewrite here is one the project has performed or ruled on: an entry
-  in `.agents/decisions.md`, a rule in [semantics.md](semantics.md)
+  in `.agents/decisions.md`, a rule in [ir-semantics.md](ir-semantics.md)
   or the schema, or an elaboration a corpus README records.
 - **excluded**: nothing in the IR represents the construct. The
   category is the design's ([design.md](design.md#scope)):
@@ -71,7 +71,7 @@ Productions from `2.2.1-type.watsup`.
 | `headerTypeIR` | in | `HeaderType` | Fields are bits or bool. |
 | `headerUnionTypeIR` | excluded, by scope | none | Design. |
 | `simpleEnumTypeIR` | in | `EnumType` | |
-| `serializableEnumTypeIR` (with `valueFieldIR`) | elaborated | `bit<N>` and `BitsLiteral` | Schema: "Serializable enums are elaborated to bits and literals." Casts among them become the IR's three casts (semantics.md, Casts). |
+| `serializableEnumTypeIR` (with `valueFieldIR`) | elaborated | `bit<N>` and `BitsLiteral` | Schema: "Serializable enums are elaborated to bits and literals." Casts among them become the IR's three casts (ir-semantics.md, Casts). |
 | `externObjectTypeIR` | in | `ExternType` | Monomorphic. Decision: one `ExternType` per instantiation (`register`, `register.16`); `externMethodTypeDefEnv` is `Method`. |
 | `parserObjectTypeIR`, `controlObjectTypeIR` | in | `Block.kind` and `Block.params` | A P4 deparser is a control; here it is a third kind with its own statement set. |
 | `packageObjectTypeIR` | excluded, by thesis | `Export` names the role | Design: the architecture is outside; SpecTec's `7-instantiation` and `9-arch`. |
@@ -101,22 +101,22 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `defaultExpressionIR` (`...`) | excluded, by elaboration | none | Design: "other sugar the frontend removes." Precedent: p4c `DefaultValues`. |
 | `unaryExpressionIR` with `!`, `~`, `-` | in | `Unary` NOT, COMPLEMENT, NEGATE | Negation wraps modulo `2^N`. |
 | `unaryExpressionIR` with `+` | excluded, by elaboration | the operand | Identity. |
-| `binaryExpressionIR` with `+ - * \|+\| \|-\| & \| ^ << >> ++ == != < <= > >= && \|\|` | in | `Binary` | semantics.md: wrapping, saturating, shift by width or more, unsigned comparison, equality on every type, short-circuit. |
-| `binaryExpressionIR` with `/`, `%` | elaborated | folded | semantics.md: P4 defines them only on compile-time constants, which the frontend folds. |
+| `binaryExpressionIR` with `+ - * \|+\| \|-\| & \| ^ << >> ++ == != < <= > >= && \|\|` | in | `Binary` | ir-semantics.md: wrapping, saturating, shift by width or more, unsigned comparison, equality on every type, short-circuit. |
+| `binaryExpressionIR` with `/`, `%` | elaborated | folded | ir-semantics.md: P4 defines them only on compile-time constants, which the frontend folds. |
 | `ternaryExpressionIR` (`e ? e : e`) | in | `Mux` | Same type on both branches. |
-| `castExpressionIR` | in | `Cast` | Three pairs: bits to bits, bool to `bit<1>`, `bit<1>` to bool. Every other P4 cast is elaborated into these (semantics.md, Casts). Implicit casts are already explicit in the IL (`$apply_cast`), so they have no row. |
+| `castExpressionIR` | in | `Cast` | Three pairs: bits to bits, bool to `bit<1>`, `bit<1>` to bool. Every other P4 cast is elaborated into these (ir-semantics.md, Casts). Implicit casts are already explicit in the IL (`$apply_cast`), so they have no row. |
 | `invalidHeaderExpressionIR` (`{#}`) | excluded, by elaboration | none | Design: other sugar. Precedent: p4c `EliminateInvalidHeaders`, into `SetInvalid`. |
 | `sequenceExpressionIR` as an extern argument | elaborated | concatenation of the fields, in order | Forwarder and csum16 READMEs: `update_checksum`'s field list becomes one `bit<144>` or `bit<16>` argument. |
 | `sequenceExpressionIR`, `recordExpressionIR` elsewhere (with `namedExpressionIR`, `...`) | excluded, by elaboration | none | Design: no tuples, other sugar. Precedents: p4c `EliminateTuples`, `StructInitializers`. |
 | `errorAccessExpressionIR` (`error.X`) | in | `Literal.error` | |
-| `memberAccessExpressionIR`: field of a header or struct | in | `Member` | Reading a field of an invalid header is closed in semantics.md. |
+| `memberAccessExpressionIR`: field of a header or struct | in | `Member` | Reading a field of an invalid header is closed in ir-semantics.md. |
 | `memberAccessExpressionIR`: `TYPE name . member` (enum member) | in | `Literal.enum_member` | |
-| `memberAccessExpressionIR`: `hs.lastIndex` | in | `LastIndex` | `bit<32>`; `nextIndex == 0` closed in semantics.md. |
+| `memberAccessExpressionIR`: `hs.lastIndex` | in | `LastIndex` | `bit<32>`; `nextIndex == 0` closed in ir-semantics.md. |
 | `memberAccessExpressionIR`: `hs.last` | elaborated | `Index(hs, LastIndex(hs))` | Stacks and subparser_stack READMEs: how the language defines it. |
 | `memberAccessExpressionIR`: `hs.next` | in | `LValue.next` | Parser only, as the target of an extract. |
 | `memberAccessExpressionIR`: `hs.size` | excluded, by elaboration | the constant `StackType.size` | Compile-time known. |
 | `memberAccessExpressionIR`: `t.apply().hit`, `.miss`, `.action_run` | see the table section | | |
-| `indexAccessExpressionIR` (`hs[e]`) | in | `Index` | Run-time index; out of range closed in semantics.md. |
+| `indexAccessExpressionIR` (`hs[e]`) | in | `Index` | Run-time index; out of range closed in ir-semantics.md. |
 | `sliceAccessExpressionIR` with `sliceop` `:` | in | `Slice{hi, lo}` | Bounds are constants; the validator checks `lo <= hi < N`. |
 | `sliceAccessExpressionIR` with `sliceop` `+:` | excluded, by elaboration | `[lo + w - 1 : lo]` | P4 1.2.5's `e[lo +: w]`; both operands are compile-time known. |
 | `callExpressionIR`: extern method in expression position | elaborated | `CallExtern.result` into a fresh local | Schema: "The IR has no discarded results; the frontend introduces a local." |
@@ -129,7 +129,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `callableTargetIR`: `TYPE name . method` (static extern method) | excluded, by scope | none | Nothing rules; the IR calls methods on instances only. |
 | `callExpressionIR`: `< typeArgumentListIR >` on a call | excluded, by elaboration | none | Design: no generics. |
 | `parenthesizedExpressionIR` | excluded, by elaboration | none | A tree has no parentheses. |
-| `argumentIR`: positional `e` | in | `Arg.expr` for `in`; `Arg.lvalue` for `out` and `inout` | Copy-in, copy-out in parameter order; aliasing is a validator error (semantics.md, Block calls). |
+| `argumentIR`: positional `e` | in | `Arg.expr` for `in`; `Arg.lvalue` for `out` and `inout` | Copy-in, copy-out in parameter order; aliasing is a validator error (ir-semantics.md, Block calls). |
 | `argumentIR`: `name = e`, `name = _`, `_` | excluded, by elaboration | positional order; a `_` out-argument to a fresh local | Design: other sugar. Precedents: p4c `OrderArguments`, `RemoveDontcareArgs`. |
 | `lvalueIR`: `referenceExpressionIR` | in | `LValue.var` | |
 | `lvalueIR`: `typedLvalueIR . name` | in | `LMember` | |
@@ -137,7 +137,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `lvalueIR`: `typedLvalueIR [ e sliceop e ]` | elaborated | read-modify-write of the whole field, `f = (f & ~mask) \| (v << lo)` | Decision: slice lvalues are elaborated, not added. Stacks README gives the formula. |
 | `lvalueIR`: `( typedLvalueIR )`; `lvalueNoteIR` | excluded, by elaboration | none | As for expressions. |
 | `simpleKeysetExpressionIR`: `e` | in | `KeySet.exact` in a select; `KeyValue.exact` in an entry | A constant of the key's type. |
-| `simpleKeysetExpressionIR`: `e &&& e` | in | `MaskedValue` in a select; `TernaryValue` in an entry | Entry values are canonical (semantics.md, Key expressions). |
+| `simpleKeysetExpressionIR`: `e &&& e` | in | `MaskedValue` in a select; `TernaryValue` in an entry | Entry values are canonical (ir-semantics.md, Key expressions). |
 | `simpleKeysetExpressionIR`: `e .. e` in a select | in | `RangeValue` | Closed range. |
 | `simpleKeysetExpressionIR`: `e .. e` in a table entry | excluded, by thesis | none | Needs the `range` match kind; see the table section. |
 | `simpleKeysetExpressionIR`: `DEFAULT`, `_` | in | `DontCare` in a select; a full-width wildcard in an entry | |
@@ -148,7 +148,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | IL construct (production) | Status | p4blo form or elaboration | Note |
 |---|---|---|---|
 | `emptyStatementIR` | excluded, by elaboration | none | |
-| `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (semantics.md, Headers). |
+| `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Headers). |
 | `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | excluded, by elaboration | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. |
 | `callStatementIR`: action call from a control body | in | `CallAction` | |
 | `callStatementIR`: extern method on an instance | in | `CallExtern` | `result` present exactly when the method returns. |
@@ -172,7 +172,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `switchStatementIR` on `t.apply().action_run` (with `switchLabelIR`, `switchCaseIR`) | elaborated | each action records which one ran in a local; an `If` chain dispatches | Implemented by the acl program; its README describes the exact action marker and dispatch. |
 | `switchStatementIR` on an expression | excluded, by elaboration | an `If` chain | Design: other sugar. Precedent: p4c `SimplifySwitch`. |
 | `constantDeclarationIR` inside a block | elaborated | folded into literals | Forwarder README (`TYPE_IPV4`); stacks README (`MAX_H2_HEADERS`). |
-| `variableDeclarationIR` | in | `Var` in `Block.locals` | An initializer becomes an `Assign` where the declaration stood (stacks README: `op1 = hdr.h1.op1`). Reading before writing gives zero (semantics.md). |
+| `variableDeclarationIR` | in | `Var` in `Block.locals` | An initializer becomes an `Assign` where the declaration stood (stacks README: `op1 = hdr.h1.op1`). Reading before writing gives zero (ir-semantics.md). |
 
 ## Parser declarations and states
 
@@ -190,37 +190,37 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `parserBlockStatementIR` | elaborated | flattened | As `blockStatementIR`. |
 | `parserConditionalStatementIR` | in | `If` in a state body | |
 | `parserStatementIR`: the other alternatives | see the statements section | | Assignment, calls, direct application. |
-| `transitionStatementIR` with `stateExpressionIR` `nameIR` | in | `Transition.direct` to `Target.state`, `accept` or `reject` | Explicit `reject` rejects with `NoError` (semantics.md). |
+| `transitionStatementIR` with `stateExpressionIR` `nameIR` | in | `Transition.direct` to `Target.state`, `accept` or `reject` | Explicit `reject` rejects with `NoError` (ir-semantics.md). |
 | `selectExpressionIR` | in | `Select` | Keys evaluated once; first matching case wins; no match rejects with `NoMatch`. |
 | `selectCaseIR` | in | `SelectCase` | Keysets are constants of the key types. |
 | `parserTypeDeclarationIR` | excluded, by thesis | `Export` names the role; `BlockKind` fixes the signature | The architecture's interface type. |
-| parser loops (no production; a state graph with a cycle) | in | the state graph | Bounded by the no-consumption revisit rule (semantics.md, Parser loop bound). |
+| parser loops (no production; a state graph with a cycle) | in | the state graph | Bounded by the no-consumption revisit rule (ir-semantics.md, Parser loop bound). |
 
 ## Table declarations
 
 | IL construct (production) | Status | p4blo form or elaboration | Note |
 |---|---|---|---|
 | `tableDeclarationIR` | in | `Table` | Its `typeIR` is the `TABLE` object type, a typing note with no residue. |
-| `tableKeysPropertyIR`, `tableKeyIR`: the expression | in | `Key.expr` | Keys are bits. A bool key is cast to `bit<1>`; a plain enum key is its member index in `bit<32>` (semantics.md, Keys are bits; schema `Key`). |
+| `tableKeysPropertyIR`, `tableKeyIR`: the expression | in | `Key.expr` | Keys are bits. A bool key is cast to `bit<1>`; a plain enum key is its member index in `bit<32>` (ir-semantics.md, Keys are bits; schema `Key`). |
 | `tableKeyIR`: the key name (`# nameIR`) | in | `Key.name` | Decision: per-table action copies set `Key.name` to p4c's key names. |
-| `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in semantics.md, Tables. |
+| `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in ir-semantics.md, Tables. |
 | `tableKeyIR`: match kind `selector` | excluded, by thesis | none | Action selectors and profiles. |
 | `tableKeyIR`: match kinds `range`, `optional` | excluded, by thesis | none | Declared by v1model and PSA, not core.p4. Nothing rules. |
 | `tableActionsPropertyIR`, `tableActionIR`: the action reference | in | `Table.actions` | Names of actions of the block. |
 | `tableActionIR`: bound arguments in `tableActionReferenceIR` | elaborated | one action copy per table, the bound lvalue substituted | Decision: per-table action copies (`setbyte`, `setbyte_1`, ...). |
 | `controlPlaneNameIR` (`@name` on an action reference) | elaborated | the copy's name | Same decision: the corpus STF names the elaborated actions directly. |
 | `tableActionIR` note `# ( parameterListIR , parameterListIR )` | excluded, by elaboration | none | A typing note splitting bound from control-plane parameters. |
-| `tableDefaultActionPropertyIR` | in | `Table.default_action`, `Table.const_default_action` | Absent means `NoAction` (semantics.md, Table miss). `NoAction` is declared with an empty body (forwarder README). |
+| `tableDefaultActionPropertyIR` | in | `Table.default_action`, `Table.const_default_action` | Absent means `NoAction` (ir-semantics.md, Table miss). `NoAction` is declared with an empty body (forwarder README). |
 | `tableEntriesPropertyIR` with `const` | in | `Table.const_entries` | Installed before any host entry. |
 | `tableEntriesPropertyIR` without `const`, and a per-entry `constIR` | excluded, by scope | none | P4 1.2.5's mutable initial entries. The IR has only const entries; `TableEntries` on the host side could carry them. The printer decision on ternary entries concerns the oracle only. |
 | `tableEntryPriorityIR` (`priority = n`) | in | `Entry.priority`, larger wins | Decision: entry priority. Const entries' smaller-wins `@priority` and list order are renumbered. |
-| `tableEntryIR`: the keyset | in | `KeyValue` exact, `LpmValue`, `TernaryValue` | Canonical values; `_` is a full-width wildcard (semantics.md, Key expressions). |
+| `tableEntryIR`: the keyset | in | `KeyValue` exact, `LpmValue`, `TernaryValue` | Canonical values; `_` is a full-width wildcard (ir-semantics.md, Key expressions). |
 | `tableEntryIR`: `tableActionReferenceIR` with arguments | in | `ActionCall` with literal args | Action data of the declared widths. |
 | `tableCustomPropertyIR`: `size` | in | `Table.size`, informative | Decision: no meaning; kept for the roundtrip. |
 | `tableCustomPropertyIR`: `largest_priority_wins`, `priority_delta` | elaborated | the frontend's priority numbering | Decision: larger wins everywhere in the IR; the frontend assigns the numbers, so the direction and the spacing are consumed. |
 | `tableCustomPropertyIR`: `implementation`, `counters`, `meters`, `psa_*` and other architecture properties | excluded, by thesis | none | Design: action profiles and selectors, direct counters and meters. |
 | `tableMetadataStructTypeIR.HIT` | in | `Apply.hit` | |
-| `tableMetadataStructTypeIR.MISS` | elaborated | `not hit` | semantics.md defines `hit` as false on a miss, including a miss that ran the default action. |
+| `tableMetadataStructTypeIR.MISS` | elaborated | `not hit` | ir-semantics.md defines `hit` as false on a miss, including a miss that ran the default action. |
 | `tableMetadataStructTypeIR.ACTION_RUN` (`tableMetadataEnumTypeIR`) | elaborated | with `switchStatementIR` on `action_run` | Design: out by elaboration. |
 
 ## Declarations and instantiation
@@ -267,7 +267,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `namedValueIR`, `namedValueListIR` | elaborated | with serializable enums | |
 | `namedExpressionIR`, `namedExpressionListIR` | excluded, by elaboration | with record expressions | |
 | `ctk` (`2.7-compile-time-known.watsup`) | excluded, by elaboration | none | A typing fact; the validator recomputes what it needs. |
-| runtime `value` (`2.1.1-value.watsup`): the header validity bit and the stack `nat` next index | in | the run-time model of semantics.md | Not syntax; listed because the IL's values carry them and every closed behavior on headers and stacks refers to them. |
+| runtime `value` (`2.1.1-value.watsup`): the header validity bit and the stack `nat` next index | in | the run-time model of ir-semantics.md | Not syntax; listed because the IL's values carry them and every closed behavior on headers and stacks refers to them. |
 
 p4blo constructs with no IL production, for completeness: `Export`,
 `Program.headers`, `Program.metadata` (the metadata contract),

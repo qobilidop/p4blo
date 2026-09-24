@@ -1,7 +1,7 @@
 """The packet a parser reads and the buffer a deparser writes.
 
 Both work in bits, most significant first, because headers need not be byte
-aligned (docs/semantics.md, "Parsers" and "Deparsers").
+aligned (docs/ir-semantics.md, "Parsers" and "Deparsers").
 """
 
 from __future__ import annotations

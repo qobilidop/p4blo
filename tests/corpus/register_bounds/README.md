@@ -3,7 +3,7 @@
 Our own program: a `register<bit<8>>(4)` indexed by an 8-bit header
 field, so that most packets name a cell beyond the end. It exists for
 one closed behavior, "a read at or beyond `size` yields zero and a
-write there is ignored" ([semantics.md](../../../docs/semantics.md),
+write there is ignored" ([semantics.md](../../../docs/ir-semantics.md),
 "Externs"; `python/p4blo/externs/register.py`;
 `ir/P4bloIR/Externs.lean`), which the [stateful](../stateful/README.md)
 program cannot reach: its register has 256 cells and its index is an
@@ -50,5 +50,5 @@ destination untouched rather than zeroing it, so a field keeps whatever
 the parser put there. Two of these vectors therefore diverge on BMv2 and
 are carried as a known divergence in `tests/test_oracle_bmv2.py`. P4
 leaves an out-of-range register access implementation-defined, p4blo's
-choice is written in `docs/semantics.md` and implemented twice, and the
+choice is written in `docs/ir-semantics.md` and implemented twice, and the
 divergence is documented rather than resolved; see `.agents/decisions.md`.

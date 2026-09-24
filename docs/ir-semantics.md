@@ -1,7 +1,14 @@
-# Semantics
+# IR semantics
 
-The closed behaviors: everything P4 leaves open, undefined or
-target-defined that p4blo closes, each with its choice and the reason.
+The meaning of a p4blo program with the architecture taken out: what a
+parser, control or deparser computes from its inputs, and every behavior
+P4 leaves open, undefined or target-defined that the IR closes, each with
+its choice and the reason. Nothing here knows about ports, packet fate,
+payloads or what happens after a rejection; those are decisions of the
+architecture that calls the blocks, and [arch-supports.md](arch-supports.md)
+records them for the architectures this repository supplies, together
+with the concrete externs they provide.
+
 The executable Lean specification in `ir/P4bloIR/` is normative; this file
 is commentary on it. The independent Python interpreter is tested against
 that specification, not proved equivalent to it. The current supported
@@ -122,8 +129,8 @@ copied back before the error propagates, every one of them, so an
 `out` argument the sub-parser never wrote takes its zero value, as on
 the success path; the bits consumed are counted up to that moment. An
 explicit `reject` inside a sub-parser rejects the whole run the same
-way. The caller decides what to do with a rejected outcome. This matches v1model, where the controls run after a parser
-rejection with `parser_error` set.
+way. The outcome is returned to the caller; what follows a rejection is
+the architecture's decision, not the parser's.
 
 - **Extraction past the packet end.** If fewer bits remain than the
   header's width, the extract raises `PacketTooShort`, consumes
@@ -244,7 +251,8 @@ A table match is evaluated over the installed entries; the program's
 ## Deparsers
 
 A deparser runs over the headers and produces the bytes of the emitted
-headers; the caller appends the payload it retained after parsing.
+headers, and nothing else; what becomes of the bytes the parser did not
+consume is the caller's decision.
 
 - **Sub-blocks.** A deparser may call only deparsers, which emit and
   never apply a table, so `deparse : H -> Packet` needs no entries.
@@ -262,10 +270,18 @@ headers; the caller appends the payload it retained after parsing.
 
 ## Externs
 
-An extern instance is state owned by the caller, bound to the program
-at load time by name. The IR says only its type, its constructor
-arguments and its call sites.
+An extern is a contract, not a construct. The IR says only an extern
+type's method signatures, an instance's constructor arguments and the
+call sites; the instance itself is state owned by the caller, bound to
+the program at load time by name. Which extern types exist, what their
+methods do and how their state persists is decided by the architecture
+that supplies them; the families this repository provides are in
+[arch-supports.md](arch-supports.md#extern-families).
 
+- **Binding** checks the declaration against the implementation's shape:
+  method names, arity, parameter directions and widths, where a width
+  may be a variable the declaration binds consistently. A mismatch
+  refuses to load; nothing is coerced.
 - **Method call order** is program order; an extern may keep state
   between calls and between packets, and that state is part of the
   caller's world, not the program's.
@@ -273,29 +289,9 @@ arguments and its call sites.
   arguments arrive as zero, results are written back in parameter
   order, then the return value. The binding sees and returns copies,
   so it can never alias program storage.
-- **Extern implementations** for the corpus are specified by their
-  own vectors under `tests/corpus/`, not here. Where an implementation closes
-  something P4 leaves open, the choice is a closed behavior like any
-  other: a `register` read at or beyond its size yields zero and a write
-  there is ignored. BMv2 ignores the write too but leaves the read's
-  destination untouched; `.agents/decisions.md` records why that divergence
-  stands.
-- **Builtin family names** use the segment before the first dot: `register.8`
-  and `register` bind the same service, subject to the declaration's shape.
-  A suffix neither changes the algorithm nor relaxes shape checks.
-- **Byte CRC services** are stateless, have no constructor arguments, and
-  expose `compute(in bit<D>) -> bit<W>`. `crc16` is CRC-16/ARC (W=16,
-  polynomial 0x8005, reflected input/output, initial/final XOR zero);
-  `crc32` is CRC-32/ISO-HDLC (W=32, polynomial 0x04c11db7, reflected
-  input/output, initial/final XOR 0xffffffff). D must be positive and a
-  multiple of eight. Consume exactly D/8 bytes, most-significant byte first,
-  retaining leading zeros; return the full result without range reduction.
-  Calls must match the bound width. Non-byte inputs are rejected, not padded.
-  The v1model printer expresses each as `hash` with base zero and maximum
-  2^W, which needs a width of W+1 so that 2^32 is not encoded as zero.
-  The known answers and the pinned SpecTec padding discrepancy are in
-  [assurance.md](assurance.md#known-disagreements-with-the-oracles); this
-  profile does not adopt that discrepancy.
+- **Where an implementation closes something P4 leaves open**, that
+  choice is a closed behavior of the implementation, recorded with it,
+  and both interpreters' models of the family must agree on it.
 
 ## Decimal values at the JSON boundary
 
@@ -315,5 +311,6 @@ full ProtoJSON conformance. An invalid host-entry request must not execute a
 packet or change persistent extern state; subsequent valid requests continue
 from the previous state. The supported canonical wire profile, current
 unknown-key/alias differences and version-policy exclusions are explicit in
-[assurance.md](assurance.md#wire-contract). Scoped JSON-value roundtrip proofs do not establish
-arbitrary ProtoJSON or whole-program validation equivalence.
+[assurance.md](assurance.md#wire-contract). Scoped JSON-value roundtrip
+proofs do not establish arbitrary ProtoJSON or whole-program validation
+equivalence.
