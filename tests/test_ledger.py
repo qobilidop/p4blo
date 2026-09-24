@@ -8,13 +8,20 @@ This module checks that shape and that every name an entry cites exists:
 - a `Lean:` name is a declaration (`def`, `theorem`, `structure`,
   `inductive`, `abbrev`, ...) under spec/ir/P4bloIR/, qualified by the
   namespaces it is declared in below `P4bloIR`, so `Installed.lookup`
-  resolves only if `lookup` is declared inside `namespace Installed`;
+  resolves only if `lookup` is declared inside `namespace Installed`; a
+  `Lean:` line may instead start with `none` and a reason when every
+  `Python:` name is in `p4blo.validator`, the behavior being the
+  validator's alone;
 - a `Python:` name is a dotted path that imports and resolves with
-  `getattr`;
-- a `Test:` reference is a pytest node id whose file and function exist, or
+  `getattr`, and whose object is defined in the module the path names, so
+  a name a module only imports does not count;
+- a `Test:` reference is a pytest node id whose file exists and whose
+  function is a `test_` function, at top level or in a `Test` class, or
   a file or directory under the repository;
 - a `Class:` line starts with one of the four classes and a sentence;
-- the class counts in the summary table equal the entries' classes.
+- the class counts in the summary table equal the entries' classes, and
+  each entry's class equals the one pinned in tests/ledger-classes.json,
+  so two entries swapping classes is caught.
 
 SpecTec names are checked against the pinned rule inventory by
 tests/test_spectec_rules.py, which reads the same `SpecTec:` lines.
@@ -24,6 +31,8 @@ from __future__ import annotations
 
 import ast
 import importlib
+import inspect
+import json
 import re
 from dataclasses import dataclass, field
 from functools import cache
@@ -34,6 +43,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 LEDGER = ROOT / "docs" / "ir-semantics.md"
+CLASS_PIN = ROOT / "tests" / "ledger-classes.json"
 LEAN_DIR = ROOT / "spec" / "ir" / "P4bloIR"
 
 FIELDS = ("P4", "SpecTec", "Lean", "Python", "Test", "Class")
@@ -156,12 +166,23 @@ def test_spectec_lines_cite_names_or_say_none() -> None:
     assert not wrong, "SpecTec lines with neither a name nor 'none':\n" + "\n".join(wrong)
 
 
+def lean_none_allowed(entry: Entry) -> bool:
+    """A `Lean:` line may say `none` only when the behavior is the
+    validator's alone, so every `Python:` name is in `p4blo.validator`."""
+    python = names_on(entry, "Python")
+    return (
+        entry.get("Lean").startswith("none")
+        and bool(python)
+        and all(name.startswith("p4blo.validator.") for name in python)
+    )
+
+
 def test_implementation_and_test_lines_cite_names() -> None:
     wrong = [
         f"{e.where()}: {k}"
         for e in entries()
         for k in ("Lean", "Python", "Test")
-        if not names_on(e, k)
+        if not names_on(e, k) and not (k == "Lean" and lean_none_allowed(e))
     ]
     assert not wrong, "lines without a backticked name:\n" + "\n".join(wrong)
 
@@ -190,6 +211,32 @@ def test_the_summary_table_counts_the_entries() -> None:
         actual[match.group("cls")] += 1
     assert {k: v for k, v in table.items() if k != "total"} == actual
     assert table.get("total") == len(entries())
+
+
+def entry_classes() -> dict[str, str]:
+    classes: dict[str, str] = {}
+    for e in entries():
+        match = CLASS_LINE.match(e.get("Class"))
+        assert match, e.where()
+        classes[e.name] = match.group("cls")
+    return classes
+
+
+def test_every_entry_keeps_its_pinned_class() -> None:
+    pinned = json.loads(CLASS_PIN.read_text(encoding="utf-8"))
+    actual = entry_classes()
+    changed = [
+        f"{name}: pinned {pinned.get(name)!r}, ledger {actual.get(name)!r}"
+        for name in sorted(set(pinned) | set(actual))
+        if pinned.get(name) != actual.get(name)
+    ]
+    assert not changed, (
+        "entries whose class differs from tests/ledger-classes.json:\n"
+        + "\n".join(changed)
+        + "\nA class change is a claim change: make it deliberately in"
+        " docs/ir-semantics.md, then edit tests/ledger-classes.json by hand to"
+        " match, with the entry's bold name as the key, in the same commit."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -267,38 +314,103 @@ def test_every_lean_name_is_declared() -> None:
 # ---------------------------------------------------------------------------
 
 
-def resolve_python(dotted: str) -> Any:
-    """The object a dotted name denotes: the longest importable module
-    prefix, then attributes."""
+def split_module(dotted: str) -> tuple[str, list[str]]:
+    """The longest importable module prefix of a dotted name, and the
+    attributes after it."""
     parts = dotted.split(".")
     if parts[0] != "p4blo":
         raise LookupError(f"'{dotted}' is not in the p4blo package")
     for split in range(len(parts), 0, -1):
         try:
-            obj: Any = importlib.import_module(".".join(parts[:split]))
+            importlib.import_module(".".join(parts[:split]))
         except ModuleNotFoundError:
             continue
-        for attribute in parts[split:]:
-            obj = getattr(obj, attribute)
-        return obj
+        return ".".join(parts[:split]), parts[split:]
     raise LookupError(dotted)
 
 
+def resolve_python(dotted: str) -> Any:
+    """The object a dotted name denotes: the longest importable module
+    prefix, then attributes."""
+    module_name, attributes = split_module(dotted)
+    obj: Any = importlib.import_module(module_name)
+    for attribute in attributes:
+        obj = getattr(obj, attribute)
+    return obj
+
+
+def defining_module(obj: Any) -> str | None:
+    """The module an object was defined in, looking through properties and
+    other wrappers, or None for plain data, which records no module."""
+    if isinstance(obj, property):
+        obj = obj.fget
+    obj = getattr(obj, "__func__", obj)
+    if callable(obj):
+        obj = inspect.unwrap(obj)
+    if inspect.ismodule(obj):
+        return obj.__name__
+    module = getattr(obj, "__module__", None) if callable(obj) or inspect.isclass(obj) else None
+    return module if isinstance(module, str) else None
+
+
+@cache
+def module_top_level_names(module_name: str) -> frozenset[str]:
+    """Names a module binds at top level by definition or assignment, not
+    by import."""
+    source = inspect.getsource(importlib.import_module(module_name))
+    names: set[str] = set()
+    for node in ast.parse(source).body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            names.add(node.name)
+        elif isinstance(node, ast.Assign):
+            names.update(t.id for t in node.targets if isinstance(t, ast.Name))
+        elif isinstance(node, ast.AnnAssign | ast.AugAssign) and isinstance(node.target, ast.Name):
+            names.add(node.target.id)
+    return frozenset(names)
+
+
+def python_problem(dotted: str) -> str | None:
+    """Why a `Python:` name does not denote something defined where it is
+    cited, or None when it does."""
+    try:
+        obj = resolve_python(dotted)
+    except (LookupError, AttributeError) as error:
+        return f"does not resolve ({error})"
+    module_name, attributes = split_module(dotted)
+    if not attributes:
+        return None
+    defined = defining_module(obj)
+    if defined is None:
+        # Plain data: the module must bind the name itself.
+        top = attributes[0]
+        if top not in module_top_level_names(module_name):
+            return f"{module_name} does not define {top}"
+        return None
+    if defined != module_name:
+        return f"defined in {defined}, not {module_name}"
+    return None
+
+
 def test_every_python_name_resolves() -> None:
-    missing: list[str] = []
-    for e in entries():
-        for name in names_on(e, "Python"):
-            try:
-                resolve_python(name)
-            except (LookupError, AttributeError) as error:
-                missing.append(f"{e.where()}: `{name}` ({error})")
-    assert not missing, "Python names that do not resolve:\n" + "\n".join(missing)
+    missing = [
+        f"{e.where()}: `{name}`: {problem}"
+        for e in entries()
+        for name in names_on(e, "Python")
+        if (problem := python_problem(name)) is not None
+    ]
+    assert not missing, "Python names not defined where they are cited:\n" + "\n".join(missing)
 
 
 def test_the_python_resolver_is_strict() -> None:
     resolve_python("p4blo.interp.tables.InstalledEntries.lookup")
     with pytest.raises(AttributeError):
         resolve_python("p4blo.interp.tables.InstalledEntries.look_up")
+    assert python_problem("p4blo.interp.tables.InstalledEntries.lookup") is None
+    assert python_problem("p4blo.ir.CORE_ERRORS") is None
+    assert python_problem("p4blo.edsl.views.Stack.last") is None
+    # `stmt` imports `evaluate` from `expr`; the name exists there only by import.
+    resolve_python("p4blo.interp.stmt.evaluate")
+    assert "defined in p4blo.interp.expr" in (python_problem("p4blo.interp.stmt.evaluate") or "")
 
 
 # ---------------------------------------------------------------------------
@@ -323,7 +435,8 @@ def defined_names(path: Path) -> frozenset[str]:
 
 
 def reference_problem(reference: str) -> str | None:
-    """Why a `Test:` reference does not exist, or None when it does."""
+    """Why a `Test:` reference does not exist or is not a test, or None
+    when it is one."""
     path_text, _, rest = reference.partition("::")
     path = ROOT / path_text
     if not path.resolve().is_relative_to(ROOT) or not path.exists():
@@ -335,6 +448,11 @@ def reference_problem(reference: str) -> str | None:
     node = re.sub(r"\[.*\]$", "", rest)
     if node not in defined_names(path):
         return f"{path_text} defines no {node}"
+    *classes, function = node.split("::")
+    if not function.startswith("test_") and not (not classes and function.startswith("Test")):
+        return f"{node} is not a test function or a Test class"
+    if any(not c.startswith("Test") for c in classes):
+        return f"{node} is not in a Test class"
     return None
 
 
@@ -353,3 +471,6 @@ def test_the_test_resolver_is_strict() -> None:
     assert reference_problem("tests/corpus/stacks") is None
     assert reference_problem("tests/test_ledger.py::test_no_such_test") is not None
     assert reference_problem("tests/corpus/no_such_program") is not None
+    # A helper is defined but is not a test.
+    assert reference_problem("tests/test_ledger.py::reference_problem") is not None
+    assert reference_problem("tests/test_ledger.py::Entry") is not None

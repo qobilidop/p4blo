@@ -38,7 +38,8 @@ its reason in prose, then six lines in this order:
   used: a rule is `Relation/rule`, a function starts with `$`. Behavior
   that SpecTec implements in its simulator's OCaml code rather than in
   its rules, such as `packet_in.extract`, is named in the class line.
-- `Lean:` the definitions under `spec/ir/P4bloIR/` that implement it.
+- `Lean:` the definitions under `spec/ir/P4bloIR/` that implement it,
+  or `none` and the reason when only the validator does.
 - `Python:` the dotted names in the `p4blo` package that implement it.
 - `Test:` the tests or corpus programs that exercise it.
 - `Class:` one of four classes, then one sentence saying what SpecTec
@@ -52,9 +53,10 @@ its reason in prose, then six lines in this order:
   - *not representable*: the situation cannot arise in SpecTec's IL.
 
 `tests/test_ledger.py` checks the shape of every entry, that every Lean
-and Python name exists, that every test reference exists, and the counts
-below; `tests/test_spectec_rules.py` checks that every SpecTec name exists
-at the pinned commit.
+and Python name exists where it is cited, that every test reference names
+a test, the counts below, and each entry's class against
+`tests/ledger-classes.json`; `tests/test_spectec_rules.py` checks that
+every SpecTec name exists at the pinned commit.
 
 | Class | Entries |
 |---|---|
