@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from google.protobuf import text_format
@@ -859,17 +860,64 @@ P4C_IMAGE = (
 _DOCKER_EXIT_CODES = {125, 126, 127}
 
 
+class PrinterCleanupError(RuntimeError):
+    """Owned-container cleanup was not confirmed; never an optional skip."""
+
+
+def run_p4test(arguments: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+    """Bound client execution and independently verify owned-container cleanup."""
+    name = f"p4blo-p4test-{uuid4().hex}"
+    try:
+        return subprocess.run(
+            ["docker", "run", "--rm", "--name", name, *arguments],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    finally:
+        cleanup_error: Exception | None = None
+        try:
+            subprocess.run(
+                ["docker", "rm", "--force", name],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            cleanup_error = error
+        try:
+            remaining = subprocess.run(
+                ["docker", "ps", "--all", "--quiet", "--filter", f"name=^/{name}$"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=True,
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            raise PrinterCleanupError(f"Cannot verify p4test container absence: {name}") from error
+        if remaining.stdout.strip():
+            raise PrinterCleanupError(f"p4test container survived cleanup: {name}")
+        if cleanup_error is not None:
+            raise PrinterCleanupError(f"p4test cleanup command failed: {name}") from cleanup_error
+
+
 @functools.cache
 def p4test_available() -> str | None:
     """None when p4test runs, otherwise the reason to skip."""
     if shutil.which("docker") is None:
         return "docker is not installed"
     try:
-        probe = subprocess.run(
-            ["docker", "run", "--rm", P4C_IMAGE, "p4test", "--version"],
+        image = subprocess.run(
+            ["docker", "image", "inspect", P4C_IMAGE],
             capture_output=True,
             text=True,
-            timeout=600,
+            timeout=15,
+        )
+        # Preserve the old cold-image implicit-pull allowance. A warm image
+        # needs only a short version probe, not the full compiler budget.
+        probe = run_p4test(
+            [P4C_IMAGE, "p4test", "--version"],
+            timeout=30 if image.returncode == 0 else 600,
         )
     except (OSError, subprocess.TimeoutExpired) as e:
         return f"docker did not run: {e}"
@@ -884,19 +932,14 @@ def p4test(path: Path, attempt: int = 0) -> None:
     reason = p4test_available()
     if reason is not None:
         pytest.skip(reason)
-    result = subprocess.run(
+    result = run_p4test(
         [
-            "docker",
-            "run",
-            "--rm",
             "-v",
             f"{path.parent}:/w",
             P4C_IMAGE,
             "p4test",
             f"/w/{path.name}",
         ],
-        capture_output=True,
-        text=True,
         timeout=600,
     )
     if result.returncode == 0:
