@@ -15,7 +15,7 @@ static/run-time boundary (`bitN` aliases and typed literals type as places;
 parameters accept any `Val` with run-time width check; sub-block call
 arguments are run-time checked; failed `assign` reports as
 `reportCallIssue`). None of it was in the register, yet
-`docs/edsl-v2-design.md:5` points at the register for the deviations. The
+`docs/design.md:5` points at the register for the deviations. The
 eDSL is unchanged, so the decision is load-bearing. Fixed: new "Python
 eDSL" section in the register.
 

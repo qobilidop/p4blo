@@ -1,6 +1,6 @@
 """The eDSL's static guarantees, tested through pyright.
 
-docs/edsl-v2-design.md promises that pyright rejects a mistyped
+docs/design.md ("Python eDSL") promises that pyright rejects a mistyped
 width, field, state, action, table or extern call. This suite makes that a
 tested property rather than a claim: every file under
 tests/pyright/must_pass must type-check with zero errors, and every file

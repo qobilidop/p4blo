@@ -1,7 +1,7 @@
 # Roadmap
 
 The research backlog beyond the completed finite scopes. Accepted
-2026-09-23 with the design in [ir-spec-boundary.md](../docs/ir-spec-boundary.md);
+2026-09-23 with the design in [ir-spec-boundary.md](../docs/design.md);
 Python and Lean only. Full architecture-independent P4 is the north star,
 not a completion criterion. Nothing here is active: assurance
 [milestone 1](../docs/assurance.md) and the [application collection](../docs/examples.md)

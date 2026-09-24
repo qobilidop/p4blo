@@ -3,151 +3,160 @@
 P4's semantic core as an IR, architecture-free, with an independent
 Lean semantics validated against a runnable reference.
 
-| | |
-|---|---|
-| Status | Draft |
-| Date | 2026-09-22 |
-| Authors | Bili Dong, with Claude Fable 5.1 |
-
-**Current direction (2026-09-23):** this document records the original
-prototype. The accepted successor architecture is
-[ir-spec-boundary.md](ir-spec-boundary.md), implemented through
-`.agents/roadmap.md`. It supersedes the original
-protobuf-as-abstract-syntax authority and single-Lean-package arrangement:
-Lean owns abstract syntax, validity and meaning; protobuf owns encoding;
-Python and a separate user-facing Lean package supply eDSL/interpreter APIs.
-Proof coverage remains scoped as recorded in [assurance.md](assurance.md).
-
-That first sentence is the project. p4blo is a personal, educational
-prototype whose purpose is to make the sentence concrete enough to
-argue about, so that a serious version can later be proposed to the P4
-community as an RFC rather than built alone. This document records
-what p4blo is, what it claims, how the claims are tested, and what has
-been decided. Progress lives in `.agents/status.md`, dated choices
-with their reasons in `.agents/decisions.md`, the closed
-behaviors in [semantics.md](semantics.md), and the construct table in
-[coverage.md](coverage.md).
+That sentence is the project. p4blo is a personal, educational prototype
+whose purpose is to make the sentence concrete enough to argue about, so
+that a serious version can later be proposed to the P4 community as an
+RFC rather than built alone. This document records what p4blo is, what
+it claims, how it is built and what is out of scope. The closed behaviors
+are in [semantics.md](semantics.md), the construct table in
+[coverage.md](coverage.md), and what is proved, tested and checked
+against which oracle in [assurance.md](assurance.md).
 
 ## Context and motivation
 
-P4 today has no architecture-free semantic core with a serialized
-form. The language specification describes P4 together with the
-architecture model it runs under, and every executable semantics
-either hardcodes one architecture or reproduces the whole language.
-Compilers have their own IRs, but those are compiler IRs, not an
-interchange format anyone else can consume.
+P4 today has no architecture-free semantic core with a serialized form.
+The language specification describes P4 together with the architecture
+model it runs under, and every executable semantics either hardcodes one
+architecture or reproduces the whole language. Compilers have their own
+IRs, but those are compiler IRs, not an interchange format anyone else
+can consume.
 
-The proposal p4blo makes is one paragraph and has no ask. P4 should
-have a specified, architecture-free semantic core with a serialized
-form. The P4 language is one frontend of that core among several.
-Architectures and externs are specified outside it as contracts. An
-RFC to standardize such an IR comes after this project, not inside
-it. It must read as the serialized form of the elaborated core that
-P4-SpecTec already defines, with the architecture taken out, never as
-a third IR beside SpecTec and p4mlir.
-
-p4blo supersedes the P4NAH demo design (2026-09-19) and the p4lean
-design before it. P4NAH survives as the name of one rule inside p4blo.
-Pakeles is a sibling, not a part: it is a parser IR designed from
-first principles, where p4blo's parser fragment is P4's own parser
-semantics, faithfully.
-
-### Audience
+The proposal p4blo makes is one paragraph and has no ask. P4 should have
+a specified, architecture-free semantic core with a serialized form. The
+P4 language is one frontend of that core among several. Architectures
+and externs are specified outside it as contracts. An RFC to standardize
+such an IR comes after this project, not inside it. It must read as the
+serialized form of the elaborated core that P4-SpecTec already defines,
+with the architecture taken out, never as a third IR beside SpecTec and
+p4mlir.
 
 The primary reader is the P4 language community: spec, compiler and
 architecture people. "Educational" describes the artifacts, each small
-enough to read in a sitting, not a separate audience. P4 users who
-want to learn what a program means by reading an interpreter, and
+enough to read in a sitting, not a separate audience. P4 users who want
+to learn what a program means by reading an interpreter, and
 formal-methods people who want a Lean foothold for P4, are served for
 free.
 
 ## Goals and non-goals
 
-### Goals
+Goals:
 
-- Define a small, post-elaboration IR for P4's semantic core with a
-  protobuf schema, a validator, and a readable text form.
+- Define a small, post-elaboration IR for P4's semantic core, with a
+  Lean definition of its syntax and meaning, a protobuf encoding, a
+  validator and a readable text form.
 - Give it two independent semantics, a Lean interpreter that is
-  normative and a Python interpreter that is the runnable reference,
-  and show that they agree.
+  normative and a Python interpreter that is the runnable reference, and
+  show that they agree.
 - Show that a P4 block is a function and that an architecture is
   ordinary code outside the IR, by running one corpus under two
   architectures unchanged.
-- Validate the whole against an external oracle on real programs.
+- Validate the whole against external oracles on real programs.
 - Publish a coverage table that walks P4's core construct by construct
   and says for each one whether it is in, elaborated away, or excluded.
+- Let people author programs in typed Python and in Lean, and prove
+  selected properties of the Lean-authored ones against the same
+  semantics that runs them.
 
-### Non-goals
-
-- Performance of any component.
-- Running existing P4 source. There is no P4 text parser; the printer
-  goes the other way.
-- P4Runtime, hardware targets, or a p4c backend. The p4c backend is
-  named in the README as the first thing a community version would
-  build, with 4ward's route as precedent.
-- Replacing any existing tool.
-- A browser playground. It was part of an earlier plan and remains a
-  future item, but it is not a deliverable of this project. The
-  constraints that would make it cheap later are kept anyway; see
-  [Pure Python](#pure-python-always).
+Non-goals: performance of any component; running existing P4 source
+(there is no P4 text parser; the printer goes the other way); P4Runtime,
+hardware targets or a p4c backend, which is the first thing a community
+version would build with 4ward's route as precedent; replacing any
+existing tool; a browser playground; universal correctness of the Python
+implementation, which is tested against Lean, not proved.
 
 ## The four claims
 
 Each claim has one experiment and one way to fail. The project makes
-these claims and no others.
+these claims and no others; their current status is in
+[assurance.md](assurance.md).
 
-1. **The core is small and post-elaboration.** The proto schema and
-   its contract fit in a few pages. No generics, no `int`, no
-   implicit casts, no tuples; every width resolved; names as ids.
-   Fails if a corpus program needs an escape hatch.
-2. **The core is semantically complete for real programs.** Four
-   programs, authored in the Python eDSL, printed to P4 text and run
-   through an external oracle under a v1model shim, match the
-   reference interpreter packet for packet. Fails on any divergence
-   not traceable to a documented closed behavior.
+1. **The core is small and post-elaboration.** The schema and its
+   contract fit in a few pages: no generics, no `int`, no implicit casts,
+   no tuples; every width resolved; references by name. Fails if a
+   corpus program needs an escape hatch.
+2. **The core is semantically complete for real programs.** Programs
+   authored in the Python eDSL, printed to P4 text and run through
+   external oracles under a v1model shim, match the reference interpreter
+   packet for packet. Fails on any divergence not traceable to a
+   documented closed behavior or a documented oracle defect.
 3. **A block is a function; an architecture is ordinary code.** Two
    architectures, a filter and a switch, each around fifty lines of
    Python with no P4 in them; every corpus program runs under both
-   unchanged. Fails if the line counts say otherwise or a block needs
-   a hook one architecture lacks.
+   unchanged. Fails if the line counts say otherwise or a block needs a
+   hook one architecture lacks.
 4. **The semantics is mechanized and agrees with the reference.** A
-   Lean interpreter over the IR, differential random testing against
-   the Python interpreter with zero unexplained divergences, and one
-   theorem. Fails if a divergence cannot be attributed to a bug in
-   one side.
+   proof-visible Lean interpreter over the IR, differential testing
+   against the Python interpreter with every divergence attributed to a
+   bug on one side, and scoped proofs about the Lean definitions. Fails
+   if a divergence cannot be attributed.
 
-## Design
+## Architecture
+
+### One IR, three representations
+
+There is one p4blo IR with three representations, and each concern has
+one authority:
+
+| Concern | Authority |
+|---|---|
+| Abstract syntax: expressions, statements, declarations | Lean, `ir/P4bloIR/IR.lean` |
+| Validity: types, scopes, widths, legal combinations | Lean, with the Python validator as the tested executable counterpart |
+| Meaning: execution and observable behavior | Lean, `ir/P4bloIR/` |
+| Serialization: messages, field numbers, encoding versions | the protobuf schema, `ir/proto/p4blo/v0/p4blo.proto` |
+| Correspondence between wire values and abstract programs | codecs specified and proved in Lean on the representable domain |
+
+The text form of the protobuf is the golden format; binary and JSON are
+transports. These are distinct contracts, and passing one does not
+establish the next:
+
+```text
+Serialized data
+    | parse: supported, well-formed encoding?
+Wire representation
+    | decode: which abstract program?
+Abstract program
+    | validate: is that program legal?
+Valid program
+    | execute: what does it do?
+Observable behavior
+```
+
+Parsing a protobuf message does not establish validity: variants may be
+unset, widths illegal, references unresolved. Raw abstract syntax stays
+ordinary, with validity a separate predicate and an executable validator,
+so that raw syntax remains useful for diagnostics, malformed-input
+testing and cross-language correspondence. Whole-program validity in
+Lean and complete codec proofs are obligations still in progress, as
+assurance.md records; the direction is settled, the guarantees are not
+all there.
 
 ### The IR is post-elaboration
 
 The IR is P4 after the frontend has done its work: monomorphic blocks,
-resolved widths, explicit casts, desugared control flow, interned
-names. That is the gain of being free of frontend sugar, and it is
-what keeps the Lean semantics free of type inference. Every frontend,
-Python now, others later, owes the IR the same elaboration.
+resolved widths, explicit casts, desugared control flow, resolved names.
+That is the gain of being free of frontend sugar, and it is what keeps
+the Lean semantics free of type inference. Every frontend, Python and
+Lean now, others later, owes the IR the same elaboration.
 
-Declarations are referenced by name, scoped as P4 scopes them, and
-never looked up dynamically: the validator resolves every reference
-once. This follows ONNX and 4ward rather than BMv2's integer ids, so
-that the text format reads like the program it encodes and a schema
-change shows up as a readable diff. Expressions carry no type
-annotations: every leaf has a known type, every operator's result is
-determined by its operands, and run-time values carry their width, so
-no interpreter infers anything and the goldens stay half the size.
+Declarations are referenced by name, scoped as P4 scopes them, and never
+looked up dynamically: the validator resolves every reference once. This
+follows ONNX and 4ward rather than BMv2's integer ids, so that the text
+format reads like the program it encodes and a schema change shows up as
+a readable diff. Expressions carry no type annotations: every leaf has a
+known type, every operator's result is determined by its operands, and
+run-time values carry their width, so no interpreter infers anything and
+the goldens stay half the size.
 
-The schema lives at `proto/p4blo/v0/p4blo.proto` under the package
-`p4blo.v0`. The version is `v0` because the schema is expected to
-change while the project runs; `v1` is reserved for the RFC-shaped
-form. `buf` lints the schema and generates the Python bindings, which
-are committed under `python/p4blo/v0/`, so that the proto package path and
-the Python import path coincide and contributors without `buf` still
-have a working package. A CI step regenerates them and
-fails on any diff.
+The schema is package `p4blo.v0`; `v1` is reserved for the RFC-shaped
+form. `buf` lints it and generates the Python bindings, which are
+committed under `python/p4blo/v0/` so that the proto package path and the
+Python import path coincide and contributors without `buf` have a working
+package; CI regenerates them and fails on any diff.
 
 ### Blocks and the P4NAH rule
 
-The one hardcoded thing is a block calling convention and the rule
-that a block performs no effects. That rule is called P4NAH.
+The one hardcoded thing is a block calling convention and the rule that
+a block performs no effects. That rule is called P4NAH.
 
 ```
 parse   : Packet × M → H × M × bits consumed × accepted × error
@@ -155,41 +164,33 @@ control : H × M × TableEntries → H × M
 deparse : H → Packet
 ```
 
-A rejection is an outcome, not an exception: the caller gets the
-partial headers, whether the parser accepted, and the error, and
-decides what to do.
-
-A control writes fields of `M`; whoever called it acts on them
+A rejection is an outcome, not an exception: the caller gets the partial
+headers, whether the parser accepted, and the error, and decides what to
+do. A control writes fields of `M`; whoever called it acts on them
 afterwards. Drop, forward, flood, clone and recirculate are decisions
 written as data, executed by the architecture. Tables are inputs
-installed by the host. A block may call another block; that is P4's
-own composition and it is in.
+installed by the host. A block may call another block; that is P4's own
+composition and it is in.
 
-There is one `Block` message with a kind tag, parse, control or
-deparse, and one signature. The three kinds differ in which statements
-they may contain, and the validator enforces those rules per kind.
-Three separate messages would have tripled the shared machinery for
-locals, parameters and sub-block calls for no gain in clarity.
+There is one `Block` message with a kind tag, parse, control or deparse,
+and one signature. The three kinds differ in which statements they may
+contain, and the validator enforces those rules per kind.
 
-A parser may loop, since a state may be revisited while extracting
-into a header stack. The bound is the no-consumption revisit rule: a
-state that consumed no bits since it was last entered may not be
-entered again, and doing so is a parse error. Fuel was rejected
-because it makes the meaning of a program depend on a number nobody
-specifies. Whether the oracles behave the same way is checked in step
-4 and is not assumed.
+A parser may loop, since a state may be revisited while extracting into
+a header stack. The bound is the no-consumption revisit rule: a state
+that consumed no bits since it was last entered may not be entered
+again, and doing so is a parse error. Fuel was rejected because it makes
+the meaning of a program depend on a number nobody specifies.
 
 ### Metadata contract
 
-An architecture declares the `M` fields it needs, each with a width
-and whether the architecture provides it before the block runs or
-consumes it after. At load the program's `M` is checked structurally
-against the declaration, by field name and width, and nothing else
-about `M` concerns anyone. A program declares exactly one `H` type and
-one `M` type.
-
-The contract vocabulary used by the architectures in this repository,
-by field name, each optional and only checked when present:
+An architecture declares the `M` fields it needs, each with a width and
+whether the architecture provides it before the block runs or consumes it
+after. At load the program's `M` is checked structurally against the
+declaration, by field name and width, and nothing else about `M`
+concerns anyone. A program declares exactly one `H` type and one `M`
+type. The contract vocabulary used by the architectures in this
+repository, each field optional and only checked when present:
 
 | Field | Type | Direction | Meaning |
 |---|---|---|---|
@@ -200,72 +201,67 @@ by field name, each optional and only checked when present:
 | `flood` | `bool` | consumed | send to every port but the ingress one |
 
 Fate is a set of booleans rather than an enum so that a program that
-knows nothing of flooding, such as the forwarder, runs unchanged under
-an architecture that offers it, which is what claim 3 requires. The
-v1model shim maps these names onto `standard_metadata`; flood has no
-shim mapping and is checked between the two architectures instead.
+knows nothing of flooding, such as the forwarder, runs unchanged under an
+architecture that offers it, which is what claim 3 requires. The v1model
+shim maps these names onto `standard_metadata`; flood has no shim
+mapping and is checked between the two architectures instead.
 
 ### Externs
 
-Register, counter, meter, hash and checksum are not core P4; they are
-v1model, PSA and PNA externs. At the IR level an extern is exactly a
-declared type with method signatures, an instance with constructor
-arguments, and call sites. The reference interpreter binds each
-instance to a registered Python callable at load, checks arity,
-directions and widths, and refuses to load on any mismatch.
-
-Every extern a corpus program uses ships twice, a Python
-implementation and a Lean model, pinned to each other by vectors. That
-pair is corpus material, not spec material. The Python package of
-bindings is a convenience and lives in its own subpackage so the
-boundary stays visible.
+Register, counter, hash and checksum are not core P4; they are v1model,
+PSA and PNA externs. At the IR level an extern is exactly a declared type
+with method signatures, an instance with constructor arguments, and call
+sites. The reference interpreter binds each instance to a registered
+Python callable at load, checks arity, directions and widths, and refuses
+to load on any mismatch. Every extern a corpus program uses ships twice,
+a Python implementation and a Lean model, pinned to each other by
+vectors and by independent known answers; that pair is corpus material,
+not spec material. The builtin families are register, counter,
+checksum16 and the byte-aligned CRC16 and CRC32 services whose contracts
+are in semantics.md.
 
 ### Architectures
 
 Python functions of one shape: given an ingress port and a packet,
 return egress ports and packets. The filter runs parser then control.
 The switch runs all three blocks over a few ports and implements drop,
-unicast and flood. Neither contains P4. Their size is the experiment
-for claim 3.
-
-Three things every architecture here does the same way, because the IR
-does not decide them. After a parser rejection the control still runs
-over the partial headers, with `parser_error` set if the program
-declares it, as v1model does. The payload is the bytes after the ones
-the parser consumed, and a parse that ends, accepted or not, having consumed a
-number of bits that is not a multiple of eight is treated as a program
-bug: the packet is dropped with a diagnostic, since P4 targets require
-byte-aligned parsing anyway. The output packet is the deparser's bytes
-followed by the payload.
+unicast and flood. Neither contains P4; their size is the experiment for
+claim 3. Three things every architecture here does the same way,
+because the IR does not decide them: after a parser rejection the
+control still runs over the partial headers, with `parser_error` set if
+the program declares it, as v1model does; the payload is the bytes after
+the ones the parser consumed, and a parse that ends off a byte boundary
+drops the packet with a diagnostic; the output packet is the deparser's
+bytes followed by the payload. Lean's `Switch` follows the same rules.
 
 ### Python eDSL
 
 `p4blo.edsl` is typed by construction: every reference is a Python
-object that pyright resolves, and widths are types. Headers and
-structs are classes whose annotated fields are real attributes
-(`ttl: bit8`), so a misspelled field is an unknown attribute; parsers,
-controls and deparsers are classes whose states and actions are
-methods, so a `select` target is `self.parse_ipv4` and a table's
-action list holds the methods themselves; a program names its roles as
-keyword arguments (`Program(..., parser=MyParser)`), never as strings.
-Widths are `Literal` type parameters, `Bits[L[8]]`, spelled through
-the aliases `bit1`..`bit64`; `Var[W]` is a place of that width and
-`Bits[W]` any value, so assigning to an expression is a static error.
+object that pyright resolves, and widths are types. Headers and structs
+are classes whose annotated fields are real attributes (`ttl: bit8`), so
+a misspelled field is an unknown attribute; parsers, controls and
+deparsers are classes whose states and actions are methods, so a `select`
+target is `self.parse_ipv4` and a table's action list holds the methods
+themselves; a program names its roles as keyword arguments, never as
+strings. Widths are `Literal` type parameters, `Bits[L[8]]`, spelled
+through the aliases `bit1`..`bit64`; `Var[W]` is a place of that width
+and `Bits[W]` any value, so assigning to an expression is a static error.
 `concat`, slices and `lookahead` have widths the type system cannot
 compute and return `Bits[int]`, a hole no typed place accepts until
 `x.as_(bit16)` asserts the width at run time and narrows it for the
-checker. Operator overloading builds expressions and control flow
-stays explicit (`with self.if_(...)`, `mux`), in the manner of JAX's
+checker. Operator overloading builds expressions and control flow stays
+explicit (`with self.if_(...)`, `mux`), in the manner of JAX's
 `lax.cond`; no decorator reads Python source, because the IR is the
 product and the eDSL should teach it by use, not hide it. A state or
-action body is called once with a recording `self`, and an expression
-has no truth value: `if x == y:` raises and names the cause.
+action body is called once with a recording `self`, and an expression has
+no truth value: `if x == y:` raises and names the cause.
 
 The typed surface is a front over `p4blo.edsl.core`, the builder that
 produces the goldens; its plain constructors and string names are the
-documented dynamic API for generated programs. The core's run-time
-checks stay authoritative, and pyright is an earlier line, not a
-replacement. `tests/test_pyright.py` tests the split:
+documented dynamic API for generated programs. The core's run-time checks
+stay authoritative, and pyright is an earlier line, not a replacement.
+`tests/test_pyright.py` tests the split with must-pass and must-fail
+fixtures:
 
 | Checked by pyright | Checked at run time only |
 |---|---|
@@ -277,358 +273,255 @@ replacement. `tests/test_pyright.py` tests the split:
 | action argument names, count and widths, in calls, defaults and entries | whether a `Bool`, `Enum` or `Error` value is a place |
 | extern method names and argument count; an `Out`/`InOut` argument being a place of the declared width | every rule the validator owns |
 
-### Printer
+Four places deviate from the original design because the type checker
+forced them: the width aliases and typed literals type as places, so a
+literal used as a target is caught only at run time; `Bool`, `Enum` and
+`Error` targets have no static place split; extern `in` parameters accept
+any value with the width checked at run time; and a failed `assign`
+surfaces as `reportCallIssue` because `assign` is overloaded over target
+kinds.
 
-IR to P4-16 text. Cheap, and it pays twice: it feeds the oracle and it
-is a frontend in reverse.
+### The Lean packages
 
-### Pure Python, always
+Two Lake packages with a one-way dependency. `ir/` is the specification,
+package `p4blo-ir` imported as `P4bloIR`: the abstract IR, its executable
+semantics with explicit extern state and parser errors, the JSON codecs,
+the scoped proofs and their axiom audits, and the `p4blo-lean` executable
+that the differential tests drive. `lean/` is the user library, package
+`p4blo` imported as `P4blo`: a typed source language whose expressions
+and commands have independent denotations, lowering to the IR with
+semantic-preservation theorems under explicit frame and declaration
+premises, complete Lean-authored programs (the forwarder and the tutorial
+firewall) that export the same bytes as their Python counterparts, and a
+reference execution API. Lean-to-Lean calls pass IR values directly;
+protobuf is for exchanging programs with other languages, files or
+processes. Each boundary has its own kind of assurance:
 
-The Python package carries no native dependency: the protobuf runtime
-is the pure-Python wheel, packets are `bytes` and `int`, and there is
-no pcap dependency because the vector format is text. The package
-targets Python 3.13 and uses nothing newer. Both constraints are
-cheap now and are what would make a browser playground free later;
-the first compiled dependency or the first 3.14-only feature would
-silently close that door.
+| Boundary | Primary assurance |
+|---|---|
+| Lean source language to IR | validity and semantic-preservation proofs |
+| Lean execution to IR semantics | the reference interpreter is reused; refinement proofs would accompany a distinct implementation |
+| protobuf to and from abstract IR | codec proofs on the representable domain plus cross-language tests |
+| Python execution to IR semantics | differential and property tests, adversarial mutations, scoped certificates |
+| authored program to intended behavior | independent expected answers, and application proofs where they exist |
 
-### Oracle
+A correct compiler can faithfully compile an incorrect program, so
+application properties are proved or tested separately, and stronger
+Lean guarantees never upgrade Python's tested conformance into
+equivalence. External oracles and known-answer tests stay because a proof
+can establish the wrong specification.
 
-The oracle runs the printed programs wrapped in a v1model shim that
-maps the metadata contract onto `standard_metadata`, replays the
-corpus vectors, and reports the verdict. The first oracle is
-P4-SpecTec's simulator, checked on 2026-09-22: its `sim` command takes
-a P4 program and an STF file, supports the v1model and ebpf
-architectures, and builds with opam and dune, so it runs natively on
-macOS and Linux without Docker. It is also the spec's own
-mechanization, which is a stronger authority than a behavioral model
-for a semantics project. BMv2's `simple_switch` is the optional second
-oracle, Linux-only through Docker.
+### Printer and oracles
 
-### Lean and differential random testing
+The printer turns IR into P4-16 text. It pays twice: it feeds the
+oracles, and it is a frontend in reverse. The oracles run the printed
+programs wrapped in a v1model shim that maps the metadata contract onto
+`standard_metadata`, replaying the corpus vectors. The first oracle is
+P4-SpecTec's simulator, the specification's own mechanization, which
+needs no Docker and runs natively; the second is BMv2's `simple_switch`
+in a pinned Docker image, the implementation P4 programmers actually run.
+They disagree in useful ways: SpecTec has no longest-prefix rule, so the
+adapter supplies prefix lengths as priorities and BMv2 independently
+decides longest prefix and const-entry and ternary priorities. Where an
+oracle is wrong, the disagreement is recorded as a strict, narrowly
+classified expected failure rather than adapted away; the list is in
+assurance.md.
 
-A Lean interpreter over the IR, decoding the protobuf JSON mapping
-with Lean's own JSON support. Cedar's Lean protobuf library is the
-upgrade if speed ever matters. Differential random testing: corpus
-programs times random packets and table entries, both interpreters
-run, outputs compared, every divergence attributed to a bug on one
-side. A pipe to a Lean binary is enough; there is no FFI. Random
-program generation is later, if ever. One theorem is proved; the
-candidates are listed under [Open questions](#open-questions).
+### Differential testing and proofs
+
+The Python interpreter is compared with the Lean interpreter through a
+pipe to the `p4blo-lean` binary: corpus programs and generated programs
+times random packets and table entries, with the complete logical extern
+state observed after every request, every divergence attributed to a bug
+on one side, and every failure saved as a replayable bundle. Statement
+execution in Lean is an explicit continuation machine driven by a
+proof-visible fixpoint, so finite traces support proofs about the actual
+interpreter rather than a model of it. Deliberate faults in both
+implementations, in observers and in codecs check that the tests would
+notice; a bounded execution certificate connects a production Python run
+to a proved Lean checker. Exactly which properties are proved, and what
+each does not establish, is the subject of assurance.md.
 
 ### Coverage table
 
-Every construct of P4's core appears in [coverage.md](coverage.md)
-with one of three statuses: in; elaborated away, with the elaboration
-named; or excluded, with a reason. The checklist is P4-SpecTec's
-elaborated IL, walked construct by construct, because it is exactly P4
-core after sugar. The subset is a checklist, not a horizon: the schema
-is designed for the full core and never bakes an exclusion into its
-shape.
-
-## What is normative
-
-- **Syntax:** the protobuf schema, plus the validator for what a
-  schema cannot express: widths agree, ids resolve, parse graph rules
-  hold, each block kind contains only its statements. The text format
-  is the readable representation and the golden format; binary and
-  JSON are transports.
-- **Meaning:** the Lean interpreter. Everything else, the Python
-  interpreter, the printer, the eDSL, the prose, is tested against it.
-  Until Lean exists the Python interpreter is provisional and the
-  prose contract in [semantics.md](semantics.md) stands in.
-- **Closed behaviors:** everything P4 leaves open and p4blo closes is
-  listed in [semantics.md](semantics.md) with its choice: reading a
-  field of an invalid header, extraction past the packet end,
-  arithmetic overflow, shifts by the width or more, table miss, LPM
-  and ternary tie-breaking, header-stack index out of range, and the
-  parser loop bound.
+Every construct of P4's core appears in [coverage.md](coverage.md) with
+one of three statuses: in; elaborated away, with the elaboration named;
+or excluded, with a reason. The checklist is P4-SpecTec's elaborated IL,
+walked construct by construct, because it is exactly P4 core after sugar.
+The subset is a checklist, not a horizon: the schema is designed for the
+full core and never bakes an exclusion into its shape.
 
 ## Scope
 
 Three exclusion categories; only the third makes p4blo a subset.
 
-- **Out by thesis:** anything architecture-dependent: intrinsic
-  metadata, packet fate as externs, action selectors and profiles,
-  direct counters and meters, clone and recirculate as operations.
+- **Out by thesis:** anything architecture-dependent: intrinsic metadata,
+  packet fate as externs, action selectors and profiles, direct counters
+  and meters, clone and recirculate as operations.
 - **Out by elaboration:** generics, `int`, implicit casts, tuples,
   `switch` on action runs, and other sugar the frontend removes.
-- **Out by scope, each threatening no claim:** `int<N>`, varbit,
-  header unions, value sets, `exit`, `return`, `for`, extern function
-  objects. Each is an additive change to the schema if it is ever
-  wanted; `int<N>` in particular is one more `Type` kind and a signed
-  variant of each arithmetic rule.
+- **Out by scope, each threatening no claim:** `int<N>`, varbit, header
+  unions, value sets, `exit`, `return`, `for`, extern function objects.
+  Each is an additive change to the schema if it is ever wanted.
 
-**In:** `bit<N>`, `bool`, enums and errors, headers, structs, header
-stacks with push, pop and index arithmetic; parser states with
-extract, lookahead, advance, verify, select with masks and ranges;
-sub-parser and sub-control instantiation; actions with data; tables
-with exact, lpm and ternary keys, priorities, default actions, const
-entries; `if`, assignment, slices, concatenation, explicit casts,
-wrapping arithmetic; emit; declared externs.
+In: `bit<N>`, `bool`, enums and errors, headers, structs, header stacks
+with push, pop and index arithmetic; parser states with extract,
+lookahead, advance, verify, select with masks and ranges; sub-parser and
+sub-control instantiation; actions with data; tables with exact, lpm and
+ternary keys, priorities, default actions, const entries; `if`,
+assignment, slices, concatenation, explicit casts, wrapping arithmetic;
+emit; declared externs.
 
-### Corpus
+### Corpus and applications
 
-Four programs, chosen to hit the hard semantics: the p4lang tutorial
-forwarder (lpm, TTL, checksum); an ACL (ternary with priorities,
-parser errors); an MPLS or VLAN program (header stacks); a stateful
-program (register). Where a program can be sourced from p4c's own test
-suite with an STF file beside it, it is, because those expected
-outputs were produced by BMv2 and reviewed by the p4c maintainers,
-which gives oracle-grade vectors before any oracle runs here. The
-tutorial forwarder has no STF; its vectors start hand-written and are
-confirmed by the oracle later. The concrete picks are recorded in
-`.agents/status.md` when the eDSL step reaches them.
-
-Each corpus program is rewritten in the eDSL, printed back to P4,
-checked to typecheck in P4-SpecTec, and then replayed on both sides.
+Corpus programs live under `tests/corpus/`, chosen to hit the hard
+semantics. Where a program can be sourced from p4c's own test suite with
+an STF file beside it, it is, because those expected outputs were
+produced by BMv2 and reviewed by the p4c maintainers, which gives
+oracle-grade vectors before any oracle runs here. The tutorial forwarder
+and firewall are pinned from p4lang's tutorials and carry hand-derived
+and independently computed vectors. Each program is authored in the eDSL,
+printed back to P4, typechecked by p4c, and replayed on both interpreters
+and both oracles. The public applications under `examples/` are complete
+Python programs with runnable demos, written for readers who know
+networking; their verification assets live under `tests/examples/`.
 
 ## Testing strategy
 
-Five layers, each answering a different question.
+Six layers, each answering a different question.
 
 1. **Unit and property tests on the primitives.** Wrapping arithmetic,
    casts, slices, concatenation, extract and emit, select matching with
-   masks and ranges. Hand-computed cases plus Hypothesis properties,
-   such as emit after extract returning the original bytes and
-   arithmetic agreeing with arithmetic modulo the width. Most
-   interpreter bugs live here and it needs no corpus.
+   masks and ranges; hand-computed cases plus Hypothesis properties.
 2. **Validator tests.** One tiny malformed program per rule, each
-   expecting a specific error. This is the executable form of the list
-   of what a schema cannot express.
+   expecting a specific error: the executable form of what a schema
+   cannot express.
 3. **Corpus goldens.** Each program's IR text and printed P4 are
-   committed. The eDSL regenerates them and the test diffs. A schema
-   change shows up as a golden diff and is reviewed like code.
-4. **Vectors in STF.** STF, the Simple Test Framework format that p4c
-   and P4-SpecTec already use, is the vector format: `add` lines
-   install table entries, `packet` lines give an input port and hex
-   bytes, `expect` lines give the expected output. One file per
-   scenario replays on the Python interpreter through a small STF
-   runner, on P4-SpecTec through its `sim` command against the printed
-   program, and on BMv2 when that oracle is used. It is readable text,
-   so there is no pcap dependency.
-5. **Differential random testing.** Python against Lean, corpus
-   programs times random packets and entries, every divergence
-   attributed.
+   committed; the eDSL regenerates them and the test diffs, so a schema
+   change is reviewed like code.
+4. **Vectors in STF.** The Simple Test Framework format that p4c and
+   P4-SpecTec already use: `add` lines install entries, `packet` lines
+   give a port and bytes, `expect` lines give the output. One file per
+   scenario replays on the Python interpreter, on Lean, and on both
+   oracles.
+5. **Differential and generated testing** against Lean, with complete
+   extern state, shrinking and retained replays.
+6. **Proofs and deliberate faults.** Scoped theorems with audited axioms,
+   and mutation campaigns that check the tests would notice a wrong
+   implementation.
 
-The oracle job is separate from the ordinary CI run. P4-SpecTec's
-OCaml toolchain is heavy and only the oracle needs it, so it is built
-in its own CI job and by a local script for whoever wants it, not in
-the dev shell.
+Every external input, from the oracle commits to the Docker image
+digests and the GitHub Actions, is pinned and listed in
+[workflows.md](workflows.md), so anyone can reproduce the checks.
 
-## Repository layout and development environment
+## Repository layout
 
 ```
 p4blo/
-  .python-version, .envrc           interpreter selection, optional environment
-  pyproject.toml, uv.lock           one Python project rooted here
-  buf.yaml, buf.gen.yaml            schema lint and codegen config
-  AGENTS.md                         instructions for agents
-  README.md                         the sentence, the claims, the table
-  docs/                             design, semantics, coverage,
-                                    status, decisions
-  ir/                               Lake package p4blo-ir
-    P4bloIR/                        abstract IR, semantics, scoped proofs
-    proto/p4blo/v0/p4blo.proto       versioned wire encoding
-  python/p4blo/                     the package
+  README.md, AGENTS.md              the front door; the agents' entry point
+  docs/                             design, semantics, coverage, assurance,
+                                    quickstart, workflows
+  .agents/                          agent working state: status, decisions, roadmap
+  ir/                               Lake package p4blo-ir (P4bloIR)
+    P4bloIR/                        abstract IR, semantics, codecs, proofs
+    proto/p4blo/v0/p4blo.proto      versioned wire encoding
+  lean/                             Lake package p4blo (P4blo): typed source
+                                    language, authored programs, execution API
+  python/p4blo/                     the Python package
     v0/                             generated protobuf code, committed
-    ir.py                           load, save, text format helpers
-    validator.py
+    ir.py, validator.py             load, save, text form; validation
     interp/                         the reference interpreter
     edsl/                           the typed eDSL; core/ is the builder beneath it
     printer.py                      IR to P4-16 text
-    externs/                        registry and the corpus externs
-    arch/                           filter.py, switch.py
-  lean/                             Lake package p4blo, user-facing P4blo/
-  examples/<application>/           public Python program, demo and README
-  tests/                            unit, validator, conformance tests
-    examples/<application>/         application goldens, vectors and tests
-    corpus/<program>/               program.py, program.txtpb,
-                                    program.p4, *.stf
-    oracle/                         original programs and oracle drivers
-  .github/workflows/                Python/schema, Lean, SpecTec and BMv2
+    externs/, arch/                 the corpus externs; filter.py and switch.py
+    drt/                            the differential loop and certificates
+  examples/<application>/           public Python programs, demos, READMEs
+  tests/                            everything that runs
+    corpus/<program>/               source, golden, README, STF vectors
+    examples/<application>/         application goldens, vectors, tests
+    oracle/                         P4-SpecTec and BMv2 drivers, original programs
+    pyright/                        the eDSL's static-check fixtures
+  scripts/, .github/workflows/      the gates, and the five CI workflows
 ```
 
 One Python project is rooted at the repository root so that `uv run
-pytest` works from there and `tests/` holds both unit tests and the
-claim tests, which are all pytest even when they shell out to Lean or
-replay vectors. The package still lives at `python/p4blo`. Shared tests,
-corpus programs and external oracle infrastructure live under `tests/`;
-package-local Lean tests stay with their Lake package. The two Lean packages
-share a pinned toolchain and depend only from user library to specification.
-Public Python applications live under `examples/`, with their verification
-assets under `tests/examples/`; see [examples.md](examples.md) for the accepted
-collection and its separate completion boundary. Faithful upstream ports
-and focused semantic fixtures remain in `tests/corpus/`.
-Directories for later steps are created when their step arrives, not as
-placeholders. This layout reflects the accepted successor architecture;
-the rest of this original design retains its historical context.
-
-Python dependencies are managed by `uv`, with versions fixed in `uv.lock`.
-Examples and Python tests share that environment. Lean has its own matching
-`lean-toolchain` pins in `ir/` and `lean/`, selected through `elan`; it is not
-a Python dependency. Schema checks, external oracles and other specialist
-gates likewise have additional tool requirements.
-
-The [development setup](../README.md#development) is the single entry point
-for interpreter selection, external prerequisites and the optional pinned
-toolchain environment. Commands elsewhere assume the relevant tools are
-available and use ordinary `uv`, Lake or shell invocations. CI's environment
-configuration remains recorded in the workflow and toolchain files.
-
-BMv2 runs in its separately pinned Docker image; the Python environment does
-not install it. A devcontainer remains deferred until there is a concrete
-need for another maintained setup path.
-
-## Build order
-
-Each step ends with something that can fail.
-
-1. **Schema, validator, semantics, one packet.** The v0 schema, the
-   validator with its negative tests, the closed-behaviors file, the
-   forwarder hand-written in text format, the Python interpreter with
-   primitive tests, and an STF runner replaying hand-written forwarder
-   vectors. Fails if the forwarder does not fit the schema or the
-   packet comes out wrong.
-2. **Externs.** The registry with signature checks; the stateful
-   program. Fails if an extern needs something the IR cannot say.
-3. **eDSL, corpus, architectures.** The four programs authored in the
-   eDSL; the two architectures; the metadata contract check. Claims 1
-   and 3 become measurable. Fails on an escape hatch or on the line
-   counts.
-4. **Printer and oracle.** The printer, the v1model shim, the
-   P4-SpecTec job, STF replay on both sides. Claim 2. Fails on any
-   unexplained divergence.
-5. **Lean.** The Lean interpreter, the extern models, differential
-   random testing, the theorem. Claim 4.
-6. **Coverage table, README, write-up.**
-
-The hand-written forwarder in step 1 will be several hundred lines of
-text format with ids instead of names and is the first artifact to rot
-when the schema changes. It is still written, because it is the honest
-test of claim 1, but it is kept minimal and regenerated from the eDSL
-in step 3 rather than maintained by hand.
-
-Done means: four claims green, coverage table published, README with
-the sentence and the claim matrix, one blog post. The date is Bili's
-to set. The honest "useful on its own" story is modest: a readable
-Python P4 interpreter with a clean IR, good for teaching and for
-testing table logic in pytest, until a p4c bridge exists.
+pytest` works from there. Python dependencies are locked by `uv`; Lean has
+matching `lean-toolchain` pins in `ir/` and `lean/` selected through
+`elan`; schema checks, oracles and other specialist gates have their own
+pinned tools. The README's development section is the single entry point
+for setup.
 
 ## Alternatives considered
 
-- **Three block messages instead of one with a kind tag.** Rejected;
-  see [Blocks](#blocks-and-the-p4nah-rule).
-- **Fuel as the parser loop bound.** Rejected; see the same section.
-- **BMv2 as the first oracle.** It was the original plan. P4-SpecTec
-  replaced it because it needs no Docker, runs on macOS, and is the
-  spec's own mechanization. BMv2 stays as the optional second.
-- **pcap as the vector format.** Rejected in favor of STF, which is
-  text, already understood by both oracles, and needs no native
-  library.
-- **Packaging Python dependencies through the system toolchain.** Rejected;
-  `uv` owns the locked Python environment independently of system packages.
-- **Lean from system packages.** Rejected in favor of `elan` and
-  `lean-toolchain`, which every Lean project uses.
-- **A devcontainer from day one.** Deferred; see the environment
-  section.
-- **A decorator-based eDSL that reads Python source.** Rejected
-  because it hides the IR, and the IR is the product.
-- **The string-referenced eDSL (v1).** Table action lists, state
-  targets and exports named things by string, and field access went
-  through `__getattr__`, so a typo surfaced at build time at best.
-  Replaced on 2026-09-22 by the typed surface above; the builder stays
-  as `p4blo.edsl.core`. The argument is in
-  `docs/edsl-v2-design.md`.
-- **A browser playground as a deliverable.** Removed from the current
-  plan to keep the project to its four claims.
-- **Naming.** See [Appendix: naming](#appendix-naming).
-
-## Risks
-
-- **P4-SpecTec's v1model coverage.** Its simulator may not handle
-  every construct a corpus program uses. Discovered in step 4; the
-  fallback for an affected program is BMv2.
-- **Schema churn.** The hand-written forwarder and the goldens rot
-  with every schema change until the eDSL exists. Accepted for steps 1
-  and 2; the goldens become regenerated from step 3.
-- **Flood under the shim.** The v1model shim may not express flood
-  without BMv2 multicast groups. If not, flood is checked between the
-  two architectures and the oracle covers drop and unicast.
-- **The Lean and Python interpreters disagreeing for a good reason.**
-  A divergence that is really an under-specified closed behavior is
-  resolved by adding the behavior to [semantics.md](semantics.md),
-  not by patching one side.
-- **Scope creep toward a fifth claim.** The design makes four claims
-  and no others; anything else is a future item.
-
-## Open questions
-
-- ~~The one theorem.~~ Settled: extract-then-emit roundtrip, proved as
-  `P4bloIR.extract_emit` in `ir/P4bloIR/Theorems.lean` over the packing
-  functions the interpreter calls. Parser determinism was not
-  attempted.
-- Whether the v1model shim can express flood without BMv2 multicast
-  groups.
-- Whether P4-SpecTec's simulator covers every construct the corpus
-  needs, and whether it can also be driven as a second oracle for
-  programs where BMv2 is the first.
-- Whether p4blo parsers could one day lower to Pakeles; a question,
-  not a plan.
+- **Protobuf as the abstract syntax authority**, the original
+  arrangement, with Lean only for meaning. Replaced by one IR defined in
+  Lean with a protobuf encoding, so that validity and meaning are stated
+  over the same syntax the proofs use and the encoding can change without
+  touching the semantics.
+- **Three block messages instead of one with a kind tag.** Rejected; it
+  triples the shared machinery for locals, parameters and calls.
+- **Fuel as the parser loop bound.** Rejected; it makes meaning depend on
+  an unspecified number.
+- **BMv2 as the first oracle.** Replaced by P4-SpecTec, which needs no
+  Docker and is the spec's own mechanization; BMv2 stays as the second,
+  for what SpecTec cannot judge.
+- **pcap as the vector format.** Rejected in favor of STF, which is text
+  and already understood by both oracles.
+- **A decorator-based eDSL that reads Python source.** Rejected because
+  it hides the IR, and the IR is the product.
+- **The string-referenced eDSL.** Table action lists, state targets and
+  exports named things by string, so a typo surfaced at build time at
+  best. Replaced by the typed surface; the builder stays as
+  `p4blo.edsl.core`.
+- **An FFI between Python and Lean.** Rejected; a pipe is enough, and an
+  FFI would be a throughput choice, not an additional guarantee.
+- **A browser playground.** Removed to keep the project to its four
+  claims; pure Python and Python 3.13 are kept so that it stays cheap.
 
 ## Neighbors
 
-- [P4-SpecTec](https://github.com/kaist-plrg/p4-spectec): the P4
-  spec's own executable mechanization, on the official track since
-  2026. Its elaborated IL is the coverage checklist and its simulator
-  the first oracle. p4blo does not re-mechanize P4; it serializes the
-  elaborated core and takes the architecture out.
-- [Nano-P4](https://github.com/pacokwon/nano-p4-spec) (P4.org GSoC
-  2026): an educational P4 dialect with typing rules, dynamic
-  semantics and one hardcoded NanoSwitch architecture, in SpecTec.
-  The same size of language with the opposite decision about the
-  architecture; the foil for claim 3.
+- [P4-SpecTec](https://github.com/kaist-plrg/p4-spectec): the P4 spec's
+  own executable mechanization. Its elaborated IL is the coverage
+  checklist and its simulator the first oracle. p4blo does not
+  re-mechanize P4; it serializes the elaborated core and takes the
+  architecture out.
+- [Nano-P4](https://github.com/pacokwon/nano-p4-spec): an educational P4
+  dialect with typing rules, dynamic semantics and one hardcoded
+  architecture, in SpecTec. The same size of language with the opposite
+  decision about the architecture; the foil for claim 3.
 - [4ward](https://github.com/4ward-p4/4ward): a p4c backend into a
-  protobuf behavioral IR into a Kotlin simulator, no semantics; the
-  proof that a protobuf P4 IR is workable and the precedent for a p4c
-  bridge.
+  protobuf behavioral IR into a Kotlin simulator, no semantics; the proof
+  that a protobuf P4 IR is workable and the precedent for a p4c bridge.
 - [p4mlir-incubator](https://github.com/p4lang/p4mlir-incubator): a
   compiler IR for a future p4c, not an interchange format.
-- [HOL4P4](https://github.com/kth-step/HOL4P4): mechanized semantics
-  with an executable derived inside the prover; no serialized IR.
-- [cedar-spec](https://github.com/cedar-policy/cedar-spec): the
-  method: Lean model as the spec, a production implementation,
-  differential random testing, protobuf across the boundary.
-- [µP4](https://github.com/cornell-netlab/MicroP4) (SIGCOMM 2020):
-  composed programs inside the language; p4blo takes the architecture
-  out of it. The framing to be visibly different from.
-- [BMv2](https://github.com/p4lang/behavioral-model): the optional
-  second oracle.
-- [p4c](https://github.com/p4lang/p4c): the source of corpus programs
-  and their STF vectors.
+- [HOL4P4](https://github.com/kth-step/HOL4P4): mechanized semantics with
+  an executable derived inside the prover; no serialized IR.
+- [cedar-spec](https://github.com/cedar-policy/cedar-spec): the method.
+  A Lean model as the specification, a production implementation,
+  differential random testing with typed generators, and retained
+  regressions. p4blo adopts that and keeps the two models independently
+  implemented: sharing semantic algorithms would weaken the comparison.
+- [µP4](https://github.com/cornell-netlab/MicroP4): composed programs
+  inside the language; p4blo takes the architecture out of it.
+- [BMv2](https://github.com/p4lang/behavioral-model) and
+  [p4c](https://github.com/p4lang/p4c): the second oracle, and the source
+  of corpus programs and their STF vectors.
 - [ONNX](https://github.com/onnx/onnx): the precedent for a readable
   protobuf IR: references by name, a checker that owns what the schema
   cannot say. Its generic node with a string operator type is not
   followed, because P4's core has a fixed handful of operators and the
   typed schema is the grammar the Lean side decodes.
 
-A construct-by-construct survey of the P4 IRs is in
-[prior-art-ir.md](prior-art-ir.md).
+The construct-by-construct survey of these IRs that shaped the schema is
+archived in git (`docs/design.md` before 2026-09-24).
 
 ## Appendix: naming
 
-*p4blo*: `p4` plus `blo`, block cut short, read aloud as *Pablo*.
-Pablo descends from Latin *Paulus*, "small", so the name says small
-blocks in two languages. Name-shaped rather than claim-shaped, so the
-tagline carries the claim. Sweep (2026-09-21): free on PyPI, crates.io
-and npm; no repository of that name; the GitHub handle is an unrelated
-empty account. Domains and trademarks unswept.
-
-Considered and rejected: `p4sem` and `p4ir` name the method, and
-`p4ir` is one letter from P4HIR; `p4blocks` is claim-shaped and
-invites the µP4 reading; `p4nah` reads as dismissive of P4 the moment
-it heads a community proposal; the small lane (`p4mini`, `p4tini`,
-`p4nano`) is Nano-P4's, and `p4nano` collides with it outright;
-`microp4` is µP4; `p4core` reads as core.p4; pa-words from other
-languages (*pala*, *palikka*, *parva*, *pavé*, *parça*) each needed a
-footnote that `blo` does not.
+*p4blo*: `p4` plus `blo`, block cut short, read aloud as *Pablo*. Pablo
+descends from Latin *Paulus*, "small", so the name says small blocks in
+two languages. Name-shaped rather than claim-shaped, so the tagline
+carries the claim. Considered and rejected: `p4sem` and `p4ir` name the
+method, and `p4ir` is one letter from P4HIR; `p4blocks` is claim-shaped
+and invites the µP4 reading; `p4nah` reads as dismissive of P4 the moment
+it heads a community proposal; the small lane (`p4mini`, `p4nano`) is
+Nano-P4's; `p4core` reads as core.p4.

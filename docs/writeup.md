@@ -32,7 +32,7 @@ the evidence for and against it.
 
 Four pieces exist in 2026 that make the proposal cheap to test, and none
 of them takes the architecture out. The survey behind this section is
-`docs/prior-art-ir.md`.
+`docs/design.md`.
 
 P4-SpecTec is the P4 specification's own mechanization, on the official
 track since 2026. Its elaborated IL, `spec/4-p4-ir/4.0-ir-syntax.watsup`,
@@ -473,7 +473,7 @@ fixed on main and the rulings it forced written into
 `docs/semantics.md`; and after step 5, over everything that landed
 since, kept beside it. Every choice the design did not already settle is a
 dated entry with its reason in `.agents/decisions.md`, and a survey preceded
-each pick: `docs/prior-art-ir.md` for the schema,
+each pick: `docs/design.md` for the schema,
 `docs/corpus-candidates.md` for the corpus.
 
 ## 7. Where to look

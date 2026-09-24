@@ -5,7 +5,7 @@ Headers and structs are classes with annotated fields; parsers, controls
 and deparsers are classes whose states and actions are methods; widths are
 type parameters, `Bits[L[8]]`, spelled through the aliases `bit8`,
 `bit48`, ...; every reference is a Python object that pyright resolves.
-The design and its arguments are in `docs/edsl-v2-design.md`; each
+The design and what pyright checks are in `docs/design.md`, "Python eDSL"; each
 module's docstring states the static rules it provides:
 
 - `values`: `Bits`, `Var`, `Bool`, `Enum`, `Error`, the aliases, `concat`, `mux`.

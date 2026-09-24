@@ -53,8 +53,9 @@ settles is not repeated here.
 
 - **Lean owns the abstract IR, validity and meaning; protobuf owns the
   encoding.** Conversion between them is an explicit obligation with its
-  own proofs, not a guarantee the organization supplies. Rationale, prior
-  art and the agreed direction: `docs/ir-spec-boundary.md`. (2026-09-23)
+  own proofs, not a guarantee the organization supplies. The direction and
+  its boundaries are in `docs/design.md`; the accepted plan is archived
+  in git as `docs/notes/ir-spec-boundary.md`. (2026-09-23)
 - **Two Lake packages.** `ir/` is the specification `P4bloIR` (package
   `p4blo-ir`) with the wire schema beside it; `lean/` is the user library
   `P4blo` (package `p4blo`), importing the specification one way. The
@@ -137,8 +138,9 @@ settles is not repeated here.
 ## Python eDSL
 
 - **The typed eDSL is type-safe by construction where pyright allows and
-  run-time checked where it does not.** The design is
-  `docs/edsl-v2-design.md`; as implemented it deviates from that note in
+  run-time checked where it does not.** The design is the "Python eDSL"
+  section of `docs/design.md`; as implemented it deviates from the
+  original note (archived as `docs/notes/edsl-v2-design.md`) in
   four places, each forced by the type checker: the width aliases `bitN`
   are places (`Var[L[N]]`) and a typed literal `bitN(v)` types as a place
   too, so a literal used as a target is caught at run time only; `Bool`,
