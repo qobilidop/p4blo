@@ -3,6 +3,9 @@
 P4's semantic core as an IR, architecture-free, with an independent
 Lean semantics validated against a runnable reference.
 
+[Project website](https://qobilidop.github.io/p4blo/) ·
+[Quickstart](docs/quickstart.md) · [Evidence](docs/evidence.md)
+
 p4blo is a personal, educational prototype. It exists to make that
 sentence concrete enough to argue about, so that a serious version can
 be proposed to the P4 community rather than built alone. The proposal

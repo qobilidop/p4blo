@@ -122,6 +122,14 @@ and promote confirmed minimal regressions into tracked tests or corpus data.
 
 ## Where every external input is pinned
 
+The separate `Website` workflow publishes only `website/` to
+<https://qobilidop.github.io/p4blo/>. It runs for website/workflow changes on
+`main` or manual dispatch on `main`, using the GitHub Actions Pages source.
+It checks JavaScript syntax before uploading and deploying the static files.
+Pages publishing is separate from the five implementation-validation
+workflows and supplies no additional semantic assurance. Preview instructions
+and maintenance boundaries are in `website/README.md`.
+
 | Input | Pin | Update by |
 |---|---|---|
 | nixpkgs (Python, uv, buf, protoc, elan, Node, opam) | `flake.lock` | `nix flake update` |

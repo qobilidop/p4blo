@@ -11,6 +11,26 @@ assurance milestone 1 are complete. Broader research remains backlog;
 
 ## Latest checked checkpoint
 
+**Project website (2026-09-23).** The user requested a website inspired by
+Veil, then explicitly requested GitHub Pages publication. The responsive
+static design is in `website/`, with rationale in
+[website-design.md](notes/website-design.md) and a CLEAR independent
+[review](notes/reviews/website-design.md). The `Website` workflow publishes
+only that directory on relevant `main` pushes or manual dispatch. Deployment
+and public-URL verification are the next concrete step at this checkpoint.
+
+Checks: `nix develop -c node --check website/main.js` passes; a one-off Nix
+Python HTML/source check passes for 17 unique IDs, all 26 link destinations,
+three local assets and both exact action excerpts. Chrome visual checks
+cover desktop and 390-pixel mobile layouts; document widths at 320, 390,
+768 and 1024 pixels have no horizontal overflow. Mouse/arrow-key language
+switching (including Home/End) and clipboard success were exercised; browser
+error/warning log is empty. `nix develop -c actionlint` passes for all six
+workflows; the Pages workflow also received independent review. No
+screen-reader certification is claimed. Python/schema, Lean,
+DRT, mutation and oracle gates were not rerun for these isolated presentation
+files; the frozen implementation evidence below is unchanged.
+
 **Assurance milestone 1 is complete.** The frozen code-gate revision is
 `3148a52f2212238da00fe76ebe8eab81d86b6023`, pushed to `main`. Exact commands,
 provenance, exceptions and CI links are in the
@@ -320,6 +340,10 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 
 Future and deliberately parked work. Milestone 1 is complete; these older
 plans are not active acceptance requirements or automatic continuation tasks.
+
+- **Project website:** design and local browser checks are complete. Finish
+  the requested GitHub Pages deployment and verify the public project URL.
+  Future visual feedback is separate from the parked semantics/proof work.
 
 - **Architecture implementation: milestone 1 complete.**
   Future extensions follow [implementation.md](implementation.md) and the agreed design in

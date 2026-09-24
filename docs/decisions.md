@@ -1240,3 +1240,15 @@ one that says so.
   high after independent tests and immutable-image replay. Revisit on a
   deliberate vector/oracle pin change; never broaden the classifier merely
   to obtain green CI. Evidence: `notes/milestone-oracle-classification.md`.
+- **Present p4blo with a static research-project website.** At the user's
+  request, study Veil's live site and adapt its introduction, capabilities,
+  real-code and next-action structure into an original p4blo design. Use
+  dependency-free HTML/CSS/JavaScript in `website/`, with real source excerpts
+  and explicit evidence boundaries; existing GitHub documents remain the
+  documentation destination. Confidence: high in this small, reversible
+  delivery; visual direction remains open to user feedback. Revisit the
+  static approach if the project needs a full documentation renderer or
+  actual browser execution. The user then explicitly requested GitHub Pages
+  publication: deploy only this directory via pinned official actions on
+  `main`, with deployment permissions scoped to one job and no custom domain.
+  This presentation work does not reopen assurance milestone 1.
