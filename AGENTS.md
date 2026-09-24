@@ -16,10 +16,10 @@ independent Lean semantics validated against a runnable reference.
    of done; it supersedes older open-ended proof/application work lists.
    `docs/profile.md` and `docs/evidence.md` summarize its input domain and
    exact evidence boundaries; do not infer broader guarantees from counts.
-   Milestone 1 is complete. The accepted new application workstream is
-   `docs/examples.md`: three Python examples, with its own finite acceptance
-   checklist. Read it before starting application work; it does not reopen
-   the completed assurance milestone or parked proofs.
+   Milestone 1 and the three-application collection are complete.
+   `docs/examples.md` records the collection's scope and satisfied finite
+   acceptance checklist. Read it before further application work; completion
+   does not reopen the assurance milestone or parked proofs.
 2. `docs/decisions.md`: every choice made while building, dated, with
    its reason. Overrule one by adding a new entry that says so.
 3. `docs/design.md`: what the project is, the four claims, how each is

@@ -1,7 +1,8 @@
 # Python application examples
 
-Accepted 2026-09-24. All three applications are implemented and independently
-reviewed; final collection checks remain pending in `status.md`.
+Accepted and completed 2026-09-24. All three applications are implemented,
+independently reviewed and checked together locally and on CI; exact evidence
+is recorded in `status.md`.
 This workstream follows completed assurance milestone 1 without reopening its
 frozen acceptance criteria. Current execution status lives in [status.md](status.md).
 Agent instructions remain in [AGENTS.md](../AGENTS.md); engineering procedures
@@ -101,7 +102,7 @@ Agreement between implementations does not replace intended-behavior checks.
   the shared real-Lean fixture and `test_lean_agrees` naming convention.
 - [x] Confirmed correctness and usability findings are resolved; remaining
   limitations, deferred opportunities and evidence boundaries are explicit.
-- [ ] Required integration gates pass on the final implementation; commands,
+- [x] Required integration gates pass on the final implementation; commands,
   revisions, skips, reviews and next steps are recorded in repository docs.
 
 Iterations address concrete findings, rather than a fixed number of passes.
@@ -112,8 +113,9 @@ follow the semantics-first, paired-interpreter procedure in the workflow.
 
 ## Next step
 
-Run the final combined repository gates, record exact evidence and remote
-results, then remove task-owned worktrees after preserving reviews and fault
-recipes. Shared wire helpers belong only to tests; each public program and
-demo remains readable on its own. No additional application or API redesign is
-needed to complete the agreed collection.
+The agreed collection is complete at implementation revision `c94336d`.
+Final local checks and all five required CI workflows pass; the status
+checkpoint records exact counts, exclusions, review evidence and preserved
+artifacts. Four task-owned worktrees are removed and the original six remain.
+Shared wire helpers belong only to tests; each public program and demo remains
+readable on its own. Stop here until a new application or improvement is scoped.

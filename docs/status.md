@@ -8,10 +8,61 @@ checkpoint. To resume the work, read this, then
 Last updated: 2026-09-24. The accepted Python/Lean architecture and bounded
 assurance milestone 1 are complete. Broader research remains backlog;
 [verification.md](verification.md) is not an open-ended release requirement.
-The active new workstream is the three Python application examples in
-[examples.md](examples.md); the user authorized autonomous implementation.
+The three Python application examples in [examples.md](examples.md) are also
+complete. No implementation work remains active under either finite checklist.
 
 ## Latest checked checkpoint
+
+**Application collection complete (2026-09-24).**
+Implementation revision `c94336d03e0c16f301b2bdf6fac2e0ef581a1b35` is pushed to
+`main`. All three applications meet their documented profiles, with independent
+reviews, runnable demos, exact packet/state expectations, generated IR goldens,
+Python/Lean comparisons and packet replays on both actual P4 oracles.
+
+Final checks, sequentially in the configured development environment, exit 0:
+
+- `scripts/check-lean.sh`: both Lean packages, proof audits and native/API checks.
+- `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: **4837 passed, one skipped, five
+  xfailed** in 533.27 seconds; Ruff format/lint, full Pyright, schema lint,
+  generated-code drift and actionlint also pass. The skip is the missing
+  optional local XDP image; the xfails are the existing precisely classified
+  external-oracle discrepancies. Logs: `.artifacts/examples-final-lean.log`
+  and `.artifacts/examples-final-check.log`.
+- Standalone uv/managed Python, without external development tools on PATH:
+  all three demos and **17 Python example tests pass**, six Lean tests
+  deliberately deselected. Exact environment and download hash accompany
+  `.artifacts/portable-env/verification.log` in `verification-environment.json`.
+- All ten source faults are rejected by independent expected-answer tests
+  under both unchanged interpreters. Every baseline/restoration passes, and
+  campaign source hashes match the final programs. Tracked recipe:
+  `notes/mutations/example-programs.py`; logs: `.artifacts/examples-mutations/`.
+  These are application-source sensitivity checks, not new interpreter proofs.
+
+All five required remote workflows pass at that exact implementation revision:
+[Python/schema CI](https://github.com/qobilidop/p4blo/actions/runs/36036851165),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36036851322),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36036851210),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36036851183), and
+[XDP compilation](https://github.com/qobilidop/p4blo/actions/runs/36036851205).
+The required Lean selector passes 2894 tests, with 1949 unrelated tests
+deselected. XDP runs all 17 checks without skips, supplying the evidence
+unavailable locally. The [website workflow](https://github.com/qobilidop/p4blo/actions/runs/36036851222)
+also passes; its rendered example remains the existing VLAN gateway.
+Local retained run metadata: `.artifacts/examples-final-ci.json`.
+
+The four worktrees created for this task are removed. Tracked edits, untracked
+source and mutation artifacts were archived and every archived file hash
+verified under `.artifacts/examples-worktree-closeout/`; its manifest records
+heads, paths and changes. Branches are preserved. Filesystem listings confirm
+all four directories absent; the registered inventory contains exactly the
+original six worktrees. Historical worker paths below no longer imply active
+work. No unrelated worktree, Docker image or cache was removed.
+
+The final checkpoint changes only status, acceptance and agent navigation;
+application, test and toolchain code remain at the checked revision above.
+Whitespace and local documentation-link checks pass for that bookkeeping.
+The finite collection checklist is satisfied. Stop here: further applications,
+website replacement and broader proofs require a new scope.
 
 **Portable development instructions (2026-09-24).** Current guides use ordinary
 commands and point to the single optional environment setup in the root README.
@@ -513,15 +564,15 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 
 ## Open threads
 
-The application collection is active. Milestone 1 is complete; the other
-older plans below are deliberately parked, not automatic continuation tasks.
+The application collection and milestone 1 are complete. The older plans below
+are deliberately parked, not automatic continuation tasks.
 
-- **Python application collection:** autonomous implementation is authorized;
-  follow [examples.md](examples.md). Current iteration: all three implemented,
-  reviewed and challenged with known-answer program mutations; review findings
-  resolved. Next: full combined gates, final evidence and removal of task-owned
-  worktrees. Existing six preserved worktrees are outside this cleanup scope.
-  Keep the finite checklist and review findings current as each advances.
+- **Python application collection: complete.** All three are implemented,
+  independently reviewed, challenged with known-answer program mutations and
+  checked together locally and on CI. Findings are resolved, current setup
+  instructions support standalone Python users, and task worktrees are removed.
+  [The finite checklist](examples.md#finite-acceptance) is satisfied; no next
+  implementation step is authorized by this completed collection alone.
 
 - **Project website:** the requested Python gateway walkthrough is published,
   checked and independently reviewed at
