@@ -19,6 +19,51 @@ import P4blo.GuardedCallPrefixTests
 import P4blo.GuardedControlCallTests
 import P4blo.ForwarderTests
 import P4blo.FieldActionWriteTests
+import P4blo.ForwarderAction
+
+/-- info: 'P4blo.ForwarderAction.observe_restore' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.observe_restore
+
+/-- info: 'P4blo.ForwarderAction.restore_observe' does not depend on any axioms -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.restore_observe
+
+/-- info: 'P4blo.ForwarderAction.body_identity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.body_identity
+
+/-- info: 'P4blo.ForwarderAction.entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.entry
+
+/-- info: 'P4blo.ForwarderAction.before_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.before_return
+
+/-- info: 'P4blo.ForwarderAction.source_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.source_steps
+
+/-- info: 'P4blo.ForwarderAction.run_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.run_correct
+
+/-- info: 'P4blo.ForwarderAction.result_matches' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.result_matches
+
+/-- info: 'P4blo.ForwarderAction.changes_only_vars' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.changes_only_vars
+
+/-- info: 'P4blo.ForwarderAction.preserves_outside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.preserves_outside
+
+/-- info: 'P4blo.ForwarderAction.populated_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.ForwarderAction.populated_correct
 
 /-- info: 'P4blo.Fields.FrameMatches.set_unshadowed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
