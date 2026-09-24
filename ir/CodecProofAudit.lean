@@ -2,6 +2,8 @@ import P4bloIR.CodecLaws
 import Tests.CodecLaws
 import P4bloIR.DeclarationCodecLaws
 import Tests.DeclarationCodec
+import P4bloIR.TableCodecLaws
+import Tests.TableCodec
 
 /-! Checked trust boundary for actual JSON-value syntax codec laws. -/
 
@@ -140,3 +142,23 @@ import Tests.DeclarationCodec
 /-- info: 'DeclarationCodecTests.declarations_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms DeclarationCodecTests.declarations_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.key_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.key_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.actionCall_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.actionCall_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.entry_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.entry_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.table_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.table_roundtrip
+
+/-- info: 'TableCodecTests.tables_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms TableCodecTests.tables_roundtrip
