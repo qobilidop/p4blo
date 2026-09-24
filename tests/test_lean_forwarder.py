@@ -60,7 +60,7 @@ def assert_program_identity(program: pb.Program) -> None:
 @pytest.fixture(scope="module")
 def forwarder(lean_binary: Path) -> pb.Program:
     assert lean_binary.is_file()
-    assert EXPORTER.is_file(), "build both Lean packages before conformance"
+    assert EXPORTER.is_file(), "build the Lean packages before conformance"
     assert {"forward.stf", "miss.stf", "non_ipv4.stf", "lpm_precedence.stf", "too_short.stf"} <= {
         vector.name for vector in VECTORS
     }, "required forwarder STF vector is missing"

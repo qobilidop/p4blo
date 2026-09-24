@@ -84,7 +84,7 @@ The Lean compiler/runtime and notation implementation are not
 verified by the lowering theorem; independent known answers exercise the
 authored syntax, JSON boundary and both production interpreters.
 
-Run `scripts/check-lean.sh` from the repo root to build and test both packages
+Run `scripts/check-lean.sh` from the repo root to build and test all three packages
 and their audits. Testing this package alone does not run the specification's
 audit or tests. After building, run
 `P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl.py` for the 21

@@ -68,7 +68,7 @@ specific package manager. Preserve actual historical command transcripts.
 
 ```
 scripts/check.sh                                   # every Python and schema check CI runs
-scripts/check-lean.sh                              # both Lean packages, audits and tests
+scripts/check-lean.sh                              # all three Lean packages, audits and tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
 tests/oracle/build.sh                                  # the P4-SpecTec oracle, once

@@ -212,7 +212,7 @@ r.read(hdr.h.got, (bit<32>) hdr.h.idx);
 ```
 
 p4blo's closed behavior (`docs/arch-supports.md`, "Extern families";
-`impl/python/p4blo/arch/externs/register.py`; `spec/ir/P4bloIR/Externs.lean`) is that a
+`impl/python/p4blo/arch/externs/register.py`; `spec/arch/P4bloArch/Externs.lean`) is that a
 read at or beyond `size` **yields zero** and a write there is ignored.
 BMv2 agrees about the write and not about the read: in
 `targets/simple_switch/primitives.cpp`, `register_read` on an

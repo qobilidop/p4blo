@@ -33,7 +33,7 @@ jobs:
           # The $(cat) must expand in the inner shell, not here.
           # shellcheck disable=SC2016
           nix develop -c sh -c 'elan toolchain install "$(cat spec/ir/lean-toolchain)"'
-      - name: Build, audit and test both Lean packages
+      - name: Build, audit and test the three Lean packages
         run: nix develop -c scripts/check-lean.sh
       - name: Differential test against the Python reference
         env:

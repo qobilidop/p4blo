@@ -15,7 +15,7 @@ locally before pushing, and check exit codes, not output.
 | Gate | Command | Expected |
 |---|---|---|
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
-| Lean | `scripts/check-lean.sh` | both packages build, each audit/test driver passes, exit 0 |
+| Lean | `scripts/check-lean.sh` | all three packages build in dependency order, each audit/test driver passes, exit 0 |
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
@@ -46,8 +46,8 @@ Prefer fresh build directories in new worktrees. Do not copy entire old
 Lean caches across package/namespace moves: stale modules can shadow current
 imports in standalone queries even when Lake's explicit build graph passes.
 For a clean-build check, wait for all binary consumers to finish, move only
-the two worktree-owned `.lake/build` directories to a recoverable temporary
-location, verify their absence, rebuild both packages, and rerun required
+the worktree-owned `.lake/build` directories to a recoverable temporary
+location, verify their absence, rebuild the packages, and rerun required
 DRT. Never move a source directory or shared toolchain as cache cleanup.
 New real-Lean tests use the shared `lean_binary` fixture and names beginning
 with `test_lean_agrees`; CI discovers them across the complete test tree.

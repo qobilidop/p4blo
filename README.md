@@ -138,7 +138,7 @@ For repository checks after installing their tools:
 
 ```
 scripts/check.sh              # every Python and schema check CI runs
-scripts/check-lean.sh         # both Lean packages, audits and tests
+scripts/check-lean.sh         # all three Lean packages, audits and tests
 ```
 
 The oracle needs P4-SpecTec: `tests/oracle/build.sh` builds its pinned source; see

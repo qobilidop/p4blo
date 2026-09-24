@@ -153,7 +153,7 @@ def checked_export(raw: Any) -> tuple[pb.Program, dict[str, dict[str, Any]]]:
 def export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
     executable = ROOT / "impl/lean/.lake/build/bin/forwarderTables"
-    assert executable.is_file(), "build both Lean packages first"
+    assert executable.is_file(), "build the Lean packages first"
     result = subprocess.run(
         [str(executable)], check=True, capture_output=True, text=True, timeout=30
     )

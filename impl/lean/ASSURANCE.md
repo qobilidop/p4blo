@@ -265,7 +265,7 @@ worktree. Each fault is applied alone and restored with an inverse patch.
    fixture failure.
 
 To reproduce, apply one exact edit above to this increment in an isolated
-worktree. Build both packages with `scripts/check-lean.sh` before mutation;
+worktree. Build all three packages with `scripts/check-lean.sh` before mutation;
 for Lean mutations run `lake +leanprover/lean4:v4.34.0 -d lean build` from
 the root after the development setup. Then run `lake test` in `impl/lean/` for
 the source known answers or required `uv run pytest 'tests/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`

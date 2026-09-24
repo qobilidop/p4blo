@@ -51,7 +51,7 @@ def assert_program_identity(program: pb.Program) -> None:
 @pytest.fixture(scope="module")
 def firewall(lean_binary: Path) -> pb.Program:
     assert lean_binary.is_file()
-    assert EXPORTER.is_file(), "build both Lean packages before conformance"
+    assert EXPORTER.is_file(), "build the Lean packages before conformance"
     assert {"connection.stf", "collisions.stf"} <= {p.name for p in VECTORS}
     result = subprocess.run([str(EXPORTER)], check=True, capture_output=True, text=True, timeout=30)
     assert result.stderr == ""

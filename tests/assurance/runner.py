@@ -486,10 +486,9 @@ def execute(run: Run) -> None:
             )
             checked_native_failure(code, stdout.decode(), stderr.decode())
     run.command(
-        "final-restored-build",
-        [*lake, "p4blo-lean", "ProofAudit", "CodecProofAudit", "codec-leaves"],
-        cwd=spec,
+        "final-restored-build", [*lake, "ProofAudit", "CodecProofAudit", "codec-leaves"], cwd=spec
     )
+    run.command("final-restored-endpoint-build", [*lake, "p4blo-lean"], cwd=arch)
     run.command("final-restored-native", [str(native), "--self-test"], cwd=spec)
     require(
         canonical(codec("codec-restored")) == canonical(CODEC_EXPECTED), "restored codec differs"
@@ -497,7 +496,7 @@ def execute(run: Run) -> None:
     for item in selected:
         run.compare("restored-" + item.name, item, scratch_binary)
     require(
-        all(digest((spec.parent / p).read_bytes()) == sha for p, sha in sources.items()),
+        all(digest((scratch / p).read_bytes()) == sha for p, sha in sources.items()),
         "scratch sources not restored exactly",
     )
     require(

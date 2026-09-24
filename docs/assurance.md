@@ -191,7 +191,7 @@ The checked theorem inventories are [`spec/ir/ProofAudit.lean`](../spec/ir/Proof
 [`spec/ir/CodecProofAudit.lean`](../spec/ir/CodecProofAudit.lean) and
 [`impl/lean/UserProofAudit.lean`](../impl/lean/UserProofAudit.lean); their exact
 statements and premises, not the labels above, define what is proved.
-Warnings are errors in both Lean packages, and the audits check the
+Warnings are errors in all three Lean packages, and the audits check the
 transitive axiom sets of advertised theorems, so `sorry`, custom axioms
 and native-evaluation escapes cannot silently replace a proof. The exact
 obligations, exclusions and mutation experiments of the scalar and field

@@ -1,5 +1,11 @@
 # Parked application proof drafts
 
+Since 2026-09-24 the repository keeps the Lean packages under `spec/ir/`,
+`spec/arch/` and `impl/lean/`, and the IR's extern state is generic with
+the families in `P4bloArch`. Both draft worktrees below predate that
+layout and must be rebased, with their extern constructions adapted,
+before any of their content can be built on `main`.
+
 2026-09-23. The user-approved finite [milestone 1](../../docs/assurance.md)
 does not require these additional application proofs. Preserve the drafts;
 do not resume them automatically or present them as landed guarantees.
