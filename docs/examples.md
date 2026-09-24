@@ -1,8 +1,7 @@
 # Python application examples
 
-Accepted 2026-09-24. The router and firewall are implemented and independently
-reviewed; integration checks are recorded in `status.md`. Load-balancer
-integration and final collection checks remain pending.
+Accepted 2026-09-24. All three applications are implemented and independently
+reviewed; final collection checks remain pending in `status.md`.
 This workstream follows completed assurance milestone 1 without reopening its
 frozen acceptance criteria. Current execution status lives in [status.md](status.md).
 Agent instructions remain in [AGENTS.md](../AGENTS.md); engineering procedures
@@ -30,6 +29,8 @@ SYN-created TCP pinholes in sixteen direct-mapped slots; collisions reject
 without eviction, policy applies on every packet and state lasts until reload.
 Each README defines the supported profile and explicit limitations. Scoped
 choices and their reasons are recorded in [decisions.md](decisions.md).
+The load balancer dispatches UDP requests through service and group/bucket
+tables, preserving IP/UDP content and assuming backends share the VIP.
 
 ## Accepted organization
 
@@ -54,8 +55,8 @@ tests/
 
 The intended repository-root invocation is
 `nix develop -c uv run python -m examples.router.demo`, with corresponding
-firewall and load-balancer modules. Router and firewall commands are available;
-load-balancer integration is pending. Examples use the existing environment, with no separate package
+firewall and load-balancer modules. All three commands are available.
+Examples use the existing environment, with no separate package
 or dependency set per application.
 
 Each program keeps headers, parser, actions, tables, control and deparser
@@ -92,10 +93,11 @@ Agreement between implementations does not replace intended-behavior checks.
   [its independent review](notes/reviews/example-router.md) and checkpoint.
 - [x] Stateful firewall meets the application criteria above; see
   [its independent review](notes/reviews/example-firewall.md).
-- [ ] Flow-affine load balancer meets the application criteria above.
-- [ ] All three are discovered by applicable repository/CI gates, including
+- [x] Flow-affine load balancer meets the application criteria above; see
+  [its independent review](notes/reviews/example-load-balancer.md).
+- [x] All three are discovered by applicable repository/CI gates, including
   the shared real-Lean fixture and `test_lean_agrees` naming convention.
-- [ ] Confirmed correctness and usability findings are resolved; remaining
+- [x] Confirmed correctness and usability findings are resolved; remaining
   limitations, deferred opportunities and evidence boundaries are explicit.
 - [ ] Required integration gates pass on the final implementation; commands,
   revisions, skips, reviews and next steps are recorded in repository docs.
@@ -108,7 +110,8 @@ follow the semantics-first, paired-interpreter procedure in the workflow.
 
 ## Next step
 
-Integrate the checked router baseline into the firewall and load-balancer
-worktrees, then build them against the committed example interfaces. Their
-directories can be developed independently. Shared wire helpers belong only
-to tests; each public program and demo remains readable on its own.
+Run the final combined repository gates, record exact evidence and remote
+results, then remove task-owned worktrees after preserving reviews and fault
+recipes. Shared wire helpers belong only to tests; each public program and
+demo remains readable on its own. No additional application or API redesign is
+needed to complete the agreed collection.

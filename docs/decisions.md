@@ -1330,3 +1330,13 @@ one that says so.
   interpreters/oracles, fault sensitivity and independent usability review.
   Revisit capacity/lifetime when a concrete application needs more than this
   deliberately bounded teaching contract. Preserve the upstream Bloom fixture.
+- **Keep the load balancer a scoped UDP service dispatcher.** A service lookup
+  chooses a group; CRC16 over the IPv4/UDP flow tuple selects one of four
+  host-mapped buckets within that group. Rewrite Ethernet, decrement TTL and
+  repair IPv4 checksum, preserving IP addresses and UDP content. Backends are
+  assumed to share the VIP and return directly; no NAT, health checking or
+  configuration-stable remapping is implied. Confidence: high after all-bucket
+  independent answers, both interpreters/oracles and fresh-reader review.
+  That review added a group-zero backend/service-miss regression, confirmed by
+  a guard-bypass mutant. Revisit bucket strategy or return-path handling only
+  for a concrete application, not to expand this initial collection.

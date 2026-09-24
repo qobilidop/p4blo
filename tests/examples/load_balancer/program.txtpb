@@ -1,0 +1,1629 @@
+name: "example_load_balancer"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "Ethernet"
+  fields {
+    name: "dst"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "src"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "ether_type"
+    type {
+      bits: 16
+    }
+  }
+}
+header_types {
+  name: "IPv4"
+  fields {
+    name: "version"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "ihl"
+    type {
+      bits: 4
+    }
+  }
+  fields {
+    name: "dscp_ecn"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "total_length"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "identification"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "flags"
+    type {
+      bits: 3
+    }
+  }
+  fields {
+    name: "fragment_offset"
+    type {
+      bits: 13
+    }
+  }
+  fields {
+    name: "ttl"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "protocol"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "checksum"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "src"
+    type {
+      bits: 32
+    }
+  }
+  fields {
+    name: "dst"
+    type {
+      bits: 32
+    }
+  }
+}
+header_types {
+  name: "UDP"
+  fields {
+    name: "src_port"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "dst_port"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "length"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "checksum"
+    type {
+      bits: 16
+    }
+  }
+}
+struct_types {
+  name: "Headers"
+  fields {
+    name: "ethernet"
+    type {
+      header: "Ethernet"
+    }
+  }
+  fields {
+    name: "ipv4"
+    type {
+      header: "IPv4"
+    }
+  }
+  fields {
+    name: "udp"
+    type {
+      header: "UDP"
+    }
+  }
+}
+struct_types {
+  name: "Metadata"
+  fields {
+    name: "ingress_port"
+    type {
+      bits: 9
+    }
+  }
+  fields {
+    name: "egress_port"
+    type {
+      bits: 9
+    }
+  }
+  fields {
+    name: "drop"
+    type {
+      boolean {
+      }
+    }
+  }
+  fields {
+    name: "expected_checksum"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "group"
+    type {
+      bits: 8
+    }
+  }
+  fields {
+    name: "service_found"
+    type {
+      boolean {
+      }
+    }
+  }
+  fields {
+    name: "flow_hash"
+    type {
+      bits: 16
+    }
+  }
+  fields {
+    name: "bucket"
+    type {
+      bits: 2
+    }
+  }
+}
+extern_types {
+  name: "checksum16"
+  methods {
+    name: "compute"
+    params {
+      name: "data"
+      type {
+        bits: 144
+      }
+      direction: DIRECTION_IN
+    }
+    returns {
+      bits: 16
+    }
+  }
+}
+extern_types {
+  name: "crc16"
+  methods {
+    name: "compute"
+    params {
+      name: "data"
+      type {
+        bits: 96
+      }
+      direction: DIRECTION_IN
+    }
+    returns {
+      bits: 16
+    }
+  }
+}
+extern_instances {
+  name: "checksum"
+  extern_type: "checksum16"
+}
+extern_instances {
+  name: "flow_hash"
+  extern_type: "crc16"
+}
+blocks {
+  name: "Parse"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "ethernet"
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "ether_type"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 16
+                value: "2048"
+              }
+            }
+          }
+          target {
+            state: "ipv4"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "ipv4"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "ipv4"
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ipv4"
+              }
+            }
+            field: "protocol"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 8
+                value: "17"
+              }
+            }
+          }
+          target {
+            state: "udp"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "udp"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "udp"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "Balance"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  actions {
+    name: "deny"
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "drop"
+          }
+        }
+        value {
+          literal {
+            boolean: true
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "select_group"
+    params {
+      name: "group"
+      type {
+        bits: 8
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "group"
+          }
+        }
+        value {
+          var: "group"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "service_found"
+          }
+        }
+        value {
+          literal {
+            boolean: true
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "deliver"
+    params {
+      name: "src_mac"
+      type {
+        bits: 48
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "dst_mac"
+      type {
+        bits: 48
+      }
+      direction: DIRECTION_NONE
+    }
+    params {
+      name: "port"
+      type {
+        bits: 9
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "src"
+          }
+        }
+        value {
+          var: "src_mac"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "dst"
+          }
+        }
+        value {
+          var: "dst_mac"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          var: "port"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ipv4"
+              }
+            }
+            field: "ttl"
+          }
+        }
+        value {
+          binary {
+            op: BINARY_OP_SUB
+            left {
+              member {
+                base {
+                  member {
+                    base {
+                      var: "hdr"
+                    }
+                    field: "ipv4"
+                  }
+                }
+                field: "ttl"
+              }
+            }
+            right {
+              literal {
+                bits {
+                  width: 8
+                  value: "1"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    body {
+      call_extern {
+        instance: "checksum"
+        method: "compute"
+        args {
+          expr {
+            binary {
+              op: BINARY_OP_CONCAT
+              left {
+                binary {
+                  op: BINARY_OP_CONCAT
+                  left {
+                    binary {
+                      op: BINARY_OP_CONCAT
+                      left {
+                        binary {
+                          op: BINARY_OP_CONCAT
+                          left {
+                            binary {
+                              op: BINARY_OP_CONCAT
+                              left {
+                                binary {
+                                  op: BINARY_OP_CONCAT
+                                  left {
+                                    binary {
+                                      op: BINARY_OP_CONCAT
+                                      left {
+                                        binary {
+                                          op: BINARY_OP_CONCAT
+                                          left {
+                                            binary {
+                                              op: BINARY_OP_CONCAT
+                                              left {
+                                                binary {
+                                                  op: BINARY_OP_CONCAT
+                                                  left {
+                                                    member {
+                                                      base {
+                                                        member {
+                                                          base {
+                                                            var: "hdr"
+                                                          }
+                                                          field: "ipv4"
+                                                        }
+                                                      }
+                                                      field: "version"
+                                                    }
+                                                  }
+                                                  right {
+                                                    member {
+                                                      base {
+                                                        member {
+                                                          base {
+                                                            var: "hdr"
+                                                          }
+                                                          field: "ipv4"
+                                                        }
+                                                      }
+                                                      field: "ihl"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                              right {
+                                                member {
+                                                  base {
+                                                    member {
+                                                      base {
+                                                        var: "hdr"
+                                                      }
+                                                      field: "ipv4"
+                                                    }
+                                                  }
+                                                  field: "dscp_ecn"
+                                                }
+                                              }
+                                            }
+                                          }
+                                          right {
+                                            member {
+                                              base {
+                                                member {
+                                                  base {
+                                                    var: "hdr"
+                                                  }
+                                                  field: "ipv4"
+                                                }
+                                              }
+                                              field: "total_length"
+                                            }
+                                          }
+                                        }
+                                      }
+                                      right {
+                                        member {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "ipv4"
+                                            }
+                                          }
+                                          field: "identification"
+                                        }
+                                      }
+                                    }
+                                  }
+                                  right {
+                                    member {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "ipv4"
+                                        }
+                                      }
+                                      field: "flags"
+                                    }
+                                  }
+                                }
+                              }
+                              right {
+                                member {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "ipv4"
+                                    }
+                                  }
+                                  field: "fragment_offset"
+                                }
+                              }
+                            }
+                          }
+                          right {
+                            member {
+                              base {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "ipv4"
+                                }
+                              }
+                              field: "ttl"
+                            }
+                          }
+                        }
+                      }
+                      right {
+                        member {
+                          base {
+                            member {
+                              base {
+                                var: "hdr"
+                              }
+                              field: "ipv4"
+                            }
+                          }
+                          field: "protocol"
+                        }
+                      }
+                    }
+                  }
+                  right {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "ipv4"
+                        }
+                      }
+                      field: "src"
+                    }
+                  }
+                }
+              }
+              right {
+                member {
+                  base {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "ipv4"
+                    }
+                  }
+                  field: "dst"
+                }
+              }
+            }
+          }
+        }
+        result {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ipv4"
+              }
+            }
+            field: "checksum"
+          }
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "drop"
+          }
+        }
+        value {
+          literal {
+            boolean: false
+          }
+        }
+      }
+    }
+  }
+  tables {
+    name: "services"
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "ipv4"
+            }
+          }
+          field: "dst"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "udp"
+            }
+          }
+          field: "dst_port"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    actions: "select_group"
+    actions: "deny"
+    default_action {
+      action: "deny"
+    }
+    size: 256
+  }
+  tables {
+    name: "backends"
+    keys {
+      expr {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "group"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    keys {
+      expr {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "bucket"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    actions: "deliver"
+    actions: "deny"
+    default_action {
+      action: "deny"
+    }
+    size: 1024
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "drop"
+        }
+      }
+      value {
+        literal {
+          boolean: true
+        }
+      }
+    }
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "service_found"
+        }
+      }
+      value {
+        literal {
+          boolean: false
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_AND
+          left {
+            binary {
+              op: BINARY_OP_AND
+              left {
+                binary {
+                  op: BINARY_OP_AND
+                  left {
+                    binary {
+                      op: BINARY_OP_AND
+                      left {
+                        binary {
+                          op: BINARY_OP_AND
+                          left {
+                            binary {
+                              op: BINARY_OP_AND
+                              left {
+                                binary {
+                                  op: BINARY_OP_AND
+                                  left {
+                                    binary {
+                                      op: BINARY_OP_AND
+                                      left {
+                                        is_valid {
+                                          header {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "ipv4"
+                                            }
+                                          }
+                                        }
+                                      }
+                                      right {
+                                        is_valid {
+                                          header {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "udp"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  right {
+                                    binary {
+                                      op: BINARY_OP_EQ
+                                      left {
+                                        member {
+                                          base {
+                                            member {
+                                              base {
+                                                var: "hdr"
+                                              }
+                                              field: "ipv4"
+                                            }
+                                          }
+                                          field: "version"
+                                        }
+                                      }
+                                      right {
+                                        literal {
+                                          bits {
+                                            width: 4
+                                            value: "4"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              right {
+                                binary {
+                                  op: BINARY_OP_EQ
+                                  left {
+                                    member {
+                                      base {
+                                        member {
+                                          base {
+                                            var: "hdr"
+                                          }
+                                          field: "ipv4"
+                                        }
+                                      }
+                                      field: "ihl"
+                                    }
+                                  }
+                                  right {
+                                    literal {
+                                      bits {
+                                        width: 4
+                                        value: "5"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          right {
+                            binary {
+                              op: BINARY_OP_GE
+                              left {
+                                member {
+                                  base {
+                                    member {
+                                      base {
+                                        var: "hdr"
+                                      }
+                                      field: "ipv4"
+                                    }
+                                  }
+                                  field: "total_length"
+                                }
+                              }
+                              right {
+                                literal {
+                                  bits {
+                                    width: 16
+                                    value: "28"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      right {
+                        binary {
+                          op: BINARY_OP_GT
+                          left {
+                            member {
+                              base {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "ipv4"
+                                }
+                              }
+                              field: "ttl"
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 8
+                                value: "1"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  right {
+                    binary {
+                      op: BINARY_OP_EQ
+                      left {
+                        binary {
+                          op: BINARY_OP_BIT_AND
+                          left {
+                            member {
+                              base {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "ipv4"
+                                }
+                              }
+                              field: "flags"
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 3
+                                value: "5"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 3
+                            value: "0"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_EQ
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "ipv4"
+                        }
+                      }
+                      field: "fragment_offset"
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 13
+                        value: "0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          right {
+            binary {
+              op: BINARY_OP_GE
+              left {
+                member {
+                  base {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "udp"
+                    }
+                  }
+                  field: "length"
+                }
+              }
+              right {
+                literal {
+                  bits {
+                    width: 16
+                    value: "8"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        call_extern {
+          instance: "checksum"
+          method: "compute"
+          args {
+            expr {
+              binary {
+                op: BINARY_OP_CONCAT
+                left {
+                  binary {
+                    op: BINARY_OP_CONCAT
+                    left {
+                      binary {
+                        op: BINARY_OP_CONCAT
+                        left {
+                          binary {
+                            op: BINARY_OP_CONCAT
+                            left {
+                              binary {
+                                op: BINARY_OP_CONCAT
+                                left {
+                                  binary {
+                                    op: BINARY_OP_CONCAT
+                                    left {
+                                      binary {
+                                        op: BINARY_OP_CONCAT
+                                        left {
+                                          binary {
+                                            op: BINARY_OP_CONCAT
+                                            left {
+                                              binary {
+                                                op: BINARY_OP_CONCAT
+                                                left {
+                                                  binary {
+                                                    op: BINARY_OP_CONCAT
+                                                    left {
+                                                      member {
+                                                        base {
+                                                          member {
+                                                            base {
+                                                              var: "hdr"
+                                                            }
+                                                            field: "ipv4"
+                                                          }
+                                                        }
+                                                        field: "version"
+                                                      }
+                                                    }
+                                                    right {
+                                                      member {
+                                                        base {
+                                                          member {
+                                                            base {
+                                                              var: "hdr"
+                                                            }
+                                                            field: "ipv4"
+                                                          }
+                                                        }
+                                                        field: "ihl"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                                right {
+                                                  member {
+                                                    base {
+                                                      member {
+                                                        base {
+                                                          var: "hdr"
+                                                        }
+                                                        field: "ipv4"
+                                                      }
+                                                    }
+                                                    field: "dscp_ecn"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                            right {
+                                              member {
+                                                base {
+                                                  member {
+                                                    base {
+                                                      var: "hdr"
+                                                    }
+                                                    field: "ipv4"
+                                                  }
+                                                }
+                                                field: "total_length"
+                                              }
+                                            }
+                                          }
+                                        }
+                                        right {
+                                          member {
+                                            base {
+                                              member {
+                                                base {
+                                                  var: "hdr"
+                                                }
+                                                field: "ipv4"
+                                              }
+                                            }
+                                            field: "identification"
+                                          }
+                                        }
+                                      }
+                                    }
+                                    right {
+                                      member {
+                                        base {
+                                          member {
+                                            base {
+                                              var: "hdr"
+                                            }
+                                            field: "ipv4"
+                                          }
+                                        }
+                                        field: "flags"
+                                      }
+                                    }
+                                  }
+                                }
+                                right {
+                                  member {
+                                    base {
+                                      member {
+                                        base {
+                                          var: "hdr"
+                                        }
+                                        field: "ipv4"
+                                      }
+                                    }
+                                    field: "fragment_offset"
+                                  }
+                                }
+                              }
+                            }
+                            right {
+                              member {
+                                base {
+                                  member {
+                                    base {
+                                      var: "hdr"
+                                    }
+                                    field: "ipv4"
+                                  }
+                                }
+                                field: "ttl"
+                              }
+                            }
+                          }
+                        }
+                        right {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "ipv4"
+                              }
+                            }
+                            field: "protocol"
+                          }
+                        }
+                      }
+                    }
+                    right {
+                      member {
+                        base {
+                          member {
+                            base {
+                              var: "hdr"
+                            }
+                            field: "ipv4"
+                          }
+                        }
+                        field: "src"
+                      }
+                    }
+                  }
+                }
+                right {
+                  member {
+                    base {
+                      member {
+                        base {
+                          var: "hdr"
+                        }
+                        field: "ipv4"
+                      }
+                    }
+                    field: "dst"
+                  }
+                }
+              }
+            }
+          }
+          result {
+            member {
+              base {
+                var: "meta"
+              }
+              field: "expected_checksum"
+            }
+          }
+        }
+      }
+      then {
+        conditional {
+          condition {
+            binary {
+              op: BINARY_OP_EQ
+              left {
+                member {
+                  base {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "ipv4"
+                    }
+                  }
+                  field: "checksum"
+                }
+              }
+              right {
+                member {
+                  base {
+                    var: "meta"
+                  }
+                  field: "expected_checksum"
+                }
+              }
+            }
+          }
+          then {
+            apply {
+              table: "services"
+            }
+          }
+          then {
+            conditional {
+              condition {
+                member {
+                  base {
+                    var: "meta"
+                  }
+                  field: "service_found"
+                }
+              }
+              then {
+                call_extern {
+                  instance: "flow_hash"
+                  method: "compute"
+                  args {
+                    expr {
+                      binary {
+                        op: BINARY_OP_CONCAT
+                        left {
+                          binary {
+                            op: BINARY_OP_CONCAT
+                            left {
+                              binary {
+                                op: BINARY_OP_CONCAT
+                                left {
+                                  member {
+                                    base {
+                                      member {
+                                        base {
+                                          var: "hdr"
+                                        }
+                                        field: "ipv4"
+                                      }
+                                    }
+                                    field: "src"
+                                  }
+                                }
+                                right {
+                                  member {
+                                    base {
+                                      member {
+                                        base {
+                                          var: "hdr"
+                                        }
+                                        field: "ipv4"
+                                      }
+                                    }
+                                    field: "dst"
+                                  }
+                                }
+                              }
+                            }
+                            right {
+                              member {
+                                base {
+                                  member {
+                                    base {
+                                      var: "hdr"
+                                    }
+                                    field: "udp"
+                                  }
+                                }
+                                field: "src_port"
+                              }
+                            }
+                          }
+                        }
+                        right {
+                          member {
+                            base {
+                              member {
+                                base {
+                                  var: "hdr"
+                                }
+                                field: "udp"
+                              }
+                            }
+                            field: "dst_port"
+                          }
+                        }
+                      }
+                    }
+                  }
+                  result {
+                    member {
+                      base {
+                        var: "meta"
+                      }
+                      field: "flow_hash"
+                    }
+                  }
+                }
+              }
+              then {
+                assign {
+                  target {
+                    member {
+                      base {
+                        var: "meta"
+                      }
+                      field: "bucket"
+                    }
+                  }
+                  value {
+                    cast {
+                      to {
+                        bits: 2
+                      }
+                      operand {
+                        member {
+                          base {
+                            var: "meta"
+                          }
+                          field: "flow_hash"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              then {
+                apply {
+                  table: "backends"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "Emit"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "ethernet"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "ipv4"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "udp"
+        }
+      }
+    }
+  }
+}
+headers: "Headers"
+metadata: "Metadata"
+exports {
+  role: "parser"
+  block: "Parse"
+}
+exports {
+  role: "control"
+  block: "Balance"
+}
+exports {
+  role: "deparser"
+  block: "Emit"
+}

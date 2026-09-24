@@ -16,6 +16,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 FAULTS = {
+    "load_balancer": {
+        "constant-bucket": (
+            "self.assign(self.meta.bucket, self.meta.flow_hash.cast(p4.bit2))",
+            "self.assign(self.meta.bucket, 0)",
+        ),
+        "source-port-omitted": (
+            "p4.concat(ip.src, ip.dst, udp.src_port, udp.dst_port).as_(",
+            "p4.concat(ip.src, ip.dst, udp.dst_port, udp.dst_port).as_(",
+        ),
+        "service-miss-uses-group-zero": (
+            "with self.if_(self.meta.service_found):",
+            "with self.if_(self.meta.ingress_port >= 0):",
+        ),
+        "stale-checksum": (
+            "        self.assign(self.hdr.ipv4.checksum, checksum.compute(checksum_data(self.hdr.ipv4)))\n",
+            "",
+        ),
+    },
     "firewall": {
         "tuple-mismatch-admitted": (
             "with self.if_(self.resident == self.record):",

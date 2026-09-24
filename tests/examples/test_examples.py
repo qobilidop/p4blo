@@ -16,7 +16,7 @@ from tests.examples.catalog import DATA, NAMES, ROOT, build
 
 
 def test_discovery_is_nonempty_and_assets_are_complete() -> None:
-    assert "router" in NAMES
+    assert {"router", "firewall", "load_balancer"} <= set(NAMES)
     for name in NAMES:
         assert (ROOT / f"examples/{name}/README.md").is_file()
         assert (ROOT / f"examples/{name}/demo.py").is_file()

@@ -13,6 +13,19 @@ The active new workstream is the three Python application examples in
 
 ## Latest checked checkpoint
 
+**Three-application integration (2026-09-24).** Router, firewall and UDP load
+balancer now live under `examples/`, each with source, README and runnable demo.
+The load-balancer [review](notes/reviews/example-load-balancer.md) requested a
+group-zero backend/service-miss regression; it is added and catches an actual
+guard-bypass fault in both interpreters. Its final sequence has 111 independent
+requests. All three applications have clean independent reviews and source
+fault campaigns with passing restored baselines (three router faults, three
+firewall faults, four load-balancer faults). The eDSL and interpreter semantics
+needed no changes. Shared discovery, typing, exact vector checks and oracle
+inventory guards are the reusable engineering improvements from this work.
+Next: combined full gates and final evidence/cleanup; do not count completion
+until the remaining checkbox in [examples.md](examples.md) is satisfied.
+
 **Firewall integration (2026-09-24).** Candidate `f874b6f` adds the public
 exact-pinhole TCP filter. Independent [review](notes/reviews/example-firewall.md)
 has no confirmed defects. Its 890-request sequence checks packets and all
@@ -485,10 +498,10 @@ The application collection is active. Milestone 1 is complete; the other
 older plans below are deliberately parked, not automatic continuation tasks.
 
 - **Python application collection:** autonomous implementation is authorized;
-  follow [examples.md](examples.md). Current iteration: router and firewall
-  reviewed/checked; load-balancer review requests one additional group-zero
-  service-miss regression. Next: integrate that checked application, run the
-  final collection gates, record completion and remove task-owned worktrees.
+  follow [examples.md](examples.md). Current iteration: all three implemented,
+  reviewed and challenged with known-answer program mutations; review findings
+  resolved. Next: full combined gates, final evidence and removal of task-owned
+  worktrees. Existing six preserved worktrees are outside this cleanup scope.
   Keep the finite checklist and review findings current as each advances.
 
 - **Project website:** the requested Python gateway walkthrough is published,
