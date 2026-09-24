@@ -398,7 +398,7 @@ class KnownSpecTecTableMaskDisagreement(Exception):
 @pytest.mark.xfail(
     strict=True,
     raises=KnownSpecTecTableMaskDisagreement,
-    reason="pinned SpecTec table adapter casts base as mask; docs/assurance.md#known-disagreements-with-the-oracles",
+    reason="pinned SpecTec table adapter casts base as mask; docs/assurance.md",
 )
 def test_firewall_route_miss_on_spectec(tmp_path: Path, printed: bool) -> None:
     oracle = spectec.find_oracle()
