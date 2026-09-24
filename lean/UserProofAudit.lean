@@ -18,6 +18,23 @@ import P4blo.CallReturnTests
 import P4blo.GuardedCallPrefixTests
 import P4blo.GuardedControlCallTests
 import P4blo.ForwarderTests
+import P4blo.FieldActionWriteTests
+
+/-- info: 'P4blo.Fields.FrameMatches.set_unshadowed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.FrameMatches.set_unshadowed
+
+/-- info: 'P4blo.Fields.Ref.write_unshadowed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Ref.write_unshadowed
+
+/-- info: 'P4blo.Fields.Ref.write_matches_unshadowed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Fields.Ref.write_matches_unshadowed
+
+/-- info: 'P4blo.FieldActionWriteTests.active_write' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.FieldActionWriteTests.active_write
 
 /-- info: 'P4blo.Forwarder.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
