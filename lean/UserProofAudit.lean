@@ -22,6 +22,59 @@ import P4blo.ForwarderTests
 import P4blo.FieldActionWriteTests
 import P4blo.ForwarderAction
 import P4blo.TutorialFirewallProof
+import P4blo.TutorialFirewallBloom
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.cell_answer' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.cell_answer
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.size_preserved' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.size_preserved
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.membership_preserved' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.membership_preserved
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.selected_cell' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.selected_cell
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.first_call' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.first_call
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.second_call' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.second_call
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.body_identity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.body_identity
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.first_step' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.first_step
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.result_externs' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.result_externs
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.result_preserves' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.result_preserves
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.profile_cells' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.profile_cells
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.insertion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.insertion
+
+/-- info: 'P4blo.TutorialFirewall.Bloom.initialized_insertion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.Bloom.initialized_insertion
 
 /-- info: 'P4blo.ForwarderAction.observe_restore' does not depend on any axioms -/
 #guard_msgs in
