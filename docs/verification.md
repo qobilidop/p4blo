@@ -6,6 +6,12 @@ implementation implements it. This extends the completed prototype's
 single-theorem milestone. It is not a claim that testing proves Python
 equivalent to Lean.
 
+The accepted finite completion boundary is now
+[assurance milestone 1](milestone-1.md). The sequences and extensions below
+describe the broader research backlog, not mandatory release criteria.
+Prioritize current-profile conformance, independent evidence and usability;
+universal Python correctness and complete pipeline proofs are non-goals.
+
 ## Assurance boundaries
 
 Lean owns abstract syntax, validity and meaning; protobuf owns wire syntax.

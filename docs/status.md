@@ -12,6 +12,14 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
+**Active goal:** complete [assurance milestone 1](milestone-1.md), accepted by
+the user after explicitly declining universal Python correctness as a resource
+goal. Integrate already-reviewed Action/Block work, close top-level interchange
+tests, audit/consolidate evidence, and finish usable clean-checkout acceptance.
+Further application proof expansion is parked; the older open threads below
+are backlog unless required by that finite checklist. No milestone completion
+is claimed yet.
+
 Combined local code integration at `9a12253` plus the reviewed oracle selector
 at `529475f`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
@@ -177,8 +185,12 @@ and BMv2 plus Lean pass. XDP run `35949452182` failed before compilation:
 Ubuntu's pinned snapshot returned HTTP 503 for noble-security/InRelease.
 Attempt 2 also failed before compilation with HTTP 503 on all three pinned
 InRelease indexes, in both build/runtime stages. No further immediate retry
-or infrastructure change is made; pins/checks remain unchanged. This is not
-a completed XDP gate or a code fix. Newer CI must be checked separately.
+or infrastructure change is made; pins/checks remain unchanged. At `54e3c65`,
+CI (`35950597919`), Lean (`35950597842`), Oracle (`35950597925`) and BMv2
+(`35950597905`) pass. XDP (`35950597787`) again fails before compilation,
+this time with HTTP 502 on all three pinned Ubuntu InRelease indexes.
+This is not a completed XDP gate or a code fix; the experimental XDP profile
+is reported separately from milestone 1's P4 acceptance.
 This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -539,9 +551,9 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/forwarder-tables.md`. Actual application is integrated at `9a12253`,
   with twelve audits, 270 native cases, 810 queue boundaries, 24 hit/error
   controls and 320 Python checks. Scope/review: `notes/forwarder-apply.md`.
-  The next actual first ingress conditional with checksum pending is active
-  in `work/forwarder-ingress` at `/Users/qobilidop/my/work/p4blo-forwarder-ingress`;
-  checksum and complete forwarding remain separate obligations.
+  Further ingress/checksum proof work is parked for milestone 1. The exact
+  unfinished tree and checks are recorded in `notes/parked-proofs.md`; none
+  of its uncommitted results is a landed guarantee or acceptance blocker.
   The small operational root prerequisite is independently reviewed and
   committed at `01d8b09`: actual active-map absence permits a block write
   without dropping action storage; action-hit reads/writes prefer and change
@@ -596,13 +608,13 @@ Things a resuming agent should know are in motion or deliberately left.
   actual Lean register fault are proof-rejected; a real Python other-cell
   fault produces three state-only mismatches on the existing four-packet input.
   Scope, reconstruction and CLEAR review: `notes/firewall-bloom.md`.
-  Next: actual two-read prefix before the decision, then drop/no-op composition,
-  hash bounds and control composition. No exact-connection-tracking claim.
+  Future backlog: actual two-read prefix before the decision, then drop/no-op
+  composition, hash bounds and control composition. These are not milestone 1
+  blockers. No exact-connection-tracking claim.
   Reviewed plan `b3defb4` is integrated at `279ed03`:
-  `notes/firewall-readback-next.md`. Root's active implementation worktree is
-  `/Users/qobilidop/my/work/p4blo-firewall-readback`, `work/firewall-readback`.
-  The unregistered actual two-call prefix and preservation/witness compile;
-  native/Python observations, audits and fault campaigns remain in progress.
+  `notes/firewall-readback-next.md`. The implementation is parked, not active;
+  `notes/parked-proofs.md` records its tree, successful standalone checks and
+  unfinished Python draft. It is not publicly registered or integrated.
 
   Four validator-accepted wrong ports fail both engines. Subsequent actual
   Python/Lean CRC XOR-one mutations pass packet-only gates but produce three

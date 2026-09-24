@@ -1182,3 +1182,15 @@ one that says so.
   do not count the failed run as assurance or immediately loop retries.
   Recheck on the next normal checkpoint run before considering a separately
   reviewed availability fix.
+- **Finish a bounded assurance milestone, not universal Python correctness.**
+  The user accepted `milestone-1.md`: freeze the current IR/profile, close
+  whole-program interchange coverage, consolidate independent/adversarial
+  evidence and usable clean-checkout acceptance, then stop. This supersedes
+  automatic continuation of every application, validator or codec proof in
+  the broader roadmap. Confidence: high that it matches the intended useful
+  deliverable; no numerical confidence-of-correctness claim. Already-reviewed
+  Action/Block work remains closeout; further readback/ingress proofs are
+  parked with WIP retained. Simple Export/Program composition is optional,
+  never an excuse to reopen the milestone. Revisit scope only for a concrete
+  acceptance gap or a new user-approved milestone; this is not a wire-version
+  migration and does not disable existing XDP CI.

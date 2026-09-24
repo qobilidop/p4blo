@@ -12,7 +12,8 @@ independent Lean semantics validated against a runnable reference.
 ## Read first, in this order
 
 1. `docs/status.md`: where the work stands, per claim and per step, and
-   the open threads.
+   the open threads. `docs/milestone-1.md` is the active finite definition
+   of done; it supersedes older open-ended proof/application work lists.
 2. `docs/decisions.md`: every choice made while building, dated, with
    its reason. Overrule one by adding a new entry that says so.
 3. `docs/design.md`: what the project is, the four claims, how each is
@@ -103,9 +104,12 @@ so the required CI gate discovers them without a hand-maintained file list.
 - **Continue autonomously within the requested direction.** Make scoped
   design decisions without waiting for feedback and record their reasons
   in `docs/decisions.md` for later review. Record confidence and a revisit
-  trigger for uncertain choices. Follow `docs/implementation.md` (Python
-  and Lean only). Prefer reversible steps to waiting for feedback. Keep
-  advancing the active roadmap while a safe, concrete next step is known.
+  trigger for uncertain choices. Follow `docs/milestone-1.md` for current
+  acceptance (Python and Lean only); `docs/implementation.md` also contains
+  future work, not mandatory completion criteria. Prefer reversible steps
+  to waiting for feedback. Complete the finite acceptance checklist, then
+  stop; do not automatically add every next possible proof. Universal Python
+  correctness and full application/pipeline proofs are explicit non-goals.
 - **Challenge verification adversarially.** Introduce deliberate semantic
   faults in isolated worktrees on both the Python and Lean sides. Record
   which conformance tests kill each mutant, investigate survivors, and

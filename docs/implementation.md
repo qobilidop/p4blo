@@ -4,6 +4,12 @@ Accepted 2026-09-23. The design is [notes/ir-spec-boundary.md](notes/ir-spec-bou
 Python and Lean only. Full architecture-independent P4 is the north star,
 not a completion criterion for this finite example-driven roadmap.
 
+**Current acceptance supersedes this broader backlog:** the user accepted
+[assurance milestone 1](milestone-1.md). Close its finite checklist; unchecked
+items below are not automatically release blockers. Further firewall readback
+and guarded-ingress proofs are parked. Do not expand application proofs or
+validator/termination work merely because another theorem is available.
+
 Work autonomously in small reviewed increments. Record uncertain decisions
 with confidence and a revisit trigger in `decisions.md`; prefer reversible
 choices. Keep the existing proof audit, Python/schema, Lean/conformance and
