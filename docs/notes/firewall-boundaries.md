@@ -78,7 +78,7 @@ of compilation, or proof of parser correctness is added by these tests.
 
 The original source/revision/license and unchanged configuration are
 those pinned by `tests/oracle/firewall.py` and
-`docs/notes/firewall-port.md`. Tests compile that original source, not the
+`docs/evidence/firewall-port.md`. Tests compile that original source, not the
 observer clone or a printer-generated replacement. The existing reviewed
 single-ingress completion sentinel and fresh-switch prefix replay protocol
 are reused without change. State is read only at the final boundary of

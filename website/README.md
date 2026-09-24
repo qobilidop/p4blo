@@ -2,7 +2,7 @@
 
 A responsive landing-page design inspired by the clear research-tool
 presentation at [Veil](https://veil.dev/). The rationale and source mapping
-are in [the design note](../docs/notes/website-design.md).
+are in [the design note](../docs/website-design.md).
 
 ## Preview
 

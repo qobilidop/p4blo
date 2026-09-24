@@ -100,7 +100,7 @@ one that says so.
   runs unchanged under the switch. Byte-aligned parsing required by the
   architectures; the control runs after a parser rejection.
 - **Corpus programs picked from p4c's test suite** after the survey in
-  `docs/notes/corpus-candidates.md`: ACL is `ternary2-bmv2` (the only
+  `docs/corpus-candidates.md`: ACL is `ternary2-bmv2` (the only
   v1model STF with runtime ternary adds and overlapping priorities),
   header stacks is `header-stack-ops-bmv2` (fifteen BMv2-produced
   vectors over push, pop, holes and `next`), stateful is
@@ -203,7 +203,7 @@ one that says so.
 - **AGENTS.md is the resumption entry point** and `docs/workflows.md`
   the procedures; `docs/status.md` carries an "Open threads" section.
   Nothing needed to continue the work may live outside the repository.
-- **eDSL v2 proposed, not yet built** (`docs/notes/edsl-v2-design.md`).
+- **eDSL v2 proposed, not yet built** (`docs/edsl-v2-design.md`).
   Bili asked for an eDSL that is as type safe as possible and never
   refers to things by string. Two surveys (pakeles and p4py; the HDL
   and compiler eDSLs) and two pyright probes led to: headers and blocks
@@ -212,7 +212,7 @@ one that says so.
   arithmetic, no source reading, goldens unchanged. Awaiting Bili's
   review of the open questions before code.
 - **eDSL v2 design accepted (Bili, 2026-09-22)** as recommended in
-  `docs/notes/edsl-v2-design.md`, all fifteen points. Build order: the
+  `docs/edsl-v2-design.md`, all fifteen points. Build order: the
   typed surface with the forwarder golden as its acceptance test, then
   the corpus rewrite and the pyright diagnostics suite in parallel,
   then a review. The v1 builder becomes `p4blo.edsl.core`, the
@@ -409,11 +409,11 @@ one that says so.
   Generation is optional; stable wire metadata and conversion obligations
   matter more than which file generates which. The rationale, proposed
   obligations, organization context, and unresolved plan are in
-  [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). Bili requested
+  [notes/ir-spec-boundary.md](ir-spec-boundary.md). Bili requested
   documentation only, no commit yet, while continuing to adjust the plan.
 - **A separate user-facing Lean package (design agreed, not built).**
   Bili accepted the prior-art-informed design in
-  [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md): a Lean library
+  [notes/ir-spec-boundary.md](ir-spec-boundary.md): a Lean library
   imports the authoritative IR package and provides an ergonomic typed
   eDSL, verified lowering, and an interpreter API. Use selective
   proof-producing elaboration, not a general compiler from arbitrary Lean.
@@ -436,7 +436,7 @@ one that says so.
   Linux BPF execution for XDP; do not imply a general eBPF translator or
   Linux model. Flowlet switching depends on a feasible time/randomness
   oracle; Katran's exact profile requires an audit. Details and sources are
-  in [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). This records
+  in [notes/ir-spec-boundary.md](ir-spec-boundary.md). This records
   direction only; implementation remains deferred and changes uncommitted
   while the design discussion continues.
 - **Implement the accepted plan autonomously, Python and Lean only.**

@@ -38,7 +38,7 @@ reproducer runs.
   only an out-of-*range* value is caught; a wrong-width value that fits
   is not. The IR stores decimal strings of the key's width, so the
   validator cannot see it either.
-- Violates recommendation 6 of `docs/notes/edsl-v2-design.md`, accepted
+- Violates recommendation 6 of `docs/edsl-v2-design.md`, accepted
   in full ("Entries are the host-facing part of a table and a wrong width
   there is silent until the validator; `Table` becomes generic in its key
   tuple with overloads for arity one to four"), and the design table's

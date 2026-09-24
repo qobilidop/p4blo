@@ -177,7 +177,7 @@ print('rows',len(rows),'canonical successes',success,'bytes',out.stat().st_size,
 for path,digest in sources.items(): print(path,digest)
 ```
 
-The independent [baseline review](reviews/milestone-interchange.md) is CLEAR:
+The independent [baseline review](../notes/reviews/milestone-interchange.md) is CLEAR:
 203 focused checks, the native endpoint, all 22 source pins, 165 exact raw
 request/answer identities and 73 actual protobuf conversions were independently
 checked. The old eight codec files also pass 1850 checks (50.85 seconds);
@@ -538,7 +538,7 @@ both bounded fault observations and all six source comparisons pass
 (`/tmp/p4blo-milestone-restored-replay.log`). No intentional mutation, active
 consumer or build remains. Root owns the combined full integration gate.
 
-Final independent [interchange review](reviews/milestone-interchange.md) is
+Final independent [interchange review](../notes/reviews/milestone-interchange.md) is
 CLEAR: 239 focused checks and 193 native anchors were rerun; the exact prior
 metadata survivor is rejected; all historical pins, dual-endpoint baseline
 bytes, both reconstructed source faults, retained observations and restored

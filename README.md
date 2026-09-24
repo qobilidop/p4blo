@@ -22,7 +22,7 @@ in this repository and runs in CI.
 | Claim | Experiment | Where |
 |---|---|---|
 | The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
-| The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/notes/firewall-port.md`](docs/notes/firewall-port.md) |
+| The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/evidence/firewall-port.md`](docs/evidence/firewall-port.md) |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`python/p4blo/arch/`](python/p4blo/arch/) |
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `python/p4blo/drt/` |
 
@@ -65,7 +65,7 @@ to manufacture agreement. The independent
 [Lean-authored firewall](lean/P4blo/TutorialFirewall.lean) now runs the complete
 program with persistent state. Initialization and Bloom-insertion properties
 are proved under explicit premises; a complete firewall pipeline proof is not
-claimed. See [its assurance note](docs/notes/lean-firewall-port.md).
+claimed. See [its assurance note](docs/evidence/lean-firewall-port.md).
 
 ## Reading order
 

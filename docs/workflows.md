@@ -96,7 +96,7 @@ location. Preserve `result.json` and its logs. Only exit 0 with status `passed`
 is acceptance; build failures, skips, unexpected failures and incomplete
 restoration fail the command. Do not edit sources or rebuild the checkout's
 executables while it runs. The exact inventory, intentional observer survivor
-and independent detector are in [the catalogue](notes/milestone-adversarial.md).
+and independent detector are in [the catalogue](evidence/milestone-adversarial.md).
 This supplements the ordinary gates; it is not a universal equivalence proof
 or a requirement to rerun every historical mutation experiment.
 
@@ -198,7 +198,7 @@ misspelled field, state, action or table, an unequal width, or a
 rebuilds the golden from the source, replays every vector under the
 switch, and checks the filter's fate decisions. Then run the oracle and
 the Lean-versus-Python gates, and add a row to `docs/status.md`. Programs from p4c's test suite are
-listed with their fitness in `docs/notes/corpus-candidates.md`; the
+listed with their fitness in `docs/corpus-candidates.md`; the
 sources are in p4c under `testdata/p4_16_samples/`.
 
 **An extern.** Add its implementation under `python/p4blo/externs/` with

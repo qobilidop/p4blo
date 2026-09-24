@@ -11,7 +11,7 @@ Lean semantics validated against a runnable reference.
 
 **Current direction (2026-09-23):** this document records the original
 prototype. The accepted successor architecture is
-[notes/ir-spec-boundary.md](notes/ir-spec-boundary.md), implemented through
+[notes/ir-spec-boundary.md](ir-spec-boundary.md), implemented through
 [implementation.md](implementation.md). It supersedes the original
 protobuf-as-abstract-syntax authority and single-Lean-package arrangement:
 Lean owns abstract syntax, validity and meaning; protobuf owns encoding;
@@ -539,7 +539,7 @@ testing table logic in pytest, until a p4c bridge exists.
   through `__getattr__`, so a typo surfaced at build time at best.
   Replaced on 2026-09-22 by the typed surface above; the builder stays
   as `p4blo.edsl.core`. The argument is in
-  `docs/notes/edsl-v2-design.md`.
+  `docs/edsl-v2-design.md`.
 - **A browser playground as a deliverable.** Removed from the current
   plan to keep the project to its four claims.
 - **Naming.** See [Appendix: naming](#appendix-naming).
@@ -613,7 +613,7 @@ testing table logic in pytest, until a p4c bridge exists.
   typed schema is the grammar the Lean side decodes.
 
 A construct-by-construct survey of the P4 IRs is in
-[notes/prior-art-ir.md](notes/prior-art-ir.md).
+[notes/prior-art-ir.md](prior-art-ir.md).
 
 ## Appendix: naming
 

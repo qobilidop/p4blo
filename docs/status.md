@@ -165,7 +165,7 @@ changes. Its README defines the single-tag/trusted-host boundary and runnable
 three-packet demo. `scripts/render-website-example.py` generates nine
 contiguous highlighted regions and the downloadable source; pytest and the
 Pages workflow check source drift. Design rationale is in
-[website-design.md](notes/website-design.md).
+[website-design.md](website-design.md).
 
 The focused seven example/corpus tests and both pinned P4 oracle replays
 pass. Independent expected bytes, diagnostics and every one of the 512
@@ -234,7 +234,7 @@ non-main trees pending separate review or a new scope for the parked work.
 **Project website (2026-09-23).** The user requested a website inspired by
 Veil, then explicitly requested GitHub Pages publication. The responsive
 static design is in `website/`, with rationale in
-[website-design.md](notes/website-design.md) and a CLEAR independent
+[website-design.md](website-design.md) and a CLEAR independent
 [review](notes/reviews/website-design.md). The `Website` workflow publishes
 only that directory on relevant `main` pushes or manual dispatch. Published
 at <https://qobilidop.github.io/p4blo/> from `c44ee92`; Pages deployment
@@ -259,7 +259,7 @@ files; the frozen implementation evidence below is unchanged.
 **Assurance milestone 1 is complete.** The frozen code-gate revision is
 `3148a52f2212238da00fe76ebe8eab81d86b6023`, pushed to `main`. Exact commands,
 provenance, exceptions and CI links are in the
-[completion report](notes/milestone-1-completion.md); the
+[completion report](evidence/milestone-1-completion.md); the
 [independent release review](notes/reviews/milestone-release.md) is CLEAR.
 Subsequent completion bookkeeping is documentation-only, not a new tested
 code revision. No mandatory implementation work remains for this milestone.
@@ -585,7 +585,7 @@ are deliberately parked, not automatic continuation tasks.
 
 - **Architecture implementation: milestone 1 complete.**
   Future extensions follow [implementation.md](implementation.md) and the agreed design in
-  [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). Python and Lean only;
+  [notes/ir-spec-boundary.md](ir-spec-boundary.md). Python and Lean only;
   full architecture-independent P4 remains a north star. Small commits and
   pushes are authorized. Record uncertain choices and revisit triggers.
 

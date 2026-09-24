@@ -3,7 +3,7 @@
 Implementation plan accepted: 2026-09-23. Bili authorized autonomous
 implementation, small tested commits and pushes. This is not a completed
 migration or a claim that the proposed proofs already exist. Track execution
-in [../implementation.md](../implementation.md) and [../status.md](../status.md).
+in [../implementation.md](implementation.md) and [../status.md](status.md).
 This checkpoint incorporates the subsequent agreement on a separate
 user-facing Lean package and the design informed by the prior-art survey.
 It also records the P4 expressiveness north star and the agreed progression
@@ -112,7 +112,7 @@ does not require sharing semantics implementations.
 The zero-literal defect already found in this repo is the motivating case:
 Lean omitted decimal-string zero; its decoder supplied zero for an absent
 field, hiding the bug in Lean-only round trips. Protobuf instead supplied
-an empty string. See [the review](reviews/zero-encoding.md).
+an empty string. See [the review](notes/reviews/zero-encoding.md).
 
 Require cross-implementation round trips in both directions, initially
 Lean/Python. Exercise malformed inputs, defaults,

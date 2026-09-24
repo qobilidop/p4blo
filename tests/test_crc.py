@@ -343,7 +343,7 @@ def test_lean_agrees_on_crc_generated_byte_strings(lean_binary: Path) -> None:
 @pytest.mark.xfail(
     strict=True,
     raises=KnownSpecTecCRCDisagreement,
-    reason="pinned SpecTec prepends zero to odd-byte CRC input; docs/notes/crc-contract.md",
+    reason="pinned SpecTec prepends zero to odd-byte CRC input; docs/crc-contract.md",
 )
 def test_crc_known_answers_on_spectec(tmp_path: Path, printed: bool) -> None:
     oracle = spectec.find_oracle()

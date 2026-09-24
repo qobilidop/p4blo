@@ -41,7 +41,7 @@ Pinned P4-SpecTec has four exact strict CRC/mask expected discrepancies in
 the original-source probes. BMv2 register out-of-bounds read leaves the old
 destination, whereas this profile returns zero; the one exact vector is a
 strict expected discrepancy. Passing control cases remain required. See
-[CRC contract](notes/crc-contract.md), [firewall analysis](notes/firewall-port.md)
+[CRC contract](crc-contract.md), [firewall analysis](evidence/firewall-port.md)
 and [BMv2 adapter](../tests/oracle/bmv2/README.md). Arbitrary ProtoJSON acceptance
 also differs as documented in the profile; that is outside canonical-wire
 parity, not an unexplained runtime disagreement.
@@ -54,12 +54,12 @@ counted as a pass. CI selection and pins are in [workflows](workflows.md).
 
 The direct top-level fixtures and rejected-host state/packet-entry checks are
 reviewed in [interchange](notes/reviews/milestone-interchange.md). The
-[finite catalogue](notes/milestone-adversarial.md) reconstructs selected input
+[finite catalogue](evidence/milestone-adversarial.md) reconstructs selected input
 bundles and checks actual Python, Lean, codec and observer faults with
 `scripts/check-assurance.py`; setup failures never count as detections.
 The six [quickstart](quickstart.md) snippet/API tests exercise both languages.
 Final combined clean-checkout and remote gates pass at `3148a52`, as recorded
-in the [completion report](notes/milestone-1-completion.md) and its independent
+in the [completion report](evidence/milestone-1-completion.md) and its independent
 review. The accepted finite milestone is complete.
 
 The [independent static audit](notes/reviews/milestone-evidence-audit.md)

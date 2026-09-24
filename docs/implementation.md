@@ -1,6 +1,6 @@
 # Implementation roadmap
 
-Accepted 2026-09-23. The design is [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md).
+Accepted 2026-09-23. The design is [notes/ir-spec-boundary.md](ir-spec-boundary.md).
 Python and Lean only. Full architecture-independent P4 is the north star,
 not a completion criterion for this finite example-driven roadmap.
 

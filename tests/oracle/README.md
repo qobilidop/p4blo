@@ -42,11 +42,11 @@ found two further discrepancies at this pin:
 
 - Odd-byte CRC32 inputs are effectively prepended with zero before hashing.
   CRC16 and even-byte CRC32 controls pass. See the exact known answers in
-  [the CRC contract](../../docs/notes/crc-contract.md).
+  [the CRC contract](../../docs/crc-contract.md).
 - LPM/ternary mask construction casts the key's base rather than the computed
   mask in the affected input branches. An original firewall /32 route miss
   is incorrectly forwarded. The existing priority/wildcard normalization
-  below does not fix that defect. See [the firewall evidence](../../docs/notes/firewall-port.md).
+  below does not fix that defect. See [the firewall evidence](../../docs/evidence/firewall-port.md).
 
 BMv2 confirms the intended behavior in both probes. CI runs original and
 printed cases, precise strict expected-discrepancy classifiers, and passing

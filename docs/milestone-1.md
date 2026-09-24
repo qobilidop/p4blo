@@ -6,7 +6,7 @@ open-ended proof/application expansion in `implementation.md` and
 v1. Python and Lean remain the only authoring/interpreter packages in scope.
 
 Completed 2026-09-23 at code-gate revision `3148a52`; exact clean-checkout
-and remote evidence is in [the completion report](notes/milestone-1-completion.md).
+and remote evidence is in [the completion report](evidence/milestone-1-completion.md).
 
 ## Claim
 

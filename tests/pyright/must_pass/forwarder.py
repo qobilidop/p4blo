@@ -1,4 +1,4 @@
-"""The forwarder, as docs/notes/edsl-v2-design.md writes it.
+"""The forwarder, as docs/edsl-v2-design.md writes it.
 
 Must type-check with zero errors: every width, field, state, action and
 table reference is resolved statically.

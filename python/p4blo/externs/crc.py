@@ -1,6 +1,6 @@
 """Full CRC-16/ARC and CRC-32/ISO-HDLC over positive byte-aligned bits.
 
-See docs/notes/crc-contract.md. The reflected byte-table implementation is
+See docs/crc-contract.md. The reflected byte-table implementation is
 independent of Lean's forward-polynomial, explicitly reflected bit fold.
 """
 
