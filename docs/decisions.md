@@ -1047,3 +1047,37 @@ one that says so.
   fault. The existing TTL0 input also catches a different destination-write
   fault; count it once, not as a new witness. Scope and independent review:
   `notes/forwarder-action.md`.
+- **Separate fixed-application protocol evidence from generic IR replay.**
+  A compiling firewall-server reset preserves all generic interpreter checks
+  but loses flow history. Retain exact fixed request/reply transcripts and
+  require complete arrays plus independent policy answers. Confidence: high
+  after independent review and real reset/source/register-write campaigns.
+  The new transcript and register-write fault reuse existing inputs; do not
+  inflate independent witness counts. Keep small fixed wrappers for now;
+  confidence in that duplication is medium, with extraction triggered by a
+  third application or divergent behavior. Scope: `notes/lean-firewall-port.md`.
+- **Distinguish proof-script sensitivity from a false codec law.** Four
+  table laws preserve all wire-representable shapes and production bytes.
+  A paired flag fault breaks a stronger intermediate proof equation while
+  its empty-table roundtrip remains provable. Record exactly that, alongside
+  independent semantic/error answers and paired observer challenges.
+  Confidence: high in the scoped composition and source-matched evidence.
+  Revisit private object-lookup factoring at Block, not by raising limits
+  or strengthening wire bounds. Scope: `notes/table-codec.md`.
+- **Compose forwarding through bounded actual-installed routes next.**
+  Prove five concrete installation shapes for every IPv4 query and fitting
+  route payload, with independent numeric selection. Then compose real table
+  application and the first control conditional, leaving checksum pending.
+  Confidence: high in semantic boundaries, medium in symbolic loop proof
+  engineering; the probe's kernel-limit failure remains documented. Factor
+  actual loop equations rather than assume lookup correctness or quietly
+  freeze symbolic data. Revisit generic LPM only when a second configuration
+  needs it. Plan/review: `notes/forwarder-table-next.md`.
+- **Finish Program codecs in dependency-sized baseline-first slices.**
+  Parser Target/KeySet/SelectCase/Transition/State precede Action/Block and
+  Export/Program. Host entries are a separate pair, not Program members.
+  Confidence: high for the five parser laws after the complete probe,
+  medium-high for later composition and medium for lasting helper placement.
+  Extract private object helpers only at the demonstrated Block reuse seam.
+  Preserve permissive defaults and error ordering without semantic validation
+  premises. Plan/review: `notes/program-codec-completion.md`.

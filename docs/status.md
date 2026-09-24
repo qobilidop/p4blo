@@ -12,7 +12,8 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `783cbba`, including total Expr/LValue/Stmt codec proofs,
+Combined local code integration at `634a21a` (later plan-only merges through
+`1c1b08e` do not change binaries), including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -90,8 +91,11 @@ source hashes. The standalone next-table probe also passes independently;
 it is unregistered and is not claimed as production Table coverage.
 The independent table baseline adds 20 native and 235 Python checks, with
 181 exact raw transcripts (82 protobuf successes / 99 errors). Production
-codec bytes and all old inventories remain unchanged. The new firewall plan
-and review are documentation only; no firewall application proof is claimed.
+codec bytes and all old inventories remain unchanged. Four actual table codec
+laws now add five default audits with constructive wire-only witnesses and
+overflow controls. Five compiling faults distinguish proof rejection from
+roundtrip-preserving wire/error mistakes; 56 raw observations over 52 distinct
+requests and all paired-observer challenges replay restored.
 The actual selected forwarder action adds eleven audited roots, 48 independent
 native outcomes / 144 queue boundaries and 76 Python checks. It proves real
 literal binding, the complete field policy and exact normal layer restoration,
@@ -99,8 +103,16 @@ not table selection or the surrounding pipeline. Review-discovered temporary
 sibling corruption and bool/int-equality gaps in auxiliary write probes are
 closed. Five compiling model faults fail the proofs; the actual Python
 destination-write fault reuses the existing TTL0 bundle. All source restoration
-and byte identities pass. Required real-Lean DRT: **1345 passed**, no skips. Full gate:
-**3061 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+and byte identities pass. The Lean-authored tutorial firewall now matches its
+independent Python builder and frozen IR exactly. Its fixed in-memory server
+retains state; 128 focused checks cover complete Bloom arrays, byte cuts,
+collisions and changing policies. Compiling source/server/Python faults are
+caught; review closed fixed-server retention and diagnostic-observer gaps.
+The separate 331679-byte reset transcript replays to all four restored answers;
+both it and the register-write challenge reuse existing four-packet input.
+Initialization and invalid-body proofs remain the next application checkpoint.
+Required real-Lean DRT: **1468 passed**, no skips. Full gate:
+**3189 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -116,9 +128,10 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `guarded-control-call.md`, `stmt-codec.md`, `action-root-writes.md` and
 `lean-forwarder.md`, `declaration-codec-baseline.md`, `field-action-writes.md`,
 `declaration-codec.md`, `table-codec-next.md`, `table-codec-baseline.md` and
-`lean-firewall-next.md` and `forwarder-action.md`.
+`lean-firewall-next.md` and `forwarder-action.md`, `table-codec.md`,
+`lean-firewall-port.md`, `forwarder-table-next.md` and `program-codec-completion.md`.
 
-All five remote workflows pass for `a7d795e`; newer CI must be checked
+All five remote workflows pass for `d7f487d`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -128,16 +141,20 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Eighteen retained execution-fault bundles and seventy-three raw codec
+Eighteen retained execution-fault bundles and 129 raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
 All eighteen execution bundles replay successfully on this integration
-(twenty-five requests), as do all seventy-three raw codec observations. The real
+(twenty-five requests), as do all 129 raw codec observations. The real
 forwarder's new TTL0 bundle matches its current authored Program, tracked
 edge input and fixed configuration. The new
 statement campaigns contribute 25 observations of 20 distinct requests;
 these counts are not independent-input counts. Declaration campaigns add 24
 observations of 24 distinct requests; harness views are not additional inputs.
+Table campaigns add 56 observations of 52 distinct requests, with 56 matching
+harness views. The fixed-firewall reset transcript lives separately under
+`.artifacts/fixed-firewall/state-reset.json`; it is not a generic DRT bundle
+or an additional distinct packet sequence.
 Header-read,
 guarded and initializer bundles match their current exporter/wrapper and exact request. All fifteen
 Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
@@ -186,7 +203,7 @@ reports and git history, not competing current instructions below.
 | verify_error | p4c `issue1824-bmv2` | eDSL, landed | p4c STF, 1 packet, passing | pass on both oracles |
 | priority | p4c `table-entries-priority-bmv2` | eDSL, landed | p4c STF, 3 packets, passing | pass on both oracles |
 | register_bounds | own program from the second review | eDSL, landed | 9 hand-derived packets, passing | passes on P4-SpecTec; two packets diverge on BMv2 by the recorded out-of-range register rule, carried as a strict xfail |
-| tutorial_firewall | pinned p4lang tutorial solution | typed Python eDSL, landed | connection establishment and Bloom false-positive vectors; six bounded profiles total | original BMv2 packets/all 8192 register cells at 30 prefix boundaries; SpecTec controls pass but exact CRC/mask probes disagree; Lean-authored port/proofs still open |
+| tutorial_firewall | pinned p4lang tutorial solution | Python and Lean sources equal unchanged golden; persistent direct Lean execution | connection/Bloom false positives, byte cuts and generated host-policy sequences | original BMv2 packets/all 8192 register cells at 30 prefix boundaries; SpecTec controls pass but exact CRC/mask probes disagree; scoped Lean application proofs next |
 
 ## Open threads
 
@@ -453,7 +470,10 @@ Things a resuming agent should know are in motion or deliberately left.
   existing TTL0 bundle, not a new distinct witness. Scope and CLEAR review:
   `notes/forwarder-action.md` and its matching report. Selected table lookup,
   checksum and complete forwarding remain open. Next bounded table work is
-  in `work/forwarder-table-next`, based on committed `783cbba`.
+  defined in `notes/forwarder-table-next.md`, independently reviewed and
+  committed with a seven-root feasibility probe. Implementation now uses
+  `work/forwarder-tables` at `/Users/qobilidop/my/work/p4blo-forwarder-tables`,
+  based on `95a784c`; universal symbolic lookup remains work, not probe evidence.
   The small operational root prerequisite is independently reviewed and
   committed at `01d8b09`: actual active-map absence permits a block write
   without dropping action storage; action-hit reads/writes prefer and change
@@ -487,9 +507,15 @@ Things a resuming agent should know are in motion or deliberately left.
   The next Lean application plan and independent review are now committed:
   `notes/lean-firewall-next.md` and its matching report. Exact-golden authoring,
   persistent complete-array execution and a first invalid-IPv4 body identity
-  are scoped separately from later Bloom properties. Root-owned implementation
-  starts in `work/lean-firewall` at `/Users/qobilidop/my/work/p4blo-lean-firewall`,
-  based on `61dc681`; no implementation result is claimed yet.
+  are scoped separately from later Bloom properties. Source/execution commits
+  `be2c4b3`/`11d9380` are integrated at `236d404`, independently reviewed CLEAR.
+  Exact source identity, persistent fixed execution and 128 focused checks
+  pass, including three actual compiling fault campaigns and restored replay.
+  A native-server reset survives generic IR DRT but fails the strengthened
+  dedicated transcript observer. The Python register-write fault reuses the
+  existing `firewall-crc32.json`, not a new distinct input. Scope and review:
+  `notes/lean-firewall-port.md`. Root-owned initialization/invalid-body proof
+  work continues in `work/lean-firewall`; it is not yet integrated or claimed.
 
   Four validator-accepted wrong ports fail both engines. Subsequent actual
   Python/Lean CRC XOR-one mutations pass packet-only gates but produce three
@@ -647,17 +673,20 @@ Things a resuming agent should know are in motion or deliberately left.
   checks, while independent native anchors still reject it. Faulty packet
   preflight is explicitly not counted as direct codec detection. Scope and
   final review: `notes/declaration-codec.md` and its matching report.
-  The next four-law table slice is independently planned/reviewed in
-  `notes/table-codec-next.md`, with an unregistered three-law feasibility
-  probe and six actual missing/null/empty-action kernel anchors. It is active
-  in `work/table-codec` at `/Users/qobilidop/my/work/p4blo-table-codec`, based
-  on `58bb072`. Baseline `9640523` is independently reviewed and integrated
+  Baseline `9640523` is independently reviewed and integrated
   at `a5ba464`: 181 exact raw transcripts, 82 public protobuf successes,
   99 errors, direct MatchKind observation and 20 native anchors. All old
-  request labels/bytes remain unchanged. The four production laws and
-  actual-code adversarial campaigns are next; preserve this frozen baseline.
-  Scope/review: `notes/table-codec.md`, `notes/reviews/table-codec-baseline.md`.
-  Full Program remains a later obligation.
+  request labels/bytes remain unchanged. Four production laws and five audits
+  (`228b76b`/`7beb6af`/`661c8d8`) are integrated at `634a21a`, with unchanged
+  actual codecs and 56 source-matched raw fault observations / 52 distinct
+  requests. Paired fixture/observer corruption demonstrates false assurance
+  that independent native anchors reject. Scope and final review:
+  `notes/table-codec.md` and its matching report. Preserve the frozen baseline.
+  The reviewed `notes/program-codec-completion.md` stages parser syntax,
+  Action/Block and Export/Program, with host entries separate. Its six-root
+  parser probe is unregistered feasibility only. Baseline-first parser work
+  now uses `work/parser-codecs` at `/Users/qobilidop/my/work/p4blo-parser-codecs`,
+  based on `1c1b08e`; full Program remains a later obligation.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 
