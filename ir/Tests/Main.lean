@@ -18,6 +18,8 @@ import Tests.DeclarationCodec
 import Tests.TableCodec
 import Tests.ParserCodec
 import Tests.BlockCodec
+import Tests.ProgramCodec
+import Tests.EntriesCodec
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -215,6 +217,8 @@ def main (args : List String) : IO UInt32 := do
     TableCodecTests.tests
     ParserCodecTests.tests
     BlockCodecTests.tests
+    ProgramCodecTests.tests
+    EntriesCodecTests.tests
     ExternFamiliesTests.tests
     FrameInitializationTests.tests
     PlainCallEntryTests.tests

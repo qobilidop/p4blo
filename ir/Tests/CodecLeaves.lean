@@ -3,6 +3,8 @@ import Tests.DeclarationCodec
 import Tests.TableCodec
 import Tests.ParserCodec
 import Tests.BlockCodec
+import Tests.ProgramCodec
+import Tests.EntriesCodec
 
 open Lean
 
@@ -19,6 +21,10 @@ def main (args : List String) : IO Unit := do
     if !failed.isEmpty then throw (IO.userError s!"parser codec tests failed: {failed}")
     let (_, failed) ← BlockCodecTests.tests.run []
     if !failed.isEmpty then throw (IO.userError s!"block codec tests failed: {failed}")
+    let (_, failed) ← ProgramCodecTests.tests.run []
+    if !failed.isEmpty then throw (IO.userError s!"program codec tests failed: {failed}")
+    let (_, failed) ← EntriesCodecTests.tests.run []
+    if !failed.isEmpty then throw (IO.userError s!"entries codec tests failed: {failed}")
     return
   if !args.isEmpty then throw (IO.userError "usage: codec-leaves [--self-test]")
   let stdin ← IO.getStdin
@@ -26,7 +32,7 @@ def main (args : List String) : IO Unit := do
   repeat
     let line ← stdin.getLine
     if line.isEmpty then break
-    let result := do BlockCodecTests.reply (← Json.parse line)
+    let result := do EntriesCodecTests.reply (← Json.parse line)
     let response := match result with
       | .ok value => value
       | .error error => Json.mkObj [("error", .str error)]
