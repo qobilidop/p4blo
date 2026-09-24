@@ -12,8 +12,7 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local code integration at `fd708e6` (the later Bloom plan-only merge
-does not change binaries), including total Expr/LValue/Stmt codec proofs,
+Combined local code integration at `ca2f20f`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
@@ -118,9 +117,18 @@ but fails the complete Env observer after normal completion. This adds no
 new divergent packet bundle. The parser-codec baseline adds 27 native anchors
 and 283 Python checks, preserving all actual codec bytes. Its 231 frozen raw
 rows, 76 actual public-protobuf outputs and thirteen historical source hashes
-all replay exactly. Universal parser-codec laws remain the next codec stage.
-Required real-Lean DRT: **1757 passed**, no skips. Full gate:
-**3530 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+all replay exactly. Five universal parser-codec laws now add six default
+audits, mixed constructive witnesses and overflow controls. Five compiling
+codec faults distinguish false roundtrips from paired mapping/error-order
+mistakes; 40 retained observations over 34 distinct requests replay restored.
+The forwarder's actual bounded table installation/selection adds nine audited
+roots, 270 native cases and 50 Python checks. Its independent numeric policy
+covers every IPv4 query and fitting payload for five installation shapes.
+A compiling shortest-prefix fault is rejected; the actual Python fault also
+produces a retained, live/restored packet mismatch on a new two-route input.
+Actual table application and the surrounding control remain separate work.
+Required real-Lean DRT: **1806 passed**, no skips. Full gate:
+**3580 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -138,9 +146,10 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `declaration-codec.md`, `table-codec-next.md`, `table-codec-baseline.md` and
 `lean-firewall-next.md` and `forwarder-action.md`, `table-codec.md`,
 `lean-firewall-port.md`, `forwarder-table-next.md`, `program-codec-completion.md`,
-`lean-firewall-proof.md`, `parser-codec-baseline.md` and `firewall-bloom-next.md`.
+`lean-firewall-proof.md`, `parser-codec-baseline.md`, `firewall-bloom-next.md`,
+`forwarder-tables.md` and `parser-codec.md`.
 
-All five remote workflows pass for `7fba846`; newer CI must be checked
+All five remote workflows pass for `23b1ced`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -150,18 +159,22 @@ tests pass. The complete integrated certificate module passes all 61 cases
 against the real Lean checker, without skips. Fresh remote CI run
 `35924868471` passes; the closure is not merely a retry of the original commit.
 Evidence: `notes/certificate-cleanup.md` and its independent review.
-Eighteen retained execution-fault bundles and 129 raw codec
+Nineteen retained execution-fault bundles and 169 raw codec
 artifacts have tracked reconstruction recipes and byte-checked ignored
 copies under `.artifacts/drt` and `.artifacts/codec` respectively.
-All eighteen execution bundles replay successfully on this integration
-(twenty-five requests), as do all 129 raw codec observations. The real
+All nineteen execution bundles replay successfully on this integration
+(twenty-six requests), as do all 169 raw codec observations. The real
 forwarder's new TTL0 bundle matches its current authored Program, tracked
 edge input and fixed configuration. The new
 statement campaigns contribute 25 observations of 20 distinct requests;
 these counts are not independent-input counts. Declaration campaigns add 24
 observations of 24 distinct requests; harness views are not additional inputs.
 Table campaigns add 56 observations of 52 distinct requests, with 56 matching
-harness views. The fixed-firewall reset transcript lives separately under
+harness views. Parser campaigns add 40 observations of 34 distinct requests,
+with 40 matching harness views. The table campaign's historical registration
+sources remain pinned at `661c8d8`; current parser-only registration additions
+are checked separately at `75a36af`, without rewriting old artifacts.
+The fixed-firewall reset transcript lives separately under
 `.artifacts/fixed-firewall/state-reset.json`; it is not a generic DRT bundle
 or an additional distinct packet sequence.
 Header-read,
@@ -177,6 +190,13 @@ historical hashes at `9640523`. The parser baseline's 231 rows have historical
 hashes at `9d68d7d`. None of these baselines is counted as fault evidence.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
+
+During the full gate a task-owned p4c version container logged success but
+remained daemon-marked running with no processes or mounts. Removing that
+exact verified container released the probe; absence was verified and all
+printer golden checks subsequently passed. No daemon restart, prune, image
+build or unrelated cleanup occurred. A bounded owned-container lifecycle fix
+is the next harness task; the underlying daemon cause is not established.
 
 ## Claim matrix
 

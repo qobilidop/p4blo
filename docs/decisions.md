@@ -1106,3 +1106,28 @@ one that says so.
   in reusable API placement. Start application-specific; revisit extraction
   for readback or a second client. Hash bounds, reverse-flow inputs and actual
   table/SYN composition follow separately. Scope: `notes/firewall-bloom-next.md`.
+- **Keep parser wire laws separate from independent wire intent.** Five
+  actual roundtrip laws preserve permissive syntax; paired tag/operand
+  mutations can preserve those equations while violating independent wire
+  answers. Error-order proof-script failure is not a false roundtrip claim.
+  Confidence: high after six default audits, constructive witnesses and
+  restored source-matched campaigns. Historical replay sources remain pinned;
+  later registration-only additions are checked separately, never rewritten
+  into old evidence. Scope: `notes/parser-codec.md`, `notes/table-codec.md`.
+- **Bound forwarding selection before composing actual application.** The
+  independent numeric policy now matches actual installed lookup for five
+  shapes, arbitrary IPv4 queries and fitting route payloads. Keep selection
+  hit separate from a forwarding default; no-hit does not imply drop.
+  Confidence: high in these scoped laws after nine audits and independent
+  full configuration tests. A fitting wrong fixture payload can preserve
+  the universal law, so independent intended inputs remain essential.
+  Revisit generic lookup only for another configuration requiring it.
+  Scope and new two-route replay: `notes/forwarder-tables.md`.
+- **Clean up only demonstrably owned stalled probe containers.** The p4c
+  version probe already has a 600-second client timeout; it does not ensure
+  container lifecycle completion. After matching the exact ID, immutable
+  image, command, start time, empty mounts and absent processes, removing that
+  one ephemeral container released the full gate. Confidence: high in
+  ownership and absence, low in the daemon's underlying failure mechanism.
+  Add bounded unique-name cleanup and absence verification as a separate
+  harness change; do not restart Docker, prune or weaken compiler checks.

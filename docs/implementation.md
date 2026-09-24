@@ -73,8 +73,11 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   takes five parser codecs, then Action/Block, then Export/Program; host entries
   remain separate. Parser baseline `9d68d7d` is integrated at `fd708e6`, with
   27 independent native anchors, 283 focused Python checks and 231 exact raw
-  rows. Five production laws and adversarial evidence follow in
-  `work/parser-codecs`; the earlier five-law probe remains unregistered.
+  rows. Five production laws and six default audits are now integrated at
+  `ca2f20f`, with constructive witnesses, overflow controls and 40 retained
+  fault observations over 34 distinct requests. The earlier probe remains
+  unregistered. Action/Block baseline and composition follow in
+  `work/block-codecs`; preserve historical provenance when extracting helpers.
   Full Program codecs, text parsing, resource limits and version policy
   remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
@@ -134,11 +137,13 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   checks include two reviewer-found strict-state observer regressions. Five
   compiling model faults are proof-rejected; a real Python destination-write
   fault reuses the existing TTL0 replay input. Scope: `notes/forwarder-action.md`
-  and its independent review. Selected-table lookup and the surrounding
-  checksum/control continuation remain open; their next bounded interface is
-  defined by the reviewed `notes/forwarder-table-next.md`. Bounded actual
-  installation/selection implementation is active in `work/forwarder-tables`
-  at `95a784c`; the plan's symbolic-lookup proof risk remains explicit.
+  and its independent review. Bounded actual installation/selection is now
+  integrated at `b3635a0`: nine audited roots, 270 native cases and 50 Python
+  checks, for arbitrary IPv4 queries and fitting payloads over five shapes.
+  The numeric policy is independent of actual lookup. A new two-route packet
+  input retains an actual Python shortest-prefix mismatch and restored replay.
+  Scope: `notes/forwarder-tables.md`. Actual table application is active in
+  `work/forwarder-apply`; checksum/control continuation remains separate.
 
 ## Application milestones
 

@@ -458,8 +458,14 @@ for name in ['kind', 'flag', 'order', 'default']:
         print(view_path.relative_to(root), hashlib.sha256(view_path.read_bytes()).hexdigest())
     print(name, 'rows', len(artifact['rows']), 'bytes', len(data), 'sha256', hashlib.sha256(data).hexdigest())
 for path in ['ir/P4bloIR/Json.lean', 'ir/P4bloIR/TableCodecLaws.lean', 'ir/Tests/TableCodec.lean', 'tests/test_codec_tables.py', 'ir/P4bloIR.lean', 'ir/CodecProofAudit.lean']:
-    assert (root / path).read_bytes() == (fault / path).read_bytes(), path
-    print('restored', path, hashlib.sha256((root / path).read_bytes()).hexdigest())
+    historical = subprocess.run(['git', '-C', str(root), 'show', f'661c8d8:{path}'], check=True, capture_output=True).stdout
+    assert historical == (fault / path).read_bytes(), path
+    current = (root / path).read_bytes()
+    if current != historical:
+        assert path in ['ir/P4bloIR.lean', 'ir/CodecProofAudit.lean'], path
+        parser_registration = subprocess.run(['git', '-C', str(root), 'show', f'75a36af:{path}'], check=True, capture_output=True).stdout
+        assert current == parser_registration, path
+    print('historically restored', path, hashlib.sha256(historical).hexdigest())
 print('live observations', count, 'distinct requests', len(seen), 'both restored endpoints agree')
 
 ```
@@ -496,3 +502,16 @@ the reviewer reran focused/native/five fresh axiom checks, verified all historic
 source hashes and protobuf outputs, inspected the real fault diagnostics, and
 independently reconstructed/replayed all 56 observations and 56 harness views
 against both restored endpoints. No active consumers remain.
+
+### Later parser-law integration provenance
+
+At main `ca2f20f`, actual Json, TableCodecLaws, native table witnesses and the
+Python fixture still match the restored table fault tree. The IR public root
+and codec audit now add exactly the parser registrations from `75a36af`.
+Requiring those two files to equal the older table-only tree incorrectly
+failed after all behavioral replays had passed. The replay recipe above now
+checks every fault-tree file against the exact final table checkpoint
+`661c8d8`, and permits only those two current-file differences, each checked
+against `75a36af`. It does not modify artifacts, skip actual decoder identity
+or treat historical source hashes as current. Both current and historically
+restored endpoints must still reproduce every raw baseline/fault input.
