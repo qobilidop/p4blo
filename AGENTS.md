@@ -44,10 +44,11 @@ an archived note is one command away:
 
 ## Read first, in this order
 
-1. `.agents/status.md`: where the work stands and what is open. Both
-   finite scopes, assurance milestone 1 and the application collection,
-   are complete; nothing is
-   active, and neither completion reopens parked proofs. `docs/assurance.md`
+1. `.agents/status.md`: where the work stands and what is open. The
+   active scope is the architecture-free IR semantics plan in
+   `.agents/notes/ir-semantics-plan.md`; the two finite scopes,
+   assurance milestone 1 and the application collection, are complete
+   and frozen, and neither reopens parked proofs. `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
    not infer broader guarantees from counts.
 2. `.agents/decisions.md`: what is decided and why. Overrule an entry by

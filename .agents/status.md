@@ -4,8 +4,11 @@ Where the work stands now. Updated at every checkpoint and compacted at
 milestone boundaries, so this file holds current state only; history up
 to the last compaction is in git at tag `agents-archive/2026-09-24`.
 
-Last updated: 2026-09-24. Nothing is active. Both finite scopes below are
-complete, and no next implementation step is authorized by them.
+Last updated: 2026-09-24. **Active: the architecture-free IR semantics
+plan**, [ir-semantics-plan.md](notes/ir-semantics-plan.md), adopted by the
+user on 2026-09-24. Phase 0 (decisions, the SpecTec rule inventory
+fixture, the ledger citation test) is done; Phase 1 is next. The two
+finite scopes below stay complete and frozen.
 
 ## Current state
 
@@ -63,6 +66,14 @@ audits and tests, `scripts/check.sh` passes with 4843 tests and the same
 one skip and five xfails, and `scripts/check-assurance.py` passes all 28
 phases with the split scratch builds. The three independent reviews are
 under `reviews/`; every finding is fixed.
+
+## Active plan progress
+
+| Item | State |
+|---|---|
+| Phase 0: decisions recorded, `tests/oracle/spectec-rules.json` and `scripts/spectec-rules.py`, `tests/test_spectec_rules.py` | done |
+| Phase 1: A1 generated programs on SpecTec, A2 SpecTec rule coverage, A3 the ledger, B1 Lean rule tags, C4 deviation theorems | next |
+| Phases 2 to 4 | see the plan |
 
 ## Open threads
 
