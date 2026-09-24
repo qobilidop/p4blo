@@ -20,6 +20,7 @@ import P4blo.GuardedControlCallTests
 import P4blo.ForwarderTests
 import P4blo.FieldActionWriteTests
 import P4blo.ForwarderAction
+import P4blo.TutorialFirewallProof
 
 /-- info: 'P4blo.ForwarderAction.observe_restore' does not depend on any axioms -/
 #guard_msgs in
@@ -64,6 +65,59 @@ import P4blo.ForwarderAction
 /-- info: 'P4blo.ForwarderAction.populated_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4blo.ForwarderAction.populated_correct
+
+/-- info: 'P4blo.TutorialFirewall.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.index_built
+
+/-- info: 'P4blo.TutorialFirewall.scope_lookup' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.scope_lookup
+
+/-- info: 'P4blo.TutorialFirewall.scope_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.scope_block
+
+/-- info: 'P4blo.TutorialFirewall.roots_agree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.roots_agree
+
+/-- info: 'P4blo.TutorialFirewall.frame_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.frame_built
+
+/-- info: 'P4blo.TutorialFirewall.frame_scope' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.frame_scope
+
+/-- info: 'P4blo.TutorialFirewall.frame_no_action' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.frame_no_action
+
+/-- info: 'P4blo.TutorialFirewall.frame_values' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.frame_values
+
+/-- info: 'P4blo.TutorialFirewall.frame_locals_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.frame_locals_zero
+
+/-- info: 'P4blo.TutorialFirewall.invalid_frame_read' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.invalid_frame_read
+
+/-- info: 'P4blo.TutorialFirewall.invalid_guard' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.invalid_guard
+
+/-- info: 'P4blo.TutorialFirewall.invalid_ipv4_control_unchanged' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.invalid_ipv4_control_unchanged
+
+/-- info: 'P4blo.TutorialFirewall.initialized_invalid_body' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.TutorialFirewall.initialized_invalid_body
+
 
 /-- info: 'P4blo.Fields.FrameMatches.set_unshadowed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
