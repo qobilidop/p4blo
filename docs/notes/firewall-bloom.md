@@ -180,7 +180,11 @@ action shadows pass, and the reused four-packet input agrees after restoration
 (`/tmp/p4blo-bloom-restored-replay.log`). Independent final campaign review is
 clear in `reviews/firewall-bloom.md`: it separately reproduced the operational
 Python effect and restored agreement without editing candidate sources.
-The final merged full gate remains the integrator's obligation.
+The final merged full gate at `25064ab` passes **4192 tests / 5 strict expected
+discrepancies / 1 explicit local-XDP skip**; required real-Lean comparisons
+pass **2382**, no skips. Both packages/default audits pass with **595 spec
+checks**, including the separately integrated Action/Block baseline. All
+retained execution and codec replays pass; no new Bloom input is counted.
 No Docker image was rebuilt or security restriction relaxed.
 
 Next: actual readback and drop/no-op composition, then hash bounds/input

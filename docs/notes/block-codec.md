@@ -411,3 +411,45 @@ comparison of all nine moved definitions/proofs and four public statements,
 753 focused checks, 161 native anchors, four fresh standard-only Table audit
 queries, actual Block lookup probe and 181/56 historical replays all pass.
 No binary consumers remain before the separate helper commit.
+
+## Integrated baseline replay
+
+Run after both main Lean packages finish building, never concurrently with a
+rebuild. The ignored baseline copy is byte-identical to the original; recorded
+sources use the baseline commit, while current proof-only helper identities
+are checked separately. This reads artifacts and never executes their metadata.
+
+```sh
+nix develop -c uv run python - <<'PY'
+import hashlib,json,subprocess
+from pathlib import Path
+from p4blo.drt._json import loads
+from tests.test_codec_blocks import requests,protobuf_value
+from tests.test_codec_leaves import same_json
+root=Path('/Users/qobilidop/my/work/p4blo')
+data=(root/'.artifacts/codec/block-baseline.json').read_bytes()
+assert len(data)==3568250 and hashlib.sha256(data).hexdigest()=='910a517c0832f9ae2413577c18a774de51290c6e775bf4be07f8398796bef49e'
+baseline=loads(data.decode())
+fixtures=requests()
+assert len(fixtures)==len(baseline['rows'])==498 and len(baseline['sources'])==18
+for path,digest in baseline['sources'].items():
+ source=subprocess.run(['git','-C',str(root),'show','6b9ffd0:'+path],check=True,capture_output=True).stdout
+ assert hashlib.sha256(source).hexdigest()==digest,path
+successes=0
+for (request,expected),row in zip(fixtures,baseline['rows'],strict=True):
+ assert same_json(request,row['request']) and same_json(expected,row['expected'])
+ assert row['stdin']==json.dumps(request,separators=(',',':'))+'\n'
+ result=subprocess.run([str(root/'ir/.lake/build/bin/codec-leaves')],input=row['stdin'],text=True,capture_output=True,timeout=10)
+ assert (result.returncode,result.stdout,result.stderr)==(row['returncode'],row['stdout'],row['stderr'])==(0,row['stdout'],'')
+ actual=loads(result.stdout)
+ assert same_json(actual,expected)
+ if 'encoded' in actual:
+  _,canonical=protobuf_value(request['kind'],actual['encoded'])
+  assert same_json(canonical,actual['encoded'])
+  successes+=1
+assert successes==114
+for path,digest in {'ir/P4bloIR/TableCodecLaws.lean':'323cff1035971abcbf85a40c755857109de2d15765a262a7524821d1604655ab','ir/P4bloIR/CodecObjectLaws.lean':'5f3061a319308e42ada1398b2d54a6c5559e90aeb90231059091526d9d768bea'}.items():
+ assert hashlib.sha256((root/path).read_bytes()).hexdigest()==digest,path
+print('498 exact baseline rows; 114 actual protobuf successes; 18 historical identities; reviewed current helper identities')
+PY
+```

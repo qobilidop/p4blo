@@ -432,7 +432,8 @@ for name in ['kind', 'flag', 'order', 'default']:
     data = (folder / 'live-raw.json').read_bytes()
     artifact = loads(data.decode())
     assert artifact['baseline_commit'] == baseline_commit and artifact['campaign'] == name
-    assert artifact['sources']['ir/P4bloIR/TableCodecLaws.lean'] == hashlib.sha256((root / 'ir/P4bloIR/TableCodecLaws.lean').read_bytes()).hexdigest()
+    old_proof = subprocess.run(['git', '-C', str(root), 'show', '228b76b:ir/P4bloIR/TableCodecLaws.lean'], check=True, capture_output=True).stdout
+    assert artifact['sources']['ir/P4bloIR/TableCodecLaws.lean'] == hashlib.sha256(old_proof).hexdigest()
     for path, digest in artifact['sources'].items():
         if path not in ['ir/P4bloIR/Json.lean', 'ir/P4bloIR/TableCodecLaws.lean']:
             old = subprocess.run(['git', '-C', str(root), 'show', f'{baseline_commit}:{path}'], check=True, capture_output=True).stdout
@@ -462,9 +463,10 @@ for path in ['ir/P4bloIR/Json.lean', 'ir/P4bloIR/TableCodecLaws.lean', 'ir/Tests
     assert historical == (fault / path).read_bytes(), path
     current = (root / path).read_bytes()
     if current != historical:
-        assert path in ['ir/P4bloIR.lean', 'ir/CodecProofAudit.lean'], path
-        parser_registration = subprocess.run(['git', '-C', str(root), 'show', f'75a36af:{path}'], check=True, capture_output=True).stdout
-        assert current == parser_registration, path
+        checkpoint = '707fb3f' if path == 'ir/P4bloIR/TableCodecLaws.lean' else '75a36af'
+        assert path in ['ir/P4bloIR/TableCodecLaws.lean', 'ir/P4bloIR.lean', 'ir/CodecProofAudit.lean'], path
+        reviewed_current = subprocess.run(['git', '-C', str(root), 'show', f'{checkpoint}:{path}'], check=True, capture_output=True).stdout
+        assert current == reviewed_current, path
     print('historically restored', path, hashlib.sha256(historical).hexdigest())
 print('live observations', count, 'distinct requests', len(seen), 'both restored endpoints agree')
 
@@ -515,3 +517,13 @@ checks every fault-tree file against the exact final table checkpoint
 against `75a36af`. It does not modify artifacts, skip actual decoder identity
 or treat historical source hashes as current. Both current and historically
 restored endpoints must still reproduce every raw baseline/fault input.
+
+### Later shared-helper integration provenance
+
+At helper checkpoint `707fb3f`, TableCodecLaws moves nine actual-object facts
+unchanged into CodecObjectLaws, preserving all four public statements. The
+recipe now checks the recorded historical proof at `228b76b` and the current
+proof separately at `707fb3f`; all other restored-source checks remain.
+`block-codec.md` supplies the complementary exact helper hashes, unchanged
+public-statement check and independent extraction review. This is proof-only
+relocation, not changed codec behavior or recaptured historical evidence.

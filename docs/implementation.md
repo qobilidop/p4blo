@@ -76,8 +76,11 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   rows. Five production laws and six default audits are now integrated at
   `ca2f20f`, with constructive witnesses, overflow controls and 40 retained
   fault observations over 34 distinct requests. The earlier probe remains
-  unregistered. Action/Block baseline and composition follow in
-  `work/block-codecs`; preserve historical provenance when extracting helpers.
+  unregistered. Action/Block baseline `6b9ffd0` and helper-only `707fb3f` are
+  integrated: 498 exact transcripts, 114 public protobuf outputs and nine
+  shared actual-object facts preserving all four Table theorem statements.
+  Two new laws and adversarial evidence follow in `work/block-codecs`;
+  historical baseline/proof identities remain separate from current helpers.
   Full Program codecs, text parsing, resource limits and version policy
   remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
@@ -170,10 +173,15 @@ mutation evidence, and an IR-minimality review. See the design for details.
   integrated at `a74f691`: thirteen audits, all nine initialized roots, 48
   native whole-state profiles and 58 Python checks. The body theorem preserves
   arbitrary unused state under the actual index/invalid-header read premises.
-  Next is exact two-write Bloom insertion and one-valued membership, following
-  the reviewed `notes/firewall-bloom-next.md`; its first-call probe is not the
-  full insertion theorem. Readback, hash bounds and control composition remain
-  separate later obligations; no exact-conntrack or full-pipeline claim.
+  Exact two-write Bloom insertion is integrated at `3372d45`: thirteen audits,
+  84 native profiles and 79 Python checks, with a constructive initialized
+  witness and explicit first-write boundary. Independent expected positions
+  close a reviewer-discovered shared-read survivor. Seven compiling Lean
+  source/runtime faults fail proofs; a real Python cell fault yields three
+  state-only divergences on the old four-packet input, not new evidence input.
+  Scope and review: `notes/firewall-bloom.md`. Actual two-read prefix, decision/
+  drop composition, hash bounds and control branching remain separate later
+  obligations; no exact-conntrack or full-pipeline claim.
 - [ ] xdp-filter: audit and pin a named configuration; Linux BPF replay with
   controlled maps/CPU; preserve early decisions, counters, pass/drop/abort and
   malformed-input order. Expand only to an explicitly selected full profile.

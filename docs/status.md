@@ -12,12 +12,12 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local code integration at `ca2f20f`, including total Expr/LValue/Stmt codec proofs,
+Combined local code integration at `25064ab`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
 prefixes and actual body-bearing plain-root call entry: both Lean package gates and default audits pass, with
-**567 spec checks**, all existing scalar/context/
+**595 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -127,8 +127,19 @@ covers every IPv4 query and fitting payload for five installation shapes.
 A compiling shortest-prefix fault is rejected; the actual Python fault also
 produces a retained, live/restored packet mismatch on a new two-route input.
 Actual table application and the surrounding control remain separate work.
-Required real-Lean DRT: **1806 passed**, no skips. Full gate:
-**3580 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+Exact Bloom insertion now adds thirteen default audits, 84 native profiles
+and 79 Python checks, including the repaired runtime-read-coupling observer.
+Seven actual compiling Lean source/runtime faults fail proofs; a real Python
+other-cell fault reuses the old four-packet input with three state-only
+mismatches. Independent review and final combined restoration checks pass.
+The Action/Block baseline adds 28 native anchors and 518 Python checks; all
+498 exact raw rows and 114 public protobuf outputs replay against eighteen
+historical source identities. The separate shared-helper extraction preserves
+all four Table statements and old bytes. Actual Action/Block laws remain work.
+The owned printer lifecycle fix adds fifteen deterministic regressions;
+all actual printer goldens pass without skips and independent review is clear.
+Required real-Lean DRT: **2382 passed**, no skips. Full gate:
+**4192 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -147,10 +158,13 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `lean-firewall-next.md` and `forwarder-action.md`, `table-codec.md`,
 `lean-firewall-port.md`, `forwarder-table-next.md`, `program-codec-completion.md`,
 `lean-firewall-proof.md`, `parser-codec-baseline.md`, `firewall-bloom-next.md`,
-`forwarder-tables.md` and `parser-codec.md`.
+`forwarder-tables.md`, `parser-codec.md`, `firewall-bloom.md`,
+`block-codec-next.md`, `block-codec-baseline.md`, `codec-object-helpers.md`
+and `printer-lifecycle.md`.
 
-All five remote workflows pass for `23b1ced`; newer CI must be checked
-separately. This closes the earlier macOS CI run `35922311964` failure at
+All five remote workflows pass for `23b1ced`. At pushed `425fbc9`, CI, Lean,
+Oracle and BMv2 pass; XDP is still building, not a completed gate. Newer CI
+must be checked separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
 at `5871da8`, attempts cleanup once, retains bounded reaping and fails closed
@@ -174,6 +188,8 @@ harness views. Parser campaigns add 40 observations of 34 distinct requests,
 with 40 matching harness views. The table campaign's historical registration
 sources remain pinned at `661c8d8`; current parser-only registration additions
 are checked separately at `75a36af`, without rewriting old artifacts.
+The later reviewed Table helper relocation is checked independently at
+`707fb3f`, retaining the original proof identity at `228b76b`.
 The fixed-firewall reset transcript lives separately under
 `.artifacts/fixed-firewall/state-reset.json`; it is not a generic DRT bundle
 or an additional distinct packet sequence.
@@ -187,7 +203,8 @@ local ignored artifacts and temporary logs. The 247 declaration baseline
 transcripts additionally retain exact bytes, independent source-matched answers
 and historical hashes at `21b0fec`; the 181 table baseline transcripts have
 historical hashes at `9640523`. The parser baseline's 231 rows have historical
-hashes at `9d68d7d`. None of these baselines is counted as fault evidence.
+hashes at `9d68d7d`; the 498 Action/Block baseline rows use `6b9ffd0`.
+None of these baselines is counted as fault evidence.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -195,8 +212,9 @@ During the full gate a task-owned p4c version container logged success but
 remained daemon-marked running with no processes or mounts. Removing that
 exact verified container released the probe; absence was verified and all
 printer golden checks subsequently passed. No daemon restart, prune, image
-build or unrelated cleanup occurred. A bounded owned-container lifecycle fix
-is the next harness task; the underlying daemon cause is not established.
+build or unrelated cleanup occurred. The reviewed bounded owned-container
+lifecycle fix is now integrated at `25064ab`; the underlying daemon cause
+is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 
 ## Claim matrix
 
@@ -205,7 +223,7 @@ is the next harness task; the underlying daemon cause is not established.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 567 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt and foundational declaration codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 595 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt, declaration/table/parser codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -498,12 +516,14 @@ Things a resuming agent should know are in motion or deliberately left.
   survivors with strict complete-state checks after each write. Five compiling
   model faults fail proofs; a real Python destination-write fault reuses the
   existing TTL0 bundle, not a new distinct witness. Scope and CLEAR review:
-  `notes/forwarder-action.md` and its matching report. Selected table lookup,
-  checksum and complete forwarding remain open. Next bounded table work is
-  defined in `notes/forwarder-table-next.md`, independently reviewed and
-  committed with a seven-root feasibility probe. Implementation now uses
-  `work/forwarder-tables` at `/Users/qobilidop/my/work/p4blo-forwarder-tables`,
-  based on `95a784c`; universal symbolic lookup remains work, not probe evidence.
+  `notes/forwarder-action.md` and its matching report. Actual bounded table
+  installation/selection is integrated at `b3635a0`: universal IPv4 query and
+  fitting payloads for five shapes, nine audits, 270 native cases and 50
+  Python checks. Independent numeric expected selection and a new two-route
+  mismatch supplement the actual lookup proofs. Scope/review:
+  `notes/forwarder-tables.md`. Actual application is active in
+  `work/forwarder-apply` at `/Users/qobilidop/my/work/p4blo-forwarder-apply`;
+  checksum and complete forwarding remain separate obligations.
   The small operational root prerequisite is independently reviewed and
   committed at `01d8b09`: actual active-map absence permits a block write
   without dropping action storage; action-hit reads/writes prefer and change
@@ -551,11 +571,15 @@ Things a resuming agent should know are in motion or deliberately left.
   state and overlays. Thirteen audits, 48 native profiles and 58 Python checks
   pass, with two compiling source proof rejections and a packet-invisible
   actual Python local-write fault. Scope: `notes/lean-firewall-proof.md`.
-  Next: exact actual Bloom insertion and one-valued membership preservation,
-  followed separately by readback and hash/control composition. Reviewed plan
-  and first-call-only probe: `notes/firewall-bloom-next.md`; root worktree
-  `/Users/qobilidop/my/work/p4blo-firewall-bloom-next`, `work/firewall-bloom-next`.
-  The unregistered probe is not a completed two-statement theorem.
+  Exact actual Bloom insertion is integrated at `3372d45`: thirteen audited
+  roots, 84 native profiles and 79 Python checks, complete two-write execution
+  and explicit first-write boundary. Review found and closed a runtime-read
+  coupling in expected positions. Six compiling authored-body faults and one
+  actual Lean register fault are proof-rejected; a real Python other-cell
+  fault produces three state-only mismatches on the existing four-packet input.
+  Scope, reconstruction and CLEAR review: `notes/firewall-bloom.md`.
+  Next: actual two-read prefix before the decision, then drop/no-op composition,
+  hash bounds and control composition. No exact-connection-tracking claim.
 
   Four validator-accepted wrong ports fail both engines. Subsequent actual
   Python/Lean CRC XOR-one mutations pass packet-only gates but produce three
@@ -727,9 +751,14 @@ Things a resuming agent should know are in motion or deliberately left.
   parser probe is unregistered feasibility only. The reviewed parser baseline
   `9d68d7d` is now integrated at `fd708e6`: 27 native anchors, 283 focused
   checks and 231 source-pinned raw rows (76 successes / 155 errors).
-  Five universal laws and their adversarial campaign are being implemented in
-  `work/parser-codecs` at `/Users/qobilidop/my/work/p4blo-parser-codecs`.
-  Preserve the historical baseline; full Program remains a later obligation.
+  Five universal laws and six audited roots are integrated at `ca2f20f`;
+  40 fault observations over 34 distinct inputs preserve historical provenance.
+  Action/Block baseline `6b9ffd0` adds 498 exact transcripts, 114 protobuf
+  successes and 28 native anchors. Reviewed helper-only `707fb3f` shares nine
+  unchanged actual-object facts while preserving all four Table statements.
+  Both are integrated; their two new universal laws/campaign are active in
+  `work/block-codecs` at `/Users/qobilidop/my/work/p4blo-block-codecs`.
+  Preserve historical baseline/proof hashes; full Program remains later work.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 

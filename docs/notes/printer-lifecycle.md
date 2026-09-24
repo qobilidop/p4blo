@@ -39,4 +39,6 @@ printer suite plus these regressions passes **71 tests**, exit 0, against the
 existing pinned image, with no skips. Ruff format/check and Pyright pass.
 Log: `/tmp/p4blo-printer-owned-focused.log`. Independent review is clear in
 `reviews/printer-lifecycle.md`, including extra interruption, compound failure
-and cache probes. The merged full gate remains the integrator's obligation.
+and cache probes. The merged full gate at `25064ab` passes **4192 tests / 5
+strict expected discrepancies / 1 local-XDP skip**, including actual printer
+goldens with no printer skips and all schema/static/workflow checks, exit 0.

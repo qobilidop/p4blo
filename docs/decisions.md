@@ -1131,3 +1131,29 @@ one that says so.
   ownership and absence, low in the daemon's underlying failure mechanism.
   Add bounded unique-name cleanup and absence verification as a separate
   harness change; do not restart Docker, prune or weaken compiler checks.
+- **Keep Bloom expectations independent of runtime variable lookup.** A
+  real position-alias fault fooled both expected-value construction and
+  execution when the observer used Env.read. Supply intended positions from
+  independent profiles and observe full state after each actual call, not
+  just the final arrays. Confidence: high after the survivor regression,
+  thirteen audited roots and independent campaign review. A repaired later
+  write must not hide an earlier unrelated mutation. Retain the original
+  four-packet input once even when another fault produces three divergences.
+  Scope: `notes/firewall-bloom.md`.
+- **Extract codec object facts only at demonstrated Block reuse.** Nine
+  unchanged table-private facts now live in an internal CodecObject namespace.
+  The actual nine-field Block lookup probe demonstrates reuse without field-
+  presence case explosion. Confidence: high in preserved public Table laws
+  and unchanged production bytes; medium in lasting helper placement. Revisit
+  for Export/Program needs, not speculative abstractions. Historical proof
+  hashes stay at their original commits; current helper identities and exact
+  moved statements are reviewed separately. Scope: `notes/block-codec.md`.
+- **Use a short warm printer probe without weakening cold CI coverage.**
+  The reviewed fix uses a 15-second local inspect, 30-second warm version
+  probe, prior 600-second cold implicit-pull allowance and unchanged compiler
+  budget. Each cleanup command is bounded at 15 seconds. Cleanup uncertainty
+  has its own failure class outside optional availability skips. Confidence:
+  high in ownership/failure handling, medium in the warm budget; revisit on
+  measured slow-host failures. Keep the differently secured XDP helper
+  separate until there is a real shared policy. Scope/review:
+  `notes/printer-lifecycle.md`.
