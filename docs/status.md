@@ -11,6 +11,60 @@ assurance milestone 1 are complete. Broader research remains backlog;
 
 ## Latest checked checkpoint
 
+**Python gateway walkthrough (2026-09-24, checked).** At the user's
+request, replace the website's short Python/Lean excerpts with a complete
+Python eDSL example and Veil-style scrolling explanation. The new
+`tests/corpus/vlan_gateway/` program parses one VLAN tag, applies exact
+ingress/VLAN/destination policy, removes admitted tags and counts admissions.
+It fits the existing eDSL and interpreter contracts without API or semantic
+changes. Its README defines the single-tag/trusted-host boundary and runnable
+three-packet demo. `scripts/render-website-example.py` generates nine
+contiguous highlighted regions and the downloadable source; pytest and the
+Pages workflow check source drift. Design rationale is in
+[website-design.md](notes/website-design.md).
+
+The focused seven example/corpus tests and both pinned P4 oracle replays
+pass. Independent expected bytes, diagnostics and every one of the 512
+counter cells are checked over a 53-request persistent sequence in Python
+and Lean. Two source/website drift tests pass. Commands completed with exit 0:
+
+- `nix develop -c scripts/check-lean.sh`: both packages, default proof audits,
+  spec checks and native/API tests pass, with no Lean source changes.
+- `P4BLO_REQUIRE_LEAN=1 nix develop -c scripts/check.sh`: **4808 passed**,
+  five existing precise oracle expected discrepancies and one optional local
+  XDP-image skip; Ruff format/lint, Pyright, schema generation drift and
+  actionlint pass. Collection confirms all **2888** `lean_agrees` tests are
+  included in this full required run; the selector was not redundantly rerun.
+- Focused new-vector replays on P4-SpecTec and BMv2: **2 passed**, no skips.
+  The existing shared Docker images were reused, not rebuilt.
+- `nix develop -c node --check website/main.js` and `actionlint` pass for
+  the final JavaScript and deployment workflow. Both website source checks
+  pass, including actual rendered text equality and generator `--check`.
+
+Chrome checks cover 1920-pixel desktop and 390-pixel mobile visuals, document
+overflow at 320/390/768/1024, step buttons/arrow navigation, manual scrolling,
+mobile-card exit, copy success feedback and a script-free fallback exposing
+all nine notes. Browser warning/error logs are empty. Reduced-motion behavior
+was source-reviewed, not browser-emulated; no screen-reader certification is
+claimed. The bounded [source-fault recipe](notes/mutations/vlan-gateway.py)
+then exercised three program faults in an isolated worktree, running each
+through both unchanged interpreters. Independent expectations reject omitted
+initial drop (case 5), omitted tag invalidation (case 0), and the wrong counter
+index (case 0, unchanged output packet), even though Python and Lean agree
+with each other. Baseline and restored runs each pass all three gateway tests.
+The first attempt exposed a missing artifact-directory creation in the new
+failure handler; that I/O error is not counted as Lean semantic detection.
+The one-line fix is followed by the successful campaign and **5 passing**
+gateway/website tests. The broader gate above preceded that failure-handler
+fix; no interpreter or application source changed afterward. Retained local
+evidence: `.artifacts/vlan-gateway/2026-09-24-checked/`, including mutant
+sources, replay bundles, logs and hashes. The independent
+[review](notes/reviews/vlan-gateway.md) has no remaining confirmed defects;
+it distinguishes its own checks from the integrator's campaign and browser
+checks. Publication and live verification remain the next steps.
+No whole-gateway proof or Lean-authored counterpart is claimed. The frozen
+milestone 1 evidence below retains its original eleven-program counts.
+
 **Local worktree cleanup (2026-09-24).** Removed 86 obsolete worktrees from
 the initial 92 after preserving and independently checking 86 recovery
 archives (971 file entries, about 271 MiB). Six trees remain: main, the two
@@ -321,8 +375,8 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 
 | Claim | Experiment | Status |
 |---|---|---|
-| 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
-| 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
+| 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: twelve corpus programs fit; firewall adds no core construct; coverage table published |
+| 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 18 vector files, 12 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
 | 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 595 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt, declaration/table/parser codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
@@ -333,7 +387,7 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 | 0 | Skeleton: flake, Python project, schema stub, CI, docs | done |
 | 1 | Schema, validator, semantics, forwarder in text format, interpreter, STF runner | done: the forwarder's five vectors pass end to end |
 | 2 | Extern registry, stateful program | done: registry with register, counter and checksum16; the stateful program and the forwarder's checksum |
-| 3 | eDSL, four corpus programs, two architectures, metadata contract | done: eleven programs in the typed eDSL, both architectures, contract check |
+| 3 | eDSL, four corpus programs, two architectures, metadata contract | done: twelve programs in the typed eDSL, both architectures, contract check |
 | 4 | Printer, v1model shim, P4-SpecTec oracle job, STF replay both sides | done: corpus gates run on both oracles in separate CI jobs; precise expected discrepancies are recorded above |
 | 5 | Lean interpreter, extern models, DRT, the theorem | done |
 | 6 | Coverage table, README claim matrix, write-up | done: coverage table (177 rows, none undecided), README, `docs/writeup.md`; both reviews kept under docs/notes/reviews and their findings fixed |
@@ -353,15 +407,18 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 | priority | p4c `table-entries-priority-bmv2` | eDSL, landed | p4c STF, 3 packets, passing | pass on both oracles |
 | register_bounds | own program from the second review | eDSL, landed | 9 hand-derived packets, passing | passes on P4-SpecTec; two packets diverge on BMv2 by the recorded out-of-range register rule, carried as a strict xfail |
 | tutorial_firewall | pinned p4lang tutorial solution | Python and Lean sources equal unchanged golden; persistent direct Lean execution | connection/Bloom false positives, byte cuts and generated host-policy sequences | original BMv2 packets/all 8192 register cells at 30 prefix boundaries; SpecTec controls pass but exact CRC/mask probes disagree; scoped Lean application proofs next |
+| vlan_gateway | original p4blo homepage example | complete Python eDSL; generated IR and website source; no new core construct | one STF file with 11 packets; independent 53-request packet/diagnostic/full-counter sequence in Python and Lean | packet vectors pass both pinned P4 oracles; counters checked by Python/Lean expectations |
 
 ## Open threads
 
 Future and deliberately parked work. Milestone 1 is complete; these older
 plans are not active acceptance requirements or automatic continuation tasks.
 
-- **Project website:** published and verified at
-  <https://qobilidop.github.io/p4blo/>. The requested task is complete;
-  future visual feedback is separate from the parked semantics/proof work.
+- **Project website:** the original site is live at
+  <https://qobilidop.github.io/p4blo/>. The requested Python gateway
+  walkthrough is implemented, checked and independently reviewed;
+  publish and verify the new section. This does not reopen the parked
+  semantics/proof work.
 
 - **Local worktrees:** cleanup is complete; five non-main trees remain
   intentionally. See [the inventory and recovery guide](notes/worktree-cleanup.md)

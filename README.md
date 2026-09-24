@@ -21,7 +21,7 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | eleven corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
+| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
 | The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/notes/firewall-port.md`](docs/notes/firewall-port.md) |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`python/p4blo/arch/`](python/p4blo/arch/) |
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `python/p4blo/drt/` |
@@ -45,6 +45,12 @@ The [execution-claim experiment](docs/certificates.md) also runs a fixed
 stateful program in production Python and checks its claimed result with
 a Lean checker whose acceptance theorem is proved. Its compiled runtime
 and observation adapter remain explicit trust boundaries.
+
+The [VLAN access gateway](tests/corpus/vlan_gateway/README.md) is the compact
+Python example behind the [homepage walkthrough](https://qobilidop.github.io/p4blo/#examples):
+parse a tag, apply a host policy, remove the tag and count the admission.
+Its runnable three-packet demo and independent packet/state tests make the
+whole path inspectable.
 
 The [tutorial firewall](tests/corpus/tutorial_firewall/README.md) preserves
 Bloom-filter false positives and compares all 8,192 register cells against
@@ -120,7 +126,7 @@ typechecked with p4c through Docker when it is available.
 | `ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
 | `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
 | `lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
-| `tests/corpus/` | eleven programs: eDSL source, IR golden, README, STF vectors |
+| `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, semantics, coverage, status, decisions, notes |
 | `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |

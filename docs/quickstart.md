@@ -15,6 +15,11 @@ schema tools. The current Lean toolchain is recorded in `lean/lean-toolchain`.
 
 ## What to edit
 
+For the homepage's Python-only walkthrough, start with the smaller
+[VLAN access gateway](../tests/corpus/vlan_gateway). Its README includes a
+three-packet demo, complete source and exact behavioral boundary. The two
+examples below additionally have independently authored Lean counterparts.
+
 | Application | Python authoring | Lean authoring | First vector |
 |---|---|---|---|
 | IPv4 forwarder | [forwarder.py](../tests/corpus/forwarder/forwarder.py) | [Forwarder.lean](../lean/P4blo/Forwarder.lean) | [forward.stf](../tests/corpus/forwarder/forward.stf) |

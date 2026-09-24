@@ -1,0 +1,621 @@
+name: "vlan_gateway"
+errors: "NoError"
+errors: "PacketTooShort"
+errors: "NoMatch"
+errors: "StackOutOfBounds"
+errors: "HeaderTooShort"
+errors: "ParserTimeout"
+errors: "ParserInvalidArgument"
+header_types {
+  name: "Ethernet"
+  fields {
+    name: "dst"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "src"
+    type {
+      bits: 48
+    }
+  }
+  fields {
+    name: "ether_type"
+    type {
+      bits: 16
+    }
+  }
+}
+header_types {
+  name: "Vlan"
+  fields {
+    name: "pcp"
+    type {
+      bits: 3
+    }
+  }
+  fields {
+    name: "dei"
+    type {
+      bits: 1
+    }
+  }
+  fields {
+    name: "vid"
+    type {
+      bits: 12
+    }
+  }
+  fields {
+    name: "ether_type"
+    type {
+      bits: 16
+    }
+  }
+}
+struct_types {
+  name: "Headers"
+  fields {
+    name: "ethernet"
+    type {
+      header: "Ethernet"
+    }
+  }
+  fields {
+    name: "vlan"
+    type {
+      header: "Vlan"
+    }
+  }
+}
+struct_types {
+  name: "Metadata"
+  fields {
+    name: "ingress_port"
+    type {
+      bits: 9
+    }
+  }
+  fields {
+    name: "egress_port"
+    type {
+      bits: 9
+    }
+  }
+  fields {
+    name: "drop"
+    type {
+      boolean {
+      }
+    }
+  }
+}
+extern_types {
+  name: "counter"
+  constructor_params {
+    name: "size"
+    type {
+      bits: 32
+    }
+    direction: DIRECTION_IN
+  }
+  methods {
+    name: "count"
+    params {
+      name: "index"
+      type {
+        bits: 32
+      }
+      direction: DIRECTION_IN
+    }
+  }
+}
+extern_instances {
+  name: "admissions"
+  extern_type: "counter"
+  args {
+    bits {
+      width: 32
+      value: "512"
+    }
+  }
+}
+blocks {
+  name: "Parse"
+  kind: BLOCK_KIND_PARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_OUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  states {
+    name: "start"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "ethernet"
+          }
+        }
+      }
+    }
+    transition {
+      select {
+        keys {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "ether_type"
+          }
+        }
+        cases {
+          sets {
+            exact {
+              bits {
+                width: 16
+                value: "33024"
+              }
+            }
+          }
+          target {
+            state: "tagged"
+          }
+        }
+        cases {
+          sets {
+            dont_care {
+            }
+          }
+          target {
+            accept {
+            }
+          }
+        }
+      }
+    }
+  }
+  states {
+    name: "tagged"
+    body {
+      extract {
+        target {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "vlan"
+          }
+        }
+      }
+    }
+    transition {
+      direct {
+        accept {
+        }
+      }
+    }
+  }
+  start_state: "start"
+}
+blocks {
+  name: "Gateway"
+  kind: BLOCK_KIND_CONTROL
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_INOUT
+  }
+  params {
+    name: "meta"
+    type {
+      struct: "Metadata"
+    }
+    direction: DIRECTION_INOUT
+  }
+  actions {
+    name: "deny"
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "drop"
+          }
+        }
+        value {
+          literal {
+            boolean: true
+          }
+        }
+      }
+    }
+  }
+  actions {
+    name: "deliver"
+    params {
+      name: "port"
+      type {
+        bits: 9
+      }
+      direction: DIRECTION_NONE
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "egress_port"
+          }
+        }
+        value {
+          var: "port"
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "ethernet"
+              }
+            }
+            field: "ether_type"
+          }
+        }
+        value {
+          member {
+            base {
+              member {
+                base {
+                  var: "hdr"
+                }
+                field: "vlan"
+              }
+            }
+            field: "ether_type"
+          }
+        }
+      }
+    }
+    body {
+      set_invalid {
+        header {
+          member {
+            base {
+              var: "hdr"
+            }
+            field: "vlan"
+          }
+        }
+      }
+    }
+    body {
+      call_extern {
+        instance: "admissions"
+        method: "count"
+        args {
+          expr {
+            cast {
+              to {
+                bits: 32
+              }
+              operand {
+                var: "port"
+              }
+            }
+          }
+        }
+      }
+    }
+    body {
+      assign {
+        target {
+          member {
+            base {
+              var: "meta"
+            }
+            field: "drop"
+          }
+        }
+        value {
+          literal {
+            boolean: false
+          }
+        }
+      }
+    }
+  }
+  tables {
+    name: "access"
+    keys {
+      expr {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "ingress_port"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "vlan"
+            }
+          }
+          field: "vid"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    keys {
+      expr {
+        member {
+          base {
+            member {
+              base {
+                var: "hdr"
+              }
+              field: "ethernet"
+            }
+          }
+          field: "dst"
+        }
+      }
+      match_kind: MATCH_KIND_EXACT
+    }
+    actions: "deliver"
+    actions: "deny"
+    default_action {
+      action: "deny"
+    }
+    size: 1024
+  }
+  body {
+    assign {
+      target {
+        member {
+          base {
+            var: "meta"
+          }
+          field: "drop"
+        }
+      }
+      value {
+        literal {
+          boolean: true
+        }
+      }
+    }
+  }
+  body {
+    conditional {
+      condition {
+        binary {
+          op: BINARY_OP_AND
+          left {
+            binary {
+              op: BINARY_OP_AND
+              left {
+                binary {
+                  op: BINARY_OP_AND
+                  left {
+                    binary {
+                      op: BINARY_OP_AND
+                      left {
+                        is_valid {
+                          header {
+                            member {
+                              base {
+                                var: "hdr"
+                              }
+                              field: "vlan"
+                            }
+                          }
+                        }
+                      }
+                      right {
+                        binary {
+                          op: BINARY_OP_GT
+                          left {
+                            member {
+                              base {
+                                member {
+                                  base {
+                                    var: "hdr"
+                                  }
+                                  field: "vlan"
+                                }
+                              }
+                              field: "vid"
+                            }
+                          }
+                          right {
+                            literal {
+                              bits {
+                                width: 12
+                                value: "0"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  right {
+                    binary {
+                      op: BINARY_OP_LT
+                      left {
+                        member {
+                          base {
+                            member {
+                              base {
+                                var: "hdr"
+                              }
+                              field: "vlan"
+                            }
+                          }
+                          field: "vid"
+                        }
+                      }
+                      right {
+                        literal {
+                          bits {
+                            width: 12
+                            value: "4095"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              right {
+                binary {
+                  op: BINARY_OP_NE
+                  left {
+                    member {
+                      base {
+                        member {
+                          base {
+                            var: "hdr"
+                          }
+                          field: "vlan"
+                        }
+                      }
+                      field: "ether_type"
+                    }
+                  }
+                  right {
+                    literal {
+                      bits {
+                        width: 16
+                        value: "33024"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          right {
+            binary {
+              op: BINARY_OP_NE
+              left {
+                member {
+                  base {
+                    member {
+                      base {
+                        var: "hdr"
+                      }
+                      field: "vlan"
+                    }
+                  }
+                  field: "ether_type"
+                }
+              }
+              right {
+                literal {
+                  bits {
+                    width: 16
+                    value: "34984"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      then {
+        apply {
+          table: "access"
+        }
+      }
+    }
+  }
+}
+blocks {
+  name: "Emit"
+  kind: BLOCK_KIND_DEPARSER
+  params {
+    name: "hdr"
+    type {
+      struct: "Headers"
+    }
+    direction: DIRECTION_IN
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "ethernet"
+        }
+      }
+    }
+  }
+  body {
+    emit {
+      value {
+        member {
+          base {
+            var: "hdr"
+          }
+          field: "vlan"
+        }
+      }
+    }
+  }
+}
+headers: "Headers"
+metadata: "Metadata"
+exports {
+  role: "parser"
+  block: "Parse"
+}
+exports {
+  role: "control"
+  block: "Gateway"
+}
+exports {
+  role: "deparser"
+  block: "Emit"
+}

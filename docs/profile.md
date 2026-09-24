@@ -36,9 +36,15 @@ evidence; the extensible Python registry does not verify arbitrary plugins.
 
 The IR is architecture-free. End-to-end regression uses the supplied switch
 and filter adapters and their declared metadata/port rules, not every P4
-architecture. The eleven-program corpus includes complete Python/Lean ports
+architecture. The twelve-program corpus includes complete Python/Lean ports
 of the forwarder and persistent tutorial Bloom firewall. The latter admits
 Bloom false positives; it is not exact connection tracking.
+
+After milestone 1, the Python-authored [VLAN access gateway](../tests/corpus/vlan_gateway)
+adds a complete single-tag admission/rewrite/counting example. Its fixed
+packet/state sequence runs on both interpreters; it has no Lean-authored
+counterpart or whole-pipeline proof. The frozen milestone's eleven-program
+counts remain historical evidence at their recorded revision.
 
 ## Inputs and validation
 

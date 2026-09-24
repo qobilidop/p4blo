@@ -1,0 +1,45 @@
+# Author-installed policy: trunk port 1, VLAN 42, destination server -> port 2.
+add access meta.ingress_port:1 hdr.vlan.vid:42 hdr.ethernet.dst:0x000000000002 deliver(port:2)
+# These deliberately installed entries exercise the control's own VID guard.
+add access meta.ingress_port:1 hdr.vlan.vid:0 hdr.ethernet.dst:0x000000000002 deliver(port:2)
+add access meta.ingress_port:1 hdr.vlan.vid:4095 hdr.ethernet.dst:0x000000000002 deliver(port:2)
+
+# The inner EtherType and all payload bytes survive; the tag disappears.
+packet 1 000000000002 000000000001 8100 002a 0800 4500001400010000401166d60a0000010a000002
+expect 2 000000000002 000000000001 0800 4500001400010000401166d60a0000010a000002
+
+# A tag's priority and drop-eligibility bits are not part of the policy key.
+packet 1 000000000002 000000000001 8100 f02a 0800 4500001400010000401166d60a0000010a000002
+expect 2 000000000002 000000000001 0800 4500001400010000401166d60a0000010a000002
+
+# Same server and VLAN, wrong ingress.
+packet 0 000000000002 000000000001 8100 002a 0800 4500001400010000401166d60a0000010a000002
+no_packet
+
+# Same server and ingress, wrong VLAN.
+packet 1 000000000002 000000000001 8100 002b 0800 4500001400010000401166d60a0000010a000002
+no_packet
+
+# Unknown destination.
+packet 1 000000000003 000000000001 8100 002a 0800 4500001400010000401166d60a0000010a000002
+no_packet
+
+# Untagged traffic is outside this gateway's policy.
+packet 1 000000000002 000000000001 0800 4500001400010000401166d60a0000010a000002
+no_packet
+
+# A partial VLAN header does not become a valid header.
+packet 1 000000000002 000000000001 8100 002a 08
+no_packet
+
+# Nested customer and service tags are both outside the single-tag profile.
+packet 1 000000000002 000000000001 8100 002a 8100 00010800
+no_packet
+packet 1 000000000002 000000000001 8100 002a 88a8 00010800
+no_packet
+
+# Even installed entries cannot admit priority tags or reserved VID 4095.
+packet 1 000000000002 000000000001 8100 0000 0800 4500001400010000401166d60a0000010a000002
+no_packet
+packet 1 000000000002 000000000001 8100 0fff 0800 4500001400010000401166d60a0000010a000002
+no_packet

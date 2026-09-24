@@ -125,7 +125,10 @@ and promote confirmed minimal regressions into tracked tests or corpus data.
 The separate `Website` workflow publishes only `website/` to
 <https://qobilidop.github.io/p4blo/>. It runs for website/workflow changes on
 `main` or manual dispatch on `main`, using the GitHub Actions Pages source.
-It checks JavaScript syntax before uploading and deploying the static files.
+It checks JavaScript syntax and the generated gateway source before uploading
+and deploying the static files. Changes to the canonical gateway source or
+renderer also trigger it; regenerate with
+`uv run python scripts/render-website-example.py` before committing.
 Pages publishing is separate from the five implementation-validation
 workflows and supplies no additional semantic assurance. Preview instructions
 and maintenance boundaries are in `website/README.md`.

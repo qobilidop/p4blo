@@ -20,7 +20,15 @@ unit suites do not automatically constitute a direct differential test.
 | Persistent extern state | `tests/test_drt_stateful_programs.py` shrinking sequences, `test_drt_state.py`, `test_externs.py`, `test_extern_families.py`, `test_crc.py`; firewall full-array collision/truncation/generated-flow tests | `TutorialFirewall.Bloom` insertion and selected initialization/invalid-body laws. Original BMv2 firewall checks packets and complete arrays; no generic extern correctness theorem or exact connection tracking. |
 | Architecture outcomes/errors | `tests/test_drt.py` drop/flood/ports/error reasons; `test_drt_replay.py` matching-error policy; corpus switch/filter vectors | Supplied architecture profiles only. No all-architecture theorem. Success/drop, parser rejection, execution error and protocol failure stay distinct. |
 | Serialization and observation | `tests/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `test_wire_decimal.py`; `test_drt_protocol.py`, `test_drt_replay.py`, strict JSON/type and frozen-state regressions | Actual component `CodecLaws` through Action/Block, checked by `ir/CodecProofAudit.lean`; independent wire answers catch roundtrip-preserving defects. Complete Program/Export and host Entries fixtures cover public protobuf conversions; rejected-host sequences and strict raw configuration observers are tested, not universal codec/validator proofs. |
-| Authored applications | Exact-golden source comparisons and independent packet/full-state profiles in `test_lean_forwarder*.py`, `test_lean_firewall*.py`, `test_firewall*.py`; eleven-program corpus rebuild/typecheck | Complete examples execute in both languages; selected source/lowering/application proofs do not verify all raw construction or the whole pipeline. Original-forwarder ingress-prefix and firewall-readback drafts are parked, not evidence. |
+| Authored applications | Exact-golden source comparisons and independent packet/full-state profiles in `test_lean_forwarder*.py`, `test_lean_firewall*.py`, `test_firewall*.py`; twelve-program corpus rebuild/typecheck | Complete examples execute in both languages; selected source/lowering/application proofs do not verify all raw construction or the whole pipeline. Original-forwarder ingress-prefix and firewall-readback drafts are parked, not evidence. |
+
+After the frozen milestone, the twelfth corpus program is the
+[Python VLAN gateway](../tests/corpus/vlan_gateway). Its 53-request sequence
+in `tests/test_vlan_gateway.py` has independent expected packets, architecture
+diagnostics and complete admission-counter state, checked in Python and Lean.
+Its STF vector runs on both P4 oracles, which observe packets only. No
+whole-gateway proof or Lean-authored source is claimed. Current checks and
+the source-mapped website walkthrough are recorded in [status](status.md).
 
 The checked theorem inventories are [IR audit](../ir/ProofAudit.lean),
 [codec audit](../ir/CodecProofAudit.lean) and

@@ -1,65 +1,111 @@
 "use strict";
 
-const tabs = [...document.querySelectorAll('[role="tab"]')];
-const panels = [...document.querySelectorAll(".code-panel")];
-const copyButton = document.querySelector(".copy-button");
-const copyStatus = document.querySelector("#copy-status");
-let activePanel = panels[0];
-let feedbackTimer;
+const walkthrough = document.querySelector("#gateway-walkthrough");
+const regions = [...walkthrough.querySelectorAll(".code-step")];
+const notes = [...walkthrough.querySelectorAll(".step-note")];
+const navigation = walkthrough.querySelector(".step-navigation");
+const buttons = [...navigation.querySelectorAll("button")];
+const status = document.querySelector("#copy-status");
+const mobile = window.matchMedia("(max-width: 1023px)");
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+let current = -1;
+let framePending = false;
+let manualUntil = 0;
 
-function selectTab(tab, focus = false) {
-  for (const item of tabs) {
-    const selected = item === tab;
-    item.setAttribute("aria-selected", String(selected));
-    item.tabIndex = selected ? 0 : -1;
-  }
-  for (const panel of panels) {
-    panel.hidden = panel.id !== tab.getAttribute("aria-controls");
-    if (!panel.hidden) activePanel = panel;
-  }
-  clearTimeout(feedbackTimer);
-  copyButton.textContent = "Copy code";
-  copyStatus.textContent = "";
-  if (focus) tab.focus();
-}
-
-for (const tab of tabs) {
-  const panel = document.getElementById(tab.getAttribute("aria-controls"));
-  panel.setAttribute("role", "tabpanel");
-  panel.setAttribute("aria-labelledby", tab.id);
-  tab.addEventListener("click", () => selectTab(tab));
-  tab.addEventListener("keydown", (event) => {
-    const current = tabs.indexOf(tab);
-    let next;
-    if (event.key === "ArrowRight") next = (current + 1) % tabs.length;
-    if (event.key === "ArrowLeft") next = (current - 1 + tabs.length) % tabs.length;
-    if (event.key === "Home") next = 0;
-    if (event.key === "End") next = tabs.length - 1;
-    if (next === undefined) return;
-    event.preventDefault();
-    selectTab(tabs[next], true);
+function activate(index) {
+  if (current === index) return;
+  current = index;
+  regions.forEach((region, i) => region.classList.toggle("active", i === index));
+  notes.forEach((note, i) => { note.hidden = i !== index; });
+  buttons.forEach((button, i) => {
+    if (i === index) button.setAttribute("aria-current", "step");
+    else button.removeAttribute("aria-current");
   });
 }
 
-selectTab(tabs[0]);
-document.querySelector(".code-tabs").hidden = false;
+function focalPoint() {
+  // Reserve the card's maximum height. Basing this on the active note's height
+  // would move the selection boundary whenever a note changes, causing flicker.
+  const available = mobile.matches ? window.innerHeight * 0.58 - 32 : window.innerHeight;
+  return Math.max(60, available * 0.45);
+}
 
-// Browsers may deny clipboard access; keep the source selectable either way.
+function update() {
+  framePending = false;
+  const bounds = walkthrough.getBoundingClientRect();
+  const focus = focalPoint();
+  const visible = bounds.top < focus && bounds.bottom > window.innerHeight * 0.5;
+  walkthrough.classList.toggle("in-view", visible);
+  if (!visible || performance.now() < manualUntil) return;
+  let closest = 0;
+  let distance = Infinity;
+  regions.forEach((region, i) => {
+    const rect = region.getBoundingClientRect();
+    // Distance to the region keeps a long block active while it is being read.
+    const next = Math.max(rect.top - focus, focus - rect.bottom, 0);
+    if (next < distance) { closest = i; distance = next; }
+  });
+  activate(closest);
+}
+
+function scheduleUpdate() {
+  if (framePending) return;
+  framePending = true;
+  window.requestAnimationFrame(update);
+}
+
+buttons.forEach((button, index) => {
+  button.addEventListener("click", () => {
+    activate(index);
+    manualUntil = performance.now() + 1200;
+    const rect = regions[index].getBoundingClientRect();
+    window.scrollTo({
+      top: window.scrollY + rect.top - focalPoint() + Math.min(rect.height / 2, 80),
+      behavior: reducedMotion.matches ? "instant" : "smooth",
+    });
+    status.textContent = `Step ${index + 1}: ${notes[index].querySelector("h3").textContent}`;
+  });
+  button.addEventListener("keydown", (event) => {
+    let target;
+    if (event.key === "ArrowRight") target = (index + 1) % buttons.length;
+    if (event.key === "ArrowLeft") target = (index - 1 + buttons.length) % buttons.length;
+    if (event.key === "Home") target = 0;
+    if (event.key === "End") target = buttons.length - 1;
+    if (target === undefined) return;
+    event.preventDefault();
+    buttons[target].focus({ preventScroll: true });
+    buttons[target].click();
+  });
+});
+
+for (const event of ["wheel", "touchstart"]) {
+  window.addEventListener(event, () => { manualUntil = 0; }, { passive: true });
+}
+window.addEventListener("scroll", scheduleUpdate, { passive: true });
+window.addEventListener("resize", scheduleUpdate);
+window.addEventListener("pageshow", scheduleUpdate);
+activate(0);
+navigation.hidden = false;
+walkthrough.classList.add("enhanced");
+scheduleUpdate();
+
+const copyButton = walkthrough.querySelector(".copy-button");
+let feedbackTimer;
 if (navigator.clipboard && window.isSecureContext) {
   copyButton.hidden = false;
   copyButton.addEventListener("click", async () => {
-    const code = activePanel.querySelector("code").textContent;
+    clearTimeout(feedbackTimer);
     copyButton.disabled = true;
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(document.querySelector("#gateway-source").textContent);
       copyButton.textContent = "Copied";
-      copyStatus.textContent = "Source excerpt copied to clipboard.";
+      status.textContent = "Complete Python source copied to clipboard.";
     } catch {
       copyButton.textContent = "Select to copy";
-      copyStatus.textContent = "Clipboard unavailable. Select the code and copy it manually.";
+      status.textContent = "Clipboard unavailable. Select the code or use Download Python source.";
     } finally {
       copyButton.disabled = false;
-      feedbackTimer = setTimeout(() => { copyButton.textContent = "Copy code"; }, 2500);
+      feedbackTimer = setTimeout(() => { copyButton.textContent = "Copy source"; }, 2500);
     }
   });
 }

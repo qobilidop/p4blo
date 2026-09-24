@@ -1265,3 +1265,29 @@ one that says so.
   remaining trees only after separate content review or a new proof scope;
   historical worktree paths do not imply active work. Details and recovery:
   `notes/worktree-cleanup.md`.
+- **Make the homepage example a complete Python VLAN access gateway.**
+  The user requested Veil's scrolling code visual and, more importantly, a
+  representative Python eDSL example, with API changes permitted if useful.
+  Prefer this small original application to a router dominated by checksum
+  construction or a Bloom firewall dominated by collision explanations.
+  One admitted packet visibly loses four bytes; one miss drops; a repeated
+  admission changes persistent state. It uses typed wire layouts, a parser
+  branch, exact match/action policy, header validity, an extern and deparsing
+  without extending the existing eDSL or changing either interpreter.
+  Scope: trusted host-installed policy, outer 0x8100, VID 1–4094, no nested
+  0x8100/0x88a8 tags, opaque payload. Counters record policy admissions,
+  including an invalid egress later rejected by the architecture. Confidence:
+  high after independent byte/state expectations, Python/Lean execution and
+  both pinned P4 packet oracles. Revisit if parser operations are added after
+  tag extraction or host configuration becomes part of the security claim.
+- **Generate the walkthrough from tested source, keeping it static.**
+  Replace the two forwarding-action excerpts with the complete gateway,
+  syntax highlighted in nine contiguous regions. A Python standard-library
+  renderer preserves the source exactly, creates its downloadable copy and
+  checks drift in pytest and before Pages deployment. Scroll selects a code
+  region and its sticky explanation; mobile uses a bounded bottom card.
+  Buttons support keyboard navigation; source and all notes remain available
+  without JavaScript. The displayed packet sequence comes from a runnable,
+  tested demo, with no browser interpreter implied. Confidence: high in the
+  source mapping and bounded implementation; visual choices remain open to
+  user feedback. Revisit when a live playground is actually requested.

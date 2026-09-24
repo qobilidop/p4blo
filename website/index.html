@@ -64,47 +64,156 @@
 
       <section class="example-section" id="examples" aria-labelledby="examples-title">
         <div class="container">
-          <div class="example-heading"><div><p class="eyebrow">Read it. Run it. Change it.</p><h2 id="examples-title">A familiar program.<br>A more explicit foundation.</h2></div><p>The IPv4 forwarder, expressed in two languages.<br>Both complete sources build the same IR.</p></div>
-          <div class="code-showcase">
-            <div class="editor">
-              <div class="editor-toolbar">
-                <div class="code-tabs" role="tablist" aria-label="Forwarder source language" hidden>
-                  <button id="tab-python" type="button" role="tab" aria-selected="true" aria-controls="panel-python">Python</button>
-                  <button id="tab-lean" type="button" role="tab" aria-selected="false" aria-controls="panel-lean" tabindex="-1">Lean</button>
-                </div>
-                <span class="editor-label">FORWARDING ACTION</span>
-                <button class="copy-button" type="button" hidden>Copy code</button>
-              </div>
-              <section class="code-panel" id="panel-python" aria-labelledby="python-heading">
-                <h3 id="python-heading" class="code-language">Python · forwarder.py</h3>
-                <pre tabindex="0" aria-label="Python forwarding action excerpt"><code><span class="syntax-comment"># Inside MyIngress — source excerpt</span>
-<span class="syntax-accent">@action</span>
-<span class="syntax-keyword">def</span> <span class="syntax-function">ipv4_forward</span>(self, dstAddr: bit48, port: bit9) -&gt; <span class="syntax-keyword">None</span>:
-    self.assign(self.meta.egress_port, port)
-    self.assign(self.hdr.ethernet.srcAddr, self.hdr.ethernet.dstAddr)
-    self.assign(self.hdr.ethernet.dstAddr, dstAddr)
-    self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - <span class="syntax-number">1</span>)</code></pre>
-                <div class="editor-footer"><span><span class="mini-dot" aria-hidden="true"></span> Typed Python eDSL</span><a href="https://github.com/qobilidop/p4blo/blob/main/tests/corpus/forwarder/forwarder.py">Full Python source <span aria-hidden="true">↗</span></a></div>
-              </section>
-              <section class="code-panel" id="panel-lean" aria-labelledby="lean-heading">
-                <h3 id="lean-heading" class="code-language">Lean · Forwarder.lean</h3>
-                <pre tabindex="0" aria-label="Lean forwarding action excerpt"><code><span class="syntax-comment">-- Inside P4blo.Forwarder — source excerpt</span>
-<span class="syntax-keyword">def</span> <span class="syntax-function">forwardAction</span> : Action :=
-  ⟨<span class="syntax-string">"ipv4_forward"</span>, [⟨<span class="syntax-string">"dstAddr"</span>, .bits <span class="syntax-number">48</span>, .none⟩, ⟨<span class="syntax-string">"port"</span>, .bits <span class="syntax-number">9</span>, .none⟩], [
-    .assign egress.lvalue (.var <span class="syntax-string">"port"</span>),
-    .assign ethSrc.lvalue ethDst.expr,
-    .assign ethDst.lvalue (.var <span class="syntax-string">"dstAddr"</span>),
-    .assign ttl.lvalue (.binary .sub ttl.expr (.literal (.bits <span class="syntax-number">8 1</span>))) ]⟩</code></pre>
-                <div class="editor-footer"><span><span class="mini-dot" aria-hidden="true"></span> Explicit Lean IR construction</span><a href="https://github.com/qobilidop/p4blo/blob/main/lean/P4blo/Forwarder.lean">Full Lean source <span aria-hidden="true">↗</span></a></div>
-              </section>
-            </div>
-            <aside class="code-notes" aria-label="What the forwarding action does">
-              <span class="item-number">IN THIS ACTION</span><h3>Nothing hidden<br>between the lines.</h3>
-              <ol><li>Choose the egress port.</li><li>Copy the old destination MAC to the source.</li><li>Write the new destination MAC.</li><li>Decrement the 8-bit TTL, wrapping at zero.</li></ol>
-              <a class="text-link" href="https://github.com/qobilidop/p4blo/blob/main/docs/quickstart.md">Run the complete example <span aria-hidden="true">↗</span></a>
-            </aside>
+          <div class="example-heading"><div><p class="eyebrow">A complete Python eDSL program</p><h2 id="examples-title">See it in action.</h2></div><p>A VLAN access gateway. Admit a packet by policy, remove its tag and remember the decision.</p></div>
+          <div class="packet-story" aria-label="Example policy: ingress port 1, VLAN 42, destination MAC ending in 02, delivered untagged to port 2">
+            <div><span class="item-number">IN / PORT 1</span><div class="packet-bytes"><span>Ethernet</span><span class="vlan-tag">VLAN 42</span><span>Payload</span></div></div>
+            <span class="packet-arrow" aria-hidden="true">→</span>
+            <div><span class="item-number">POLICY</span><p>VLAN 42 · destination …:02</p></div>
+            <span class="packet-arrow" aria-hidden="true">→</span>
+            <div><span class="item-number">OUT / PORT 2</span><div class="packet-bytes"><span>Ethernet</span><span>Payload</span></div></div>
           </div>
-          <p class="example-caption">These excerpts depend on declarations in their linked sources. The complete examples include parsing, table installation and packet replay.</p>
+          <p class="walkthrough-hint">Scroll through the code. Follow the explanation, or choose a step.</p>
+<!-- BEGIN GENERATED GATEWAY -->
+<div class="walkthrough" id="gateway-walkthrough">
+  <div class="editor">
+    <div class="editor-toolbar"><span class="source-name"><span class="mini-dot" aria-hidden="true"></span> vlan_gateway.py</span><span class="editor-label">PYTHON eDSL</span><button class="copy-button" type="button" hidden>Copy source</button></div>
+    <pre tabindex="0" aria-label="Complete Python VLAN gateway source"><code id="gateway-source"><span class="code-step" id="step-wire" data-step="wire"><span class="syntax-string">&quot;&quot;&quot;A single-tag VLAN access gateway, built with the typed Python eDSL.&quot;&quot;&quot;</span>
+
+<span class="syntax-keyword">from</span> __future__ <span class="syntax-keyword">import</span> annotations
+
+<span class="syntax-keyword">from</span> p4blo <span class="syntax-keyword">import</span> edsl <span class="syntax-keyword">as</span> p4
+<span class="syntax-keyword">from</span> p4blo.edsl.externs <span class="syntax-keyword">import</span> <span class="syntax-function">Counter</span>
+<span class="syntax-keyword">from</span> p4blo.v0 <span class="syntax-keyword">import</span> p4blo_pb2 <span class="syntax-keyword">as</span> pb
+
+
+<span class="syntax-keyword">class</span> <span class="syntax-function">Ethernet</span>(p4.<span class="syntax-function">Header</span>):
+    dst: p4.bit48
+    src: p4.bit48
+    ether_type: p4.bit16
+
+
+<span class="syntax-keyword">class</span> <span class="syntax-function">Vlan</span>(p4.<span class="syntax-function">Header</span>):
+    pcp: p4.bit3
+    dei: p4.bit1
+    vid: p4.bit12
+    ether_type: p4.bit16
+
+
+</span><span class="code-step" id="step-contract" data-step="contract"><span class="syntax-keyword">class</span> <span class="syntax-function">Headers</span>(p4.<span class="syntax-function">Struct</span>):
+    ethernet: <span class="syntax-function">Ethernet</span>
+    vlan: <span class="syntax-function">Vlan</span>
+
+
+<span class="syntax-keyword">class</span> <span class="syntax-function">Metadata</span>(p4.<span class="syntax-function">Struct</span>):
+    ingress_port: p4.bit9
+    egress_port: p4.bit9
+    drop: p4.<span class="syntax-function">Bool</span>
+
+
+</span><span class="code-step" id="step-parse" data-step="parse"><span class="syntax-keyword">class</span> <span class="syntax-function">Parse</span>(p4.<span class="syntax-function">Parser</span>[<span class="syntax-function">Headers</span>, <span class="syntax-function">Metadata</span>]):
+    @p4.state(start=<span class="syntax-keyword">True</span>)
+    <span class="syntax-keyword">def</span> start(self) -&gt; p4.<span class="syntax-function">Transition</span>:
+        self.extract(self.hdr.ethernet)
+        <span class="syntax-keyword">return</span> self.select(
+            self.hdr.ethernet.ether_type,
+            {<span class="syntax-number">0x8100</span>: self.tagged},
+            default=self.accept,
+        )
+
+    @p4.state
+    <span class="syntax-keyword">def</span> tagged(self) -&gt; p4.<span class="syntax-function">Transition</span>:
+        self.extract(self.hdr.vlan)
+        <span class="syntax-keyword">return</span> self.accept
+
+
+</span><span class="code-step" id="step-state" data-step="state">admissions = <span class="syntax-function">Counter</span>(<span class="syntax-string">&quot;admissions&quot;</span>, size=<span class="syntax-number">512</span>)
+
+
+</span><span class="code-step" id="step-action" data-step="action"><span class="syntax-keyword">class</span> <span class="syntax-function">Gateway</span>(p4.<span class="syntax-function">Control</span>[<span class="syntax-function">Headers</span>, <span class="syntax-function">Metadata</span>]):
+    @p4.action
+    <span class="syntax-keyword">def</span> deny(self) -&gt; <span class="syntax-keyword">None</span>:
+        self.assign(self.meta.drop, <span class="syntax-keyword">True</span>)
+
+    @p4.action
+    <span class="syntax-keyword">def</span> deliver(self, port: p4.bit9) -&gt; <span class="syntax-keyword">None</span>:
+        self.assign(self.meta.egress_port, port)
+        self.assign(self.hdr.ethernet.ether_type, self.hdr.vlan.ether_type)
+        self.set_invalid(self.hdr.vlan)
+        admissions.count(port.cast(p4.bit32))
+        self.assign(self.meta.drop, <span class="syntax-keyword">False</span>)
+
+</span><span class="code-step" id="step-policy" data-step="policy">    access = p4.<span class="syntax-function">Table</span>(
+        keys=(
+            p4.exact(<span class="syntax-function">Metadata</span>.ingress_port),
+            p4.exact(<span class="syntax-function">Headers</span>.vlan.vid),
+            p4.exact(<span class="syntax-function">Headers</span>.ethernet.dst),
+        ),
+        actions=[deliver, deny],
+        default=deny(),
+        size=<span class="syntax-number">1024</span>,
+    )
+
+</span><span class="code-step" id="step-guard" data-step="guard">    <span class="syntax-keyword">def</span> apply(self) -&gt; <span class="syntax-keyword">None</span>:
+        self.assign(self.meta.drop, <span class="syntax-keyword">True</span>)
+        vlan = self.hdr.vlan
+        <span class="syntax-keyword">with</span> self.if_(
+            vlan.is_valid()
+            &amp; (vlan.vid &gt; <span class="syntax-number">0</span>)
+            &amp; (vlan.vid &lt; <span class="syntax-number">4095</span>)
+            &amp; (vlan.ether_type != <span class="syntax-number">0x8100</span>)
+            &amp; (vlan.ether_type != <span class="syntax-number">0x88A8</span>)
+        ):
+            self.apply_table(self.access)
+
+
+</span><span class="code-step" id="step-emit" data-step="emit"><span class="syntax-keyword">class</span> <span class="syntax-function">Emit</span>(p4.<span class="syntax-function">Deparser</span>[<span class="syntax-function">Headers</span>]):
+    <span class="syntax-keyword">def</span> apply(self) -&gt; <span class="syntax-keyword">None</span>:
+        self.emit(self.hdr.ethernet)
+        self.emit(self.hdr.vlan)
+
+
+</span><span class="code-step" id="step-build" data-step="build">program = p4.<span class="syntax-function">Program</span>(
+    <span class="syntax-string">&quot;vlan_gateway&quot;</span>,
+    headers=<span class="syntax-function">Headers</span>,
+    metadata=<span class="syntax-function">Metadata</span>,
+    parser=<span class="syntax-function">Parse</span>,
+    control=<span class="syntax-function">Gateway</span>,
+    deparser=<span class="syntax-function">Emit</span>,
+    externs=[admissions],
+)
+
+
+<span class="syntax-keyword">def</span> build() -&gt; pb.<span class="syntax-function">Program</span>:
+    <span class="syntax-keyword">return</span> program.build()
+
+
+<span class="syntax-keyword">if</span> __name__ == <span class="syntax-string">&quot;__main__&quot;</span>:
+    <span class="syntax-keyword">from</span> p4blo <span class="syntax-keyword">import</span> ir
+
+    print(ir.dump_text(build()), end=<span class="syntax-string">&quot;&quot;</span>)
+</span></code></pre>
+    <div class="editor-footer"><span>Complete source · no elisions</span><a href="vlan_gateway.py" download>Download Python source ↗</a></div>
+  </div>
+  <aside class="note-panel" aria-label="Code walkthrough">
+    <p class="eyebrow">Follow the packet</p>
+    <article class="step-note" data-note="wire"><p class="step-count">01 / 09</p><h3>Describe the bytes on the wire.</h3><p>Ethernet comes first, then a four-byte VLAN tag. Field annotations carry exact bit widths: even the tag’s 3-bit priority and 12-bit VLAN ID are explicit. These Python classes describe packet headers, not ordinary Python records.</p><p class="step-caption">WIRE FORMAT · 14 BYTES + 4 BYTES</p></article>
+    <article class="step-note" data-note="contract"><p class="step-count">02 / 09</p><h3>Separate the packet from its context.</h3><p>Headers hold parsed packet data. Metadata connects the program to its architecture: the host supplies ingress_port; the program chooses egress_port and drop. The core doesn’t know about a particular device.</p><p class="step-caption">PACKET DATA + ARCHITECTURE CONTRACT</p></article>
+    <article class="step-note" data-note="parse"><p class="step-count">03 / 09</p><h3>Follow the tag.</h3><p>Extract Ethernet, then branch on EtherType. Only 0x8100 leads to the VLAN state. Extraction marks a complete header valid; a short packet leaves the tag invalid. The payload stays unread, ready to pass through unchanged.</p><p class="step-caption">ETHERNET → VLAN → PAYLOAD</p></article>
+    <article class="step-note" data-note="state"><p class="step-count">04 / 09</p><h3>Remember more than one packet.</h3><p>This extern declares a persistent counter for every 9-bit port value. The program records a call; the runtime provides the counter implementation. Reusing one loaded program preserves those counts across packets.</p><p class="step-caption">PERSISTENT STATE · 512 COUNTERS</p></article>
+    <article class="step-note" data-note="action"><p class="step-count">05 / 09</p><h3>Admit. Untag. Account.</h3><p>The table supplies a port. Restore the encapsulated EtherType before invalidating the VLAN header, count the admission, then clear drop. The explicit cast widens the port to the counter’s 32-bit index. Admissions count decisions, not physical transmissions.</p><p class="step-caption">VLAN 42 → PORT 2 · ADMISSIONS[2] + 1</p></article>
+    <article class="step-note" data-note="policy"><p class="step-count">06 / 09</p><h3>Make permission an exact match.</h3><p>Three keys must match together: ingress port, VLAN ID and destination MAC. The host installs the entries; packet processing applies them. With the default policy shown here, a miss calls deny—even when the destination MAC is familiar.</p><p class="step-caption">(INGRESS 1, VLAN 42, …:02) → DELIVER(2)</p></article>
+    <article class="step-note" data-note="guard"><p class="step-count">07 / 09</p><h3>Start closed. Check before lookup.</h3><p>Controls still run after a failed parse, so drop starts true. Only a valid tag, a VLAN ID from 1 to 4094 and a non-nested EtherType reach the table. with self.if_ records a packet-time branch; a normal Python if would run while building the program.</p><p class="step-caption">UNTAGGED · TRUNCATED · NESTED → DROP</p></article>
+    <article class="step-note" data-note="emit"><p class="step-count">08 / 09</p><h3>A missing tag is the transformation.</h3><p>Emit writes valid headers in order. The admitted packet’s VLAN header is now invalid, so it contributes no bytes. The switch appends the untouched payload: a 38-byte input becomes a 34-byte output, with both MAC addresses preserved.</p><p class="step-caption">ETHERNET + PAYLOAD · FOUR BYTES SHORTER</p></article>
+    <article class="step-note" data-note="build"><p class="step-count">09 / 09</p><h3>Build once. Inspect every operation.</h3><p>Assemble the parser, control, deparser and extern into one architecture-free IR. Running this complete source prints that IR. The linked demo installs the policy and replays packets; tests compare independent expected bytes and counter states against both Python and Lean execution.</p><p class="step-caption">PYTHON eDSL → SHARED IR → EXECUTION</p></article>
+    <nav class="step-navigation" aria-label="Walkthrough steps" hidden><button type="button" data-go="wire" aria-label="Step 1: Describe the bytes on the wire." title="Describe the bytes on the wire."><span aria-hidden="true"></span></button><button type="button" data-go="contract" aria-label="Step 2: Separate the packet from its context." title="Separate the packet from its context."><span aria-hidden="true"></span></button><button type="button" data-go="parse" aria-label="Step 3: Follow the tag." title="Follow the tag."><span aria-hidden="true"></span></button><button type="button" data-go="state" aria-label="Step 4: Remember more than one packet." title="Remember more than one packet."><span aria-hidden="true"></span></button><button type="button" data-go="action" aria-label="Step 5: Admit. Untag. Account." title="Admit. Untag. Account."><span aria-hidden="true"></span></button><button type="button" data-go="policy" aria-label="Step 6: Make permission an exact match." title="Make permission an exact match."><span aria-hidden="true"></span></button><button type="button" data-go="guard" aria-label="Step 7: Start closed. Check before lookup." title="Start closed. Check before lookup."><span aria-hidden="true"></span></button><button type="button" data-go="emit" aria-label="Step 8: A missing tag is the transformation." title="A missing tag is the transformation."><span aria-hidden="true"></span></button><button type="button" data-go="build" aria-label="Step 9: Build once. Inspect every operation." title="Build once. Inspect every operation."><span aria-hidden="true"></span></button></nav>
+  </aside>
+</div>
+<!-- END GENERATED GATEWAY -->
+          <div class="demo-result">
+            <div><p class="eyebrow">From the runnable demo</p><h3>Three packets.<br>One persistent counter.</h3><p>One installed rule admits VLAN 42. VLAN 43 misses. The next admitted packet sees the previous count.</p><a class="text-link" href="https://github.com/qobilidop/p4blo/tree/main/tests/corpus/vlan_gateway">Run it and inspect the tests <span aria-hidden="true">↗</span></a></div>
+            <div class="demo-transcript"><p class="terminal-command">$ nix develop -c uv run python -m tests.corpus.vlan_gateway.demo</p><ol><li><span>VLAN 42</span><strong>port 2 · tag removed</strong><code>count 1</code></li><li><span>VLAN 43</span><strong class="packet-drop">drop · policy miss</strong><code>count 1</code></li><li><span>VLAN 42</span><strong>port 2 · tag removed</strong><code>count 2</code></li></ol><p>Admitted packets: 38 → 34 bytes. Payload preserved.</p></div>
+          </div>
+          <p class="example-caption">A single-tag gateway with a trusted host policy, not a complete VLAN switch. The walkthrough presents tested source; it doesn’t execute Python in your browser. <a href="https://github.com/qobilidop/p4blo/tree/main/tests/corpus/vlan_gateway#exact-boundary">Read its exact boundary ↗</a></p>
           <div class="application-links">
             <a href="https://github.com/qobilidop/p4blo/tree/main/tests/corpus/forwarder"><span class="application-icon" aria-hidden="true">⇄</span><div><span class="item-number">01 / IPv4 FORWARDER</span><h3>From route lookup to packet rewrite.</h3><p>LPM tables, header updates and checksum computation.</p></div><span class="link-arrow" aria-hidden="true">↗</span></a>
             <a href="https://github.com/qobilidop/p4blo/tree/main/tests/corpus/tutorial_firewall"><span class="application-icon" aria-hidden="true">▦</span><div><span class="item-number">02 / BLOOM FIREWALL</span><h3>State that lives beyond one packet.</h3><p>Persistent registers and a Bloom filter, including its false positives.</p></div><span class="link-arrow" aria-hidden="true">↗</span></a>

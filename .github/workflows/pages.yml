@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'website/**'
+      - 'scripts/render-website-example.py'
+      - 'tests/corpus/vlan_gateway/vlan_gateway.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -34,6 +36,8 @@ jobs:
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - name: Check JavaScript syntax
         run: node --check website/main.js
+      - name: Check generated example source
+        run: python3 scripts/render-website-example.py --check
       - name: Upload website only
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
