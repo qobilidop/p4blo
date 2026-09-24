@@ -1222,3 +1222,21 @@ one that says so.
   rejected by independent literal anchors. Revisit the catalogue for a changed
   input/API or a concrete survivor, not to extend this milestone indefinitely.
   The command and evidence boundaries are in `notes/milestone-adversarial.md`.
+- **Observe rejected-host configuration without numeric type coercion.**
+  Independent review reproduced two survivors: hex serialization hid a
+  counter's integer-to-Boolean mutation, and ordinary dataclass equality hid
+  a metadata Boolean-to-integer mutation. Keep serialized protocol answers,
+  but also freeze the raw externs, index, metadata, roles and installed state
+  with explicit type identity. Confidence: high for the finite rejected-host
+  fixtures after retained negative regressions and actual source faults;
+  this is not global validator equivalence or rollback after execution errors.
+  Revisit when the observed configuration gains new state. Evidence and
+  independent review: `notes/milestone-interchange.md`.
+- **Whitelist the exact BMv2 discrepancy, not every failure on its node.**
+  The old broad strict xfail accepted a simulated oracle error. Require a
+  dedicated exception only for the exact vector, semantic-failure status and
+  two known packet mismatches. Actual pytest regressions make errors and
+  changed mismatches fail, and corrected output strict-XPASS. Confidence:
+  high after independent tests and immutable-image replay. Revisit on a
+  deliberate vector/oracle pin change; never broaden the classifier merely
+  to obtain green CI. Evidence: `notes/milestone-oracle-classification.md`.

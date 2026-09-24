@@ -19,7 +19,7 @@ unit suites do not automatically constitute a direct differential test.
 | Tables/actions/host installation | `tests/test_interp_tables.py`, generated corpus configurations in `test_drt.py`, `test_lean_forwarder_tables.py`, `test_lean_forwarder_action.py`, `test_lean_forwarder_apply.py`; strict configuration/full-state/default-hit observations | `ForwarderTables.lookup_correct` covers five installed shapes; `ForwarderApply.run_correct` composes their actual actions/hit timing. Exact/LPM/ternary corpus and five explicit BMv2 application profiles, not every possible table family. |
 | Persistent extern state | `tests/test_drt_stateful_programs.py` shrinking sequences, `test_drt_state.py`, `test_externs.py`, `test_extern_families.py`, `test_crc.py`; firewall full-array collision/truncation/generated-flow tests | `TutorialFirewall.Bloom` insertion and selected initialization/invalid-body laws. Original BMv2 firewall checks packets and complete arrays; no generic extern correctness theorem or exact connection tracking. |
 | Architecture outcomes/errors | `tests/test_drt.py` drop/flood/ports/error reasons; `test_drt_replay.py` matching-error policy; corpus switch/filter vectors | Supplied architecture profiles only. No all-architecture theorem. Success/drop, parser rejection, execution error and protocol failure stay distinct. |
-| Serialization and observation | `tests/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks}.py`; `test_wire_decimal.py`; `test_drt_protocol.py`, `test_drt_replay.py`, strict JSON/type and frozen-state regressions | Actual component `CodecLaws` through Action/Block, checked by `ir/CodecProofAudit.lean`; independent wire answers catch roundtrip-preserving defects. Top-level Program/Entries closeout is pending below. |
+| Serialization and observation | `tests/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `test_wire_decimal.py`; `test_drt_protocol.py`, `test_drt_replay.py`, strict JSON/type and frozen-state regressions | Actual component `CodecLaws` through Action/Block, checked by `ir/CodecProofAudit.lean`; independent wire answers catch roundtrip-preserving defects. Complete Program/Export and host Entries fixtures cover public protobuf conversions; rejected-host sequences and strict raw configuration observers are tested, not universal codec/validator proofs. |
 | Authored applications | Exact-golden source comparisons and independent packet/full-state profiles in `test_lean_forwarder*.py`, `test_lean_firewall*.py`, `test_firewall*.py`; eleven-program corpus rebuild/typecheck | Complete examples execute in both languages; selected source/lowering/application proofs do not verify all raw construction or the whole pipeline. Original-forwarder ingress-prefix and firewall-readback drafts are parked, not evidence. |
 
 The checked theorem inventories are [IR audit](../ir/ProofAudit.lean),
@@ -42,13 +42,15 @@ XDP is a separate compile-only experiment, with no kernel-execution evidence
 and no role in this P4 milestone. Required P4 oracle unavailability cannot be
 counted as a pass. CI selection and pins are in [workflows](workflows.md).
 
-## Finite closeout still required
+## Reproducible acceptance
 
-1. Integrate direct independent Export/Program and TableEntries/Entries tests,
-   including rejected-host-configuration state preservation.
-2. Integrate the selected clean-checkout replay/sensitivity command and its
-   reviewed finite catalogue; retain setup failures separately from kills.
-3. Verify the two-language quickstart and final clean-checkout gates.
+The direct top-level fixtures and rejected-host state/packet-entry checks are
+reviewed in [interchange](notes/reviews/milestone-interchange.md). The
+[finite catalogue](notes/milestone-adversarial.md) reconstructs selected input
+bundles and checks actual Python, Lean, codec and observer faults with
+`scripts/check-assurance.py`; setup failures never count as detections.
+The six [quickstart](quickstart.md) snippet/API tests exercise both languages.
+Final combined clean-checkout gates remain the last release requirement.
 
 The [independent static audit](notes/reviews/milestone-evidence-audit.md)
 found these concrete closeout gaps, not a need for another general proof

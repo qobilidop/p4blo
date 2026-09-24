@@ -46,7 +46,7 @@ it is the next composable one.
   Delivered in `profile.md` and independently reviewed in
   `notes/reviews/milestone-profile.md`; this checks the scope document, not
   the remaining implementation/release criteria.
-- [ ] **Whole-program interchange:** direct independent Export/Program and
+- [x] **Whole-program interchange:** direct independent Export/Program and
   host TableEntries/Entries fixtures cover complete fields, actual public
   Python/protobuf conversions, presence/defaults, malformed inputs and
   representability boundaries. Decode-, validation- or installation-rejected
@@ -55,16 +55,24 @@ it is the next composable one.
   an accepted program. Existing component evidence remains intact.
   Finish Export/Program proof composition only if straightforward; a difficult
   theorem cannot reopen this milestone or replace independent tests.
-- [ ] **Evidence coverage:** a compact feature-to-evidence matrix maps each
+  Delivered in `test_codec_program.py`, `test_codec_entries.py` and native
+  anchors, reviewed in `notes/reviews/milestone-interchange.md`. Strict raw
+  state/configuration regressions close the two observed equality survivors.
+- [x] **Evidence coverage:** a compact feature-to-evidence matrix maps each
   current semantic family to independent tests, generated comparisons,
   applicable oracle evidence and scoped proofs. Close meaningful holes or
   state narrowly justified exclusions; no unexplained implementation mismatch.
-- [ ] **Repeatable adversarial acceptance:** select a finite, reviewed fault
+  Delivered in `evidence.md` and `profile.md`, with independent audit and
+  the identified interchange/reproduction gaps now implemented.
+- [x] **Repeatable adversarial acceptance:** select a finite, reviewed fault
   catalogue across Python, Lean, serialization and observers. A documented
   command replays the retained evidence and runs the selected sensitivity
   checks. No unexplained survivor; equivalent mutants and noncompiling setup
   failures are classified separately. Do not require rerunning every historical
   exploratory fault or invent a numerical mutation-score guarantee.
+  Delivered by `scripts/check-assurance.py`, its tracked catalogue and
+  `notes/reviews/milestone-adversarial.md`. Owner end-to-end acceptance passes;
+  the final combined independent run remains part of release evidence below.
 - [x] **Usable authoring paths:** clean-checkout documented commands let a
   new user author/run the two flagship examples in both languages. Review
   diagnostics, imports and API claims; repair concrete rough edges, not a
