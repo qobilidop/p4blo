@@ -1,8 +1,70 @@
 import Tests.TableCodec
+import P4bloIR.ParserCodecLaws
 
 open Lean P4bloIR
 
 namespace ParserCodecTests
+
+def wireState : State := ⟨"", [.conditional (.literal (.boolean false))
+  [.push (.var "missing") (2 ^ 32 - 1)] [.emit (.var "")]],
+  .select [.lookahead (.stack "Missing" 0), .literal (.bits 0 (10 ^ 100))]
+    [⟨[.exact (.boolean false), .masked (.bits 0 99) (.error ""),
+       .range (.bits (2 ^ 32 - 1) 77) (.bits 0 2), .dontCare], .state ""⟩,
+     ⟨[], .accept⟩, ⟨[.dontCare], .reject⟩]⟩
+
+/-- Kernel nonvacuity: mixed arities/types, all sets/targets and a nested body. -/
+theorem parserState_roundtrip (path : String) :
+    State.decode path wireState.toJson = .ok wireState := by
+  apply CodecLaws.state_roundtrip
+  simp [wireState, CodecLaws.StateRepresentable, CodecLaws.TransitionRepresentable,
+    CodecLaws.SelectCaseRepresentable, CodecLaws.KeySetRepresentable,
+    CodecLaws.StmtRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.LValueRepresentable, CodecLaws.TypeRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+
+example (target : Target) : CodecLaws.TransitionRepresentable (.direct target) := by trivial
+example : ¬ CodecLaws.KeySetRepresentable (.exact (.bits (2 ^ 32) 0)) := by
+  simp [CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeySetRepresentable (.masked (.bits (2 ^ 32) 0) (.boolean false)) := by
+  simp [CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeySetRepresentable (.masked (.boolean false) (.bits (2 ^ 32) 0)) := by
+  simp [CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeySetRepresentable (.range (.bits (2 ^ 32) 0) (.error "")) := by
+  simp [CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.KeySetRepresentable (.range (.error "") (.bits (2 ^ 32) 0)) := by
+  simp [CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.SelectCaseRepresentable ⟨[.exact (.bits (2 ^ 32) 0)], .accept⟩ := by
+  simp [CodecLaws.SelectCaseRepresentable, CodecLaws.KeySetRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TransitionRepresentable
+    (.select [.slice (.var "") (2 ^ 32) 0] []) := by
+  simp [CodecLaws.TransitionRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TransitionRepresentable
+    (.select [.slice (.var "") 0 (2 ^ 32)] []) := by
+  simp [CodecLaws.TransitionRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TransitionRepresentable (.select [.lookahead (.bits (2 ^ 32))] []) := by
+  simp [CodecLaws.TransitionRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TransitionRepresentable (.select [.lookahead (.stack "" (2 ^ 32))] []) := by
+  simp [CodecLaws.TransitionRepresentable, CodecLaws.ExprRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.TransitionRepresentable
+    (.select [] [⟨[.masked (.boolean false) (.bits (2 ^ 32) 0)], .reject⟩]) := by
+  simp [CodecLaws.TransitionRepresentable, CodecLaws.SelectCaseRepresentable,
+    CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StateRepresentable ⟨"", [.push (.var "") (2 ^ 32)], .direct .accept⟩ := by
+  simp [CodecLaws.StateRepresentable, CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StateRepresentable ⟨"", [.pop (.var "") (2 ^ 32)], .direct .reject⟩ := by
+  simp [CodecLaws.StateRepresentable, CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StateRepresentable
+    ⟨"", [.conditional (.literal (.bits (2 ^ 32) 0)) [] []], .select [] []⟩ := by
+  simp [CodecLaws.StateRepresentable, CodecLaws.StmtRepresentable,
+    CodecLaws.ExprRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.StateRepresentable
+    ⟨"", [], .select [] [⟨[.range (.error "") (.bits (2 ^ 32) 0)], .state ""⟩]⟩ := by
+  simp [CodecLaws.StateRepresentable, CodecLaws.TransitionRepresentable,
+    CodecLaws.SelectCaseRepresentable, CodecLaws.KeySetRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
 
 /-- Direct constructors, independent of production oneof labels and fixtures. -/
 def targetValue : Target → Json
