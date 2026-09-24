@@ -58,9 +58,9 @@ at the pinned commit.
 
 | Class | Entries |
 |---|---|
-| same | 36 |
+| same | 37 |
 | refines undefined | 8 |
-| deviates | 5 |
+| deviates | 4 |
 | not representable | 2 |
 | total | 51 |
 
@@ -179,7 +179,10 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   two sides of an assignment or the arguments of a call are evaluated is
   therefore unobservable. `&&`, `||` and the conditional operator
   evaluate only the operands they need; an assignment evaluates its
-  right-hand side before it resolves its target.
+  right-hand side before it resolves its target. An extern call with a
+  result is not an expression: it resolves the result's target before
+  the call, as the next section's "Copy-back target" says, because the
+  call can write its `out` arguments.
   - P4: none
   - SpecTec: `Expr_eval/land-false`, `Expr_eval/lor-true`, `Expr_eval/cond-true`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
   - Lean: `evaluate`, `Execution.dispatch`
@@ -286,33 +289,33 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Python: `p4blo.interp.stmt.push_front`, `p4blo.interp.stmt.pop_front`
   - Test: `tests/test_interp_control.py::test_push_front_shifts_up_and_pops_the_last`, `tests/test_interp_control.py::test_pop_front_shifts_down_and_clears_the_last`, `tests/test_interp_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
   - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps the stored fields of the elements moved into those places, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
-- **Block calls.** A sub-block call copies `in` arguments in, runs the
-  block, and copies `out` and `inout` arguments back in parameter
-  order. Two `out` or `inout` arguments that alias the same storage
+- **Block calls.** A sub-block call copies `in` arguments in, resolves
+  `out` and `inout` ones, runs the block, and copies `out` and `inout`
+  arguments back in parameter order. Two `out` or `inout` arguments that alias the same storage
   are a validator error, so copy order never matters; an `in` argument
   may overlap them, since it is copied in before anything is written
   (§6.8).
   - P4: §6.8
   - SpecTec: `Call_eval/controlApplyMethodCallee`, `Call_eval/parserApplyMethodCallee`, `Copy_in`, `Copy_out`
-  - Lean: `argumentValue`, `copyBack`, `Execution.dispatch`
-  - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_back`, `p4blo.validator._Validator.check_args`
+  - Lean: `argumentValue`, `copyIn`, `copyBack`, `Execution.dispatch`
+  - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.validator._Validator.check_args`
   - Test: `tests/test_interp_control.py::test_sub_control_call_copies_in_and_out`, `tests/test_interp_control.py::test_an_in_argument_overlapping_an_inout_one_is_copied_in_first`, `tests/test_validator.py::test_call_alias`, `tests/test_validator.py::test_no_alias`
   - Class: same. `Copy_in` evaluates every argument into the callee's frame before the body runs and `Copy_out` writes `out` and `inout` parameters back in parameter order; where a copy-back lands is the next entry.
-- **Copy-back target.** Copy-back writes to the argument's lvalue as it
-  resolves when the call returns, not as it resolved at copy-in: an
-  index expression inside the argument is evaluated again. The two
-  differ only when the call changes a variable the index reads, which
-  an action can do directly, since it sees its block's variables, and a
-  block or extern call can do through another `out` argument. P4
-  resolves the lvalue once, at copy-in (§6.8). This is not a deliberate
-  choice; it is listed so that the difference is known, and closing it
-  changes both interpreters.
+- **Copy-back target.** An `out` or `inout` argument is resolved once,
+  at copy-in: every index expression inside it is evaluated then, in
+  argument order, and copy-back writes through the element it named,
+  even if the call has since changed a variable the index reads. An
+  action can change one directly, since it sees its block's variables;
+  a block or extern call can change one through another `out` argument
+  copied back earlier. An extern call's result target is resolved the
+  same way, before the call. `hs.next` is not resolved here; only an
+  extract uses it. P4 resolves the lvalue once, at copy-in (§6.8).
   - P4: §6.8
-  - SpecTec: `Copy_in_arg/inout`, `Copy_in_arg/out`, `Copy_out_argument/non-dontcare`
-  - Lean: `copyBack`, `callExtern`
-  - Python: `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
-  - Test: `tests/test_interp_control.py::test_direct_action_call_passes_directional_arguments`, `tests/test_interp_control.py::test_sub_control_call_copies_in_and_out`
-  - Class: deviates. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, and `Copy_out_argument/non-dontcare` writes through that reference.
+  - SpecTec: `Copy_in_arg/inout`, `Copy_in_arg/out`, `Copy_out_argument/non-dontcare`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
+  - Lean: `resolveLValue`, `resolveArg`, `copyIn`, `copyBack`, `callExtern`, `Execution.dispatch`
+  - Python: `p4blo.interp.expr.resolve_lvalue`, `p4blo.interp.stmt.resolve_arg`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
+  - Test: `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
+  - Class: same. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, `Copy_out_argument/non-dontcare` writes through that reference, and an assignment of an extern call's result resolves its target before the call.
 - **Action calls** from a control body pass arguments in the same
   way. Actions invoked by a table receive their action data as
   directionless parameters, which are read-only like `in` parameters.
