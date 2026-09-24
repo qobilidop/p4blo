@@ -337,7 +337,8 @@ the source region the instruction keeps.
 approximations, and cross-checks its instruction totals against the
 simulator's own `cover-sim` command.
 
-In scope are the rules of `8-dynamic` and the functions of `3-operations`.
+In scope are the rules of `8-dynamic` and the functions of `3-operations`,
+including the `builtin` functions the OCaml runtime supplies for them.
 Every one of them that does not fire is listed in
 [`spectec-coverage-exclusions.json`](../tests/oracle/spectec-coverage-exclusions.json)
 with a reason written by hand, in one of four categories: `architecture`
@@ -353,11 +354,11 @@ At the pinned commit, over 15 programs and 21 vectors:
 
 | Status | 8-dynamic rules | 3-operations functions |
 |---|---|---|
-| hit | 134 | 20 |
+| hit | 134 | 26 |
 | architecture | 0 | 0 |
 | excluded-construct | 149 | 22 |
-| not-representable | 27 | 7 |
-| unhit | 51 | 9 |
+| not-representable | 27 | 8 |
+| unhit | 51 | 12 |
 
 A hit rule is exercised, not verified equivalent: the simulator applied it
 while running a printed program, which says nothing about whether p4blo's
