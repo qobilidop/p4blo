@@ -6,6 +6,7 @@ import ArchTests.ExternFamilies
 import ArchTests.ExecutionCertificate
 import ArchTests.CertificateWire
 import ArchTests.HostTrap
+import ArchTests.Coverage
 
 /-!
 Tests for the reference architecture: the forwarder's vectors replayed under
@@ -27,6 +28,7 @@ def main (args : List String) : IO UInt32 := do
     | .ok p =>
       check "fixture decodes" true
       forwarderReplayTests p vectorsText
+      CoverageTests.tests p
     | .error e =>
       IO.println s!"     got: {e}"
       check "fixture decodes" false

@@ -7,8 +7,9 @@ line from stdin and writes one per line to stdout:
 
     request:  {"entries": <pb.Entries as protobuf JSON, proto field names>,
                "ingress_port": n, "packet": "<hex>"}
-    reply:    {"outputs": [[port, "<hex>"], ...], "state": {...}, "diagnostic": "..."}
-              or   {"error": "...", "state": {...}}
+    reply:    {"outputs": [[port, "<hex>"], ...], "state": {...}, "diagnostic": "...",
+               "coverage": ["tag", ...]}
+              or   {"error": "...", "state": {...}, "coverage": ["tag", ...]}
 
 `diagnostic` is present when the architecture dropped the packet for a
 reason the program did not decide (a misaligned parse, an egress port the
@@ -19,6 +20,13 @@ from the same fresh state. Anything else on stdout, or a reply that does
 not parse, is a `ProtocolError`: the harness never guesses.
 `state` is required, including on errors: logical extern observations as
 specified in `p4blo.drt.state`, not either runtime's object layout.
+
+`coverage` is the sorted list of rule tags of the Lean semantics the request
+exercised (`P4bloIR.Coverage`; `p4blo-lean coverage-inventory` lists them
+all). It is the adequacy measure of the campaign, not part of agreement.
+A reply without it comes from an older peer: it is tolerated, recorded as
+`None`, and counted by `RuleCoverage.unreported` so that a report can say
+the measure is missing rather than empty.
 
 ## Agreement
 
@@ -53,6 +61,7 @@ from google.protobuf import json_format
 from p4blo import arch, ir
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
+from p4blo.drt.coverage import RuleCoverage
 from p4blo.drt.generate import generate
 from p4blo.drt.state import Snapshot, decode, encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
@@ -99,6 +108,9 @@ class Outcome:
     error: str | None = None
     diagnostic: str | None = None
     state: Snapshot = ()
+    # The rule tags the Lean side reported, or None when the peer sent none.
+    # Coverage measures the campaign; it never takes part in agreement.
+    coverage: frozenset[str] | None = field(default=None, compare=False)
 
     def agrees_with(self, other: Outcome) -> bool:
         if self.state != other.state:
@@ -157,6 +169,8 @@ class Report:
     inputs: tuple[Case, ...] = ()
     program_ir: pb.Program | None = field(default=None, repr=False)
     protocol_error: str | None = None
+    # The Lean rule tags accumulated over the cases run so far.
+    rule_coverage: RuleCoverage = field(default_factory=RuleCoverage, repr=False)
 
     @property
     def passed(self) -> bool:
@@ -216,10 +230,11 @@ def parse_reply(line: str) -> Outcome:
     diagnostic = reply.get("diagnostic")
     if diagnostic is not None and not isinstance(diagnostic, str):
         raise ProtocolError(f"bad diagnostic {diagnostic!r} in {line!r}")
+    coverage = parse_coverage(reply, line)
     if "error" in reply:
         if not isinstance(reply["error"], str) or "outputs" in reply:
             raise ProtocolError(f"bad error reply: {line!r}")
-        return Outcome(error=reply["error"], state=state)
+        return Outcome(error=reply["error"], state=state, coverage=coverage)
     if "outputs" not in reply or not isinstance(reply["outputs"], list):
         raise ProtocolError(f"reply has neither outputs nor error: {line!r}")
     outputs: list[tuple[int, bytes]] = []
@@ -233,7 +248,17 @@ def parse_reply(line: str) -> Outcome:
             outputs.append((port, bytes.fromhex(data)))
         except (TypeError, ValueError) as e:
             raise ProtocolError(f"bad output {item!r} in {line!r}") from e
-    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic, state=state)
+    return Outcome(outputs=tuple(outputs), diagnostic=diagnostic, state=state, coverage=coverage)
+
+
+def parse_coverage(reply: dict[str, object], line: str) -> frozenset[str] | None:
+    """The reply's rule tags; None when an older peer sent no `coverage`."""
+    if "coverage" not in reply:
+        return None
+    tags = reply["coverage"]
+    if not isinstance(tags, list) or not all(isinstance(t, str) for t in tags):
+        raise ProtocolError(f"bad coverage in {line!r}")
+    return frozenset(tags)
 
 
 class LeanRunner:
@@ -433,6 +458,7 @@ def compare_cases(
             e.report = report
             raise
         report.cases += 1
+        report.rule_coverage.add(lean.coverage)
         if python.error is not None and lean.error is not None:
             report.both_errored += 1
         if not python.agrees_with(lean):

@@ -166,6 +166,7 @@ def test_lean_agrees_on_decimal_request_rejection_without_state_change(
     assert result.returncode == 0, result.stdout + result.stderr
     replies = [json.loads(line) for line in result.stdout.splitlines()]
     assert len(replies) == 3
+    assert all(isinstance(r.pop("coverage"), list) for r in replies)
     assert replies[0] == {"outputs": [[0, "00"]], "state": expected_first}
     assert set(replies[1]) == {"error", "state"}
     assert f"{field}: expected a decimal number, got an empty string" in replies[1]["error"]

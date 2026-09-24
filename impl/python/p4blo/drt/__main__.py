@@ -1,11 +1,14 @@
 """`python -m p4blo.drt <program dir> <count> [--seed N] [--ports N]
-[--lean PATH | --fake] [--show N] [--save DIR]`
+[--lean PATH | --fake] [--show N] [--save DIR] [--coverage]`
 
 Prints the summary and STF excerpts of the first divergences. `--save`
 writes a self-contained JSON replay of the program and full input sequence,
 plus the excerpts. Stateful failures require that JSON bundle; the single
 packet excerpts omit prior extern state. Exit status 1 on divergence or
-unexpected shared errors, 2 on a protocol error.
+unexpected shared errors, 2 on a protocol error. `--coverage` also prints
+the Lean rule tags the cases hit and those they did not, against the
+inventory `p4blo-lean coverage-inventory` lists; it does not change the
+exit status.
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ from pathlib import Path
 
 from p4blo import ir
 from p4blo.drt.case import Outputs, case_to_stf
+from p4blo.drt.coverage import rule_inventory
 from p4blo.drt.replay import save as save_replay
 from p4blo.drt.run import Outcome, ProtocolError, Report, compare, default_lean_binary
 
@@ -32,6 +36,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--show", type=int, default=3, help="divergences to print")
     parser.add_argument("--save", type=Path, default=None, help="write shown divergences here")
+    parser.add_argument(
+        "--coverage", action="store_true", help="print the Lean rule tags hit and unhit"
+    )
     args = parser.parse_args(argv)
 
     if args.fake:
@@ -46,6 +53,8 @@ def main(argv: list[str] | None = None) -> int:
             show(e.report, args.program_dir, args.show, args.save)
         return 2
     print(report.summary())
+    if args.coverage:
+        print(report.rule_coverage.describe(rule_inventory(lean)))
     show(report, args.program_dir, args.show, args.save)
     return 0 if report.passed else 1
 

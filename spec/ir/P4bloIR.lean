@@ -11,6 +11,7 @@ import P4bloIR.Env
 import P4bloIR.Eval
 import P4bloIR.Exec
 import P4bloIR.Interp
+import P4bloIR.Coverage
 import P4bloIR.Hex
 import P4bloIR.Theorems
 import P4bloIR.ScalarTyping
