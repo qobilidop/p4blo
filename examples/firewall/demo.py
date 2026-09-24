@@ -1,4 +1,4 @@
-"""Run with: nix develop -c uv run python -m examples.firewall.demo."""
+"""Run with: uv run python -m examples.firewall.demo."""
 
 from examples.firewall.program import build
 from p4blo import arch, stf

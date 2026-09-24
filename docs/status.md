@@ -13,6 +13,22 @@ The active new workstream is the three Python application examples in
 
 ## Latest checked checkpoint
 
+**Portable development instructions (2026-09-24).** Current guides use ordinary
+commands and point to the single optional environment setup in the root README.
+`.python-version` selects Python 3.13. A separately downloaded uv 0.12.18,
+with PATH restricted to `/usr/bin:/bin:/usr/sbin:/sbin`, installed managed
+CPython 3.13.15 through `uv sync --locked` into an isolated project environment.
+Its interpreter base prefix is outside the pinned system-tool store. All three
+demos and `uv run pytest tests/examples -k 'not lean' -q` pass: 17 tests,
+six Lean tests deliberately deselected. Log: `.artifacts/portable-env/verification.log`.
+This establishes the standalone Python path, not every external-tool installer.
+The edited quickstart and all examples also pass with required Lean: 29 tests.
+Both Lean packages/audits/native checks pass again before the final full run
+(`.artifacts/examples-final-lean.log`). Historical transcripts retain their
+original commands. Independent [setup review](notes/reviews/portable-development.md)
+has no blocking findings; both documentation suggestions are resolved.
+Next: combined gates.
+
 **Three-application integration (2026-09-24).** Router, firewall and UDP load
 balancer now live under `examples/`, each with source, README and runnable demo.
 The load-balancer [review](notes/reviews/example-load-balancer.md) requested a

@@ -2,7 +2,10 @@
 
 The historical closed-scalar increment below is followed by contextual and
 command increments. Their expanded claims supersede older "next" boundaries
-without rewriting the earlier experiment records.
+without rewriting the earlier experiment records. Command transcripts below
+retain the environments and paths used for those historical experiments;
+current prerequisites and ordinary invocations are documented in
+[development setup](../README.md#development) and [workflows](../docs/workflows.md).
 
 The independent forwarding-body policy increment is recorded in
 [`docs/notes/forward-policy.md`](../docs/notes/forward-policy.md): complete
@@ -264,8 +267,8 @@ worktree. Each fault is applied alone and restored with an inverse patch.
 To reproduce, apply one exact edit above to this increment in an isolated
 worktree. Build both packages with `scripts/check-lean.sh` before mutation;
 for Lean mutations run `lake +leanprover/lean4:v4.34.0 -d lean build` from
-the root in Nix. Then run `lake test` in `lean/` for the source known answers
-or required `pytest 'tests/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`
+the root after the development setup. Then run `lake test` in `lean/` for
+the source known answers or required `uv run pytest 'tests/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`
 (substitute `read-add` for experiment 3). The direct differential check in
 experiment 4 uses the fixture's validated `read-x` program,
 `Case(pb.Entries(), 0, b"")`, four ports and `ir/.lake/build/bin/p4blo-lean`;
@@ -473,7 +476,7 @@ experiments are **proof/build rejections**, not runtime DRT kills:
 Reproduce each proof/surface experiment by applying the exact single edit
 (plus the specified typing-proof adjustments) in a separate worktree with
 this increment, then running its default user build:
-`nix develop -c lake +leanprover/lean4:v4.34.0 -d lean build`.
+`lake +leanprover/lean4:v4.34.0 -d lean build`.
 For experiment 5, run `lake test` inside `lean/` and the focused pytest below.
 Restore every edit before the next experiment. No mutant is committed.
 
@@ -559,7 +562,7 @@ In an isolated worktree, apply each edit separately to `setField` in
 `ir/P4bloIR/Eval.lean` and run, from its `ir/` directory:
 
 ```sh
-nix develop -c lake +leanprover/lean4:v4.34.0 build P4bloIR.FieldLaws
+lake +leanprover/lean4:v4.34.0 build P4bloIR.FieldLaws
 ```
 
 1. Replace the header arm

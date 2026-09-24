@@ -13,7 +13,7 @@ packet fate visible in one complete program.
 From the repository root:
 
 ```sh
-nix develop -c uv run python -m examples.firewall.demo
+uv run python -m examples.firewall.demo
 ```
 
 Expected output:
@@ -105,7 +105,7 @@ After building Lean with the repository's standard workflow, run the focused
 checks from the repository root:
 
 ```sh
-P4BLO_REQUIRE_LEAN=1 nix develop -c uv run pytest tests/examples/firewall tests/examples/test_examples.py
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests/examples/firewall tests/examples/test_examples.py
 ```
 
 The existing upstream-derived `tests/corpus/tutorial_firewall` remains a

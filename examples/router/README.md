@@ -9,7 +9,7 @@ with an updated IPv4 header checksum. A missing route drops the packet.
 From the repository root:
 
 ```sh
-nix develop -c uv run python -m examples.router.demo
+uv run python -m examples.router.demo
 ```
 
 ```text

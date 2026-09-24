@@ -5,11 +5,8 @@
 # what is missing. See tests/oracle/README.md.
 #
 # Needs: git, make, a C compiler, opam (2.1 or newer), and libgmp with its
-# headers plus pkgconf, which zarith's opam packages probe for. On Linux and
-# macOS:
-#
-#   nix:     nix develop .#oracle -c tests/oracle/build.sh   (the pinned way; CI does this)
-#   ubuntu:  sudo apt-get install -y opam libgmp-dev pkg-config
+# headers plus pkgconf, which zarith's opam packages probe for. See
+# README.md#development for external-tool setup options.
 #
 # Environment:
 #   P4BLO_ORACLE_DIR   where P4-SpecTec is cloned and built

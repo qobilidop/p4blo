@@ -30,7 +30,8 @@ without eviction, policy applies on every packet and state lasts until reload.
 Each README defines the supported profile and explicit limitations. Scoped
 choices and their reasons are recorded in [decisions.md](decisions.md).
 The load balancer dispatches UDP requests through service and group/bucket
-tables, preserving IP/UDP content and assuming backends share the VIP.
+tables, preserving IP addresses, UDP fields and payload, and assuming backends
+share the VIP.
 
 ## Accepted organization
 
@@ -54,8 +55,9 @@ tests/
 ```
 
 The intended repository-root invocation is
-`nix develop -c uv run python -m examples.router.demo`, with corresponding
+`uv run python -m examples.router.demo`, with corresponding
 firewall and load-balancer modules. All three commands are available.
+Follow the [development setup](../README.md#development) once.
 Examples use the existing environment, with no separate package
 or dependency set per application.
 

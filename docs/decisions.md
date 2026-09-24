@@ -1333,10 +1333,22 @@ one that says so.
 - **Keep the load balancer a scoped UDP service dispatcher.** A service lookup
   chooses a group; CRC16 over the IPv4/UDP flow tuple selects one of four
   host-mapped buckets within that group. Rewrite Ethernet, decrement TTL and
-  repair IPv4 checksum, preserving IP addresses and UDP content. Backends are
+  repair IPv4 checksum, preserving IP addresses, UDP fields and payload. Backends are
   assumed to share the VIP and return directly; no NAT, health checking or
   configuration-stable remapping is implied. Confidence: high after all-bucket
   independent answers, both interpreters/oracles and fresh-reader review.
   That review added a group-zero backend/service-miss regression, confirmed by
   a guard-bypass mutant. Revisit bucket strategy or return-path handling only
   for a concrete application, not to expand this initial collection.
+- **Make development instructions independent of the environment manager.**
+  At the user's request, ordinary commands are the default and optional
+  pinned-tool setup lives once in the root README. This supersedes earlier
+  guidance that treated that environment as the only supported setup.
+  `uv sync --locked` installs Python dependencies; `.python-version` selects
+  supported Python 3.13 even when the system interpreter is newer. Schema,
+  Lean and external-oracle work still requires the explicitly listed tools.
+  Preserve historical command transcripts rather than rewriting evidence.
+  Confidence: high for Python examples after a standalone uv/managed-Python
+  run with only system directories on PATH; non-Python tool installation is
+  documented, not claimed tested across every platform. Revisit prerequisites
+  when a concrete supported-platform setup exposes a missing dependency.

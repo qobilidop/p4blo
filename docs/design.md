@@ -420,7 +420,7 @@ the dev shell.
 
 ```
 p4blo/
-  flake.nix, flake.lock, .envrc     tools: python, uv, buf, protoc, elan
+  .python-version, .envrc           interpreter selection, optional environment
   pyproject.toml, uv.lock           one Python project rooted here
   buf.yaml, buf.gen.yaml            schema lint and codegen config
   AGENTS.md                         instructions for agents
@@ -464,40 +464,21 @@ Directories for later steps are created when their step arrives, not as
 placeholders. This layout reflects the accepted successor architecture;
 the rest of this original design retains its historical context.
 
-The development environment has three layers, each owning what it is
-best at.
+Python dependencies are managed by `uv`, with versions fixed in `uv.lock`.
+Examples and Python tests share that environment. Lean has its own matching
+`lean-toolchain` pins in `ir/` and `lean/`, selected through `elan`; it is not
+a Python dependency. Schema checks, external oracles and other specialist
+gates likewise have additional tool requirements.
 
-- **Nix flake for tools.** `flake.nix` pins the interpreter and the
-  build tools: Python 3.13, `uv`, `buf`, `protoc`, `elan`, and Node
-  for the `pyright` wheel. Linters and type checker are Python
-  packages managed by `uv`, so the `uv`-only path has them too.
-  `flake.lock` pins nixpkgs, so every contributor and CI get identical
-  tool versions. Locally `.envrc` with `use flake` enters it through
-  direnv. In CI, each job installs Nix and runs every command through
-  `nix develop -c`. The flake is self-contained and adds nothing to
-  anyone's home configuration. It supports Linux and macOS on Intel
-  and ARM; Windows contributors use WSL2.
-- **uv for Python packages.** Nix provides the interpreter and `uv`;
-  `uv` owns `pyproject.toml` and `uv.lock`. Because the package is
-  pure Python the lock resolves identically on every platform.
-  Contributors who do not want Nix get a working Python environment
-  from `uv sync` alone.
-- **Lean's own pinning.** Lean is versioned by `lean-toolchain` in
-  `lean/`, which `elan` reads. Nix supplies `elan`, not Lean, because
-  Lean in nixpkgs lags releases and would fight the toolchain file.
+The [development setup](../README.md#development) is the single entry point
+for interpreter selection, external prerequisites and the optional pinned
+toolchain environment. Commands elsewhere assume the relevant tools are
+available and use ordinary `uv`, Lake or shell invocations. CI's environment
+configuration remains recorded in the workflow and toolchain files.
 
-BMv2 stays outside the environment on purpose. It is an optional
-second oracle, run through a Docker image pinned by digest, on Linux
-only, in a job that runs on demand.
-
-A devcontainer is deferred. The README documents three tiers: the
-flake through direnv as the recommended path, `uv sync` for
-Python-only work, and a devcontainer on request. A devcontainer that
-did not itself run the flake would be a second environment definition
-and would drift; one that did would be Nix in a box. Either becomes
-worth it only for a Windows contributor without WSL2 or for a
-zero-install Codespaces story, and both are a one-day addition on top
-of the flake.
+BMv2 runs in its separately pinned Docker image; the Python environment does
+not install it. A devcontainer remains deferred until there is a concrete
+need for another maintained setup path.
 
 ## Build order
 
@@ -545,9 +526,9 @@ testing table logic in pytest, until a p4c bridge exists.
 - **pcap as the vector format.** Rejected in favor of STF, which is
   text, already understood by both oracles, and needs no native
   library.
-- **Packaging Python dependencies through Nix.** Rejected; `uv` does it
-  with less friction and gives non-Nix contributors a path.
-- **Lean from nixpkgs.** Rejected in favor of `elan` and
+- **Packaging Python dependencies through the system toolchain.** Rejected;
+  `uv` owns the locked Python environment independently of system packages.
+- **Lean from system packages.** Rejected in favor of `elan` and
   `lean-toolchain`, which every Lean project uses.
 - **A devcontainer from day one.** Deferred; see the environment
   section.

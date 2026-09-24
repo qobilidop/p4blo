@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Every check CI runs, in order, stopping at the first failure.
-# Run inside the flake: `nix develop -c scripts/check.sh` (or with direnv).
+# Run with the development tools from README.md#development on PATH.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 uv sync --locked --quiet

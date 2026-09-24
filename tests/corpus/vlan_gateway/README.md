@@ -21,8 +21,10 @@ contracts; no eDSL or interpreter extension is needed.
 
 From the repository root:
 
+After the repository [development setup](../../../README.md#development):
+
 ```sh
-nix develop -c uv run python -m tests.corpus.vlan_gateway.demo
+uv run python -m tests.corpus.vlan_gateway.demo
 ```
 
 ```text

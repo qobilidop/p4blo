@@ -1,8 +1,10 @@
 # Workflows
 
 How to build, check and change p4blo, for a person or an agent who has
-never seen it. Every command below runs from the repository root inside
-the flake (`direnv allow` once, or prefix with `nix develop -c`).
+never seen it. Every command below runs from the repository root after the
+[development setup](../README.md#development). Python commands use `uv`;
+Lean, schema, workflow and oracle checks additionally need the specialist
+tools listed there. `uv` does not install those external tools.
 
 ## Gates
 
@@ -79,9 +81,9 @@ audit expectation only after reviewing the changed trust boundary.
 The milestone's finite adversarial acceptance command is:
 
 ```sh
-nix develop -c uv sync --locked
-nix develop -c scripts/check-lean.sh
-nix develop -c uv run python scripts/check-assurance.py
+uv sync --locked
+scripts/check-lean.sh
+uv run python scripts/check-assurance.py
 ```
 
 Run these sequentially from an unchanged checkout. The last command rebuilds
@@ -135,7 +137,7 @@ and maintenance boundaries are in `website/README.md`.
 
 | Input | Pin | Update by |
 |---|---|---|
-| nixpkgs (Python, uv, buf, protoc, elan, Node, opam) | `flake.lock` | `nix flake update` |
+| Optional pinned development tools | [`flake.lock`](../flake.lock) | see [development setup](../README.md#development); review lock updates |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
 | Lean toolchain | `ir/lean-toolchain`, `lean/lean-toolchain` (must match) | edit both; user package depends on local `../ir`, manifests committed |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it |
@@ -147,20 +149,24 @@ and maintenance boundaries are in `website/README.md`.
 | Original XDP feature build and libbpf | commits/archive SHA-256 in `tests/oracle/xdp/Dockerfile` | review source, ABI/profile and licenses; rerun required compile/negative gate |
 | XDP build environment | Ubuntu image digest, dated authenticated archive snapshot and CA bundle SHA-256 in `tests/oracle/xdp/` | update together; retain compiler/package/dependency provenance and same-build object repeat check |
 
-Nothing else is downloaded at build or test time. The `uv sync` path
-without Nix gets the same Python packages but not the same interpreter,
-`buf` or `protoc`; it is a convenience, not the reproducible path.
+`uv.lock` fixes the Python dependency versions. The interpreter selection
+and optional pinned external-tool setup are documented in
+[development setup](../README.md#development). Specialist tools retain their
+own version requirements and pins; installing Python dependencies does not
+satisfy those requirements.
 
 ## The oracle locally
 
 ```
-nix develop .#oracle -c tests/oracle/build.sh        # ~6 minutes the first time; prints the binary path
+tests/oracle/build.sh                              # needs opam/GMP; prints the binary path
 P4BLO_ORACLE_DIR=~/.cache/p4blo/p4-spectec uv run pytest tests/test_oracle.py -v
 uv run python tests/oracle/run.py -v tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
 ```
 
-`tests/oracle/README.md` says what the simulator can and cannot check and how
-`tests/oracle/run.py` translates the STF dialect for it.
+[The oracle README](../tests/oracle/README.md) lists its C/OCaml build
+prerequisites, what the simulator can check, and how `tests/oracle/run.py`
+translates the STF dialect. The build script creates the pinned OCaml switch;
+`uv` manages only the Python replay driver and tests.
 
 ## Changing things
 

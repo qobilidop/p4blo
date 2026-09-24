@@ -1,17 +1,17 @@
 # Author and run the two examples
 
-Run every command from the repository root. These examples need no Docker,
-P4 compiler or external oracle. Nix supplies the pinned development tools:
+Run every command from the repository root after the
+[development setup](../README.md#development). These examples need no Docker,
+P4 compiler or external oracle. The Python section needs only the Python
+setup. For the Lean sections, also install `elan` as described there, then run:
 
 ```sh
-nix develop -c uv sync --locked
-nix develop -c scripts/check-lean.sh
+scripts/check-lean.sh
 ```
 
-The second command builds **both** Lean packages, checks proof audits and runs
-native tests; the first build takes longer. Without Nix, `uv sync --locked`
-is enough for the Python section, but does not install the pinned Lean or
-schema tools. The current Lean toolchain is recorded in `lean/lean-toolchain`.
+This builds **both** Lean packages, checks proof audits and runs native tests;
+the first build takes longer. `uv` does not install Lean or schema tools.
+The current Lean toolchain is recorded in `lean/lean-toolchain`.
 
 ## What to edit
 
@@ -58,7 +58,7 @@ entire sequence: its externs hold the firewall's persistent registers.
 
 <!-- quickstart: python-run -->
 ```sh
-nix develop -c uv run python - <<'PY'
+uv run python - <<'PY'
 from pathlib import Path
 from p4blo import arch, stf
 from tests.corpus.forwarder.forwarder import build as forwarder
@@ -103,7 +103,7 @@ they are separate from persistent extern state.
 After editing either Lean source, rebuild its existing executable:
 
 ```sh
-nix develop -c lake +leanprover/lean4:v4.34.0 -d lean build leanForwarder leanTutorialFirewall
+lake +leanprover/lean4:v4.34.0 -d lean build leanForwarder leanTutorialFirewall
 ```
 
 With no arguments each executable exports its authored Program as JSON.
@@ -117,7 +117,7 @@ expectations—Python does not execute the packets in this section.
 
 <!-- quickstart: lean-run -->
 ```sh
-nix develop -c uv run python - <<'PY'
+uv run python - <<'PY'
 import json
 import subprocess
 from pathlib import Path
@@ -177,7 +177,7 @@ authoritative IR/specification.
 
 <!-- quickstart: lean-fragment -->
 ```sh
-nix develop -c lake +leanprover/lean4:v4.34.0 -d lean env lean --stdin <<'LEAN'
+lake +leanprover/lean4:v4.34.0 -d lean env lean --stdin <<'LEAN'
 import P4blo
 open P4blo.Scalar
 open scoped P4blo.Scalar
@@ -222,7 +222,7 @@ execution error; the state/error boundary is documented separately.
 To check these exact documented snippets after building Lean:
 
 ```sh
-nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_quickstart.py -q
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_quickstart.py -q
 ```
 
 For broader application coverage, run `tests/test_lean_forwarder.py` and

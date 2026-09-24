@@ -6,10 +6,10 @@ are in [the design note](../docs/notes/website-design.md).
 
 ## Preview
 
-From the repository root:
+From the repository root after [development setup](../README.md#development):
 
 ```sh
-nix develop -c python -m http.server 4173 --bind 127.0.0.1 --directory website
+uv run python -m http.server 4173 --bind 127.0.0.1 --directory website
 ```
 
 Open <http://127.0.0.1:4173>. Alternatively, open `index.html` directly;
@@ -35,12 +35,13 @@ relative paths so the site works under the `/p4blo/` project subpath.
 The walkthrough presents the complete tested
 [`vlan_gateway.py`](../tests/corpus/vlan_gateway/vlan_gateway.py), not a browser
 runtime. Edit that canonical source and the explanatory steps in the renderer,
-then regenerate the highlighted block and downloadable source:
+then regenerate the highlighted block and downloadable source. The final
+syntax check also needs Node.js, as listed in the development setup:
 
 ```sh
-nix develop -c uv run python scripts/render-website-example.py
-nix develop -c uv run pytest tests/test_website.py tests/test_vlan_gateway.py
-nix develop -c node --check website/main.js
+uv run python scripts/render-website-example.py
+uv run pytest tests/test_website.py tests/test_vlan_gateway.py
+node --check website/main.js
 ```
 
 The generated files are committed, so deployment needs no site build.

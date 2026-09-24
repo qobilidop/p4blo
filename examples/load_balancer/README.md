@@ -16,7 +16,7 @@ servers, address resolution or a complete deployment.
 From the repository root:
 
 ```sh
-nix develop -c uv run python -m examples.load_balancer.demo
+uv run python -m examples.load_balancer.demo
 ```
 
 Expected output:

@@ -67,24 +67,18 @@ result first, so rerunning it is cheap and a partial failure resumes
 where it stopped.
 
 It needs `git`, `make`, a C compiler, `opam` 2.1 or newer, and libgmp's
-headers plus `pkgconf`, which the opam packages under `bignum` probe
-for. opam is deliberately not in the flake (design.md, "Testing
-strategy"), so:
+headers plus `pkgconf` (also packaged as `pkg-config`), which the opam
+packages under `bignum` probe for. Install these specialist prerequisites
+using your platform's tools or the optional pinned setup described in
+[development setup](../../README.md#development). `uv` does not supply them.
 
-```
-# Ubuntu (what CI does)
-sudo apt-get install -y opam libgmp-dev pkg-config
+```sh
 tests/oracle/build.sh
-
-# With Nix, on Linux or macOS
-nix-shell -p opam gmp pkgconf --run tests/oracle/build.sh
 ```
 
 opam's root defaults to `~/.opam`; set `OPAMROOT` to put it elsewhere.
-Under Nix the binary links against the Nix store's libgmp, so it keeps
-working as long as that path is not garbage-collected. The first build
-compiles OCaml and Jane Street's `core`; on an M-series Mac it took
-about six minutes: two for the switch, two for the packages, two for
+The first build creates the pinned OCaml switch and compiles OCaml and
+Jane Street's `core`; on an M-series Mac it took about six minutes: two for the switch, two for the packages, two for
 `make build`. A rerun with the stamp in place returns in milliseconds.
 
 ## Running
@@ -253,12 +247,10 @@ about four seconds.
 
 ## Reproducible build
 
-The pinned way is the flake's oracle shell, which carries opam, gmp and
-pkgconf at the versions in `flake.lock`; CI uses it:
-
-```
-nix develop .#oracle -c tests/oracle/build.sh
-```
+The optional pinned external-tool environment used by CI is described in
+[development setup](../../README.md#development); `flake.lock` records its
+opam, GMP and pkgconf versions. The build command is the same after either
+setup path: `tests/oracle/build.sh`.
 
 `build.sh` pins P4-SpecTec (`P4_SPECTEC_COMMIT`), the p4c submodule it
 reads `p4include` from, the OCaml switch (5.1.0) and the opam-repository

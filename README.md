@@ -94,32 +94,54 @@ claimed. See [its assurance note](docs/notes/lean-firewall-port.md).
 
 ## Getting started
 
-Three tiers, from most to least reproducible.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run
+from the repository root:
 
-1. **Nix flake with direnv** (recommended). Install
-   [Nix](https://nixos.org/download/) and
-   [direnv](https://direnv.net/), then `cd` into the repository and
-   run `direnv allow`. Python, `uv`, `buf`, `protoc` and `elan` are
-   pinned by `flake.lock`. Without direnv, prefix commands with
-   `nix develop -c`.
-2. **uv only.** Install [uv](https://docs.astral.sh/uv/) and run
-   `uv sync`. This gives the Python package, tests, linter and type
-   checker, but not the schema tools or Lean.
-3. **Devcontainer.** Not provided yet; open an issue if you need one.
+```sh
+uv sync --locked
+uv run python -m examples.router.demo
+uv run pytest tests/examples -k 'not lean'
+```
+
+The `.python-version` file selects Python 3.13; uv can download it if needed.
+The locked environment includes the Python package, tests, linter and type
+checker. The [firewall and load-balancer demos](examples/README.md) use the
+same environment. No compiler, external oracle or separate service is needed
+to run these Python examples.
 
 To author and run the complete forwarder and persistent firewall in either
 language, follow the [tested quickstart](docs/quickstart.md). It uses the
 existing APIs and executables; no Docker or P4 oracle is needed.
 
-For repository checks:
+## Development
+
+Commands throughout the documentation assume the required tools are on PATH.
+Choose how to install them; the project does not require a particular system
+package manager.
+
+| Work | Additional tools |
+|---|---|
+| Python examples and application tests | None beyond the uv environment above |
+| Full Python/schema/workflow gate | Node.js, `buf`, `protoc`, `actionlint` |
+| Lean packages and real differential tests | `elan`/`lake`; the checked-in `lean-toolchain` files select the compiler |
+| P4-SpecTec oracle | Git, Make, opam, a C toolchain, pkg-config, GMP and zstd development files; [builder details](tests/oracle/README.md) |
+| BMv2, P4 printer typechecks and XDP compilation | Docker and the corresponding pinned images; [workflow details](docs/workflows.md) |
+
+Optional: [Nix](https://nixos.org/download/) provides pinned development tools
+through `flake.nix` and `flake.lock`. With [direnv](https://direnv.net/) shell
+integration enabled, run `direnv allow` once: `.envrc` loads the environment
+when you enter the repository, so commands need no prefix. Alternatively,
+enter the environment once with `nix develop` (add `.#oracle` to select the
+shell with optional OCaml build prerequisites).
+
+For repository checks after installing their tools:
 
 ```
 scripts/check.sh              # every Python and schema check CI runs
 scripts/check-lean.sh         # both Lean packages, audits and tests
 ```
 
-The oracle needs P4-SpecTec: `nix develop .#oracle -c tests/oracle/build.sh`
-builds it in a pinned OCaml environment; see
+The oracle needs P4-SpecTec: `tests/oracle/build.sh` builds its pinned source; see
 [`tests/oracle/README.md`](tests/oracle/README.md). The printer's goldens are
 typechecked with p4c through Docker when it is available.
 

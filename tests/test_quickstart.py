@@ -28,11 +28,11 @@ def snippet(name: str, language: str) -> str:
     block = text.split(marker)[1].split("\n```", 1)[0]
     header, source = block.split("\n", 1)
     if language == "python":
-        assert header == "nix develop -c uv run python - <<'PY'"
+        assert header == "uv run python - <<'PY'"
         delimiter = "PY"
     else:
         toolchain = (ROOT / "lean/lean-toolchain").read_text().strip()
-        assert header == f"nix develop -c lake +{toolchain} -d lean env lean --stdin <<'LEAN'"
+        assert header == f"lake +{toolchain} -d lean env lean --stdin <<'LEAN'"
         delimiter = "LEAN"
     assert source.endswith("\n" + delimiter)
     return source.removesuffix("\n" + delimiter) + "\n"

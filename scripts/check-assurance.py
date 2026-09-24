@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the finite milestone catalogue; use `nix develop -c uv run python ...`."""
+"""Run the finite milestone catalogue: `uv run python scripts/check-assurance.py`."""
 
 import sys
 from pathlib import Path
