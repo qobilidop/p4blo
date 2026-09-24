@@ -2,7 +2,7 @@
 
     uv run python tests/oracle/bmv2/run.py <program.txtpb> <vectors.stf>
 
-The program is printed with `p4blo.printer.print_program` under the v1model
+The program is printed with `p4blo.arch.v1model.print_program` under the v1model
 shim, rewritten for BMv2's parser (see `use_last`) and compiled once with
 `p4c-bm2-ss prog.p4 -o prog.json` inside the `p4blo-bmv2` Docker image
 (tests/oracle/bmv2/Dockerfile). Each vector is then
@@ -45,7 +45,8 @@ from pathlib import Path
 # the package lives under impl/python/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "impl" / "python"))
 
-from p4blo import ir, printer, stf  # noqa: E402
+from p4blo import ir, stf  # noqa: E402
+from p4blo.arch import v1model  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402
 
 __all__ = [
@@ -353,7 +354,7 @@ def use_last(p4: str) -> tuple[str, list[str]]:
 
 def uses_flood(index: ir.Index) -> bool:
     """Whether the program's metadata contract has `flood`, which the v1model
-    shim leaves unmapped (printer.standard_metadata_binding), so BMv2 would
+    shim leaves unmapped (v1model.standard_metadata_binding), so BMv2 would
     not see the decision."""
     return any(f.name == "flood" for f in index.fields(index.program.metadata))
 
@@ -522,7 +523,7 @@ def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
     if uses_flood(index):
         detail = "the program uses flood, which the v1model shim cannot express for BMv2"
         return [Verdict(vector, "skip", detail, ()) for vector in vectors]
-    p4, notes = use_last(printer.print_program(index.program, index=index))
+    p4, notes = use_last(v1model.print_program(index.program, index=index))
     command = _docker_command(image, "compile")
     try:
         compiled = compile_program(image, p4)

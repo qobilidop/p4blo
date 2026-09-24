@@ -437,8 +437,8 @@ p4blo/
     ir.py, validator.py             load, save, text form; validation
     interp/                         the reference interpreter
     edsl/                           the typed eDSL; core/ is the builder beneath it
-    printer.py                      IR to P4-16 text
-    externs/, arch/                 the corpus externs; filter.py and switch.py
+    arch/                           contract, filter, switch, the extern
+                                    families, and the v1model printer
     drt/                            the differential loop and certificates
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs

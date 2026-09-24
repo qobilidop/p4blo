@@ -15,13 +15,13 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 from p4blo import arch, interp, ir, validator
+from p4blo.arch.externs import Registry
+from p4blo.arch.externs.counter import Counter
 from p4blo.drt._json import loads
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
 from p4blo.drt.run import run_python
 from p4blo.drt.state import encode, snapshot
-from p4blo.externs import Registry
-from p4blo.externs.counter import Counter
 from p4blo.interp.tables import InstallError
 from p4blo.v0 import p4blo_pb2 as pb
 from tests import test_codec_tables as table

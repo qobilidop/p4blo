@@ -22,11 +22,11 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import ir
+from p4blo.arch.externs.register import Register
 from p4blo.drt import replay
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.replay import save
 from p4blo.drt.run import compare_program
-from p4blo.externs.register import Register
 from p4blo.interp import expr, stmt
 from p4blo.interp.api import InterpError
 from p4blo.interp.env import Env

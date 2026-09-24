@@ -2,7 +2,7 @@
 
     uv run python tests/oracle/run.py <program.txtpb> <vectors.stf>
 
-For each vector file: the program is printed with `p4blo.printer.print_program`
+For each vector file: the program is printed with `p4blo.arch.v1model.print_program`
 into a temporary directory, the vector is translated into the STF dialect the
 simulator reads (see `translate`; the `add` lines are re-rendered at the
 program's key widths), and
@@ -39,7 +39,8 @@ from pathlib import Path
 # the package lives under impl/python/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "impl" / "python"))
 
-from p4blo import ir, printer, stf  # noqa: E402
+from p4blo import ir, stf  # noqa: E402
+from p4blo.arch import v1model  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402
 
 __all__ = [
@@ -328,7 +329,7 @@ def run_vector(
 def run(oracle: Oracle, program: Path, vectors: list[Path]) -> list[Verdict]:
     """Print the program once and run every vector against it."""
     index = ir.Index.build(ir.load_text(program))
-    p4 = printer.print_program(index.program, index=index)
+    p4 = v1model.print_program(index.program, index=index)
     with tempfile.TemporaryDirectory(prefix="p4blo-oracle-") as tmp:
         workdir = Path(tmp)
         program_p4 = workdir / f"{program.stem}.p4"

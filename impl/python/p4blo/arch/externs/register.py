@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from p4blo.externs import (
+from p4blo.arch.externs import (
     Bindings,
     Implementation,
     MethodShape,

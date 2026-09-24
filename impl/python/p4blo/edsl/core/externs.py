@@ -1,7 +1,7 @@
 """Declarations of the externs the corpus implements.
 
 Each helper declares, on a program, the monomorphic extern type that
-`p4blo.externs` binds: the same constructor and method signatures, with the
+`p4blo.arch.externs` binds: the same constructor and method signatures, with the
 width parameter fixed. The IR knows nothing of these; they save retyping
 the signature that the implementation checks against.
 """

@@ -12,8 +12,10 @@ variable such as `"T"` that the declaration binds consistently. `Register`
 is the example: `read(out T result, in bit<32> index)` and
 `write(in bit<32> index, in T value)` for any width `T`.
 
-The implementations under this package are corpus material: each is pinned
-to its Lean model by vectors. They are not part of the IR.
+The implementations under this package are what the supplied architectures
+provide (docs/arch-supports.md, "Extern families"); each is pinned to its
+Lean model by vectors and independent known answers. They are not part of
+the IR, which sees only the binding.
 """
 
 from __future__ import annotations
@@ -186,7 +188,7 @@ def fits(value: Value, type: pb.Type) -> bool:
 
 def default_registry() -> Registry:
     """Every implementation shipped with the corpus."""
-    from p4blo.externs import checksum, counter, crc, register
+    from p4blo.arch.externs import checksum, counter, crc, register
 
     registry = Registry()
     registry.register(register.IMPLEMENTATION)

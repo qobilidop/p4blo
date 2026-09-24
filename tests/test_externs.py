@@ -1,7 +1,8 @@
 import pytest
 
-from p4blo import externs, ir
-from p4blo.externs.checksum import internet_checksum
+from p4blo import ir
+from p4blo.arch import externs
+from p4blo.arch.externs.checksum import internet_checksum
 from p4blo.interp.values import Bits
 
 

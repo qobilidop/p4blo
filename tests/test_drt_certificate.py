@@ -15,9 +15,9 @@ from typing import Any
 
 import pytest
 
+from p4blo.arch.externs.counter import Counter
+from p4blo.arch.externs.register import Register
 from p4blo.drt import certificate
-from p4blo.externs.counter import Counter
-from p4blo.externs.register import Register
 from p4blo.interp.api import ExternResult
 from p4blo.interp.env import Env
 from p4blo.interp.stmt import execute

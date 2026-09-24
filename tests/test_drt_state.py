@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 
 from p4blo import arch, ir
+from p4blo.arch.externs.counter import Counter
+from p4blo.arch.externs.register import Register
 from p4blo.drt.case import Case
 from p4blo.drt.run import (
     Divergence,
@@ -21,8 +23,6 @@ from p4blo.drt.run import (
     python_outcome,
 )
 from p4blo.drt.state import Observation, decode, encode, snapshot
-from p4blo.externs.counter import Counter
-from p4blo.externs.register import Register
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
 

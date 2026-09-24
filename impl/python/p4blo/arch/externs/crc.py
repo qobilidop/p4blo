@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from p4blo.externs import BindError, Bindings, Implementation, MethodShape, ParamShape, Shape
+from p4blo.arch.externs import BindError, Bindings, Implementation, MethodShape, ParamShape, Shape
 from p4blo.interp import ExternBinding, ExternResult, InterpError
 from p4blo.interp.values import Bits, Value
 from p4blo.v0 import p4blo_pb2 as pb

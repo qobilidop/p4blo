@@ -9,9 +9,9 @@ from typing import Any, cast
 import pytest
 
 from p4blo import arch
+from p4blo.arch.externs.register import Register
 from p4blo.drt.case import Case
 from p4blo.drt.run import compare_program
-from p4blo.externs.register import Register
 from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet

@@ -10,6 +10,10 @@ leave. Two are here, a filter and a switch, and neither contains P4.
                   exported roles; once per program
     filter.py     parser and control; the packet leaves as it came, or not
     switch.py     all three blocks; drop, flood or unicast over a few ports
+    externs/      the extern families the architectures supply, and the
+                  registry that binds them to a program
+    v1model.py    the printer: IR to P4-16 under a v1model shim, so the P4
+                  oracles can run a program; the only v1model support there is
 """
 
 from __future__ import annotations

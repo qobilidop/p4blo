@@ -17,7 +17,7 @@ from types import MappingProxyType
 
 from p4blo import validator
 from p4blo.arch.contract import CONTRACT, Contract, Metadata
-from p4blo.externs import Registry, default_registry
+from p4blo.arch.externs import Registry, default_registry
 from p4blo.interp import ExternBinding
 from p4blo.interp.tables import InstalledEntries
 from p4blo.ir import Index

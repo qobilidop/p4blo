@@ -1,5 +1,8 @@
-"""IR to P4-16 text, wrapped in a v1model shim.
+"""The v1model printer: IR to P4-16 text, wrapped in a v1model shim.
 
+This is the repository's v1model support, and all of it: not an
+implementation of the architecture but the mapping that lets the P4
+oracles run a printed program (docs/arch-supports.md, "The v1model shim").
 The IR has no architecture; the printed program supplies v1model's six
 blocks so that it compiles with p4c and runs on BMv2 or P4-SpecTec's
 simulator. The shim is the whole architecture binding and lives in
@@ -290,7 +293,7 @@ def standard_metadata_binding(
 
 
 # The extern families the shim knows, by ExternType name. Each matches an
-# implementation under impl/python/p4blo/externs/.
+# implementation under impl/python/p4blo/arch/externs/.
 REGISTER = "register"
 COUNTER = "counter"
 CHECKSUM16 = "checksum16"
@@ -457,7 +460,7 @@ class _StmtPrinter:
         # v1model has no checksum extern object; its `hash` with
         # HashAlgorithm.csum16, base 0 and max 2^16 is the one's-complement
         # checksum of the data, which is what checksum16.compute returns.
-        # That this agrees with impl/python/p4blo/externs/checksum.py is verified
+        # That this agrees with impl/python/p4blo/arch/externs/checksum.py is verified
         # against the oracle in step 4 (docs/design.md, "Build order").
         if call.method != "compute" or len(call.args) != 1 or not call.HasField("result"):
             raise PrintError(f"checksum16 call {call.instance}.{call.method} has the wrong shape")

@@ -11,11 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, printer, stf, validator
+from p4blo import arch, ir, stf, validator
+from p4blo.arch import v1model
+from p4blo.arch.externs.crc import crc16, crc32
 from p4blo.drt.case import Case
 from p4blo.drt.run import LeanRunner, run_python
 from p4blo.drt.state import Observation, Snapshot, snapshot
-from p4blo.externs.crc import crc16, crc32
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.corpus.tutorial_firewall.tutorial_firewall import build
 from tests.oracle import firewall as original
@@ -413,7 +414,7 @@ def test_firewall_route_miss_on_spectec(tmp_path: Path, printed: bool) -> None:
     )
     if printed:
         source = tmp_path / "printed.p4"
-        source.write_text(printer.print_program(build()))
+        source.write_text(v1model.print_program(build()))
         translated, _ = spectec.translate(
             "\n".join(CONFIGURATION) + "\n" + packets, ir.Index.build(build())
         )

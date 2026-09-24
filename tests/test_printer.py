@@ -19,8 +19,9 @@ from uuid import uuid4
 import pytest
 from google.protobuf import text_format
 
-from p4blo import ir, printer, validator
-from p4blo.printer import PrintError, print_expr, print_lvalue, print_stmt, print_type
+from p4blo import ir, validator
+from p4blo.arch import v1model
+from p4blo.arch.v1model import PrintError, print_expr, print_lvalue, print_stmt, print_type
 from p4blo.v0 import p4blo_pb2 as pb
 
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden" / "printer"
@@ -967,7 +968,7 @@ def test_golden_program_is_valid(name: str) -> None:
 
 @pytest.mark.parametrize("name", [*GOLDENS, "forwarder", "port_parser"])
 def test_golden(name: str) -> None:
-    text = printer.print_program(golden_program(name))
+    text = v1model.print_program(golden_program(name))
     path = check_golden(name, text)
     p4test(path)
 
@@ -1121,7 +1122,7 @@ def test_print_stmt_conditional_nests_and_indents() -> None:
 
 def test_standard_metadata_binding_is_by_name() -> None:
     index = ir.Index.build(golden_program("control_features"))
-    prologue, epilogue = printer.standard_metadata_binding(index, "m")
+    prologue, epilogue = v1model.standard_metadata_binding(index, "m")
     assert prologue == [
         "m.ingress_port = standard_metadata.ingress_port;",
         "m.parser_error = standard_metadata.parser_error;",
@@ -1133,15 +1134,15 @@ def test_standard_metadata_binding_is_by_name() -> None:
     # The parser gets the field the architectures write before it runs, and
     # only that one: parser_error is set after the parser, and nothing is
     # consumed there.
-    assert printer.standard_metadata_binding(index, "m", "parser") == (
+    assert v1model.standard_metadata_binding(index, "m", "parser") == (
         ["m.ingress_port = standard_metadata.ingress_port;"],
         [],
     )
     index = ir.Index.build(golden_program("bare"))
-    assert printer.standard_metadata_binding(index, "m") == ([], [])
-    assert printer.standard_metadata_binding(index, "m", "parser") == ([], [])
+    assert v1model.standard_metadata_binding(index, "m") == ([], [])
+    assert v1model.standard_metadata_binding(index, "m", "parser") == ([], [])
     with pytest.raises(PrintError, match="deparser"):
-        printer.standard_metadata_binding(index, "m", "deparser")
+        v1model.standard_metadata_binding(index, "m", "deparser")
 
 
 # A parser that decides on `meta.ingress_port`: packets from port 1 are
@@ -1204,7 +1205,7 @@ def test_the_parser_is_provided_ingress_port_before_it_runs(start: str) -> None:
     typechecks; the `first` one checks the synthesized start state."""
     p = program(PORT_PARSER % (start, start))
     assert validator.validate(p) == []
-    text = printer.print_program(p)
+    text = v1model.print_program(p)
     parser_text = text[text.index("parser P(") : text.index("control C(")]
     control_text = text[text.index("control C(") :]
     copy = "meta.ingress_port = standard_metadata.ingress_port;"
@@ -1223,7 +1224,7 @@ def test_contract_field_with_the_wrong_type_is_refused() -> None:
     drop = next(f for f in p.struct_types[1].fields if f.name == "drop")
     drop.type.CopyFrom(pb.Type(bits=1))
     with pytest.raises(PrintError, match="drop"):
-        printer.print_program(p)
+        v1model.print_program(p)
 
 
 def test_unknown_extern_family_is_refused() -> None:
@@ -1231,7 +1232,7 @@ def test_unknown_extern_family_is_refused() -> None:
     p.extern_types[0].name = "mystery"
     p.extern_instances[0].extern_type = "mystery"
     with pytest.raises(PrintError, match="mystery"):
-        printer.print_program(p)
+        v1model.print_program(p)
 
 
 def test_a_noaction_with_a_body_is_refused() -> None:
@@ -1240,25 +1241,25 @@ def test_a_noaction_with_a_body_is_refused() -> None:
     p = golden_program("control_features")
     control = p.blocks[1]
     no_action = next(a for a in control.actions if a.name == "NoAction")
-    assert "action NoAction" not in printer.print_program(p)
+    assert "action NoAction" not in v1model.print_program(p)
     no_action.body.add().CopyFrom(control.actions[1].body[0])  # meta.drop = true
     with pytest.raises(PrintError, match="NoAction with a body"):
-        printer.print_program(p)
+        v1model.print_program(p)
     del no_action.body[:]
     no_action.params.add(name="port", type=pb.Type(bits=9))
     with pytest.raises(PrintError, match="NoAction with a body"):
-        printer.print_program(p)
+        v1model.print_program(p)
 
 
 def test_start_state_clash_is_refused() -> None:
     p = golden_program("parser_features")
     p.blocks[0].states[1].name = "start"
     with pytest.raises(PrintError, match="start"):
-        printer.print_program(p)
+        v1model.print_program(p)
 
 
 def test_extern_placement() -> None:
-    text = printer.print_program(golden_program("externs"))
+    text = v1model.print_program(golden_program("externs"))
     lines = text.splitlines()
     # Shared with a sub-control: top level. Used by one exported block: inside it.
     assert "counter(32w4, CounterType.packets) pkts;" in lines
@@ -1271,7 +1272,7 @@ def test_extern_placement() -> None:
 
 
 def test_ternary_entries_print_by_descending_priority() -> None:
-    text = printer.print_program(golden_program("control_features"))
+    text = v1model.print_program(golden_program("control_features"))
     twenty = text.index("priority = 20:")
     ten = text.index("priority = 10:")
     assert twenty < ten
@@ -1280,7 +1281,7 @@ def test_ternary_entries_print_by_descending_priority() -> None:
 
 
 def test_missing_roles_get_empty_blocks() -> None:
-    text = printer.print_program(golden_program("bare"))
+    text = v1model.print_program(golden_program("bare"))
     assert "control MyIngress(inout H hdr, inout M meta, inout standard_metadata_t" in text
     assert "control MyDeparser(packet_out packet, in H hdr)" in text
     assert text.rstrip().endswith(

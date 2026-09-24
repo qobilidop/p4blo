@@ -13,9 +13,9 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch.externs.register import Register
 from p4blo.drt import replay
 from p4blo.drt.case import Case
-from p4blo.externs.register import Register
 from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet

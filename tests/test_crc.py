@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, externs, ir, printer
+from p4blo import arch, ir
+from p4blo.arch import externs, v1model
+from p4blo.arch.externs.crc import crc16, crc32
 from p4blo.drt import state
 from p4blo.drt.case import Case
 from p4blo.drt.run import compare_program, run_python
@@ -29,7 +31,6 @@ from p4blo.edsl import (
 )
 from p4blo.edsl import state as parser_state
 from p4blo.edsl.core import externs as core_externs
-from p4blo.externs.crc import crc16, crc32
 from p4blo.interp import InterpError
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
@@ -282,8 +283,8 @@ def test_unsupported_input_widths_fail_binding_and_printing(width: int) -> None:
     index = ir.Index.build(p)
     with pytest.raises(externs.BindError, match="positive multiple of 8"):
         externs.default_registry().bind(index)
-    with pytest.raises(printer.PrintError, match="positive multiple of 8"):
-        printer.print_program(p)
+    with pytest.raises(v1model.PrintError, match="positive multiple of 8"):
+        v1model.print_program(p)
 
 
 @pytest.mark.parametrize("width", [16, 32])
@@ -300,8 +301,8 @@ def test_crc_extra_constructor_arguments_are_not_ignored(index: int) -> None:
     p.extern_instances[index].args.add(bits=pb.BitsLiteral(width=8, value="1"))
     with pytest.raises(externs.BindError, match="constructor takes no arguments"):
         externs.default_registry().bind(ir.Index.build(p))
-    with pytest.raises(printer.PrintError, match="constructor takes no arguments"):
-        printer.print_program(p)
+    with pytest.raises(v1model.PrintError, match="constructor takes no arguments"):
+        v1model.print_program(p)
 
 
 @pytest.mark.parametrize("bad", ["return", "direction", "constructor", "method"])
@@ -318,8 +319,8 @@ def test_malformed_crc_shapes_are_rejected(bad: str) -> None:
         decl.methods[0].name = "not_compute"
     with pytest.raises(externs.BindError):
         externs.default_registry().bind(ir.Index.build(p))
-    with pytest.raises(printer.PrintError, match="wrong shape"):
-        printer.print_program(p)
+    with pytest.raises(v1model.PrintError, match="wrong shape"):
+        v1model.print_program(p)
 
 
 def test_lean_agrees_on_crc_known_answers(lean_binary: Path) -> None:
@@ -352,7 +353,7 @@ def test_crc_known_answers_on_spectec(tmp_path: Path, printed: bool) -> None:
     assert oracle.missing() is None
     source = tmp_path / "crc.p4"
     source.write_text(
-        printer.print_program(program([d for d, _, _ in KNOWN])) if printed else original_p4()
+        v1model.print_program(program([d for d, _, _ in KNOWN])) if printed else original_p4()
     )
     vector = tmp_path / "crc.stf"
     vector.write_text(f"packet 0 {PACKET.hex()}\nexpect 0 {(EXPECTED + PACKET).hex()}$\n")
@@ -399,7 +400,7 @@ def test_crc_known_answers_on_bmv2(tmp_path: Path, printed: bool) -> None:
     if unavailable:
         pytest.skip(unavailable)
     p = program([d for d, _, _ in KNOWN])
-    compiled = bmv2.compile_program(image, printer.print_program(p) if printed else original_p4())
+    compiled = bmv2.compile_program(image, v1model.print_program(p) if printed else original_p4())
     vector = tmp_path / "crc.stf"
     vector.write_text(f"packet 0 {PACKET.hex()}\nexpect 0 {(EXPECTED + PACKET).hex()}$\n")
     verdict = bmv2.run_vector(image, ir.Index.build(p), compiled, vector)

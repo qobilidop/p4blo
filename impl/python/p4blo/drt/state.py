@@ -11,10 +11,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from p4blo.arch import Loaded
-from p4blo.externs.checksum import Checksum16
-from p4blo.externs.counter import Counter
-from p4blo.externs.crc import CRC
-from p4blo.externs.register import Register
+from p4blo.arch.externs.checksum import Checksum16
+from p4blo.arch.externs.counter import Counter
+from p4blo.arch.externs.crc import CRC
+from p4blo.arch.externs.register import Register
 
 
 @dataclass(frozen=True)

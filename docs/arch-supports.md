@@ -12,7 +12,7 @@ is deliberately not supported.
 |---|---|---|
 | filter | `impl/python/p4blo/arch/filter.py` | parser and control; the packet leaves as it came, or not at all |
 | switch | `impl/python/p4blo/arch/switch.py`, `ir/P4bloIR/Switch.lean` | parser, control and deparser over a few ports, with drop, unicast and flood; the Lean twin is what the differential tests run |
-| v1model | `standard_metadata_binding` in `impl/python/p4blo/printer.py` | not an implementation: a printing shim that maps the contract onto `standard_metadata` so the P4 oracles can run printed programs |
+| v1model | `standard_metadata_binding` in `impl/python/p4blo/arch/v1model.py` | not an implementation: a printing shim that maps the contract onto `standard_metadata` so the P4 oracles can run printed programs |
 | PSA, PNA, TNA and other P4 architectures | none | see [Not supported](#not-supported) |
 
 The filter and the switch exist to make [claim 3](design.md#the-four-claims)

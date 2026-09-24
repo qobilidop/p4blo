@@ -21,10 +21,10 @@ from pathlib import Path
 from typing import Literal, NotRequired, TypedDict
 
 from p4blo import ir
+from p4blo.arch.externs import default_registry
+from p4blo.arch.externs.counter import Counter
+from p4blo.arch.externs.register import Register
 from p4blo.drt.run import default_lean_binary
-from p4blo.externs import default_registry
-from p4blo.externs.counter import Counter
-from p4blo.externs.register import Register
 from p4blo.interp.api import InterpError
 from p4blo.interp.env import Env
 from p4blo.interp.errors import ParseError

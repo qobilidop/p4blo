@@ -4,13 +4,13 @@ import P4bloIR.Value
 /-!
 # Extern models
 
-The Lean side of the corpus externs, pinned to `impl/python/p4blo/externs/` by
+The Lean side of the corpus externs, pinned to `impl/python/p4blo/arch/externs/` by
 vectors (docs/design.md, "Externs"). An extern is state owned by the caller
 (docs/ir-semantics.md, "Externs"): `Externs` holds one `ExternState` per
 instance, every call returns the state after it, and the caller threads it
 through the three block runs and across packets.
 
-Binding mirrors `impl/python/p4blo/externs/__init__.py`: an instance's extern
+Binding mirrors `impl/python/p4blo/arch/externs/__init__.py`: an instance's extern
 type name selects the model, and the declaration is checked against the
 model's `Shape`, where a width may be a variable such as `"T"` that the
 declaration binds consistently. The error sentences are the Python ones.

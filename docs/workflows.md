@@ -203,10 +203,10 @@ the Lean-versus-Python gates, and add a row to the corpus table in
 `testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
 the current programs is archived in git as `docs/corpus-candidates.md`.
 
-**An extern.** Add its implementation under `impl/python/p4blo/externs/` with
+**An extern.** Add its implementation under `impl/python/p4blo/arch/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
 `ir/P4bloIR/Externs.lean`, the printer's v1model form in
-`impl/python/p4blo/printer.py`, and a typed family class in
+`impl/python/p4blo/arch/v1model.py`, and a typed family class in
 `impl/python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
 `Counter` and `Checksum16`, from which the IR `ExternType` is derived.

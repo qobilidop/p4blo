@@ -22,12 +22,12 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 from p4blo import arch, ir, stf, validator
+from p4blo.arch.externs.register import Register
 from p4blo.drt import replay
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
-from p4blo.externs.register import Register
 from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
