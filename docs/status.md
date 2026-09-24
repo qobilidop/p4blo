@@ -20,6 +20,15 @@ Further application proof expansion is parked; the older open threads below
 are backlog unless required by that finite checklist. No milestone completion
 is claimed yet.
 
+The reviewed [current profile](profile.md) and [evidence map](evidence.md)
+now separate canonical-wire interchange, validity, tested execution and scoped
+proofs. The scope/trust-boundary checklist item is complete. Static evidence
+review found concrete packaging/top-level-wire gaps, not a need for more
+application proofs. Remaining work is isolated in `work/milestone-interchange`,
+`work/milestone-adversarial` and `work/milestone-usability`; their drafts and
+owner checks are not yet integrated evidence. Next: review/integrate those
+three finite slices, run fresh-checkout acceptance and stop at the checklist.
+
 Combined local code integration at `7bfdcca`, including reviewed Action/Block
 laws and the oracle selector at `529475f`, total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,

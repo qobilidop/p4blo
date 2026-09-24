@@ -39,10 +39,13 @@ it is the next composable one.
 
 ## Acceptance checklist
 
-- [ ] **Scope and trust boundaries:** one concise current profile states
+- [x] **Scope and trust boundaries:** one concise current profile states
   supported syntax/externs, input assumptions, wire/default/unknown-field
   behavior, error categories, resource limits and exclusions. An unproved
   validator or parser is labeled, not presented as a proved guarantee.
+  Delivered in `profile.md` and independently reviewed in
+  `notes/reviews/milestone-profile.md`; this checks the scope document, not
+  the remaining implementation/release criteria.
 - [ ] **Whole-program interchange:** direct independent Export/Program and
   host TableEntries/Entries fixtures cover complete fields, actual public
   Python/protobuf conversions, presence/defaults, malformed inputs and

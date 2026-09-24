@@ -1202,3 +1202,13 @@ one that says so.
   fixed; newer public/audit registrations are checked at their own reviewed
   checkpoint. Export/Program and host-entry testing are the finite next task,
   not an automatic requirement for every additional theorem.
+- **State the tested canonical wire domain instead of promising arbitrary
+  ProtoJSON parity.** The current Python parser rejects unknown fields while
+  Lean ignores them; enum numbers and camelCase aliases also differ. Confirmed
+  all three differences directly against the public protobuf parser and real
+  codec endpoint. Keep current semantics, document these noncanonical forms
+  outside interchange parity, and test top-level boundaries independently.
+  Confidence: high in the observed scope; this is not safe version negotiation
+  or untrusted-input hardening. Revisit only when a real producer needs another
+  accepted form. The reviewed profile also removes stale totality/termination
+  implications and maps evidence without numerical correctness claims.

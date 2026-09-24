@@ -169,7 +169,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `conditionalStatementIR` | in | `If` | `otherwise` may be empty. |
 | `forStatementIR` (all three forms), `forInitStatementIR`, `forUpdateStatementIR`, `forCollectionExpressionIR` | excluded, by scope | none | Design. |
 | `breakStatementIR`, `continueStatementIR` | excluded, by scope | none | With `for`. |
-| `switchStatementIR` on `t.apply().action_run` (with `switchLabelIR`, `switchCaseIR`) | elaborated | each action records which one ran in a metadata field; an `If` chain dispatches | Design: out by elaboration. The rewrite is planned for the acl program (corpus-candidates.md, ternary2). |
+| `switchStatementIR` on `t.apply().action_run` (with `switchLabelIR`, `switchCaseIR`) | elaborated | each action records which one ran in a local; an `If` chain dispatches | Implemented by the acl program; its README describes the exact action marker and dispatch. |
 | `switchStatementIR` on an expression | excluded, by elaboration | an `If` chain | Design: other sugar. Precedent: p4c `SimplifySwitch`. |
 | `constantDeclarationIR` inside a block | elaborated | folded into literals | Forwarder README (`TYPE_IPV4`); stacks README (`MAX_H2_HEADERS`). |
 | `variableDeclarationIR` | in | `Var` in `Block.locals` | An initializer becomes an `Assign` where the declaration stood (stacks README: `op1 = hdr.h1.op1`). Reading before writing gives zero (semantics.md). |
@@ -294,39 +294,28 @@ on 2026-09-22; the rulings and their reasons are in
 
 ## How the corpus exercises the in-rows
 
-Each corpus program's golden was scanned for the IR nodes it holds.
-The forwarder covers `Type.bits`, headers and structs, `Member`,
-`Var`, `Binary` SUB and CONCAT, `IsValid`, `If`, `Assign`, `Extract`,
-`Select` with an exact case and `DontCare`, `Transition.direct`,
-`Table` with an `lpm` key, `default_action`, `Apply`, `CallExtern`
-(`checksum16`), `ExternType`, `ExternInstance`, `Emit`, `Export`, and
-the metadata contract fields `ingress_port`, `egress_port`, `drop`.
-Stacks covers `Type.stack`, `Index`, `LastIndex`, `LValue.next`,
-`Push`, `Pop`, `SetValid`, `SetInvalid`, `Slice`, `Unary` COMPLEMENT,
-`Binary` BIT_AND, BIT_OR, SHL, EQ, `Verify` with a user error,
-`CallBlock` with an `inout` stack argument, `Emit` of a stack, and the
-slice-lvalue elaboration. Subparser_stack covers `CallBlock` from a
-parser state, a parser-scoped local, `Extract` into `next` across the
-sub-parser's `inout` argument, and the same slice elaboration.
-Stateful covers `register` and `counter` instances, `CallExtern` with
-`result`, `Cast`, `Binary` ADD, block locals, and two control halves
-merged into one block. Csum16 covers `checksum16` on one field and the
-0xFFFF/0x0000 edge. The acl program (p4c's `ternary2-bmv2`, in flight)
-will cover `ternary` keys, `Entry.priority` with overlapping host
-entries, action data, the per-table action copies, `MaskedValue` in a
-select, a parser loop over a stack, and the `action_run` elaboration.
-The companions (`parser_error-bmv2`, `issue1824-bmv2`,
-`table-entries-priority-bmv2`, in flight) will cover the
-`parser_error` contract field, `Verify` with `false`, and
-`const_entries` with priorities.
+All eleven programs below are implemented, not planned. Their READMEs record
+the precise source elaborations and bounded vectors. Syntax occurrence alone
+does not show that a vector executes a branch; use the current
+[feature-to-evidence matrix](evidence.md) for semantic checks and qualifications.
 
-No corpus program yet holds `Mux`, `Lookahead`, `Advance`,
-`RangeValue`, `Apply.hit`, `CallAction` from a control body, `exact`
-match kind, `Unary` NOT or NEGATE, `Binary` ADD_SAT, SUB_SAT, SHR, MUL,
-NE, LT, LE, GT, GE, AND, OR, or the bool casts. Each is exercised by
-the unit tests in `tests/test_interp_expr.py`,
-`tests/test_interp_parser.py`, `tests/test_interp_tables.py`,
-`tests/test_interp_control.py`, `tests/test_validator.py` and
-`tests/test_printer.py`, and none is an escape hatch a corpus program
-was found to need. The differential tests of step 5 run them all
-against Lean.
+| Corpus program | Principal exercised boundary |
+|---|---|
+| [forwarder](../tests/corpus/forwarder/README.md) | IPv4 parsing, LPM actions/defaults, TTL rewrite, checksum and deparse; complete independent Python/Lean sources |
+| [stacks](../tests/corpus/stacks/README.md) | Header stacks, next/last/index, validity, push/pop, slice elaboration and inout block calls |
+| [subparser_stack](../tests/corpus/subparser_stack/README.md) | Parser-scoped locals and next extraction through sub-parser inout arguments |
+| [stateful](../tests/corpus/stateful/README.md) | Persistent register/counter instances, extern results and arithmetic |
+| [csum16](../tests/corpus/csum16/README.md) | Checksum16 field input and 0xffff/0x0000 boundary |
+| [acl](../tests/corpus/acl/README.md) | Ternary host priorities, masked parser select, stack loop and action-run elaboration |
+| [priority](../tests/corpus/priority/README.md) | Overlapping const ternary entries and priority-convention elaboration |
+| [parser_error](../tests/corpus/parser_error/README.md) | Atomic short extraction and controls after parser rejection |
+| [verify_error](../tests/corpus/verify_error/README.md) | User errors, verify failure and parser-error observation |
+| [register_bounds](../tests/corpus/register_bounds/README.md) | Persistent read/write, wrapping and explicit out-of-bounds policy |
+| [tutorial_firewall](../tests/corpus/tutorial_firewall/README.md) | Direction/default policies, action calls, CRC16/32 and two persistent Bloom arrays; complete independent Python/Lean sources |
+
+Operators and execution paths not exercised by these fixed vectors have
+focused native/Python known answers and generated differential suites where
+listed in [evidence.md](evidence.md). In particular, scalar/lazy-expression,
+aggregate/call-copy and stateful program generators complement the corpus.
+Do not infer that every IR constructor has every kind of evidence, or that
+every P4 feature is implemented, from the aggregate test or row counts.

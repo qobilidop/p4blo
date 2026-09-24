@@ -65,7 +65,10 @@ are in `tests/oracle/xdp/README.md`. If local disk capacity is insufficient,
 use a reviewed isolated-branch CI experiment; never prune unrelated Docker
 data or count an unavailable local gate as successful native execution.
 
-The active assurance roadmap is [verification.md](verification.md). Keep
+The finite acceptance boundary is [milestone-1.md](milestone-1.md), with the
+supported input domain in [profile.md](profile.md) and feature-to-evidence
+map in [evidence.md](evidence.md). [verification.md](verification.md) retains
+the broader research roadmap, not additional release blockers. Keep
 proved properties, tested agreement and open obligations separate in every
 checkpoint. Passing differential tests is not a proof of equivalence.
 Lean treats warnings as errors. Its default `ProofAudit` target checks the

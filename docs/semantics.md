@@ -2,10 +2,10 @@
 
 The closed behaviors: everything P4 leaves open, undefined or
 target-defined that p4blo closes, each with its choice and the reason.
-Until the Lean interpreter exists this file together with the Python
-interpreter is the normative meaning, and the Python interpreter is
-provisional. After that the Lean interpreter is normative and this file
-is commentary on it.
+The executable Lean specification in `ir/P4bloIR/` is normative; this file
+is commentary on it. The independent Python interpreter is tested against
+that specification, not proved equivalent to it. The current supported
+input domain and trust boundary are in [profile.md](profile.md).
 
 A behavior is added here before it is implemented. A divergence
 between interpreters that turns out to be an unlisted open behavior is
@@ -54,7 +54,7 @@ values are described below.
   the recursively zero value with every header invalid for compound
   types. P4 leaves this undefined (§6.8); zero is chosen because it is
   the least surprising value, it is what BMv2 does at packet start,
-  and it makes the Lean model total.
+  and it gives initialization a deterministic value.
 
 ## Headers
 
@@ -192,7 +192,9 @@ else, and every extern instance is state supplied by the caller.
   directionless parameters, which are read-only like `in` parameters.
 - **Recursion** between blocks is a validator error. Actions may call
   actions; the call graph of actions and blocks together is acyclic,
-  so every run terminates; every construct in the IR is bounded.
+  as the intended termination discipline. A joint theorem connecting whole-
+  program validation, this graph and the parser revisit rule to termination
+  of the actual runner has not been proved.
 
 ## Tables
 
@@ -308,5 +310,7 @@ entry installer rejects it; Lean rejects the unrepresentable spelling during
 decoding. This is agreement on rejection, not identical pipeline staging or
 full ProtoJSON conformance. An invalid host-entry request must not execute a
 packet or change persistent extern state; subsequent valid requests continue
-from the previous state. General unknown-field/version policy and verified
-codec roundtrips remain separate open obligations.
+from the previous state. The supported canonical wire profile, current
+unknown-key/alias differences and version-policy exclusions are explicit in
+[profile.md](profile.md). Scoped JSON-value roundtrip proofs do not establish
+arbitrary ProtoJSON or whole-program validation equivalence.

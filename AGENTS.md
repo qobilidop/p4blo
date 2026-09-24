@@ -14,6 +14,8 @@ independent Lean semantics validated against a runnable reference.
 1. `docs/status.md`: where the work stands, per claim and per step, and
    the open threads. `docs/milestone-1.md` is the active finite definition
    of done; it supersedes older open-ended proof/application work lists.
+   `docs/profile.md` and `docs/evidence.md` summarize its input domain and
+   exact evidence boundaries; do not infer broader guarantees from counts.
 2. `docs/decisions.md`: every choice made while building, dated, with
    its reason. Overrule one by adding a new entry that says so.
 3. `docs/design.md`: what the project is, the four claims, how each is
