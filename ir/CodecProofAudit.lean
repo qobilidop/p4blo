@@ -1,5 +1,7 @@
 import P4bloIR.CodecLaws
 import Tests.CodecLaws
+import P4bloIR.DeclarationCodecLaws
+import Tests.DeclarationCodec
 
 /-! Checked trust boundary for actual JSON-value syntax codec laws. -/
 
@@ -98,3 +100,43 @@ import Tests.CodecLaws
 /-- info: 'CodecLawTests.nestedStatement_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms CodecLawTests.nestedStatement_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.field_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.field_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.headerType_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.headerType_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.structType_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.structType_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.enumType_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.enumType_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.var_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.var_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.param_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.param_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.method_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.method_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.externType_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.externType_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.externInstance_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.externInstance_roundtrip
+
+/-- info: 'DeclarationCodecTests.declarations_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms DeclarationCodecTests.declarations_roundtrip
