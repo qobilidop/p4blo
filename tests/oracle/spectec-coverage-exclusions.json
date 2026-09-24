@@ -2,7 +2,7 @@
  "commit": "2730cfd9e74048bb5439da0f8afcef124079a064",
  "categories": {
   "architecture": "fires only through 9-arch, packages, or the instantiation of externs and blocks",
-  "excluded-construct": "the construct is excluded or elaborated away in docs/coverage.md; `row` names the row",
+  "excluded-construct": "the construct is excluded or elaborated away in docs/p4-spec-coverage.md; `row` names the row",
   "not-representable": "the construct is in, but no input the printer can produce reaches this rule; the reason says why",
   "unhit": "in scope and reachable from printable input, but not exercised yet; `reach` names the input that would. A to-do list for generated testing"
  },
@@ -335,7 +335,7 @@
    "file": "3-operations/3-operations.watsup",
    "line": 1108,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "dec",
@@ -343,7 +343,7 @@
    "file": "3-operations/3-operations.watsup",
    "line": 1111,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "dec",
@@ -351,7 +351,7 @@
    "file": "3-operations/3-operations.watsup",
    "line": 1113,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "dec",
@@ -359,7 +359,7 @@
    "file": "3-operations/3-operations.watsup",
    "line": 1116,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "dec",
@@ -367,7 +367,7 @@
    "file": "3-operations/3-operations.watsup",
    "line": 1119,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "dec",
@@ -375,7 +375,7 @@
    "file": "3-operations/3-operations.watsup",
    "line": 1124,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "rule",
@@ -2094,7 +2094,7 @@
    "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
    "line": 192,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "rule",
@@ -2311,7 +2311,7 @@
    "file": "8-dynamic/8.10.4-eval-call.watsup",
    "line": 600,
    "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/coverage.md has no row for them, and varbit is excluded by scope."
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
   },
   {
    "kind": "rule",

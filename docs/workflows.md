@@ -180,7 +180,7 @@ behavior is resolved by adding it to the doc, not by patching one side.
 **The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
 `spec/ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules and
-`docs/coverage.md`, then regenerate every corpus golden from its eDSL
+`docs/p4-spec-coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
 Record the decision in `.agents/decisions.md`.

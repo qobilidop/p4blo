@@ -21,7 +21,7 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
+| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto), [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md), [`tests/corpus/`](tests/corpus/) |
 | The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/assurance.md`](docs/assurance.md#known-disagreements-with-the-oracles) |
 | A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch/) |
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`spec/ir/`](spec/ir/), `impl/python/p4blo/drt/` |
@@ -82,7 +82,7 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
    for meaning. The independent [Lean user library](impl/lean/README.md) imports
    this specification and exposes verified scalar authoring and execution:
    `import P4blo` for users, `import P4bloIR` for the IR contract.
-6. [`docs/coverage.md`](docs/coverage.md): every construct of
+6. [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
 7. [`docs/assurance.md`](docs/assurance.md): what is claimed for which
    programs, what is proved, what is tested against which oracle, and

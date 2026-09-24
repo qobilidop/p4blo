@@ -31,7 +31,7 @@ The profile is the current v0 IR, not all P4 and not arbitrary hostile
 input. Lean's [abstract syntax](../spec/ir/P4bloIR/IR.lean) and executable
 semantics are authoritative; the [protobuf schema](../spec/ir/proto/p4blo/v0/p4blo.proto)
 defines transport syntax; [semantics.md](ir-semantics.md) records the closed
-behaviors; [coverage.md](coverage.md) walks P4 construct by construct.
+behaviors; [p4-spec-coverage.md](p4-spec-coverage.md) walks P4 construct by construct.
 
 ### Surface
 

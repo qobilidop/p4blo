@@ -66,7 +66,7 @@ coverage command that runs STF directories and reports which rules fired.
 Run it over the corpus and the generated programs; produce a tracked
 report listing every rule of `spec/8-dynamic` and the functions of
 `spec/3-operations` as hit, unhit-in-scope, or out-of-scope by
-coverage.md. Gate: a test that fails when an in-scope rule is unhit and
+p4-spec-coverage.md. Gate: a test that fails when an in-scope rule is unhit and
 not listed as excluded with a reason. Exit: the semantic surface p4blo
 claims to share with P4 is exactly the set of rules its tests exercise.
 
@@ -97,7 +97,7 @@ semantics, with nothing architectural between them.
 relation, its instantiation relation produces the elaborated IL, and the
 `il-value-tree` branch already prints IL values. Add an exporter from
 SpecTec's instantiated IL to p4blo IR. This does three things at once: it
-turns every "elaborated" row of coverage.md from a ruling into code; it
+turns every "elaborated" row of p4-spec-coverage.md from a ruling into code; it
 gives p4blo a P4 source frontend it never had, going through the
 language's own typing and instantiation; and it lets real P4 programs
 enter the DRT loop. The reverse direction, p4blo IR to SpecTec IL, is the
