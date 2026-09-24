@@ -34,6 +34,8 @@ extend-exclude = [
     "python/p4blo/v0",  # generated code
     ".claude",  # worktrees
     ".agents",  # agent notes and campaign recipes
+    "docs/edsl-v2-design.md",  # historical code samples, kept as written
+    "docs/evidence/milestone-interchange.md",  # historical transcripts, kept as written
     "tests/pyright",  # pyright fixtures, some of which must fail
 ]
 
