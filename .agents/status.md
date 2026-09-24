@@ -48,6 +48,13 @@ revision: [CI](https://github.com/qobilidop/p4blo/actions/runs/36036851165),
 Local logs and mutation artifacts under `.artifacts/` are untracked and
 not evidence anyone else can check.
 
+The 2026-09-24 documentation reorganization (this directory, the
+compaction and the promoted contracts under `docs/`) changed no runtime
+source beyond path strings in comments. `scripts/check.sh` passes at
+`2a5638d` with 4839 passed, the same one skip and five xfails, plus the
+new link test; the later review-fix commits touch Markdown only. The Lean
+gate was not rerun: its only change is a doc comment in `Switch.lean`.
+
 ## Open threads
 
 These are parked or backlog, not tasks. Resuming any of them needs a new
