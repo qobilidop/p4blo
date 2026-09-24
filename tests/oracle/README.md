@@ -46,7 +46,7 @@ found two further discrepancies at this pin:
 - LPM/ternary mask construction casts the key's base rather than the computed
   mask in the affected input branches. An original firewall /32 route miss
   is incorrectly forwarded. The existing priority/wildcard normalization
-  below does not fix that defect. See [the firewall evidence](../../docs/evidence/firewall-port.md).
+  below does not fix that defect. See [assurance.md](../../docs/assurance.md#known-disagreements-with-the-oracles).
 
 BMv2 confirms the intended behavior in both probes. CI runs original and
 printed cases, precise strict expected-discrepancy classifiers, and passing

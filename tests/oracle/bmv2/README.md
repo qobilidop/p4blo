@@ -148,6 +148,25 @@ has to change on the way:
   each key's BMv2 match type against the IR's match kind before writing
   the command.
 
+### Register readback
+
+For programs with persistent state the driver has an optional readback
+profile, used by the original tutorial firewall's state observations:
+`post_commands` may contain only whole-array `register_read <name>`
+commands; `completion_packet` is an exact port and byte sentinel expected
+exactly once; and the reply's `registers` are complete arrays parsed from
+the whole pinned CLI transcript, with sizes and value ranges checked
+against the compiled program. Each observation replays a full sequence
+prefix on a fresh switch, then sends a distinct non-stateful sentinel
+whose route is known; its observed egress is the barrier before reading.
+That argument holds for this pinned build, which starts one ingress
+thread and processes input packets in FIFO order, and for a program whose
+registers are touched only by ingress. It is not a general quiescence
+proof: do not reuse the profile for recirculation, multiple ingress
+workers or asynchronous externs without a new completion argument.
+Missing or duplicate sentinels, extra diagnostics, truncated or duplicate
+arrays and invalid cells all fail.
+
 ### pcap FIFOs and the settle heuristic
 
 Packets reach the switch the way p4c's own runner sends them, through
