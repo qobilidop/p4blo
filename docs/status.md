@@ -12,12 +12,12 @@ acceptance criteria and trust boundaries are in [verification.md](verification.m
 
 ## Latest checked checkpoint
 
-Combined local integration at `f1493d8`, including total Expr/LValue/Stmt codec proofs,
+Combined local integration at `77b9890`, including total Expr/LValue/Stmt codec proofs,
 Arg wire laws, unified read-only header expressions, independent source zero,
 actual/source frame-initialization proofs, readable command lists and forwarding
 policy proofs, the separately named validity-guarded policy and exact flat-body
 prefixes and actual body-bearing plain-root call entry: both Lean package gates and default audits pass, with
-**506 spec checks**, all existing scalar/context/
+**520 spec checks**, all existing scalar/context/
 command/path answers and negative checks, seven field-expression answers and
 six additional field-expression kernel rejection examples, plus ten field-
 command full-state answers and declaration/permission/continuation checks.
@@ -74,8 +74,14 @@ post-drop checksum checks, four in-memory packet answers and 50 Python tests
 cover the explicitly bounded port. Review found a state-only Python fault
 surviving packet checks; strict complete-state checks now reject it. A new
 actual TTL-underflow fault is retained and replayed live/restored.
-Required real-Lean DRT: **867 passed**, no skips. Full gate:
-**2431 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
+The declaration baseline adds 14 native checks and 319 Python tests, without
+changing production codecs. All 247 raw transcripts match source-pinned
+expectations and exact bytes; 102 successful outputs pass public protobuf
+wrappers. The action-layer field adapter adds four audited roots and a mixed
+shadowed/unshadowed witness, preserving the old block-only APIs. A rejected
+false theorem conclusion is not counted as a compiling runtime fault.
+Required real-Lean DRT: **1114 passed**, no skips. Full gate:
+**2750 passed / 5 precise expected discrepancies / 1 explicit skip**, plus
 formatting, lint, types, schema generation/no drift and workflow checks;
 all commands exited 0. The sole skip is the unavailable local XDP image;
 required native XDP CI passes at `c550a6f`, including lifecycle regressions.
@@ -89,9 +95,9 @@ Latest reviews also include `named-paths.md`, `forward-policy.md`,
 `plain-call-entry.md`, `body-parametric-entry.md`, `call-initializers.md` and
 `plain-call-return.md`, `guarded-call-prefix.md`, `stmt-codec-baseline.md` and
 `guarded-control-call.md`, `stmt-codec.md`, `action-root-writes.md` and
-`lean-forwarder.md`.
+`lean-forwarder.md`, `declaration-codec-baseline.md` and `field-action-writes.md`.
 
-All five remote workflows pass for `5708b82`; newer CI must be checked
+All five remote workflows pass for `0d30fa0`; newer CI must be checked
 separately. This closes the earlier macOS CI run `35922311964` failure at
 `2bd65b8`: a redundant final process-group kill raised PermissionError after
 timeout cleanup, masking its diagnostic. Reviewed fix `8438cbd`, integrated
@@ -115,7 +121,9 @@ Expr/LValue/Arg fault inputs uniquely match tracked fixtures; all 59 Expr and
 69 LValue/Arg and 79 Stmt source-matched pre-refactor transcripts retain byte-identical
 stdout/stderr and exit status. Artifact
 command metadata is never executed. Reconstruction recipes survive losing
-local ignored artifacts and temporary logs.
+local ignored artifacts and temporary logs. The 247 declaration baseline
+transcripts additionally retain exact bytes, independent source-matched answers
+and historical hashes at `21b0fec`; they are not fault observations.
 Earlier exact counts and experiments remain in named review/assurance
 reports and git history, not competing current instructions below.
 
@@ -126,7 +134,7 @@ reports and git history, not competing current instructions below.
 | 1. The core is small and post-elaboration | existing constructs and explicit extern contracts; no application escape hatch | green: eleven corpus programs fit; firewall adds no core construct; coverage table published |
 | 2. Supports the tested real programs | corpus packets and original firewall packet/state prefixes | 17 vector files, 11 programs; one strict BMv2 register divergence; separate CRC/mask probes expose four precise pinned SpecTec discrepancies |
 | 3. A block is a function; an architecture is ordinary code | two ~50-line Python architectures, corpus unchanged under both | green: filter 45 lines, switch 50, no P4; every corpus program runs under both, and the filter's fate decisions match the switch's on every vector |
-| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 506 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt codecs and finite-trace execution proofs; no universal Python equivalence claim |
+| 4. Mechanized and agrees with the reference | Lean interpreter, DRT and named checked properties | green: 520 spec checks plus user-package tests; corpus and typed generated-program DRT with extern-state comparison; contextual scalar checking, exact scalar/field expression and command lowering, header-read/source-zero correspondence, actual frame initialization and plain-root entry/normal return, representable leaf/Expr/LValue/Arg/Stmt codecs and finite-trace execution proofs; no universal Python equivalence claim |
 
 ## Steps
 
@@ -406,8 +414,11 @@ Things a resuming agent should know are in motion or deliberately left.
   `notes/lean-forwarder.md` and its matching report. Ordinary parser/action/
   table/extern assembly remains explicitly unverified; no full-pipeline
   theorem is implied. Next work is active in `work/forwarder-action`, based
-  on committed `f1493d8`, starting with a target-only unshadowed field adapter
-  that preserves other modeled action-shadowed roots and the old APIs.
+  on committed `f1493d8`. The target-only unshadowed field adapter is now
+  integrated from `0da36db` at `77b9890`, preserving other modeled
+  action-shadowed roots and the old APIs. Its four audited roots, mixed-layer
+  witness and narrow false-conclusion challenge are independently reviewed:
+  `notes/field-action-writes.md` and its matching report.
   The reviewed next plan `notes/forwarder-action-next.md` targets actual
   selected table-action execution: an unshadowed block-write bridge, exact
   old-destination/TTL-wrap policy, and action-layer restoration in eleven
@@ -591,8 +602,11 @@ Things a resuming agent should know are in motion or deliberately left.
   independently checked plan/probe: `notes/program-codec-next.md` and its
   matching review, with `ir/DeclarationCodecProbe.lean` left unregistered.
   Nine foundational declaration codecs are already total and need composition
-  proofs, not another decoder refactor. Independent descriptors/raw baselines
-  precede proof work; full Program remains a later obligation.
+  proofs, not another decoder refactor. The separately reviewed baseline
+  `21b0fec` is integrated: 247 exact raw transcripts, 102 public protobuf
+  successes, 145 errors and 14 native anchors. Nine universal laws and fault
+  evidence are reviewed in `work/declaration-codec`, awaiting integration.
+  Full Program remains a later obligation.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 

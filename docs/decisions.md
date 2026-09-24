@@ -991,3 +991,13 @@ one that says so.
   complete verified frontend. Revisit the small ordinary declaration helpers
   on a second real client; add no macro or second AST prematurely. Scope and
   independent review: `notes/lean-forwarder.md`.
+- **Keep action-layer field updates operational and target-specific.** Lift
+  the authoritative root-write law through existing recursive field writes,
+  requiring only the written root to be absent from the active action map.
+  Other modeled roots may still be action-shadowed. Confidence: high for
+  exact Run preservation and mixed-layer correspondence; medium for the
+  long-term public adapter shape. Revisit on a second verified action, not
+  by weakening the existing block-only command API. Independent proof review,
+  witnesses and the precisely labeled false-conclusion challenge are in
+  `notes/field-action-writes.md`. The full selected-action theorem remains
+  a separate obligation.

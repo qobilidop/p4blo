@@ -61,7 +61,9 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   The next accepted slice is nine foundational declaration codecs, following
   `notes/program-codec-next.md`: reuse existing type/literal/list laws without
   changing already-total decoders. An independent constructor/raw-error
-  baseline comes first. Full Program codecs, text parsing, resource limits
+  baseline is integrated: 247 exact transcripts, independent constructor/error
+  answers and public protobuf wrappers. The nine laws/fault campaigns are
+  independently reviewed and queued for integration. Full Program codecs, text parsing, resource limits
   and version policy remain open.
 - [ ] Expand the Lean validator beyond closed scalars with soundness and
   completeness for each claimed fragment; document remaining global obligations.
@@ -110,7 +112,10 @@ both P4-oracle gates green. A skipped oracle is not passing evidence.
   Its positive-path prerequisite now has actual unshadowed block-write and
   action-hit read/write laws, with constructive active-frame witnesses and
   four compiled model faults rejected. Source permissions and the existing
-  no-action command API are unchanged. The next selected-action trace follows
+  no-action command API are unchanged. The target-only unshadowed field
+  adapter is now integrated with mixed-layer witnesses and four default-audited
+  roots; it preserves other action-shadowed roots without broadening source
+  permissions. The next selected-action trace follows
   `notes/forwarder-action-next.md`; that application proof remains pending.
 
 ## Application milestones
