@@ -4,7 +4,7 @@ P4's semantic core as an IR, architecture-free, with an independent
 Lean semantics validated against a runnable reference.
 
 [Project website](https://qobilidop.github.io/p4blo/) ·
-[Quickstart](docs/quickstart.md) · [Evidence](docs/evidence.md)
+[Quickstart](docs/quickstart.md) · [Assurance](docs/assurance.md)
 
 p4blo is a personal, educational prototype. It exists to make that
 sentence concrete enough to argue about, so that a serious version can
@@ -32,19 +32,14 @@ existing P4 source, P4Runtime, hardware, or a replacement for any tool.
 The first thing a community version would build is a p4c backend;
 [4ward](https://github.com/4ward-p4/4ward) shows the route.
 
-The current development focus is the bounded
-[Milestone 1](docs/milestone-1.md): useful Python and Lean authoring, a strong
-specification, and tested implementation conformance. The broader
-[verification program](docs/verification.md) records longer-term directions,
-not additional requirements for finishing this milestone.
-The tests compare persistent extern state as well as packets. Recorded
-mutation campaigns challenge both implementations; failing experiments
-retain concrete replay bundles. These are layered evidence, not a proof of
-universal Python–Lean equivalence or whole-program type safety.
-The [execution-claim experiment](docs/certificates.md) also runs a fixed
-stateful program in production Python and checks its claimed result with
-a Lean checker whose acceptance theorem is proved. Its compiled runtime
-and observation adapter remain explicit trust boundaries.
+What is claimed for which programs, what is proved, what is tested
+against which oracle, and which deliberate faults the tests catch, is in
+one place: [assurance](docs/assurance.md). The tests compare persistent
+extern state as well as packets, recorded mutation campaigns challenge
+both implementations, and a fixed execution-claim experiment checks a
+production Python run with a Lean checker whose acceptance theorem is
+proved. These are layered evidence, not a proof of universal Python–Lean
+equivalence or whole-program type safety.
 
 Start with the [public Python applications](examples/README.md), beginning
 with the [IPv4 router](examples/router/README.md). Each has a complete eDSL

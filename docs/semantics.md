@@ -5,7 +5,7 @@ target-defined that p4blo closes, each with its choice and the reason.
 The executable Lean specification in `ir/P4bloIR/` is normative; this file
 is commentary on it. The independent Python interpreter is tested against
 that specification, not proved equivalent to it. The current supported
-input domain and trust boundary are in [profile.md](profile.md).
+input domain and trust boundary are in [assurance.md](assurance.md#supported-profile).
 
 A behavior is added here before it is implemented. A divergence
 between interpreters that turns out to be an unlisted open behavior is
@@ -291,8 +291,9 @@ arguments and its call sites.
   multiple of eight. Consume exactly D/8 bytes, most-significant byte first,
   retaining leading zeros; return the full result without range reduction.
   Calls must match the bound width. Non-byte inputs are rejected, not padded.
-  The exact contract, known answers and pinned SpecTec padding discrepancy
-  are in [crc-contract.md](crc-contract.md); this profile does not adopt that discrepancy.
+  The known answers and the pinned SpecTec padding discrepancy are in
+  [assurance.md](assurance.md#known-disagreements-with-the-oracles); this
+  profile does not adopt that discrepancy.
 
 ## Decimal values at the JSON boundary
 
@@ -312,5 +313,5 @@ full ProtoJSON conformance. An invalid host-entry request must not execute a
 packet or change persistent extern state; subsequent valid requests continue
 from the previous state. The supported canonical wire profile, current
 unknown-key/alias differences and version-policy exclusions are explicit in
-[profile.md](profile.md). Scoped JSON-value roundtrip proofs do not establish
+[assurance.md](assurance.md#wire-contract). Scoped JSON-value roundtrip proofs do not establish
 arbitrary ProtoJSON or whole-program validation equivalence.

@@ -179,7 +179,7 @@ these entries record why.
   (2026-09-22)
 - **CRC16/CRC32 are stateless extern families with exact byte-aligned
   widths**, full results and no padding or range reduction; the contract is
-  `docs/crc-contract.md`. Independent known answers found pinned SpecTec's
+  `docs/assurance.md`. Independent known answers found pinned SpecTec's
   odd-byte padding defect; BMv2 confirms the standard behavior. (2026-09-23)
 - **Statement execution uses an explicit continuation machine.** A total
   step function performs one semantic operation and the interpreter drives

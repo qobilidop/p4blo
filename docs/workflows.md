@@ -67,12 +67,10 @@ are in `tests/oracle/xdp/README.md`. If local disk capacity is insufficient,
 use a reviewed isolated-branch CI experiment; never prune unrelated Docker
 data or count an unavailable local gate as successful native execution.
 
-The finite acceptance boundary is [milestone-1.md](milestone-1.md), with the
-supported input domain in [profile.md](profile.md) and feature-to-evidence
-map in [evidence.md](evidence.md). [verification.md](verification.md) retains
-the broader research roadmap, not additional release blockers. Keep
-proved properties, tested agreement and open obligations separate in every
-checkpoint. Passing differential tests is not a proof of equivalence.
+What is claimed, for which programs, and what backs it is
+[assurance.md](assurance.md). Keep proved properties, tested agreement and
+open obligations separate in every checkpoint; passing differential tests
+is not a proof of equivalence.
 Lean treats warnings as errors. Its default `ProofAudit` target checks the
 transitive axiom sets of advertised theorems; `sorry`, custom axioms and
 native-evaluation escapes cannot silently replace those proofs. Update an
@@ -96,11 +94,11 @@ location. Preserve `result.json` and its logs. Only exit 0 with status `passed`
 is acceptance; build failures, skips, unexpected failures and incomplete
 restoration fail the command. Do not edit sources or rebuild the checkout's
 executables while it runs. The exact inventory, intentional observer survivor
-and independent detector are in [the catalogue](evidence/milestone-adversarial.md).
+and independent detector are in [assurance.md](assurance.md#adversarial-checks).
 This supplements the ordinary gates; it is not a universal equivalence proof
 or a requirement to rerun every historical mutation experiment.
 
-The fixed execution-claim experiment is in [certificates.md](certificates.md).
+The fixed execution-claim experiment is in [assurance.md](assurance.md#execution-certificates).
 `python -m p4blo.drt.certificate create` executes production Python and
 writes a claim; `verify` asks the compiled Lean checker to accept or reject
 it. This is distinct from ordinary differential fuzzing and is not a
@@ -200,7 +198,7 @@ misspelled field, state, action or table, an unequal width, or a
 rebuilds the golden from the source, replays every vector under the
 switch, and checks the filter's fate decisions. Then run the oracle and
 the Lean-versus-Python gates, and add a row to the corpus table in
-`docs/evidence.md`. Programs from p4c's test suite are
+`docs/assurance.md`. Programs from p4c's test suite are
 listed with their fitness in `docs/corpus-candidates.md`; the
 sources are in p4c under `testdata/p4_16_samples/`.
 

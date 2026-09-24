@@ -297,7 +297,7 @@ on 2026-09-22; the rulings and their reasons are in
 All eleven programs below are implemented, not planned. Their READMEs record
 the precise source elaborations and bounded vectors. Syntax occurrence alone
 does not show that a vector executes a branch; use the current
-[feature-to-evidence matrix](evidence.md) for semantic checks and qualifications.
+[evidence matrix](assurance.md#evidence-by-semantic-family) for semantic checks and qualifications.
 
 | Corpus program | Principal exercised boundary |
 |---|---|
@@ -315,7 +315,7 @@ does not show that a vector executes a branch; use the current
 
 Operators and execution paths not exercised by these fixed vectors have
 focused native/Python known answers and generated differential suites where
-listed in [evidence.md](evidence.md). In particular, scalar/lazy-expression,
+listed in [assurance.md](assurance.md#evidence-by-semantic-family). In particular, scalar/lazy-expression,
 aggregate/call-copy and stateful program generators complement the corpus.
 Do not infer that every IR constructor has every kind of evidence, or that
 every P4 feature is implemented, from the aggregate test or row counts.

@@ -42,11 +42,11 @@ an archived note is one command away:
 ## Read first, in this order
 
 1. `.agents/status.md`: where the work stands and what is open. Both
-   finite scopes, [assurance milestone 1](docs/milestone-1.md) and the
+   finite scopes, [assurance milestone 1](docs/assurance.md) and the
    [application collection](docs/examples.md), are complete; nothing is
-   active, and neither completion reopens parked proofs. `docs/profile.md`
-   and `docs/evidence.md` state the input domain and exact evidence
-   boundaries; do not infer broader guarantees from counts.
+   active, and neither completion reopens parked proofs. `docs/assurance.md`
+   states the claim, the input domain and exact evidence boundaries; do
+   not infer broader guarantees from counts.
 2. `.agents/decisions.md`: what is decided and why. Overrule an entry by
    rewriting it in place with the new date and reason.
 3. `docs/design.md`: what the project is, the four claims, how each is

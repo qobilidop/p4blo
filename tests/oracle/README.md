@@ -42,7 +42,7 @@ found two further discrepancies at this pin:
 
 - Odd-byte CRC32 inputs are effectively prepended with zero before hashing.
   CRC16 and even-byte CRC32 controls pass. See the exact known answers in
-  [the CRC contract](../../docs/crc-contract.md).
+  [assurance.md](../../docs/assurance.md#known-disagreements-with-the-oracles).
 - LPM/ternary mask construction casts the key's base rather than the computed
   mask in the affected input branches. An original firewall /32 route miss
   is incorrectly forwarded. The existing priority/wildcard normalization

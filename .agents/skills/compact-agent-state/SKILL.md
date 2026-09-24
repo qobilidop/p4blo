@@ -42,7 +42,7 @@ room for a new scope before the old one is recorded as closed.
    rule in several increments; remove entries whose subject no longer
    exists or that only sequenced work now landed. Target about 300 lines.
 5. **Trim `roadmap.md`** to landed/open per item; move landed detail to
-   `docs/evidence.md` or `lean/ASSURANCE.md` if it is not already there.
+   `docs/assurance.md` or `lean/ASSURANCE.md` if it is not already there.
 6. **Fix references.** Links into deleted files become plain mentions
    marked archived; links into promoted files follow them. Path strings in
    tests, docstrings and the website follow too. `docs/` must not link into

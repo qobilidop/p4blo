@@ -58,7 +58,7 @@ Mobile reserves the note's maximum height so note changes cannot oscillate
 the selection boundary. Explicit keyboard/mouse navigation temporarily holds
 the selected step while the page scrolls; user wheel/touch resumes selection.
 
-Evidence copy derives from `docs/profile.md`, `docs/evidence.md`,
+Evidence copy derives from `docs/assurance.md`, `docs/assurance.md`,
 `lean/ASSURANCE.md` and the milestone 1 completion/adversarial reports.
 The site identifies the educational prototype and scoped proof boundary.
 There is no browser interpreter, invented benchmark, fabricated testimonial,

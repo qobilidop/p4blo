@@ -29,7 +29,7 @@ TCP sequence numbers prevent earlier outputs satisfying later expectations.
 packet-shape/direction cases, and original-source comparisons. SpecTec's
 known odd-byte CRC32 bug permutes these register indices consistently, so
 packet-only examples can pass despite wrong state. See
-`docs/crc-contract.md` and `docs/evidence/firewall-port.md` for assurance
+`docs/assurance.md` and `docs/evidence/firewall-port.md` for assurance
 limits.
 
 The independent [Lean source](../../../lean/P4blo/TutorialFirewall.lean)

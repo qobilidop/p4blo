@@ -16,7 +16,7 @@ prototype. The accepted successor architecture is
 protobuf-as-abstract-syntax authority and single-Lean-package arrangement:
 Lean owns abstract syntax, validity and meaning; protobuf owns encoding;
 Python and a separate user-facing Lean package supply eDSL/interpreter APIs.
-Proof coverage remains scoped as recorded in [evidence.md](evidence.md).
+Proof coverage remains scoped as recorded in [assurance.md](assurance.md).
 
 That first sentence is the project. p4blo is a personal, educational
 prototype whose purpose is to make the sentence concrete enough to

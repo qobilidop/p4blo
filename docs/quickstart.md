@@ -47,7 +47,7 @@ documented scoped proofs. Complete parser/table/action/extern declarations in
 these examples also use ordinary `P4bloIR` constructors. That explicit raw
 assembly is **not** a verified complete frontend. Complete execution is tested;
 only the individual properties listed in [the assurance notes](../lean/ASSURANCE.md)
-are proved. The [milestone](milestone-1.md) does not require a whole-pipeline
+are proved. The [milestone](assurance.md) does not require a whole-pipeline
 proof or universal Python correctness.
 
 ## Run the Python-authored programs

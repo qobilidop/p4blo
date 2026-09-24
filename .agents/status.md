@@ -11,7 +11,7 @@ complete, and no next implementation step is authorized by them.
 
 | Scope | Result | Revision | Evidence |
 |---|---|---|---|
-| Assurance milestone 1 | complete 2026-09-23 | `3148a52` (code gate) | [completion report](../docs/evidence/milestone-1-completion.md), [evidence map](../docs/evidence.md) |
+| Assurance milestone 1 | complete 2026-09-23 | `3148a52` (code gate) | [release evidence](../docs/assurance.md#release-evidence) |
 | Python application collection: router, firewall, load balancer | complete 2026-09-24 | `c94336d` | [examples.md](../docs/examples.md); checks below |
 | Project website with the VLAN gateway walkthrough | published | `38d740e` | <https://qobilidop.github.io/p4blo/> |
 
