@@ -9,7 +9,12 @@ claim on APFS or shared/hardlinked caches. Six worktrees remain.
 
 ## Preserved worktrees
 
-All paths below are under `/Users/qobilidop/my/work/`.
+Later on 2026-09-24 the five non-main trees below were converted to
+pushed branches and removed; only `p4blo` remains registered. Their
+contents and gaps are in [parked-proofs.md](parked-proofs.md). The table
+records what was retained at the time of the cleanup.
+
+All paths below were under `/Users/qobilidop/my/work/`.
 
 | Worktree | Reason retained |
 |---|---|

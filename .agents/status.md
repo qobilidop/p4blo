@@ -69,8 +69,8 @@ passes all three packages with their audits and tests;
 xfails; `scripts/check-assurance.py` passes all 28 phases with the split
 scratch builds. The independent review is
 `reviews/spec-split-2026-09-24.md`; its two runner findings are fixed.
-The two parked draft worktrees predate the layout and need rebasing
-before use, as `notes/parked-proofs.md` now says.
+The parked drafts predate the layout and need rebasing before use; they
+now live on pushed branches, as `notes/parked-proofs.md` says.
 
 A second pass the same day reduced `docs/` to six reference files
 (design, semantics, coverage, assurance, quickstart, workflows), folding
@@ -86,10 +86,10 @@ These are parked or backlog, not tasks. Resuming any of them needs a new
 scope from the user.
 
 - **Parked proof drafts** for firewall readback and guarded forwarding
-  ingress live in local worktrees, not on `main`; their exact state is in
-  [parked-proofs.md](notes/parked-proofs.md). Five non-main worktrees
-  remain intentionally; see [worktree-cleanup.md](notes/worktree-cleanup.md)
-  before treating any of them or the local archives as disposable.
+  ingress are on pushed `work/*` branches, not on `main`; their exact
+  state and gaps are in [parked-proofs.md](notes/parked-proofs.md). No
+  non-main worktree remains; the local recovery archives of the earlier
+  cleanup are described in [worktree-cleanup.md](notes/worktree-cleanup.md).
 - **Research backlog** beyond the completed milestone is the
   [roadmap](roadmap.md): Lean surface and validator extensions,
   whole-program codecs, xdp-filter, flowlet switching, bounded Katran.

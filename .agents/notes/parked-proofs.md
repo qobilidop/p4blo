@@ -1,56 +1,22 @@
 # Parked application proof drafts
 
-Since 2026-09-24 the repository keeps the Lean packages under `spec/ir/`,
-`spec/arch/` and `impl/lean/`, and the IR's extern state is generic with
-the families in `P4bloArch`. Both draft worktrees below predate that
-layout and must be rebased, with their extern constructions adapted,
-before any of their content can be built on `main`.
+2026-09-23, converted to branches 2026-09-24. The user-approved finite
+[milestone 1](../../docs/assurance.md) does not require these additional
+application proofs. Nothing on these branches is evidence for a landed
+claim; do not resume them without a new scope. All are pushed to
+`origin`. Each predates the 2026-09-24 layout (`spec/ir`, `spec/arch`,
+`impl/lean`) and the generic extern state, so each needs rebasing, with
+its extern constructions moved to `P4bloArch`, before it can build.
 
-2026-09-23. The user-approved finite [milestone 1](../../docs/assurance.md)
-does not require these additional application proofs. Preserve the drafts;
-do not resume them automatically or present them as landed guarantees.
-The tracked plans describe the intended mathematics independently of these
-local worktrees. No release result depends on either tree or temporary logs.
+| Branch | Tip | What it holds | What it lacks |
+|---|---|---|---|
+| `work/firewall-readback` | `75fdcf6` | the actual two-read prefix before the Bloom decision in Lean: copy-back, exact remaining queue, preservation of unrelated state; compiles standalone, theorem queries clean; a Python test draft | registration in the package and audits; the Python test was never run and uses wrong protobuf accessors; review; fault campaign. Plan: `docs/notes/firewall-readback-next.md` at tag `agents-archive/2026-09-24`; its review is on `work/parked-reviews` |
+| `work/forwarder-ingress` | `231e981` | actual table application composed with the first ingress guard, checksum pending; owner-reported Lean checks; Python and export drafts; its plan `docs/notes/forwarder-ingress.md` | the Python gates never ran and Pyright reports a wrong field name in the test; review; the checksum step; not a complete forwarding proof |
+| `work/firewall-adversarial` | `e76ed46` | one unique commit from a firewall fault campaign | never reviewed for integration |
+| `work/program-codec-next` | `b5728a0` | one unique commit from the Program codec closeout | never reviewed for integration |
+| `work/parked-reviews` | `d18436b` | the reviews of the two drafts above and eight variant review versions whose final forms are archived | nothing; reference only |
 
-## Firewall readback
-
-Tree: `/Users/qobilidop/my/work/p4blo-firewall-readback`, branch
-`work/firewall-readback`, HEAD `b3defb4` (plan only, already integrated).
-Untracked files: `lean/P4blo/TutorialFirewallReadback.lean`,
-`lean/P4blo/TutorialFirewallReadbackTests.lean`, and
-`tests/test_lean_firewall_readback.py`.
-
-The standalone core compiles at default limits: actual two register calls,
-copyback, exact remaining queue and preservation of unrelated state/layers.
-Standalone native observations pass 337 profiles (56 noncanonical native-only
-profiles). Seventeen fresh theorem queries pass: `cell_answer` has no axioms;
-the other sixteen use only the standard three audited axioms. These modules
-are not public/default-registered. No final independent acceptance review or
-fault campaign has been completed.
-
-The Python draft has not been formatted or tested. Suspected draft protobuf
-access mistakes include `.else_`, `WhichOneof("stmt")` instead of `"kind"`,
-and a CallAction field name. Native success does not establish that this draft
-works. Do not count proposed 280 canonical Python profiles as executed tests.
-Future work, only under a new scope: repair/review the draft, integrate actual
-audits, independently challenge observers and semantics, then run full gates.
-The reviewed mathematical plan is `firewall-readback-next.md`.
-
-## Guarded forwarding ingress
-
-Tree: `/Users/qobilidop/my/work/p4blo-forwarder-ingress`, branch
-`work/forwarder-ingress`, base/HEAD `9a12253`, uncommitted draft.
-The owner reports both Lean packages/default checks, eleven audit roots,
-540 native prefixes, 1620 queue boundaries and twelve invalid controls pass.
-The draft combines actual table application with the first ingress guard,
-leaving the checksum pending; it is not a complete forwarding proof.
-
-Python/export drafts exist but focused, required and full Python gates and
-adversarial campaigns have not run. Ruff formatting/checking passed; Pyright
-still reports `InstalledEntries.defaults` at line 484 of
-`tests/test_lean_forwarder_ingress.py` (the actual field is `default_actions`).
-There is no final independent review. Do not count draft Python cases or the
-unmerged proof as accepted evidence. The local plan is
-`docs/notes/forwarder-ingress.md` in that worktree; the landed application
-prerequisites and their scope were documented in `docs/notes/forwarder-apply.md`,
-now archived (`git show agents-archive/2026-09-24:docs/notes/forwarder-apply.md`).
+The review worktree's other 74 files were identical to notes at the
+archive tag and were not duplicated. Recovery archives of the 86
+worktrees removed on 2026-09-24 remain local; see
+[worktree-cleanup.md](worktree-cleanup.md).
