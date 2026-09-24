@@ -11,7 +11,7 @@ assurance milestone 1 are complete. Broader research remains backlog;
 
 ## Latest checked checkpoint
 
-**Python gateway walkthrough (2026-09-24, checked).** At the user's
+**Python gateway walkthrough (2026-09-24, published).** At the user's
 request, replace the website's short Python/Lean excerpts with a complete
 Python eDSL example and Veil-style scrolling explanation. The new
 `tests/corpus/vlan_gateway/` program parses one VLAN tag, applies exact
@@ -61,7 +61,16 @@ evidence: `.artifacts/vlan-gateway/2026-09-24-checked/`, including mutant
 sources, replay bundles, logs and hashes. The independent
 [review](notes/reviews/vlan-gateway.md) has no remaining confirmed defects;
 it distinguishes its own checks from the integrator's campaign and browser
-checks. Publication and live verification remain the next steps.
+checks. Published from `38d740e998a0c482983df8704af1bc81429b5f9c` at
+<https://qobilidop.github.io/p4blo/#examples>; Pages run
+[35972463500](https://github.com/qobilidop/p4blo/actions/runs/35972463500)
+succeeded. Public HTML, CSS, JavaScript and downloadable Python source match
+the committed files byte for byte. Chrome verifies the live step transition
+with no browser warnings/errors. Both temporary review/mutation worktrees
+were removed after preserving the review and fault artifacts; their paths
+were verified absent and the original six registrations remain. The requested
+example and visual are complete; the next step is user feedback on the live
+walkthrough. No additional semantic or proof work is implied.
 No whole-gateway proof or Lean-authored counterpart is claimed. The frozen
 milestone 1 evidence below retains its original eleven-program counts.
 
@@ -414,11 +423,10 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 Future and deliberately parked work. Milestone 1 is complete; these older
 plans are not active acceptance requirements or automatic continuation tasks.
 
-- **Project website:** the original site is live at
-  <https://qobilidop.github.io/p4blo/>. The requested Python gateway
-  walkthrough is implemented, checked and independently reviewed;
-  publish and verify the new section. This does not reopen the parked
-  semantics/proof work.
+- **Project website:** the requested Python gateway walkthrough is published,
+  checked and independently reviewed at
+  <https://qobilidop.github.io/p4blo/#examples>. It is complete; future visual
+  feedback does not reopen the parked semantics/proof work.
 
 - **Local worktrees:** cleanup is complete; five non-main trees remain
   intentionally. See [the inventory and recovery guide](notes/worktree-cleanup.md)
