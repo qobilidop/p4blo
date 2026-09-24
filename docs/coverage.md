@@ -320,3 +320,57 @@ listed in [assurance.md](assurance.md#evidence-by-semantic-family). In particula
 aggregate/call-copy and stateful program generators complement the corpus.
 Do not infer that every IR constructor has every kind of evidence, or that
 every P4 feature is implemented, from the aggregate test or row counts.
+
+## Rule coverage on P4-SpecTec
+
+The table above says which IL constructs p4blo has. A second, measured
+account says which of P4-SpecTec's rules p4blo's inputs make the pinned
+simulator fire. [`spectec-coverage.json`](../tests/oracle/spectec-coverage.json)
+records, for every rule, rule group, relation and function of the
+[rule inventory](../tests/oracle/spectec-rules.json), whether it fired and
+in how many of the vectors, over every corpus program and example printed
+through the v1model shim. The simulator runs the spec in a structured form in
+which each relation's rules are merged into one instruction tree; a rule
+counts as fired when the instruction that concludes it ran, found through
+the source region the instruction keeps.
+[`coverage.py`](../tests/oracle/coverage.py) explains the method and its two
+approximations, and cross-checks its instruction totals against the
+simulator's own `cover-sim` command.
+
+In scope are the rules of `8-dynamic` and the functions of `3-operations`.
+Every one of them that does not fire is listed in
+[`spectec-coverage-exclusions.json`](../tests/oracle/spectec-coverage-exclusions.json)
+with a reason written by hand, in one of four categories: `architecture`
+(fires only through the architecture layer), `excluded-construct` (the
+construct is excluded or elaborated away by a row above, which the entry
+names), `not-representable` (the construct is in, but the printer cannot
+produce input that reaches the rule), and `unhit` (reachable, not yet
+exercised; each entry names the generated input that would reach it).
+`tests/test_spectec_coverage.py` fails when an in-scope item is neither hit
+nor excluded, when an exclusion is stale, and when the counts below drift.
+
+At the pinned commit, over 15 programs and 21 vectors:
+
+| Status | 8-dynamic rules | 3-operations functions |
+|---|---|---|
+| hit | 134 | 20 |
+| architecture | 0 | 0 |
+| excluded-construct | 149 | 22 |
+| not-representable | 27 | 7 |
+| unhit | 51 | 9 |
+
+A hit rule is exercised, not verified equivalent: the simulator applied it
+while running a printed program, which says nothing about whether p4blo's
+own semantics agrees with it beyond what the oracle tests compare. A
+function counts as hit wherever it was entered, including constant folding
+during typing. Most unhit rules propagate a parser rejection raised inside
+an expression, such as a `lookahead` on a short packet; the rest are
+operators and parser shapes no corpus program uses.
+
+The measurement needs the oracle and a small probe built against its
+library; regenerating it takes about fifteen seconds:
+
+```sh
+python3 tests/oracle/coverage.py build   # once per pin, where tests/oracle/build.sh runs
+uv run python tests/oracle/coverage.py   # rewrite the report; --check compares instead
+```
