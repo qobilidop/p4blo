@@ -6,6 +6,8 @@ import P4bloIR.TableCodecLaws
 import Tests.TableCodec
 import P4bloIR.ParserCodecLaws
 import Tests.ParserCodec
+import P4bloIR.BlockCodecLaws
+import Tests.BlockCodec
 
 /-! Checked trust boundary for actual JSON-value syntax codec laws. -/
 
@@ -188,3 +190,15 @@ import Tests.ParserCodec
 /-- info: 'ParserCodecTests.parserState_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms ParserCodecTests.parserState_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.action_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.action_roundtrip
+
+/-- info: 'P4bloIR.CodecLaws.block_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.CodecLaws.block_roundtrip
+
+/-- info: 'BlockCodecTests.blocks_roundtrip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms BlockCodecTests.blocks_roundtrip

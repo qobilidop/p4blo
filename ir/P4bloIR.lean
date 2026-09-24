@@ -26,3 +26,4 @@ import P4bloIR.PlainCallReturn
 import P4bloIR.DeclarationCodecLaws
 import P4bloIR.TableCodecLaws
 import P4bloIR.ParserCodecLaws
+import P4bloIR.BlockCodecLaws

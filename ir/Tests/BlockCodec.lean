@@ -1,8 +1,122 @@
 import Tests.ParserCodec
+import P4bloIR.BlockCodecLaws
 
 open Lean P4bloIR
 
 namespace BlockCodecTests
+
+def wireAction : Action := ⟨"",
+  [⟨"same", .bits 0, .none⟩, ⟨"same", .struct "Missing", .«in»⟩,
+   ⟨"", .stack "Missing" (2 ^ 32 - 1), .out⟩, ⟨"", .boolean, .inout⟩],
+  [.conditional (.literal (.boolean false)) [.push (.var "Missing") (2 ^ 32 - 1)]
+    [.pop (.var "Missing") 0], .callBlock "" []]⟩
+def wireBlock (kind : BlockKind) : Block := ⟨"block", kind, wireAction.params.reverse,
+  [⟨"", .bits (2 ^ 32 - 1)⟩, ⟨"same", .stack "" 0⟩, ⟨"same", .error⟩],
+  [wireAction, ⟨"", [], []⟩, ⟨"", [], [.emit (.var "Missing")]⟩],
+  [TableCodecTests.wireTable false none,
+   TableCodecTests.wireTable true (some ⟨"", []⟩),
+   TableCodecTests.wireTable false (some TableCodecTests.wireCall)],
+  [ParserCodecTests.wireState, ⟨"", [], .direct .accept⟩, ⟨"", [], .direct .reject⟩],
+  "Unresolved", [.apply "Missing" none, .emit (.var ""), .advance (.literal (.bits 0 (10 ^ 100)))]⟩
+
+/-- Kernel nonvacuity for every kind, including semantically invalid field combinations. -/
+theorem blocks_roundtrip (path : String) (kind : BlockKind) :
+    Action.decode path wireAction.toJson = .ok wireAction ∧
+    Block.decode path (wireBlock kind).toJson = .ok (wireBlock kind) := by
+  refine ⟨CodecLaws.action_roundtrip _ _ ?_, CodecLaws.block_roundtrip _ _ ?_⟩
+  all_goals simp [wireAction, wireBlock, TableCodecTests.wireTable,
+    TableCodecTests.wireEntry, TableCodecTests.wireKey, TableCodecTests.wireCall,
+    ParserCodecTests.wireState, CodecLaws.BlockRepresentable, CodecLaws.ActionRepresentable,
+    CodecLaws.ParamRepresentable, CodecLaws.VarRepresentable,
+    CodecLaws.TableRepresentable, CodecLaws.KeyRepresentable,
+    CodecLaws.EntryRepresentable, CodecLaws.ActionCallRepresentable,
+    CodecLaws.KeyValueRepresentable, CodecLaws.StateRepresentable,
+    CodecLaws.TransitionRepresentable, CodecLaws.SelectCaseRepresentable,
+    CodecLaws.KeySetRepresentable, CodecLaws.StmtRepresentable,
+    CodecLaws.ExprRepresentable, CodecLaws.LValueRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+
+private def emptyBlock : Block := ⟨"", .control, [], [], [], [], [], "", []⟩
+example : ¬ CodecLaws.ActionRepresentable ⟨"", [⟨"", .bits (2 ^ 32), .none⟩], []⟩ := by
+  simp [CodecLaws.ActionRepresentable, CodecLaws.ParamRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.ActionRepresentable ⟨"", [⟨"", .stack "" (2 ^ 32), .inout⟩], []⟩ := by
+  simp [CodecLaws.ActionRepresentable, CodecLaws.ParamRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.ActionRepresentable ⟨"", [], [.push (.var "") (2 ^ 32)]⟩ := by
+  simp [CodecLaws.ActionRepresentable, CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.ActionRepresentable
+    ⟨"", [], [.conditional (.literal (.bits (2 ^ 32) 0)) [] []]⟩ := by
+  simp [CodecLaws.ActionRepresentable, CodecLaws.StmtRepresentable,
+    CodecLaws.ExprRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with params := [⟨"", .bits (2 ^ 32), .out⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.ParamRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with locals := [⟨"", .stack "Missing" (2 ^ 32)⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.VarRepresentable,
+    CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with actions := [⟨"", [⟨"", .bits (2 ^ 32), .«in»⟩], []⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.ActionRepresentable,
+    CodecLaws.ParamRepresentable, CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with actions := [⟨"", [], [.pop (.var "") (2 ^ 32)]⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.ActionRepresentable,
+    CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with tables := [⟨"", [], [], none, false, [], 2 ^ 32⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.TableRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with tables := [⟨"", [⟨.slice (.var "") (2 ^ 32) 0, .exact, ""⟩],
+      [], none, false, [], 0⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.TableRepresentable,
+    CodecLaws.KeyRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with tables := [⟨"", [], [], some ⟨"", [.bits (2 ^ 32) 0]⟩, false, [], 0⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.TableRepresentable,
+    CodecLaws.ActionCallRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with tables := [⟨"", [], [], none, false,
+      [⟨[.lpm 0 (2 ^ 32)], ⟨"", []⟩, 0⟩], 0⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.TableRepresentable,
+    CodecLaws.EntryRepresentable, CodecLaws.KeyValueRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with tables := [⟨"", [], [], none, false,
+      [⟨[], ⟨"", [.bits (2 ^ 32) 0]⟩, 0⟩], 0⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.TableRepresentable,
+    CodecLaws.EntryRepresentable, CodecLaws.ActionCallRepresentable,
+    CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with tables := [⟨"", [], [], none, false, [⟨[], ⟨"", []⟩, 2 ^ 32⟩], 0⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.TableRepresentable,
+    CodecLaws.EntryRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with states := [⟨"", [], .select [.slice (.var "") 0 (2 ^ 32)] []⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.StateRepresentable,
+    CodecLaws.TransitionRepresentable, CodecLaws.ExprRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with states := [⟨"", [], .select []
+      [⟨[.masked (.boolean false) (.bits (2 ^ 32) 0)], .accept⟩]⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.StateRepresentable,
+    CodecLaws.TransitionRepresentable, CodecLaws.SelectCaseRepresentable,
+    CodecLaws.KeySetRepresentable, CodecLaws.LiteralRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with states := [⟨"", [.push (.var "") (2 ^ 32)], .direct .reject⟩] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.StateRepresentable,
+    CodecLaws.StmtRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with body := [.emit (.lookahead (.bits (2 ^ 32)))] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.StmtRepresentable,
+    CodecLaws.ExprRepresentable, CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with body := [.emit (.lookahead (.stack "" (2 ^ 32)))] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.StmtRepresentable,
+    CodecLaws.ExprRepresentable, CodecLaws.TypeRepresentable, CodecLaws.UInt32]
+example : ¬ CodecLaws.BlockRepresentable
+    { emptyBlock with body := [.pop (.var "") (2 ^ 32)] } := by
+  simp [emptyBlock, CodecLaws.BlockRepresentable, CodecLaws.StmtRepresentable, CodecLaws.UInt32]
 
 /-- Direct constructors, independent of BlockKind.names and protoName. -/
 def kindValue : BlockKind → String
