@@ -24,10 +24,14 @@ The reviewed [current profile](profile.md) and [evidence map](evidence.md)
 now separate canonical-wire interchange, validity, tested execution and scoped
 proofs. The scope/trust-boundary checklist item is complete. Static evidence
 review found concrete packaging/top-level-wire gaps, not a need for more
-application proofs. Remaining work is isolated in `work/milestone-interchange`,
-`work/milestone-adversarial` and `work/milestone-usability`; their drafts and
-owner checks are not yet integrated evidence. Next: review/integrate those
-three finite slices, run fresh-checkout acceptance and stop at the checklist.
+application proofs. Remaining implementation is isolated in
+`work/milestone-interchange` and `work/milestone-adversarial`; their drafts and
+owner checks are not yet integrated evidence. The tested two-language
+`quickstart.md` is integrated at `eb66820` from `a6b79c1`: six main snippet/API
+tests pass after a fresh build of both Lean packages. Review and stale-cache
+diagnosis are recorded in `notes/reviews/milestone-usability.md`. The
+authoring-path checklist item is complete. Next: review/integrate the two
+remaining slices, run fresh-checkout acceptance and stop at the checklist.
 
 Combined local code integration at `7bfdcca`, including reviewed Action/Block
 laws and the oracle selector at `529475f`, total Expr/LValue/Stmt codec proofs,

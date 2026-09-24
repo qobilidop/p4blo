@@ -65,10 +65,13 @@ it is the next composable one.
   checks. No unexplained survivor; equivalent mutants and noncompiling setup
   failures are classified separately. Do not require rerunning every historical
   exploratory fault or invent a numerical mutation-score guarantee.
-- [ ] **Usable authoring paths:** clean-checkout documented commands let a
+- [x] **Usable authoring paths:** clean-checkout documented commands let a
   new user author/run the two flagship examples in both languages. Review
   diagnostics, imports and API claims; repair concrete rough edges, not a
   speculative syntax redesign or complete frontend verification.
+  Delivered in `quickstart.md`, exercised by its six snippet/API tests and
+  reviewed in `notes/reviews/milestone-usability.md`. Final combined release
+  gates remain a separate unchecked item below.
 - [ ] **Final release evidence:** required Python/schema, both Lean/default
   audits/conformance and applicable P4-oracle gates pass on the final revision.
   Reconstruct and replay selected retained artifacts without depending on
