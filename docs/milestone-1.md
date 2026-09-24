@@ -5,6 +5,9 @@ open-ended proof/application expansion in `implementation.md` and
 `verification.md`. It does not change the v0 wire format or announce protobuf
 v1. Python and Lean remain the only authoring/interpreter packages in scope.
 
+Completed 2026-09-23 at code-gate revision `3148a52`; exact clean-checkout
+and remote evidence is in [the completion report](notes/milestone-1-completion.md).
+
 ## Claim
 
 For the documented current IR profile, the independent Python implementation
@@ -72,25 +75,29 @@ it is the next composable one.
   exploratory fault or invent a numerical mutation-score guarantee.
   Delivered by `scripts/check-assurance.py`, its tracked catalogue and
   `notes/reviews/milestone-adversarial.md`. Owner end-to-end acceptance passes;
-  the final combined independent run remains part of release evidence below.
+  the final combined independent run also passes in release evidence below.
 - [x] **Usable authoring paths:** clean-checkout documented commands let a
   new user author/run the two flagship examples in both languages. Review
   diagnostics, imports and API claims; repair concrete rough edges, not a
   speculative syntax redesign or complete frontend verification.
   Delivered in `quickstart.md`, exercised by its six snippet/API tests and
   reviewed in `notes/reviews/milestone-usability.md`. Final combined release
-  gates remain a separate unchecked item below.
-- [ ] **Final release evidence:** required Python/schema, both Lean/default
+  gates are recorded separately below.
+- [x] **Final release evidence:** required Python/schema, both Lean/default
   audits/conformance and applicable P4-oracle gates pass on the final revision.
   Reconstruct and replay selected retained artifacts without depending on
   old temporary logs/worktrees. Record exact commands, revisions, reviewed
   exceptions and unresolved external availability separately in a short
   completion report. A skipped required check is not a pass.
+  Delivered in `notes/milestone-1-completion.md`, independently reviewed in
+  `notes/reviews/milestone-release.md`. All five remote workflows pass at
+  the exact frozen code revision; completion bookkeeping is documentation-only.
 
 The XDP compile-only experiment stays visible with its existing CI checks and
-pins, but is not evidence for this milestone's P4 profile. Its current upstream
-snapshot outage is reported separately, never silently skipped, disabled or
-claimed green. No XDP kernel execution or new eBPF application is required.
+pins, but is not evidence for this milestone's P4 profile. Its earlier upstream
+snapshot outage is recorded separately; the final required remote job passes.
+The unavailable local image remains an explicit skip, not a local pass.
+No XDP kernel execution or new eBPF application is required.
 
 ## Explicit non-blockers
 

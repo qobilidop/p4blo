@@ -5,58 +5,49 @@ Where the work stands, by build-order step from
 checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
-Last updated: 2026-09-23, implementing the accepted Python/Lean architecture,
-verified scalar commands and independently tested firewall state. The original prototype's
-steps are complete. The stronger assurance work is in progress; its
-acceptance criteria and trust boundaries are in [verification.md](verification.md).
+Last updated: 2026-09-23. The accepted Python/Lean architecture and bounded
+assurance milestone 1 are complete. Broader research remains backlog;
+[verification.md](verification.md) is not an open-ended release requirement.
 
 ## Latest checked checkpoint
 
-**Active goal:** complete [assurance milestone 1](milestone-1.md), accepted by
-the user after explicitly declining universal Python correctness as a resource
-goal. The implementation, evidence audit and authoring paths are integrated;
-finish combined clean-checkout acceptance and the final report.
-Further application proof expansion is parked; the older open threads below
-are backlog unless required by that finite checklist. No milestone completion
-is claimed yet.
+**Assurance milestone 1 is complete.** The frozen code-gate revision is
+`3148a52f2212238da00fe76ebe8eab81d86b6023`, pushed to `main`. Exact commands,
+provenance, exceptions and CI links are in the
+[completion report](notes/milestone-1-completion.md); the
+[independent release review](notes/reviews/milestone-release.md) is CLEAR.
+Subsequent completion bookkeeping is documentation-only, not a new tested
+code revision. No mandatory implementation work remains for this milestone.
 
-The reviewed [current profile](profile.md) and [evidence map](evidence.md)
-now separate canonical-wire interchange, validity, tested execution and scoped
-proofs. The scope/trust-boundary checklist item is complete. Static evidence
-review found concrete packaging/top-level-wire gaps, not a need for more
-application proofs. The top-level wire baseline is integrated at `dcddcad`
-from `e03cd7a`, with formatting corrected at `29073eb`: both Lean gates (624
-spec checks), 209 focused codec/quickstart checks and 2869 required real-Lean
-checks pass. Its independent review covers 165 source-pinned requests and
-73 actual protobuf successes. The first full gate stopped at formatting;
-the corrected gate passed: 4721 tests, five existing expected discrepancies,
-one explicit local XDP-image skip, plus every static/schema/workflow check.
-The reviewed host rejection/state slice (`95c4ca8`, `278f9bc`) is integrated
-at `a6697f3`. Independent review passed 239 focused tests, 193 native anchors
-and both restored fault campaigns. Strict raw extern and configuration
-snapshots close two reproduced bool/int observer survivors.
-The reviewed finite adversarial runner (`21b5b8a`, `9846b5f`) is integrated
-at `dd5f135`, with its command in `workflows.md`. Owner fresh-copy acceptance
-and its full gate pass. The final independent clean-checkout run remains
-required. Release review found that BMv2's old broad expected-failure marker
-could hide an oracle error; the checked narrow classifier is integrated at
-`01484ae` from `145c991`. Fifteen independent classifier/actual-pytest controls
-and the live known vector pass. The full release plan is independently CLEAR
-in `notes/reviews/milestone-release-plan.md`. Both combined Lean package
-gates now pass with 627 spec checks. The integrated codec/host/runner/quickstart/
-BMv2 selection passes 302 tests and its one precise expected discrepancy,
-without skips. Final combined clean-checkout release gates are pending.
-The tested two-language
-`quickstart.md` is integrated at `eb66820` from `a6b79c1`: six main snippet/API
-tests pass after a fresh build of both Lean packages. Review and stale-cache
-diagnosis are recorded in `notes/reviews/milestone-usability.md`. The
-authoring-path checklist item is complete. All five remote workflows now pass
-at `cb2bef8`, including XDP run `35958165283`; the earlier snapshot outage
-below is historical, not a current failed run. Next: freeze this combined
-revision, run locked sync and both Lean builds in a new worktree, then the
-full/JUnit and required conformance gates plus `check-assurance.py`. Verify
-all skip/expected-discrepancy identities, push and check CI, record the exact
-tested revision and stop at the checklist. Do not resume parked proofs.
+Fresh-checkout acceptance passed:
+
+- Locked environment and both Lean package builds, default proof audits,
+  627 spec checks and user-package native/API tests.
+- Full Python/schema/workflow gate: **4793 passed**, five precisely classified
+  expected oracle discrepancies and one explicit optional local XDP-image skip.
+  All required P4 oracle and printer checks ran; no availability skip is hidden.
+- Required Lean/Python conformance: **2886 passed**, no skips or errors.
+- Finite `scripts/check-assurance.py` campaign: ten selected sensitivity
+  regressions, actual compiled Lean runtime/codec faults, the paired-observer
+  challenge, exact independent detections and restored saved-input replays.
+  An independent reviewer rechecked provenance and replayed restored inputs.
+- All five remote workflows passed at the same revision: CI `35960620942`,
+  Lean `35960620935`, P4-SpecTec `35960620865`, BMv2 `35960620846` and XDP
+  `35960620983`. The earlier XDP snapshot outage below is historical.
+
+Closeout integrates whole-program/host interchange (`dcddcad`, `a6697f3`),
+the finite catalogue (`dd5f135`), precise oracle classification (`01484ae`)
+and the tested two-language quickstart (`eb66820`). Review closed two real
+bool/int state-observer survivors and a broad BMv2 expected-failure marker.
+The [profile](profile.md) and [evidence map](evidence.md) distinguish syntax,
+validity, tested execution and scoped proofs. This is not universal Python
+equivalence, full P4 support or a fully proved application pipeline.
+
+Stop here. The threads below are future/parked work, not an instruction to
+resume them automatically. Their unfinished proof drafts remain preserved in
+[parked-proofs.md](notes/parked-proofs.md); a new milestone needs new direction.
+
+## Historical checkpoints
 
 Combined local code integration at `7bfdcca`, including reviewed Action/Block
 laws and the oracle selector at `529475f`, total Expr/LValue/Stmt codec proofs,
@@ -327,10 +318,11 @@ is not established. Scope and failure handling: `notes/printer-lifecycle.md`.
 
 ## Open threads
 
-Things a resuming agent should know are in motion or deliberately left.
+Future and deliberately parked work. Milestone 1 is complete; these older
+plans are not active acceptance requirements or automatic continuation tasks.
 
-- **Architecture implementation: authorized and active.**
-  Follow [implementation.md](implementation.md) and the agreed design in
+- **Architecture implementation: milestone 1 complete.**
+  Future extensions follow [implementation.md](implementation.md) and the agreed design in
   [notes/ir-spec-boundary.md](notes/ir-spec-boundary.md). Python and Lean only;
   full architecture-independent P4 remains a north star. Small commits and
   pushes are authorized. Record uncertain choices and revisit triggers.

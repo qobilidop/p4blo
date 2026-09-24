@@ -50,7 +50,9 @@ reviewed in [interchange](notes/reviews/milestone-interchange.md). The
 bundles and checks actual Python, Lean, codec and observer faults with
 `scripts/check-assurance.py`; setup failures never count as detections.
 The six [quickstart](quickstart.md) snippet/API tests exercise both languages.
-Final combined clean-checkout gates remain the last release requirement.
+Final combined clean-checkout and remote gates pass at `3148a52`, as recorded
+in the [completion report](notes/milestone-1-completion.md) and its independent
+review. The accepted finite milestone is complete.
 
 The [independent static audit](notes/reviews/milestone-evidence-audit.md)
 found these concrete closeout gaps, not a need for another general proof
