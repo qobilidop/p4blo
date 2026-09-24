@@ -180,7 +180,12 @@ def assert_leaf(
     lean_binary: Path, kind: CodecKind, wire: object, expected: dict[str, object]
 ) -> dict[str, object]:
     """Retain raw leaf JSON before an independent known answer can fail."""
+    # A sibling of the given endpoint when there is one (the observer tests
+    # hand in a fake); otherwise the IR specification package's endpoint,
+    # since the conformance endpoint belongs to the architecture package.
     binary = lean_binary.with_name("codec-leaves")
+    if not binary.exists():
+        binary = ROOT / "spec/ir/.lake/build/bin/codec-leaves"
     assert binary.is_file(), f"missing test endpoint: {binary} (build spec/ir/ default targets)"
     request = {"kind": kind, "wire": wire}
     command = [str(binary)]
