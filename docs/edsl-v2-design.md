@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Status | Implemented 2026-09-22; deviations recorded in decisions.md |
-| Inputs | [edsl-prior-art-own.md](notes/edsl-prior-art-own.md) (pakeles, p4py), [edsl-prior-art-survey.md](notes/edsl-prior-art-survey.md) (HDL and compiler eDSLs), the pyright probes under [probes/](notes/probes/) |
+| Inputs | `notes/edsl-prior-art-own.md` (pakeles, p4py), `notes/edsl-prior-art-survey.md` (HDL and compiler eDSLs) and the pyright probes under `notes/probes/`, all archived in git |
 
 ## The problem
 

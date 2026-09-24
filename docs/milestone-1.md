@@ -109,19 +109,11 @@ of Lean/Python runtimes, compilers, JSON parser or protobuf implementation.
 
 Further firewall readback and guarded-ingress proofs are parked, not release
 blockers. Their worktrees and exact unfinished obligations are retained in
-`status.md`; they must not be reported as landed guarantees. Already-reviewed
+the agent notes; they must not be reported as landed guarantees. Already-reviewed
 Action/Block codec commits are integrated as closeout, not a new proof ladder.
 
-## Three bounded closeout batches
-
-1. Integrate reviewed Action/Block work and finish the remaining whole-program
-   interchange tests; optional simple top-level proof composition.
-2. Audit semantic coverage and consolidate a finite reproducible adversarial
-   acceptance command; fix demonstrated gaps without expanding the profile.
-3. Complete the two-language usability pass, clean-checkout gates and final
-   current handoff/report.
-
-Stop when this checklist is satisfied. Put additional improvements in a
-separate future backlog rather than automatically extending the milestone.
-Do not stop merely at an intermediate commit, and do not claim completion
-while a required checkbox or unclassified discrepancy remains.
+The milestone closed in three reviewed batches: integrating the reviewed
+Action/Block codec work and the whole-program interchange tests, auditing
+semantic coverage into the finite adversarial acceptance command, and the
+two-language usability pass with clean-checkout gates. Additional
+improvements belong to a separate backlog, not to this milestone.

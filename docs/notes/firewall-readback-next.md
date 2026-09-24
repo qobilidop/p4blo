@@ -3,7 +3,7 @@
 2026-09-23. Continue the reviewed insertion boundary from `3372d45`, using
 committed main interfaces at `25064ab`. Worktree: `p4blo-firewall-readback`,
 branch `work/firewall-readback`. Runtime, actual Program and golden stay fixed.
-The independent [design review](reviews/firewall-readback-next.md) specifies
+The independent design review (`notes/reviews/firewall-readback-next.md`, archived) specifies
 the exact scope, storage cases, observations and adversarial acceptance.
 
 Prove four actual machine transitions from `.statements checkBloom :: K` to

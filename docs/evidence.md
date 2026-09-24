@@ -35,6 +35,27 @@ The checked theorem inventories are [IR audit](../ir/ProofAudit.lean),
 [user-package audit](../lean/UserProofAudit.lean). Their exact statements and
 premises, not the row labels above, define what is proved.
 
+## Corpus programs
+
+| Program | Source | Vectors | Oracles |
+|---|---|---|---|
+| forwarder | p4lang tutorial basic; Python and Lean sources equal the golden | 5 hand-derived STF files plus TTL0/1 and invalid-control state checks | 5/5 on both, checksum included |
+| acl | p4c `ternary2-bmv2` | p4c STF, 6 adds, 4 packets | 4/4 on both |
+| stacks | p4c `header-stack-ops-bmv2` | p4c STF, 15 packets | 15/15 on both |
+| subparser_stack | p4c `subparser-with-header-stack-bmv2` | p4c STF, 1 packet | both |
+| stateful | p4c `issue1097-2-bmv2` plus own cross-packet vectors | 2 p4c packets plus 6 of ours | 8/8 on both |
+| csum16 | p4c `issue655-bmv2` | p4c STF, 6 packets | 6/6 on both |
+| parser_error | p4c `parser_error-bmv2` | p4c STF, 2 packets | both |
+| verify_error | p4c `issue1824-bmv2` | p4c STF, 1 packet | both |
+| priority | p4c `table-entries-priority-bmv2` | p4c STF, 3 packets | both |
+| register_bounds | own program from the second review | 9 hand-derived packets | SpecTec passes; two packets diverge on BMv2 by the recorded out-of-range register rule, a strict xfail |
+| tutorial_firewall | pinned p4lang tutorial solution; Python and Lean sources equal the golden | connection/Bloom false positives, byte cuts, generated host-policy sequences | original BMv2 packets and all 8192 register cells at 30 prefix boundaries; SpecTec controls pass, exact CRC/mask probes are strict expected discrepancies |
+| vlan_gateway | original p4blo homepage example | one STF file with 11 packets; independent 53-request packet/diagnostic/counter sequence in Python and Lean | packet vectors pass both; counters checked by Python/Lean expectations |
+
+The three public applications under `examples/` have their own goldens,
+vectors and independent expectations under `tests/examples/`, replayed on
+both oracles by the shared catalogs.
+
 ## Known disagreements, not hidden passes
 
 Pinned P4-SpecTec has four exact strict CRC/mask expected discrepancies in
@@ -53,7 +74,7 @@ counted as a pass. CI selection and pins are in [workflows](workflows.md).
 ## Reproducible acceptance
 
 The direct top-level fixtures and rejected-host state/packet-entry checks are
-reviewed in [interchange](notes/reviews/milestone-interchange.md). The
+reviewed in interchange (`notes/reviews/milestone-interchange.md`, archived). The
 [finite catalogue](evidence/milestone-adversarial.md) reconstructs selected input
 bundles and checks actual Python, Lean, codec and observer faults with
 `scripts/check-assurance.py`; setup failures never count as detections.
@@ -62,7 +83,7 @@ Final combined clean-checkout and remote gates pass at `3148a52`, as recorded
 in the [completion report](evidence/milestone-1-completion.md) and its independent
 review. The accepted finite milestone is complete.
 
-The [independent static audit](notes/reviews/milestone-evidence-audit.md)
+The independent static audit (`notes/reviews/milestone-evidence-audit.md`, archived)
 found these concrete closeout gaps, not a need for another general proof
 project. Gate success, mutation sensitivity and theorem counts are distinct
 evidence, never probabilities of correctness. Check off the finite milestone

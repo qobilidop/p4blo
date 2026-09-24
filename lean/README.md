@@ -95,7 +95,7 @@ values. Their correspondence laws use the actual IR initializer with explicit
 nominal agreement and sufficient fuel, including invalid stored headers.
 This is not yet a frame/call initialization theorem; exact scope, checked
 application witnesses and adversarial evidence are in
-[`source-zero.md`](../docs/notes/source-zero.md).
+the archived note `notes/source-zero.md`.
 
 ## Verified scalar command bodies
 
@@ -236,7 +236,7 @@ Index/declaration/frame premises. The named full-state policy uses ordinary
 TTL comparison/predecessor, separately from the authored equality guards and
 modular addition. It covers stored invalid-header contents but does not prove
 parsing, routing-table lookup, checksum maintenance or architecture fate.
-See [the policy assurance note](../docs/notes/forward-policy.md) for independent
+See the policy assurance note (`notes/forward-policy.md`, archived) for independent
 anchors and faults that generic lowering proofs alone do not reject.
 
 Use `Scalar.Cmd.block [...]` or `Fields.Cmd.block [...]` for ordinary
@@ -244,5 +244,5 @@ left-to-right command lists. Branch bodies can be lists too; subsequent
 commands run after the selected branch. These functions compose the existing
 typed AST, not a new interpreter or Lean `do` language. The field examples
 retain kernel checks that their new spelling constructs the exact old ASTs.
-See [the sequencing note](../docs/notes/command-blocks.md) for composition
+See the sequencing note (`notes/command-blocks.md`, archived) for composition
 proofs, independent order checks and deliberate reversal/omission faults.

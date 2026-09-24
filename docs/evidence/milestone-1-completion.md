@@ -58,7 +58,7 @@ source restoration, proof audits, native controls, independent codec answer
 and all three input replays pass. No build failure is counted as a detection.
 The original checkout remains unchanged and its complete recorded source
 hashes match. Log: `/tmp/p4blo-milestone-release-assurance.log`.
-The [independent release review](../notes/reviews/milestone-release.md) is CLEAR for
+The independent release review (`notes/reviews/milestone-release.md`, archived) is CLEAR for
 all local evidence: it checked exact JUnit identities, source/mutant hashes,
 actual detector transcripts and independently replayed the three baseline
 inputs and the same retained CRC-fault input after restoration.

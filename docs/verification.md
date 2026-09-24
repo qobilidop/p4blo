@@ -57,35 +57,15 @@ the statements and integration, which the
 axiom audit cannot do. [certificates.md](certificates.md) specifies the
 compiled claim-checking experiment and its additional trust assumptions.
 
-## Work sequence and acceptance
+## Work sequence
 
-1. **Reliable comparison and reproduction.** Required CI fails if Lean
-   cannot run. Protocol failures and hangs are failures. A replay artifact
-   contains the actual program and the whole input sequence from fresh
-   extern state, including table snapshots, empty packets and non-bit
-   action data that STF cannot represent. A seed is supplementary evidence,
-   not the only reproducer.
-2. **Observe state and generate programs.** Compare abstract extern state
-   as well as outputs. Add shrinking, typed program generation and focused
-   component comparisons; retain corpus and external-oracle checks. Test
-   the harness against deliberate corruptions and malformed replies.
-3. **Proof-friendly execution.** Give statement execution explicit rules
-   that Lean's logic can unfold. Ordinary `partial` execution is not that
-   boundary. Preserve existing language behavior and test against Python;
-   never silently reinterpret an implementation budget as ParserTimeout.
-4. **Validity and soundness.** Start with expression checking and its
-   connection to actual evaluation; extend to statements and programs.
-   Distinguish internal failures from permitted parser errors. State all
-   assumptions about stores, table entries and extern implementations.
-5. **Stronger execution assurance.** Evaluate a sound certificate checker
-   on a small stateful program. Only an accepted, fully bound certificate
-   would establish correctness of that execution. This does not prove
-   Python termination or universal equivalence.
-
-Each implemented checkpoint receives an independent read-only review and
-the relevant gates. `status.md` records what actually landed, the evidence,
-and remaining obligations. Proofs must be imported by a checked target;
-unchecked axioms and `sorry` are not accepted substitutes for proofs.
+The five stages the program set out (reliable reproduction, state
+observation and program generation, proof-friendly execution, validity
+and soundness for named fragments, a bounded execution certificate) are
+implemented within the profile that [milestone 1](milestone-1.md) froze;
+[evidence.md](evidence.md) maps each semantic family to its tests, oracles
+and proofs. Proofs must be imported by a checked audit target; unchecked
+axioms and `sorry` are not accepted substitutes.
 
 ## Adversarial iterations
 
@@ -114,32 +94,9 @@ sharing semantic algorithms between the two would weaken differential
 testing. Within one implementation, duplicated type analysis can be
 consolidated without removing that independence.
 
-## Next concrete extensions
+## Open extensions
 
-The current checkpoint has contextual scalar checking, exact typed Lean
-expression and scalar-command lowering with constructive frame/declaration
-witnesses, a proof-visible statement machine, fixed stateful claim checker, typed scalar/stateful
-campaigns and bounded original-firewall full-state observations.
-Resume with these bounded tasks rather than claiming the roadmap complete:
-
-1. Extend the proved packet/metadata paths and expressions with writable
-   commands, preserving siblings and validity under actual Index agreement
-   and root permissions. Reuse the scalar command sequencing implementation;
-   do not delay fields for every scalar operator. The scoped next plan is
-   [notes/typed-fields-plan.md](notes/typed-fields-plan.md); the prior scalar
-   plan is implemented and reviewed in `notes/reviews/typed-statements.md`.
-2. Generate small validated action/sub-block calls and changing host table
-   snapshots across packet sequences. Challenge copy-in/copyback ordering,
-   aliasing and fault paths with independent mutations and retained replays.
-3. Formalize the validator assumptions needed for machine progress and
-   termination: acyclic calls, well-formed stores/externs, finite packet input
-   and the parser's no-consumption revisit rule. The current finite-trace
-   theorem supplies no proof that every valid program has such a trace.
-4. Extend actual codec laws to remaining finite leaves before replacing
-   production recursive `partial` decoders with proof-visible recursion.
-   Preserve malformed-but-representable syntax and separate known wire answers
-   from round trips: paired encoder/decoder faults can satisfy the latter.
-
-Generalizing the claim checker beyond the fixed fragment should follow
-explicit validity and observation contracts. A broader JSON interface alone
-would not discharge these obligations.
+The research backlog (validator assumptions for progress and termination,
+generated calls with changing host snapshots, remaining codec laws, a
+generalized claim checker) is tracked in the agent roadmap, not here; it
+records longer-term directions, not release requirements.

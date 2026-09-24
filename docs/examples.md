@@ -1,12 +1,10 @@
 # Python application examples
 
 Accepted and completed 2026-09-24. All three applications are implemented,
-independently reviewed and checked together locally and on CI; exact evidence
-is recorded in `status.md`.
-This workstream follows completed assurance milestone 1 without reopening its
-frozen acceptance criteria. Current execution status lives in [status.md](status.md).
-Agent instructions remain in [AGENTS.md](../AGENTS.md); engineering procedures
-live in [workflows.md](workflows.md#application-development).
+independently reviewed and checked together locally and on CI. This
+workstream follows completed assurance milestone 1 without reopening its
+frozen acceptance criteria. Engineering procedures are in
+[workflows.md](workflows.md#application-development).
 
 ## Purpose and selection
 
@@ -82,40 +80,22 @@ until a separately justified presentation change. No website replacement,
 additional application, Lean-authored counterpart or new proof ladder is
 required by this workstream.
 
-## Finite acceptance
+## Completion criteria
 
-For each application, completion means a reviewed contract and runnable demo;
-readable typed source; independent exact packet/fate/state expectations;
-golden reconstruction; Python/Lean comparison and applicable oracle evidence
-with precise exclusions; targeted adversarial checks; and a fresh-reader
-review that runs and modifies the example without conversation context.
-Failures from setup or compilation do not count as semantic fault detection.
-Agreement between implementations does not replace intended-behavior checks.
+For each application, completion means a reviewed contract and runnable
+demo; readable typed source; independent exact packet/fate/state
+expectations; golden reconstruction; Python/Lean comparison and applicable
+oracle evidence with precise exclusions; targeted adversarial checks; and a
+fresh-reader review that runs and modifies the example without
+conversation context. Failures from setup or compilation do not count as
+semantic fault detection. Agreement between implementations does not
+replace intended-behavior checks.
 
-- [x] Router meets the application criteria above; see
-  [its independent review](notes/reviews/example-router.md) and checkpoint.
-- [x] Stateful firewall meets the application criteria above; see
-  [its independent review](notes/reviews/example-firewall.md).
-- [x] Flow-affine load balancer meets the application criteria above; see
-  [its independent review](notes/reviews/example-load-balancer.md).
-- [x] All three are discovered by applicable repository/CI gates, including
-  the shared real-Lean fixture and `test_lean_agrees` naming convention.
-- [x] Confirmed correctness and usability findings are resolved; remaining
-  limitations, deferred opportunities and evidence boundaries are explicit.
-- [x] Required integration gates pass on the final implementation; commands,
-  revisions, skips, reviews and next steps are recorded in repository docs.
-
-Iterations address concrete findings, rather than a fixed number of passes.
-When this checklist is satisfied, stop. Additional applications and broader
-research remain backlog. Evidence-driven improvements to the eDSL, diagnostics,
-runtime or verification infrastructure are in scope; changes to meaning still
-follow the semantics-first, paired-interpreter procedure in the workflow.
-
-## Next step
-
-The agreed collection is complete at implementation revision `c94336d`.
-Final local checks and all five required CI workflows pass; the status
-checkpoint records exact counts, exclusions, review evidence and preserved
-artifacts. Four task-owned worktrees are removed and the original six remain.
-Shared wire helpers belong only to tests; each public program and demo remains
-readable on its own. Stop here until a new application or improvement is scoped.
+All three applications met these criteria on 2026-09-24 at implementation
+revision `c94336d`, with clean independent reviews (archived in git) and
+all required gates passing; [status.md](status.md) records the checks.
+Additional applications and broader research remain backlog.
+Evidence-driven improvements to the eDSL, diagnostics, runtime or
+verification infrastructure are in scope for future application work;
+changes to meaning still follow the semantics-first, paired-interpreter
+procedure in the workflow.

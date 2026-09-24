@@ -63,7 +63,7 @@ The SHA-256 of the completed `archives.json` manifest is:
 
 ## Checks and next step
 
-[Independent review](reviews/worktree-cleanup.md) verified all archive hashes,
+Independent review (`notes/reviews/worktree-cleanup.md`, archived) verified all archive hashes,
 contents, modes and patches, and inspected index flags and private HEAD
 reflogs. Its sole history finding was fixed before removal. Fresh source,
 index, HEAD and status checks gated each deletion. No active process cwd or

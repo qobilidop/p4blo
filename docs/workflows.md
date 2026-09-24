@@ -110,8 +110,10 @@ standalone proof term or universal equivalence claim.
 not just packets for a fixed corpus. It includes systematic operator/width
 boundaries and 200 deterministic, shrinking Hypothesis examples. Failures
 write concrete program/input bundles under `.artifacts/drt/` (override with
-`P4BLO_DRT_FAILURE_DIR`), replayable with the same command above. Selected
-semantic mutation campaigns and exact patches are kept in `notes/mutations/`.
+`P4BLO_DRT_FAILURE_DIR`), replayable with the same command above. The
+source-fault campaign recipes for the applications are kept in
+`notes/mutations/`; campaign reports are archived in git after each
+compaction.
 `tests/test_drt_stateful_programs.py` varies widths, independent register and
 counter capacities, arithmetic, conditional effects and write ordering. It
 compares complete packet sequences, including every extern cell after each
@@ -197,7 +199,8 @@ misspelled field, state, action or table, an unequal width, or a
 `tests/test_corpus.py` picks the directory up by itself: it validates,
 rebuilds the golden from the source, replays every vector under the
 switch, and checks the filter's fate decisions. Then run the oracle and
-the Lean-versus-Python gates, and add a row to `docs/status.md`. Programs from p4c's test suite are
+the Lean-versus-Python gates, and add a row to the corpus table in
+`docs/evidence.md`. Programs from p4c's test suite are
 listed with their fitness in `docs/corpus-candidates.md`; the
 sources are in p4c under `testdata/p4_16_samples/`.
 

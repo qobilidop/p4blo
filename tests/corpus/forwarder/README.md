@@ -23,9 +23,9 @@ API. The [quickstart](../../../docs/quickstart.md) runs both authored versions.
 Scoped proofs cover the invalid-IPv4 identity, the actual selected forwarding
 action, and bounded installed-table lookup/application families. These are
 not a verified whole frontend or pipeline; see the
-[port](../../../docs/notes/lean-forwarder.md),
-[action](../../../docs/notes/forwarder-action.md) and
-[application](../../../docs/notes/forwarder-apply.md) assurance notes.
+port (`notes/lean-forwarder.md`, archived),
+action (`notes/forwarder-action.md`, archived) and
+application (`notes/forwarder-apply.md`, archived) assurance notes.
 
 ## Elaborated away
 

@@ -38,7 +38,7 @@ runner preserves register state across requests and is tested against all
 8,192 cells as well as packet outputs. Follow the
 [quickstart](../../../docs/quickstart.md) to author and run either version.
 The [Lean port](../../../docs/evidence/lean-firewall-port.md),
-[initialization](../../../docs/notes/lean-firewall-proof.md) and
-[Bloom insertion](../../../docs/notes/firewall-bloom.md) notes distinguish
+initialization (`notes/lean-firewall-proof.md`, archived) and
+Bloom insertion (`notes/firewall-bloom.md`, archived) notes distinguish
 tested execution from scoped proofs. Complete raw IR assembly is not a
 verified frontend, and no whole-firewall correctness proof is claimed.

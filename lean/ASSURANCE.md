@@ -8,7 +8,7 @@ current prerequisites and ordinary invocations are documented in
 [development setup](../README.md#development) and [workflows](../docs/workflows.md).
 
 The independent forwarding-body policy increment is recorded in
-[`docs/notes/forward-policy.md`](../docs/notes/forward-policy.md): complete
+`docs/notes/forward-policy.md` (archived): complete
 state observation/inverse laws, an arbitrary-store intended-policy theorem,
 actual execution, independent named-state anchors and three isolated faults.
 It does not extend the body into a complete router or certify a checksum.

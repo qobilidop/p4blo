@@ -112,7 +112,7 @@ does not require sharing semantics implementations.
 The zero-literal defect already found in this repo is the motivating case:
 Lean omitted decimal-string zero; its decoder supplied zero for an absent
 field, hiding the bug in Lean-only round trips. Protobuf instead supplied
-an empty string. See [the review](notes/reviews/zero-encoding.md).
+an empty string. See the review (`notes/reviews/zero-encoding.md`, archived).
 
 Require cross-implementation round trips in both directions, initially
 Lean/Python. Exercise malformed inputs, defaults,
