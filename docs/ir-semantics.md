@@ -222,13 +222,15 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Class: deviates. An out-of-range write does nothing in SpecTec too, but `Expr_eval/headerStack` reads `hs[i]` with `i >= S` as the last element, valid or not, and `Lvalue_read/stack-out-of-bounds` reads it as element `0` made invalid with its stored fields; p4blo gives one answer, an invalid zero header, in both places.
 - **`hs.lastIndex`** is `nextIndex - 1` as a `bit<32>`; when
   `nextIndex == 0` its value is `2^32 - 1`, the wrapped result. P4
-  says undefined.
+  says undefined. It exists only in a parser, as in P4, so `hs.last`,
+  which the eDSL spells `hs[hs.lastIndex]`, does too; the validator
+  rejects it in a control, an action or a deparser with `PARSER_ONLY`.
   - P4: §8.18
-  - SpecTec: `Expr_eval/stack-lastIndex`
+  - SpecTec: `Expr_eval/stack-lastIndex`, `Expr_ok/headerStack-lastIndex`
   - Lean: `evaluate`
-  - Python: `p4blo.interp.expr.last_index`
-  - Test: `tests/test_interp_control.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`
-  - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`; p4blo keeps the 32-bit arithmetic of `nextIndex - 1`.
+  - Python: `p4blo.interp.expr.last_index`, `p4blo.validator._Validator.type_of`
+  - Test: `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`, `tests/test_validator.py::test_parser_only`, `tests/test_validator.py::test_last_index_in_a_parser_is_fine`
+  - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, and p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only in a parser, as the validator does.
 
 ## Lvalues and assignment
 

@@ -209,11 +209,6 @@ def test_out_of_range_stack_read_is_a_zero_invalid_header_and_write_does_nothing
     assert out.hs == Stack("h8", [Header("h8", False, [Bits(8, 0)])] * 2, 0)
 
 
-def test_last_index_wraps_at_next_index_zero() -> None:
-    cast = f"cast {{ to {{ bits: 8 }} operand {{ last_index {{ stack {{ {HDR_HS} }} }} }} }}"
-    assert run(assign(META_N, cast)).n == Bits(8, 255)
-
-
 def stack_of(a: int, b: int, next_index: int) -> Struct:
     return Struct(
         "H",

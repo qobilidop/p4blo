@@ -32,7 +32,7 @@ Blocks
                       start_state, actions or tables of another kind
   PARSER_START_STATE  a parser's start_state is not one of its states
   BLOCK_KIND_STMT     a statement in a block kind that does not allow it
-  PARSER_ONLY         lookahead outside a parser
+  PARSER_ONLY         lookahead or stack.lastIndex outside a parser
   NEXT_ONLY_EXTRACT   stack.next anywhere but as the target of an extract
   PARAM_DIRECTION     a parameter direction its owner does not allow
 Expressions, lvalues and statements
@@ -1127,6 +1127,10 @@ class _Validator:
             case "index":
                 return self.type_of_index(expr.index.base, expr.index.index, scope, f"{path}.index")
             case "last_index":
+                # P4 §8.18 and SpecTec's Expr_ok/headerStack-lastIndex allow
+                # lastIndex only in a parser (docs/ir-semantics.md, "`hs.lastIndex`").
+                if not scope.in_parser:
+                    self.report(PARSER_ONLY, "stack.lastIndex is allowed only in a parser", path)
                 self.expect_expr(
                     expr.last_index.stack, is_stack, "a stack", scope, f"{path}.last_index.stack"
                 )
