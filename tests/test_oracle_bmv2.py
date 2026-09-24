@@ -15,7 +15,9 @@ One vector is a known, analysed divergence and is marked `xfail`: see
 from __future__ import annotations
 
 import json
+import os
 import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -42,6 +44,23 @@ KNOWN_DIVERGENCES = {
     ),
 }
 
+REGISTER_BOUNDS_DETAIL = (
+    "line 46: expected 040700 $ on port 0, got 0407ff\n"
+    "line 52: expected ff0100 $ on port 0, got ff01ff"
+)
+
+
+class KnownBMv2RegisterBoundsDisagreement(Exception):
+    """Only the two documented unchanged-destination outputs, not oracle errors."""
+
+
+def known_register_bounds_disagreement(verdict: bmv2_run.Verdict) -> bool:
+    return (
+        verdict.vector == CORPUS / "register_bounds/bounds.stf"
+        and verdict.status == "fail"
+        and verdict.detail == REGISTER_BOUNDS_DETAIL
+    )
+
 
 def program_of(vector: Path) -> Path:
     """The one IR text file beside a vector."""
@@ -57,7 +76,13 @@ def vector_id(vector: Path) -> str:
 def marks(vector: Path) -> list[pytest.MarkDecorator]:
     """`xfail`, strictly, when the vector is a known divergence; nothing else."""
     known = KNOWN_DIVERGENCES.get(vector_id(vector))
-    return [] if known is None else [pytest.mark.xfail(reason=known, strict=True)]
+    return (
+        []
+        if known is None
+        else [
+            pytest.mark.xfail(reason=known, strict=True, raises=KnownBMv2RegisterBoundsDisagreement)
+        ]
+    )
 
 
 PARAMETERS = [pytest.param(v, marks=marks(v), id=vector_id(v)) for v in VECTORS]
@@ -143,6 +168,8 @@ def test_original_firewall_observer_rejects_premature_ack() -> None:
 def test_vector_passes_on_bmv2(image: str, vector: Path) -> None:
     (verdict,) = bmv2_run.run(image, program_of(vector), [vector])
     where = f"{vector.relative_to(ROOT)}\ncommand: {shlex.join(verdict.command)}"
+    if known_register_bounds_disagreement(verdict):
+        raise KnownBMv2RegisterBoundsDisagreement(f"{where}\n{verdict.detail}")
     if verdict.status == "fail":
         pytest.fail(f"DIVERGENCE: BMv2 disagrees on {where}\n{verdict.detail}")
     if verdict.status == "error":
@@ -150,3 +177,89 @@ def test_vector_passes_on_bmv2(image: str, vector: Path) -> None:
     if verdict.status == "skip":
         pytest.skip(verdict.detail)
     assert verdict.status == "pass", verdict
+
+
+@pytest.mark.parametrize("status", ["error", "pass", "known", "changed"])
+def test_known_bmv2_marker_does_not_hide_errors_or_corrections(tmp_path: Path, status: str) -> None:
+    """Exercise pytest's actual marker, not just metadata or the predicate."""
+    source = tmp_path / "test_marker.py"
+    source.write_text(
+        "from tests.test_oracle_bmv2 import CORPUS, marks, bmv2_run, REGISTER_BOUNDS_DETAIL\n"
+        "from tests.test_oracle_bmv2 import test_vector_passes_on_bmv2 as check_vector\n"
+        "vector = CORPUS / 'register_bounds/bounds.stf'\n"
+        "def test_probe(monkeypatch):\n"
+        f"    status = {status!r}\n"
+        "    detail = REGISTER_BOUNDS_DETAIL + "
+        "('\\nextra mismatch' if status == 'changed' else '')\n"
+        "    verdict = bmv2_run.Verdict(vector, 'fail' if status in ('known', 'changed') "
+        "else status, detail, ())\n"
+        "    monkeypatch.setattr(bmv2_run, 'run', lambda *args: [verdict])\n"
+        "    check_vector('unused-test-image', vector)\n"
+        "test_probe = marks(vector)[0](test_probe)\n"
+    )
+    env = dict(os.environ, PYTHONPATH=str(ROOT))
+    env.pop("PYTEST_ADDOPTS", None)
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "--confcutdir", str(tmp_path), str(source)],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == (0 if status == "known" else 1), result.stdout + result.stderr
+    assert result.stderr == "", result.stderr
+    if status == "known":
+        assert "1 xfailed" in result.stdout, result.stdout
+        return
+    assert "1 failed" in result.stdout and "1 xfailed" not in result.stdout, result.stdout
+    if status == "error":
+        assert "ORACLE ERROR (not a divergence)" in result.stdout, result.stdout
+    elif status == "pass":
+        assert "XPASS(strict)" in result.stdout, result.stdout
+    else:
+        assert "DIVERGENCE: BMv2 disagrees" in result.stdout, result.stdout
+
+
+@pytest.mark.parametrize(
+    "status,detail,vector",
+    [
+        ("error", REGISTER_BOUNDS_DETAIL, "register_bounds/bounds.stf"),
+        ("skip", REGISTER_BOUNDS_DETAIL, "register_bounds/bounds.stf"),
+        ("pass", REGISTER_BOUNDS_DETAIL, "register_bounds/bounds.stf"),
+        ("fail", REGISTER_BOUNDS_DETAIL, "forwarder/forward.stf"),
+        ("fail", REGISTER_BOUNDS_DETAIL + "\nextra mismatch", "register_bounds/bounds.stf"),
+        ("fail", REGISTER_BOUNDS_DETAIL + "\n", "register_bounds/bounds.stf"),
+        ("fail", REGISTER_BOUNDS_DETAIL.splitlines()[0], "register_bounds/bounds.stf"),
+        ("fail", REGISTER_BOUNDS_DETAIL.replace("0407ff", "0407fe"), "register_bounds/bounds.stf"),
+        (
+            "fail",
+            "\n".join(reversed(REGISTER_BOUNDS_DETAIL.splitlines())),
+            "register_bounds/bounds.stf",
+        ),
+        ("fail", "", "register_bounds/bounds.stf"),
+    ],
+)
+def test_register_bounds_classifier_rejects_other_results(
+    status: str, detail: str, vector: str
+) -> None:
+    assert not known_register_bounds_disagreement(
+        bmv2_run.Verdict(CORPUS / vector, status, detail, ())
+    )
+
+
+def test_register_bounds_classifier_accepts_exact_observed_packets() -> None:
+    # These two literal mismatches correspond to the only ff-preserving OOB
+    # outputs; the other seven packets, including in-range state/wrap, agreed.
+    verdict = bmv2_run.Verdict(
+        CORPUS / "register_bounds/bounds.stf",
+        "fail",
+        "line 46: expected 040700 $ on port 0, got 0407ff\n"
+        "line 52: expected ff0100 $ on port 0, got ff01ff",
+        (),
+    )
+    assert known_register_bounds_disagreement(verdict)
+    (marker,) = marks(verdict.vector)
+    assert marker.kwargs["raises"] is KnownBMv2RegisterBoundsDisagreement
+    assert marker.kwargs["strict"] is True
+    assert marks(CORPUS / "forwarder/forward.stf") == []
