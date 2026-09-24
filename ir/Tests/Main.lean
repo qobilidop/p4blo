@@ -15,6 +15,7 @@ import Tests.FrameInitialization
 import Tests.PlainCallEntry
 import Tests.PlainCallReturn
 import Tests.DeclarationCodec
+import Tests.TableCodec
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -209,6 +210,7 @@ def main (args : List String) : IO UInt32 := do
     CRCTests.tests
     CodecLawTests.tests
     DeclarationCodecTests.tests
+    TableCodecTests.tests
     ExternFamiliesTests.tests
     FrameInitializationTests.tests
     PlainCallEntryTests.tests
