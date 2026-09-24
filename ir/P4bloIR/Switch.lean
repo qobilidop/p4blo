@@ -26,10 +26,10 @@ The rules, all from docs/design.md:
 
 The metadata contract fields are each optional and only checked when
 present, by name and type (docs/design.md, "Metadata contract"). As in
-`python/p4blo/arch/contract.py`, an undeclared field reads as its zero
+`impl/python/p4blo/arch/contract.py`, an undeclared field reads as its zero
 value and ignores writes: a program without `egress_port` unicasts to
 port 0. The deparser runs before the fate is read, as in
-`python/p4blo/arch/switch.py`, so its extern calls happen on a drop too.
+`impl/python/p4blo/arch/switch.py`, so its extern calls happen on a drop too.
 -/
 
 namespace P4bloIR

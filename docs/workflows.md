@@ -172,7 +172,7 @@ translates the STF dialect. The build script creates the pinned OCaml switch;
 
 **A closed behavior.** Write it in `docs/ir-semantics.md` first, or in
 `docs/arch-supports.md` when an architecture or extern family owns it, then
-implement it in `python/p4blo/interp/` and `ir/P4bloIR/` together, with a
+implement it in `impl/python/p4blo/interp/` and `ir/P4bloIR/` together, with a
 test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
@@ -189,7 +189,7 @@ Record the decision in `.agents/decisions.md`.
 source, in the typed eDSL `p4blo.edsl`; `tests/corpus/forwarder/forwarder.py`
 is the model), `<name>.txtpb` (its output), `README.md` (source, what
 was elaborated away, what is deferred, in the style of the others), and
-`*.stf` vectors in the dialect `python/p4blo/stf.py` documents.
+`*.stf` vectors in the dialect `impl/python/p4blo/stf.py` documents.
 Type-check the source with `uv run pyright tests/corpus/<name>/<name>.py`: a
 misspelled field, state, action or table, an unequal width, or a
 `concat` used without `as_` is an error there before the build runs.
@@ -203,18 +203,18 @@ the Lean-versus-Python gates, and add a row to the corpus table in
 `testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
 the current programs is archived in git as `docs/corpus-candidates.md`.
 
-**An extern.** Add its implementation under `python/p4blo/externs/` with
+**An extern.** Add its implementation under `impl/python/p4blo/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
 `ir/P4bloIR/Externs.lean`, the printer's v1model form in
-`python/p4blo/printer.py`, and a typed family class in
-`python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
+`impl/python/p4blo/printer.py`, and a typed family class in
+`impl/python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
 `Counter` and `Checksum16`, from which the IR `ExternType` is derived.
 The dynamic form for generated programs is a helper in
-`python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
+`impl/python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
 
-**An architecture.** A Python module under `python/p4blo/arch/` with a
+**An architecture.** A Python module under `impl/python/p4blo/arch/` with a
 `run(loaded, entries, ingress_port, packet)` method, no P4 in it; the
 contract vocabulary is the table in `docs/design.md`, and the rules
 every architecture follows are in the same section and in

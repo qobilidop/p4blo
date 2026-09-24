@@ -6,7 +6,7 @@
 # edit for p4blo's STF dialect (see README.md): each `expect` is moved after
 # the `packet` it belongs to. p4c's runner queues expectations per port, so
 # it accepts either order; p4blo's replay pairs a packet with the expects
-# that follow it (python/p4blo/stf.py, "Replay"). The bytes are untouched.
+# that follow it (impl/python/p4blo/stf.py, "Replay"). The bytes are untouched.
 
 # header hdr { bit<8>  e; bit<16> t; bit<8>  l; bit<8> r; bit<1>  v; }
 

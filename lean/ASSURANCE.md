@@ -1034,7 +1034,7 @@ generic seam plus this candidate. All intentional edits were restored:
    `111213141516` instead of `aabbccddeeff`. This is a compiled surface-intent
    kill, not a failed proof or a Lean/Python mismatch.
 5. **Actual Python write changes validity.** Immediately after the member
-   assignment in production `python/p4blo/interp/expr.py:write_lvalue`, add:
+   assignment in production `impl/python/p4blo/interp/expr.py:write_lvalue`, add:
 
    ```python
    if (

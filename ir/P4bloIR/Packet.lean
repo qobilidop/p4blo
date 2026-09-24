@@ -1,7 +1,7 @@
 /-!
 # The packet under a parser and the buffer of a deparser
 
-Mirrors `python/p4blo/interp/packet.py`. Both work in bits, most significant
+Mirrors `impl/python/p4blo/interp/packet.py`. Both work in bits, most significant
 first, because headers need not be byte aligned (docs/ir-semantics.md,
 "Parsers" and "Deparsers"). Neither raises: a read past the end returns
 `none`, and the interpreter turns that into `PacketTooShort`.

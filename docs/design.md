@@ -151,7 +151,7 @@ the goldens stay half the size.
 
 The schema is package `p4blo.v0`; `v1` is reserved for the RFC-shaped
 form. `buf` lints it and generates the Python bindings, which are
-committed under `python/p4blo/v0/` so that the proto package path and the
+committed under `impl/python/p4blo/v0/` so that the proto package path and the
 Python import path coincide and contributors without `buf` have a working
 package; CI regenerates them and fails on any diff.
 
@@ -432,7 +432,7 @@ p4blo/
     proto/p4blo/v0/p4blo.proto      versioned wire encoding
   lean/                             Lake package p4blo (P4blo): typed source
                                     language, authored programs, execution API
-  python/p4blo/                     the Python package
+  impl/python/p4blo/                     the Python package
     v0/                             generated protobuf code, committed
     ir.py, validator.py             load, save, text form; validation
     interp/                         the reference interpreter

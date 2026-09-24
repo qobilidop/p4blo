@@ -23,7 +23,7 @@ requires = ["uv_build>=0.9,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-root = "python"
+module-root = "impl/python"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -31,7 +31,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 extend-exclude = [
-    "python/p4blo/v0",  # generated code
+    "impl/python/p4blo/v0",  # generated code
     ".claude",  # worktrees
     ".agents",  # agent notes and campaign recipes
     "tests/pyright",  # pyright fixtures, some of which must fail
@@ -44,7 +44,7 @@ select = ["E", "F", "I", "UP", "B"]
 known-first-party = ["p4blo"]
 
 [tool.pyright]
-include = ["python", "tests", "examples"]
-exclude = ["python/p4blo/v0", "tests/pyright"]  # tests/test_pyright.py runs the fixtures itself
+include = ["impl/python", "tests", "examples"]
+exclude = ["impl/python/p4blo/v0", "tests/pyright"]  # tests/test_pyright.py runs the fixtures itself
 pythonVersion = "3.13"
 typeCheckingMode = "standard"

@@ -4,7 +4,7 @@ Our own program: a `register<bit<8>>(4)` indexed by an 8-bit header
 field, so that most packets name a cell beyond the end. It exists for
 one closed behavior, "a read at or beyond `size` yields zero and a
 write there is ignored" ([semantics.md](../../../docs/ir-semantics.md),
-"Externs"; `python/p4blo/externs/register.py`;
+"Externs"; `impl/python/p4blo/externs/register.py`;
 `ir/P4bloIR/Externs.lean`), which the [stateful](../stateful/README.md)
 program cannot reach: its register has 256 cells and its index is an
 8-bit field cast to `bit<32>`, so neither its vectors nor the
@@ -32,7 +32,7 @@ zero by the packet after it, which finds the stored zero and adds to
 it. The program declares no contract field, so every packet leaves on
 port 0, as in the stateful program.
 
-Under the random sweep (`python/p4blo/drt`), `idx` is a random byte, so
+Under the random sweep (`impl/python/p4blo/drt`), `idx` is a random byte, so
 about 252 of every 256 cases index past the end and the remaining few
 land on the cells; both interpreters run every case.
 

@@ -4,7 +4,7 @@ import P4bloIR.Widths
 /-!
 # Expressions and lvalues
 
-Mirrors `python/p4blo/interp/expr.py`. `evaluate` has one case per `Expr`
+Mirrors `impl/python/p4blo/interp/expr.py`. `evaluate` has one case per `Expr`
 kind and implements docs/ir-semantics.md, "Values". `readLValue` and
 `writeLValue` implement "Headers" and "Header stacks": a read of an invalid
 header returns its stored fields, a read past a stack's end returns a zero

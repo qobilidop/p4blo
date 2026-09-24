@@ -23,8 +23,8 @@ in this repository and runs in CI.
 |---|---|---|
 | The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`ir/proto/p4blo/v0/p4blo.proto`](ir/proto/p4blo/v0/p4blo.proto), [`docs/coverage.md`](docs/coverage.md), [`tests/corpus/`](tests/corpus/) |
 | The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/assurance.md`](docs/assurance.md#known-disagreements-with-the-oracles) |
-| A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`python/p4blo/arch/`](python/p4blo/arch/) |
-| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `python/p4blo/drt/` |
+| A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch/) |
+| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`ir/`](ir/), `impl/python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
 [`.agents/status.md`](.agents/status.md). Not claimed: performance, running
@@ -76,7 +76,7 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
    with a runnable demonstration and explicit packet profile. The faithful
    upstream ports and focused semantic fixtures remain in
    [`tests/corpus/`](tests/corpus/), each with its own provenance and contract.
-4. [`python/p4blo/interp/`](python/p4blo/interp/): the reference
+4. [`impl/python/p4blo/interp/`](impl/python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
 5. [`ir/P4bloIR/`](ir/P4bloIR/): the same semantics in Lean, normative
    for meaning. The independent [Lean user library](lean/README.md) imports
@@ -150,7 +150,7 @@ typechecked with p4c through Docker when it is available.
 | Path | What |
 |---|---|
 | `ir/` | authoritative Lean syntax/semantics, scoped proofs, wire schema and conformance endpoint |
-| `python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
+| `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
 | `lean/` | user-facing `P4blo`, depending on `P4bloIR`; verified typed scalar authoring under explicit frame premises and reference execution API |
 | `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `examples/` | public Python applications, runnable demos and behavioral contracts |

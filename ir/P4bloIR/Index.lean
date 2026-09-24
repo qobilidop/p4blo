@@ -5,7 +5,7 @@ import P4bloIR.IR
 /-!
 # Name index
 
-`Index` resolves names to declarations, as `python/p4blo/ir.py`'s `Index`
+`Index` resolves names to declarations, as `impl/python/p4blo/ir.py`'s `Index`
 does, and `Index.build` enforces the same naming rules: every name is
 non-empty and unique in its scope, and a block-level name may not reuse a
 program-level one. Program-level declarations (header, struct, enum and

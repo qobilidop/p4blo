@@ -3,6 +3,6 @@ version: v2
 # proto package path and the Python import path coincide.
 plugins:
   - protoc_builtin: python
-    out: python
+    out: impl/python
   - protoc_builtin: pyi
-    out: python
+    out: impl/python

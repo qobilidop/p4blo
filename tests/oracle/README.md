@@ -5,7 +5,7 @@ programs, printed to P4 under the v1model shim, match the reference
 interpreter packet for packet on an external oracle. The oracle is
 [P4-SpecTec](https://github.com/kaist-plrg/p4-spectec)'s simulator, the
 P4 specification's own mechanization, driven through its `sim` command
-on the same STF vectors `python/p4blo/stf.py` replays on the Python
+on the same STF vectors `impl/python/p4blo/stf.py` replays on the Python
 interpreter. It is built by `tests/oracle/build.sh`, driven by `tests/oracle/run.py`,
 and asserted by `tests/test_oracle.py`, which skips without a binary and
 runs in its own CI job, `.github/workflows/oracle.yml`, because the
@@ -122,7 +122,7 @@ says which it was.
 
 ## The STF dialect
 
-p4blo's vectors (documented in `python/p4blo/stf.py`) are a subset of
+p4blo's vectors (documented in `impl/python/p4blo/stf.py`) are a subset of
 p4c's STF, and the simulator's grammar (`p4spec/lib/stf/parser.mly`)
 parses all of it: bare or qualified table and action names, dotted key
 names such as `hdr.ipv4.dstAddr`, `*` nibbles in `expect`, `$` for an

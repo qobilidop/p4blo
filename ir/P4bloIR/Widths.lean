@@ -3,7 +3,7 @@ import P4bloIR.Index
 /-!
 # Static types and widths
 
-Mirrors `python/p4blo/interp/widths.py`. Expressions carry no annotations,
+Mirrors `impl/python/p4blo/interp/widths.py`. Expressions carry no annotations,
 so `typeOf` recomputes a type where the interpreter needs a width before it
 has a value: the width of a table key at installation and of the header an
 `extract` or `lookahead` reads.

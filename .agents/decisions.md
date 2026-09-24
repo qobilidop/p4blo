@@ -61,7 +61,7 @@ settles is not repeated here.
   `P4blo` (package `p4blo`), importing the specification one way. The
   `p4blo-lean` executable and all wire identities are preserved. (2026-09-23,
   supersedes the temporary `P4bloLean` name.)
-- **Generated protobuf code is committed** at `python/p4blo/v0/`, where the
+- **Generated protobuf code is committed** at `impl/python/p4blo/v0/`, where the
   proto package path and the Python import path coincide. CI regenerates
   and fails on drift. (2026-09-22)
 - **Shared verification assets live under `tests/`**: corpus programs,
@@ -194,7 +194,7 @@ these entries record why.
 
 - **STF is the vector format; P4-SpecTec's `sim` is the first oracle and
   BMv2 the second.** STF is text, readable and understood by both. Dialect
-  conventions, recorded in `python/p4blo/stf.py`: a `packet` without
+  conventions, recorded in `impl/python/p4blo/stf.py`: a `packet` without
   `expect` asserts no output; `expect` matches a prefix unless it ends in
   `$`; key names may index stacks; non-canonical entries are rejected with
   a line number; a hex or binary literal's written form fixes its width;

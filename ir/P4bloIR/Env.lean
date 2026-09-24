@@ -6,7 +6,7 @@ import P4bloIR.Externs
 /-!
 # The run-time environment
 
-Mirrors `python/p4blo/interp/env.py`. Names are block-scoped (proto header,
+Mirrors `impl/python/p4blo/interp/env.py`. Names are block-scoped (proto header,
 "Names"), so each activation of a block has its own `Frame` of parameters
 and locals, created at their zero values (docs/ir-semantics.md, "Uninitialized
 variables"). While an action runs, its parameters are layered on top of the

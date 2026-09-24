@@ -241,7 +241,7 @@ def _recorder(method: str, fn: Callable[..., object]) -> Callable[..., object]:
     return record
 
 
-# -- the families the corpus implements (python/p4blo/externs) ----------------
+# -- the families the corpus implements (impl/python/p4blo/externs) ----------------
 
 
 class Register[T: Bits[Any]](Extern, name="register"):

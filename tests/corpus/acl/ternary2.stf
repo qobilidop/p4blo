@@ -14,7 +14,7 @@
 #   - The first two `expect` lines, which p4c wrote before their `packet`,
 #     are moved after it. p4c's runner queues expectations per port, so it
 #     accepts either order; p4blo's replay pairs a packet with the expects
-#     that follow it (python/p4blo/stf.py, "Replay"). The bytes are untouched.
+#     that follow it (impl/python/p4blo/stf.py, "Replay"). The bytes are untouched.
 
 add test1 0 data.f1:0x****0101 ingress.setb1(val:0x7f, port:2)
 add test1 503 data.f1:0x****0202 ingress.setb1(val:7, port:3)

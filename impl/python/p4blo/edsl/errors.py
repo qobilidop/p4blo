@@ -23,7 +23,7 @@ from typing import Any
 
 from p4blo.edsl.core.types import EdslError as _CoreEdslError
 
-_PACKAGE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # python/p4blo
+_PACKAGE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # impl/python/p4blo
 _STDLIB = sysconfig.get_paths()["stdlib"]
 _SITE = sysconfig.get_paths()["purelib"]
 

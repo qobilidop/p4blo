@@ -3,7 +3,7 @@ import P4bloIR.Index
 /-!
 # Run-time values
 
-Mirrors `python/p4blo/interp/values.py`. A value carries everything the
+Mirrors `impl/python/p4blo/interp/values.py`. A value carries everything the
 semantics needs: a `Bits` knows its width, a header its validity, a stack
 its next index (docs/ir-semantics.md, "Values"). Values are immutable, so the
 Python `copy` is the identity here and is not written.

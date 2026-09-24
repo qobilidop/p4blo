@@ -9,7 +9,7 @@ The calling convention of docs/design.md, "Blocks and the P4NAH rule":
     control : H × M × TableEntries → H × M
     deparse : H → Packet
 
-Mirrors `python/p4blo/interp/{parser,control,deparser}.py`. None of them
+Mirrors `impl/python/p4blo/interp/{parser,control,deparser}.py`. None of them
 mutates its arguments. Externs are the only state a block can touch; the
 caller passes them in and gets them back, since a Lean value cannot be
 mutated in place the way the Python bindings are. `Except String` is for

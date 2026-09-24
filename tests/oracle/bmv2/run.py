@@ -42,8 +42,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 # Runnable as a script from the repository root without installing anything:
-# the package lives under python/.
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+# the package lives under impl/python/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "impl" / "python"))
 
 from p4blo import ir, printer, stf  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402

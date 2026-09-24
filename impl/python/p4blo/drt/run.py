@@ -487,8 +487,11 @@ def compare_program(
 
 
 def default_lean_binary() -> Path:
-    """Where `lake build` leaves the executable, relative to this checkout."""
-    root = Path(__file__).resolve().parents[3]
+    """Where `lake build` leaves the executable, relative to this checkout.
+
+    This file is impl/python/p4blo/drt/run.py, four levels below the root.
+    """
+    root = Path(__file__).resolve().parents[4]
     return (
         root
         / "ir"

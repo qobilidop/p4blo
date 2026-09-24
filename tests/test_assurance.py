@@ -185,7 +185,7 @@ def test_provenance_covers_both_engines_fixtures_and_tools() -> None:
     hashes = source["sha256"]
     assert isinstance(hashes, dict)
     for file in [
-        "python/p4blo/interp/stmt.py",
+        "impl/python/p4blo/interp/stmt.py",
         "ir/P4bloIR/Json.lean",
         "uv.lock",
         "flake.lock",

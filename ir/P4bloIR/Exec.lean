@@ -3,7 +3,7 @@ import P4bloIR.Eval
 /-!
 # Statements, calls, and the parser's state machine
 
-Mirrors `python/p4blo/interp/stmt.py`. `executeOne` has one case per
+Mirrors `impl/python/p4blo/interp/stmt.py`. `executeOne` has one case per
 `Stmt` kind. Statements are shared by the three block kinds where the
 schema allows (proto, "Where each statement may appear"), so they live
 together; the parser's states are here too because a sub-parser call is a

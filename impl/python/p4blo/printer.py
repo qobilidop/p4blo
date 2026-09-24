@@ -290,7 +290,7 @@ def standard_metadata_binding(
 
 
 # The extern families the shim knows, by ExternType name. Each matches an
-# implementation under python/p4blo/externs/.
+# implementation under impl/python/p4blo/externs/.
 REGISTER = "register"
 COUNTER = "counter"
 CHECKSUM16 = "checksum16"
@@ -457,7 +457,7 @@ class _StmtPrinter:
         # v1model has no checksum extern object; its `hash` with
         # HashAlgorithm.csum16, base 0 and max 2^16 is the one's-complement
         # checksum of the data, which is what checksum16.compute returns.
-        # That this agrees with python/p4blo/externs/checksum.py is verified
+        # That this agrees with impl/python/p4blo/externs/checksum.py is verified
         # against the oracle in step 4 (docs/design.md, "Build order").
         if call.method != "compute" or len(call.args) != 1 or not call.HasField("result"):
             raise PrintError(f"checksum16 call {call.instance}.{call.method} has the wrong shape")

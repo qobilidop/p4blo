@@ -54,4 +54,4 @@ jobs:
       - name: Generated code is current
         run: |
           nix develop -c buf generate
-          git diff --exit-code -- python/p4blo/v0
+          git diff --exit-code -- impl/python/p4blo/v0

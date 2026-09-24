@@ -36,8 +36,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # Runnable as a script from the repository root without installing anything:
-# the package lives under python/.
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "python"))
+# the package lives under impl/python/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "impl" / "python"))
 
 from p4blo import ir, printer, stf  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402
@@ -120,7 +120,7 @@ def find_oracle(environ: dict[str, str] | None = None) -> Oracle | None:
 def translate(text: str, index: ir.Index) -> tuple[str, list[str]]:
     """Rewrite a p4blo vector file into what `p4spectec sim` reads.
 
-    p4blo's dialect (python/p4blo/stf.py) is a subset of p4c's, and the
+    p4blo's dialect (impl/python/p4blo/stf.py) is a subset of p4c's, and the
     simulator's grammar (p4spec/lib/stf/parser.mly) parses all of it, but
     its runner gives two things a different meaning:
 

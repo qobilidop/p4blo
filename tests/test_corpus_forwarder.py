@@ -44,7 +44,7 @@ def test_the_headers_and_metadata_types(index: ir.Index) -> None:
     program = index.program
     assert [f.name for f in index.fields(program.headers)] == ["ethernet", "ipv4"]
     metadata = {f.name: f.type for f in index.fields(program.metadata)}
-    # The contract fields the forwarder uses (python/p4blo/arch/contract.py).
+    # The contract fields the forwarder uses (impl/python/p4blo/arch/contract.py).
     assert set(metadata) == {"ingress_port", "egress_port", "drop"}
     assert metadata["ingress_port"].bits == 9
     assert metadata["egress_port"].bits == 9

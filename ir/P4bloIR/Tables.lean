@@ -5,7 +5,7 @@ import P4bloIR.Widths
 /-!
 # Installed table entries and the match algorithm
 
-Mirrors `python/p4blo/interp/tables.py`; see docs/ir-semantics.md, "Tables":
+Mirrors `impl/python/p4blo/interp/tables.py`; see docs/ir-semantics.md, "Tables":
 exact, longest prefix, and largest priority among ternary matches; const
 entries first; the default action on a miss. Tables are block-scoped, so
 they are addressed by `(block, table)` names. Installation errors are

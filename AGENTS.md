@@ -98,7 +98,7 @@ so the required CI gate discovers them without a hand-maintained file list.
   Keep this entry point current when the active scope or workflow changes.
 - **Pure Python.** No dependency of the `p4blo` package may ship
   native code, and nothing newer than Python 3.13 is used.
-- **Generated code is committed.** `python/p4blo/v0/*_pb2.py*` come
+- **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` come
   from `buf generate`. Never edit them; edit the schema and regenerate.
   CI fails on drift.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**

@@ -10,6 +10,6 @@ uv run pyright
 uv run pytest -q
 buf lint
 buf generate
-git diff --exit-code -- python/p4blo/v0
+git diff --exit-code -- impl/python/p4blo/v0
 actionlint
 echo "all checks passed"

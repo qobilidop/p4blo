@@ -4,7 +4,7 @@ The second, optional oracle for [claim 2](../../../docs/design.md#the-four-claim
 the corpus programs, printed to P4 under the v1model shim, replayed on
 the reference *implementation* rather than on the specification. p4c's
 BMv2 backend compiles the printed program and BMv2's `simple_switch`
-runs the same STF vectors `python/p4blo/stf.py` replays on the Python
+runs the same STF vectors `impl/python/p4blo/stf.py` replays on the Python
 interpreter. It is built by [`Dockerfile`](Dockerfile), driven by
 [`run.py`](run.py) with [`driver.py`](driver.py) inside the container,
 and asserted by
@@ -212,7 +212,7 @@ r.read(hdr.h.got, (bit<32>) hdr.h.idx);
 ```
 
 p4blo's closed behavior (`docs/arch-supports.md`, "Extern families";
-`python/p4blo/externs/register.py`; `ir/P4bloIR/Externs.lean`) is that a
+`impl/python/p4blo/externs/register.py`; `ir/P4bloIR/Externs.lean`) is that a
 read at or beyond `size` **yields zero** and a write there is ignored.
 BMv2 agrees about the write and not about the read: in
 `targets/simple_switch/primitives.cpp`, `register_read` on an
