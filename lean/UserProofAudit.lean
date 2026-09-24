@@ -17,6 +17,31 @@ import P4blo.CallInitializerTests
 import P4blo.CallReturnTests
 import P4blo.GuardedCallPrefixTests
 import P4blo.GuardedControlCallTests
+import P4blo.ForwarderProof
+
+/-- info: 'P4blo.Forwarder.index_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Forwarder.index_built
+
+/-- info: 'P4blo.Forwarder.frame_built' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Forwarder.frame_built
+
+/-- info: 'P4blo.Forwarder.frame_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Forwarder.frame_block
+
+/-- info: 'P4blo.Forwarder.frame_no_action' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Forwarder.frame_no_action
+
+/-- info: 'P4blo.Forwarder.invalid_guard' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Forwarder.invalid_guard
+
+/-- info: 'P4blo.Forwarder.invalid_ipv4_control_unchanged' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4blo.Forwarder.invalid_ipv4_control_unchanged
 
 /-- info: 'P4blo.GuardedControlCall.body_prefix' depends on axioms: [propext] -/
 #guard_msgs in
