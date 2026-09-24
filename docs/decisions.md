@@ -1252,3 +1252,16 @@ one that says so.
   publication: deploy only this directory via pinned official actions on
   `main`, with deployment permissions scoped to one job and no custom domain.
   This presentation work does not reopen assurance milestone 1.
+
+## 2026-09-24
+
+- **Archive obsolete worktree contents before removing their build caches.**
+  The user requested local cleanup. Keep main, the two documented parked
+  proof drafts and three trees with unique history/review content; remove
+  86 merged-history checkouts after archiving tracked edits, untracked files
+  and non-cache ignored evidence. Preserve every branch and the one commit
+  found only in a worktree HEAD reflog. Confidence: high after independent
+  archive/hash/index/reflog review and filesystem/count checks. Revisit the
+  remaining trees only after separate content review or a new proof scope;
+  historical worktree paths do not imply active work. Details and recovery:
+  `notes/worktree-cleanup.md`.

@@ -5,11 +5,24 @@ Where the work stands, by build-order step from
 checkpoint. To resume the work, read this, then
 [decisions.md](decisions.md), then [workflows.md](workflows.md).
 
-Last updated: 2026-09-23. The accepted Python/Lean architecture and bounded
+Last updated: 2026-09-24. The accepted Python/Lean architecture and bounded
 assurance milestone 1 are complete. Broader research remains backlog;
 [verification.md](verification.md) is not an open-ended release requirement.
 
 ## Latest checked checkpoint
+
+**Local worktree cleanup (2026-09-24).** Removed 86 obsolete worktrees from
+the initial 92 after preserving and independently checking 86 recovery
+archives (971 file entries, about 271 MiB). Six trees remain: main, the two
+documented parked drafts, and three trees with unique history/review content.
+All removed directories were verified absent, final registrations recounted,
+and retained non-main HEAD/status checked unchanged. Branches were preserved;
+review found and protected one reflog-only commit with a local recovery ref.
+Exact scope, local archive location and recovery instructions are in
+[worktree-cleanup.md](notes/worktree-cleanup.md), with the
+[independent review](notes/reviews/worktree-cleanup.md). No implementation
+changed; runtime gates were not rerun. Cleanup is complete; retain the five
+non-main trees pending separate review or a new scope for the parked work.
 
 **Project website (2026-09-23).** The user requested a website inspired by
 Veil, then explicitly requested GitHub Pages publication. The responsive
@@ -349,6 +362,10 @@ plans are not active acceptance requirements or automatic continuation tasks.
 - **Project website:** published and verified at
   <https://qobilidop.github.io/p4blo/>. The requested task is complete;
   future visual feedback is separate from the parked semantics/proof work.
+
+- **Local worktrees:** cleanup is complete; five non-main trees remain
+  intentionally. See [the inventory and recovery guide](notes/worktree-cleanup.md)
+  before treating any remaining tree or local archive as disposable.
 
 - **Architecture implementation: milestone 1 complete.**
   Future extensions follow [implementation.md](implementation.md) and the agreed design in
@@ -857,9 +874,11 @@ plans are not active acceptance requirements or automatic continuation tasks.
   Action/Block baseline `6b9ffd0` adds 498 exact transcripts, 114 protobuf
   successes and 28 native anchors. Reviewed helper-only `707fb3f` shares nine
   unchanged actual-object facts while preserving all four Table statements.
-  Both are integrated; their two new universal laws/campaign are active in
-  `work/block-codecs` at `/Users/qobilidop/my/work/p4blo-block-codecs`.
-  Preserve historical baseline/proof hashes; full Program remains later work.
+  Both are integrated; the two universal laws and campaign also landed as
+  milestone 1 closeout. The obsolete `work/block-codecs` checkout was removed
+  in the 2026-09-24 cleanup; its branch and recovery archive remain available.
+  Preserve historical baseline/proof hashes; current Program/Export/Entries
+  test evidence is mapped in `evidence.md`.
   Text parsing, semantic-version policy, whole-program codecs and general
   runtime resource limits remain separate obligations.
 
