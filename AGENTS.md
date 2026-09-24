@@ -9,23 +9,50 @@ was done: everything needed is in the files named here.
 p4blo: P4's semantic core as an IR, architecture-free, with an
 independent Lean semantics validated against a runnable reference.
 
+## Where things live
+
+Documentation is split by what it describes, not by who reads it:
+
+- `docs/` describes the artifact: what p4blo is, what it means, what it
+  covers, how to use it, how to check and change it, and the evidence for
+  its claims. It is written for people and will be published on its own,
+  so nothing in it links into `.agents/` (a test enforces this).
+- `.agents/` describes the work: where it stands, what was decided and
+  why, what is parked, and the procedures agents follow. It is committed
+  narrative state, never runtime state; logs and artifacts stay in the
+  ignored `.artifacts/`.
+
+| File | Holds |
+|---|---|
+| `.agents/status.md` | current state, last checked evidence, open threads, next step |
+| `.agents/decisions.md` | the decisions in force, by topic, each with its reason and date |
+| `.agents/roadmap.md` | the research backlog beyond the completed scopes |
+| `.agents/notes/` | live working notes: parked-work inventories, plans they cite, campaign recipes |
+| `.agents/reviews/` | independent review reports for the current work, until the next compaction |
+| `.agents/skills/` | Agent Skills (`<name>/SKILL.md`), the cross-agent location; `.claude/skills` is a symlink to it |
+
+`.agents/` is a hidden directory. Searches with `rg`, `fd` and similar
+tools skip it unless told to include hidden files; `git grep` does not.
+
+Everything that was ever written is in git. The tag
+`agents-archive/<date>` marks the tree just before each compaction, so
+an archived note is one command away:
+`git show agents-archive/2026-09-24:docs/notes/<name>.md`.
+
 ## Read first, in this order
 
-1. `.agents/status.md`: where the work stands, per claim and per step, and
-   the open threads. `docs/milestone-1.md` is the active finite definition
-   of done; it supersedes older open-ended proof/application work lists.
-   `docs/profile.md` and `docs/evidence.md` summarize its input domain and
-   exact evidence boundaries; do not infer broader guarantees from counts.
-   Milestone 1 and the three-application collection are complete.
-   `docs/examples.md` records the collection's scope and satisfied finite
-   acceptance checklist. Read it before further application work; completion
-   does not reopen the assurance milestone or parked proofs.
-2. `.agents/decisions.md`: every choice made while building, dated, with
-   its reason. Overrule one by adding a new entry that says so.
+1. `.agents/status.md`: where the work stands and what is open. Both
+   finite scopes, [assurance milestone 1](docs/milestone-1.md) and the
+   [application collection](docs/examples.md), are complete; nothing is
+   active, and neither completion reopens parked proofs. `docs/profile.md`
+   and `docs/evidence.md` state the input domain and exact evidence
+   boundaries; do not infer broader guarantees from counts.
+2. `.agents/decisions.md`: what is decided and why. Overrule an entry by
+   rewriting it in place with the new date and reason.
 3. `docs/design.md`: what the project is, the four claims, how each is
    tested, what is out of scope.
-4. `docs/workflows.md`: the gates, where every external input is
-   pinned, and how to make each kind of change.
+4. `docs/workflows.md`: the gates, where every external input is pinned,
+   and how to make each kind of change.
 5. `docs/semantics.md` and `ir/proto/p4blo/v0/p4blo.proto` when touching
    meaning or syntax; `docs/coverage.md` for what P4 constructs are in.
 
@@ -75,11 +102,11 @@ so the required CI gate discovers them without a hand-maintained file list.
   CI fails on drift.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
   The spec is the `ir/` Lake package (`p4blo-ir`, imports `P4bloIR`). The
-  `lean/` user package (`p4blo`, imports `P4blo`) imports it, never the reverse.
-  Whole-program validity and codec proofs remain work
-  in progress, not guarantees supplied by this organization. A closed
-  behavior is written in `docs/semantics.md` first
-  and implemented in both interpreters second.
+  `lean/` user package (`p4blo`, imports `P4blo`) imports it, never the
+  reverse. Whole-program validity and codec proofs remain work in progress,
+  not guarantees supplied by this organization. A closed behavior is
+  written in `docs/semantics.md` first and implemented in both
+  interpreters second.
 - **Corpus programs** live under `tests/corpus/<name>/` with their eDSL
   source, golden, README and STF vectors; `tests/test_corpus.py` picks
   new ones up by itself. Sources are written in the typed eDSL
@@ -91,15 +118,15 @@ so the required CI gate discovers them without a hand-maintained file list.
   goldens, vectors and demos; both oracle catalogs include example vectors.
   Wire new checks into CI explicitly. Preserve upstream regression programs
   in `tests/corpus/`.
-- **Every decision the design does not settle** becomes a dated entry
-  in `.agents/decisions.md`. `.agents/status.md` is updated at every
-  checkpoint, including its "Open threads". Record the exact checks run,
-  skipped gates, remaining obligations and next concrete step. A fresh
-  agent must be able to resume from the repository alone; conversation
-  history and temporary files are not handoff documentation.
-  For application work, also maintain the acceptance checklist in
-  `docs/examples.md`. Record the current iteration, unresolved review findings,
-  relevant worktree/branch and evidence locations, and the next concrete step.
+- **Every decision the design does not settle** goes in
+  `.agents/decisions.md`, under its topic, with its reason and date, and
+  with a confidence and revisit trigger when uncertain. Do not restate what
+  the design or semantics documents already settle.
+- **`.agents/status.md` is updated at every checkpoint**, including its
+  open threads: the exact checks run, skipped gates, remaining obligations
+  and the next concrete step. A fresh agent must be able to resume from the
+  repository alone; conversation history and temporary files are not
+  handoff documentation.
 - **Commits** follow the usual git conventions (Chris Beams' seven
   rules; the kernel's "describe your changes"). One logical change per
   commit: if the subject wants an "and" or a semicolon, split it. The
@@ -119,6 +146,8 @@ so the required CI gate discovers them without a hand-maintained file list.
   Size commits by a coherent, independently reviewable outcome, not a line
   quota or one file per commit. Include related tests and documentation;
   separate mechanical moves and reusable API changes from application policy.
+  Once notes are archived, the commit log is the only narrative of how
+  the work went, so the body matters.
 - **Commit and push autonomously.** The user authorizes committing and
   pushing completed, checked work without a separate permission prompt.
   Inspect the branch and remote first, preserve unrelated changes, and
@@ -126,29 +155,60 @@ so the required CI gate discovers them without a hand-maintained file list.
   explicitly rather than presenting skips as successful checks.
 - **Continue autonomously within the requested direction.** Make scoped
   design decisions without waiting for feedback and record their reasons
-  in `.agents/decisions.md` for later review. Record confidence and a revisit
-  trigger for uncertain choices. Follow `docs/milestone-1.md` for current
-  acceptance (Python and Lean only); `.agents/roadmap.md` also contains
-  future work, not mandatory completion criteria. Prefer reversible steps
-  to waiting for feedback. Complete the finite acceptance checklist, then
-  stop; do not automatically add every next possible proof. Universal Python
-  correctness and full application/pipeline proofs are explicit non-goals.
+  for later review. Prefer reversible steps to waiting for feedback.
+  Complete the finite scope you were given, then stop; `.agents/roadmap.md`
+  is backlog, not a to-do list, and universal Python correctness and full
+  application/pipeline proofs are explicit non-goals.
 - **Challenge verification adversarially.** Introduce deliberate semantic
   faults in isolated worktrees on both the Python and Lean sides. Record
   which conformance tests kill each mutant, investigate survivors, and
   improve coverage before repeating. A failure to build is not a test
   that detected a semantic inconsistency. Never merge intentional faults.
-- **Sub-agents** work in their own worktree, own a disjoint set of
-  files, build against interfaces already committed on `main`, and
-  finish with the gates green. Integration happens on `main`. Each
-  build step is followed by an independent read-only review, kept
-  under `docs/notes/reviews/`. Details in `docs/workflows.md`.
-  Spawn them when useful without waiting for permission; choose a model
-  appropriate to the task's complexity. Create each worktree before
-  delegating and include its absolute path and file ownership in the
-  brief. Sub-agents must not edit the integrator's working tree.
-  Worktrees do not isolate external resources: use distinct Docker image
-  tags and `P4BLO_BMV2_IMAGE` per implementation worktree. Never rebuild the
-  shared oracle image while another agent's tests use it. Coordinate other
-  mutable caches, ports and fixtures explicitly; immutable pinned caches
-  may be shared.
+
+## Working with agents
+
+Each sub-agent gets its own git worktree (`git worktree add`), owns a
+disjoint set of files named in its brief, builds against interfaces
+already committed on `main`, and finishes with the gates green. The
+integrator merges on `main`, reruns the gates and removes the worktree.
+Spawn sub-agents when useful without waiting for permission; choose a
+model appropriate to the task; create the worktree before delegating and
+put its absolute path and file ownership in the brief. Sub-agents must
+not edit the integrator's working tree.
+
+After each build step an independent, read-only review agent looks for
+confirmed defects with reproducers. Its report goes under
+`.agents/reviews/` and its findings are fixed on `main`. Reviews stay
+there until the next compaction archives them.
+
+Worktrees do not isolate external resources: use distinct Docker image
+tags and `P4BLO_BMV2_IMAGE` per implementation worktree, and never
+rebuild the shared oracle image while another agent's tests use it.
+Coordinate other mutable caches, ports and fixtures explicitly; immutable
+pinned caches may be shared.
+
+## Checkpoints and compaction
+
+At each checkpoint, update `.agents/status.md`, any changed decision, and
+this file when scope or navigation changes. Record the current iteration,
+unresolved findings, active branch or worktree, durable evidence and the
+next action.
+
+When a milestone closes, or when the resume read (status, decisions,
+roadmap and live notes) grows past roughly a thousand lines, compact
+`.agents/` with the `compact-agent-state` skill in `.agents/skills/`.
+Compaction removes history and keeps truth: every decision still in
+force with its reason and date, the current evidence with commit hashes
+that still resolve, open threads and known discrepancies, and anything a
+test or a `docs/` file references. It changes no claim. The previous
+tree is tagged `agents-archive/<date>` first, the compaction is reviewed
+independently against that tag, and notes that turn out to describe the
+artifact rather than the work are promoted into `docs/` instead of
+being archived.
+
+## Resuming
+
+Read the files above in order. Nothing needed to continue the work lives
+outside the repository; local worktrees and `.artifacts/` are convenience,
+not evidence. If `.agents/status.md` says nothing is active, ask for a
+scope before starting one.

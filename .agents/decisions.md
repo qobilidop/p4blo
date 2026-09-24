@@ -365,3 +365,23 @@ The exact theorem statements, premises and exclusions are in
 - **Obsolete worktrees are archived before removal**, with hashes checked
   independently; branches and reflog-only commits are preserved.
   (2026-09-24)
+- **Documentation is split by subject.** `docs/` describes the artifact
+  and is written for people, to be published on its own; `.agents/`
+  describes the work and is the resumable state. `docs/` never links into
+  `.agents/`, which `tests/test_docs_links.py` enforces, so the split
+  survives publication. `AGENTS.md` is the single entry point and names
+  every agent file. (2026-09-24, supersedes the 2026-09-22 placement of
+  status, decisions and notes under `docs/`.)
+- **`.agents/` is compacted at milestone boundaries; git is the archive.**
+  Status holds current state only, decisions are a topical register of
+  what is in force, and finished notes and reviews are deleted after the
+  tree is tagged `agents-archive/<date>`. Compaction changes no claim and
+  is reviewed against the tag; the procedure is the `compact-agent-state`
+  skill. Notes that turn out to describe the artifact are promoted into
+  `docs/` instead. Reason: the resume read had grown to a diary, stale
+  plans sat beside live ones, and git already kept every byte.
+  (2026-09-24)
+- **Skills live in `.agents/skills/`**, the location the Agent Skills
+  convention and Codex, Cursor, Gemini CLI and Copilot read. Claude Code
+  reads only `.claude/skills/`, so that path is a committed symlink to
+  `../.agents/skills`; each skill exists once. (2026-09-24)

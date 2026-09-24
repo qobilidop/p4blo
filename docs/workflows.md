@@ -112,8 +112,8 @@ boundaries and 200 deterministic, shrinking Hypothesis examples. Failures
 write concrete program/input bundles under `.artifacts/drt/` (override with
 `P4BLO_DRT_FAILURE_DIR`), replayable with the same command above. The
 source-fault campaign recipes for the applications are kept in
-`notes/mutations/`; campaign reports are archived in git after each
-compaction.
+`.agents/notes/mutations/`; campaign reports are archived in git after
+each compaction.
 `tests/test_drt_stateful_programs.py` varies widths, independent register and
 counter capacities, arithmetic, conditional effects and write ordering. It
 compares complete packet sequences, including every extern cell after each
@@ -239,7 +239,7 @@ replicating the structure for firewall and load-balancer applications:
    build step. The reviewer runs the documented demo and tries a small policy
    modification using scratch copies or local configuration overrides in
    their isolated worktree, without editing canonical sources.
-   Retain the report under `docs/notes/reviews/` and resolve confirmed findings.
+   Retain the report under `.agents/reviews/` and resolve confirmed findings.
 5. Improve the responsible layer: application, eDSL, diagnostics, runtime or
    test infrastructure. Validate a reusable change with concrete usage. Record
    speculative opportunities as backlog rather than expanding acceptance.
@@ -261,24 +261,8 @@ unresolved findings, active branch/worktree, durable evidence and next action.
 Update `AGENTS.md` when scope or navigation changes. Another agent should be
 able to resume from these files without chat history or temporary worktrees.
 
-## Working with agents
+## Working with agents and resuming
 
-Each sub-agent gets its own git worktree (`git worktree add`), owns a
-disjoint set of files named in its brief, builds against interfaces
-already committed on `main`, and finishes with the gates green. The
-integrator merges branches on `main`, reruns the gates, and removes the
-worktree. After each build step an independent, read-only review agent
-looks for confirmed defects with reproducers; its report is kept under
-`docs/notes/reviews/` and its findings are fixed on `main`. Every
-non-obvious choice becomes a dated entry in `.agents/decisions.md`;
-progress and open threads live in `.agents/status.md`.
-
-## Resuming
-
-Read, in this order: `.agents/status.md` (where things stand, open
-threads), `.agents/decisions.md` (what was decided and why), `docs/design.md`
-(what the project is), then this file. The write-up in
-`docs/writeup.md` is the narrative version. Nothing needed to continue
-the work lives outside the repository.
-For active application work, also read `docs/examples.md` for the accepted
-scope, remaining acceptance criteria and next implementation step.
+Sub-agent coordination, review placement, checkpoints, compaction and
+the reading order for resuming are in `AGENTS.md`; nothing needed to
+continue the work lives outside the repository.
