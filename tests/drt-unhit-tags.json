@@ -33,7 +33,6 @@
   "stack.lastIndex.empty": "no generated program reads lastIndex before a push or extract",
   "stmt.advance": "no program uses advance",
   "stmt.callAction": "generated controls have no direct action calls",
-  "table.hit.overwritesAction": "no generated action assigns the lvalue its apply writes hit to",
-  "table.miss.noAction": "every generated table declares a default action"
+  "table.hit.overwritesAction": "no generated action assigns the lvalue its apply writes hit to"
  }
 }

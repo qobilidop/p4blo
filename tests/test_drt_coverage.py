@@ -228,7 +228,7 @@ def test_lean_agrees_and_hits_every_rule_tag(lean_binary: Path) -> None:
         "tags listed in tests/drt-unhit-tags.json are now hit; remove them:\n"
         + "\n".join(f"  {tag}" for tag in stale)
     )
-    assert len(known) <= 34, "the unhit list grew; it may only shrink"
+    assert len(known) <= 33, "the unhit list grew; it may only shrink"
 
 
 def test_the_unhit_list_names_reasons() -> None:

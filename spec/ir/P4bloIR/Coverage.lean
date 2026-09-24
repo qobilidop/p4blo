@@ -493,8 +493,12 @@ def bitsBehaviors (op : BinaryOp) (x y : Bits) : List Tag :=
   | .shr => otherWidth ++ if y.value ≥ n then [.«expr.shr.overflow»] else []
   | _ => []
 
-/-- The kind of an `==` or `!=` on two evaluated operands. -/
-def equalityBehaviors : Value → Value → List Tag
+/-- The kind of an `==` or `!=` on two evaluated operands, and of every
+comparison it makes inside them. A struct compares its fields and a stack
+its elements by the same rule, so a header nested in either is compared by
+the header rule and reports its case, as a top-level one does. A header's
+own fields are part of the header rule and are not walked. -/
+partial def equalityBehaviors : Value → Value → List Tag
   | .bits _, .bits _ => [.«expr.equality.bits»]
   | .bool _, .bool _ => [.«expr.equality.bool»]
   | .enum .., .enum .. => [.«expr.equality.enum»]
@@ -504,37 +508,50 @@ def equalityBehaviors : Value → Value → List Tag
     else if va != vb then [.«expr.equality.header.validityDiffers»]
     else [.«expr.equality.header.bothInvalid»] ++
       (if fa != fb then [.«expr.equality.header.invalidFieldsDiffer»] else [])
-  | .struct .., .struct .. => [.«expr.equality.struct»]
-  | .stack _ _ na, .stack _ _ nb =>
-    [.«expr.equality.stack»] ++ (if na != nb then [.«expr.equality.stack.nextIndexDiffers»] else [])
+  | .struct _ fa, .struct _ fb =>
+    .«expr.equality.struct» :: (fa.zip fb).flatMap fun (a, b) => equalityBehaviors a b
+  | .stack _ ea na, .stack _ eb nb =>
+    [.«expr.equality.stack»] ++
+      (if na != nb then [.«expr.equality.stack.nextIndexDiffers»] else []) ++
+      (ea.zip eb).flatMap fun (a, b) => equalityBehaviors a b
   | _, _ => []
 
-/-- The kind of a cast of an evaluated operand. -/
+/-- The kind of a cast of an evaluated operand. Only the casts the ledger
+names are tagged; the validator admits no other. -/
 def castBehaviors : Ty → Value → List Tag
-  | .bits _, .bool _ => [.«expr.cast.boolToBits»]
+  | .bits 1, .bool _ => [.«expr.cast.boolToBits»]
   | .bits m, .bits x =>
     if m < x.width then [.«expr.cast.truncate»]
     else if m > x.width then [.«expr.cast.extend»] else [.«expr.cast.sameWidth»]
   | .boolean, .bits _ => [.«expr.cast.bitsToBool»]
   | _, _ => []
 
-/-- Whether `name`, read in the current activation, is a block local or an
-`out` parameter holding its type's zero value: the witness of
-`value.uninitialized`. -/
+/-- Whether `name`, read in the current activation, is a block local, an
+`out` parameter of the block or an `out` parameter of the running action,
+holding its type's zero value: the witness of `value.uninitialized`. An
+action's parameter shadows the block's name, as `Frame.read?` reads it. -/
 def zeroLocal (run : Run) (name : String) : Bool :=
   let frame := run.frame
-  if (frame.actionVars.bind (·[name]?)).isSome then false
-  else
+  let isZero (ty : Ty) (v : Value) : Bool :=
+    match Value.zero ty run.index with
+    | .ok z => v == z
+    | .error _ => false
+  match frame.actionVars.bind (·[name]?) with
+  | some v =>
+    let param? : Option Param := do
+      let action ← frame.scope.actions[← frame.action]?
+      action.params.find? (·.name == name)
+    match param? with
+    | some p => p.direction == .out && isZero p.type v
+    | none => false
+  | none =>
     let decl? := frame.scope.vars[name]?
     let candidate := match decl? with
       | some (.var _) => true
       | some (.param p) => p.direction == .out
       | none => false
     match decl?, frame.vars[name]? with
-    | some decl, some v =>
-      candidate && match Value.zero decl.type run.index with
-        | .ok z => v == z
-        | .error _ => false
+    | some decl, some v => candidate && isZero decl.type v
     | _, _ => false
 
 /-- The tags of evaluating `e` on `run`, walked in evaluation order: the
@@ -701,13 +718,40 @@ def entryTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
         | .lvalue lv => readTags run lv
   perArg ++ (if overlaps params args then [.«call.copyIn.overlap»] else [])
 
-/-- The tags of copying `out` and `inout` arguments back, in parameter order. -/
-def copyBackTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
-  let written := (params.zip args).filterMap fun (p, a) =>
+/-- The tags of writing `lvalues` back, in order, into `run`: each write as
+`writeTags` classifies it. Every copy-back goes through here: an action's
+or a block's `out` and `inout` arguments, and an extern call's results and
+return value.
+
+It assumes the lvalues are already resolved: every index inside them is a
+literal fixed at copy-in, as P4 resolves an argument once (§6.8). Then the
+tags of one write depend only on its lvalue and the storage it lands in,
+and the writes of one call land in disjoint storage, which the validator's
+alias rule guarantees, so classifying them all against `run` is exact.
+
+Today the interpreters resolve each lvalue again when it is written
+(ledger: Copy-back target), after the earlier writes of the same call. An
+index read from a variable that an earlier write of the same call changes
+then names a different element here from the one written, and that
+lvalue's tags, `stack.index.writeOutOfRange` and
+`header.field.writeInvalid` among them, describe the wrong element. The
+classification makes no attempt to replay the earlier writes. -/
+def writeBackTags (run : Run) (lvalues : List LValue) : List Tag :=
+  lvalues.flatMap (writeTags run)
+
+/-- The lvalues of the `out` and `inout` arguments of a call, in parameter
+order. -/
+def writtenArgs (params : List Param) (args : List Arg) : List LValue :=
+  (params.zip args).filterMap fun (p, a) =>
     match a with
     | .lvalue lv => if p.direction == .out || p.direction == .inout then some lv else none
     | .expr _ => none
-  written.flatMap (writeTags run) ++
+
+/-- The tags of copying `out` and `inout` arguments back into `run`, in
+parameter order. -/
+def copyBackTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
+  let written := writtenArgs params args
+  writeBackTags run written ++
     (if written.length ≥ 2 then [.«call.copyOut.order»] else [])
 
 /-- The tags of emitting an evaluated value, as `emitValue` recurses. -/
@@ -797,12 +841,12 @@ def stmtTags (run : Run) : Stmt → List Tag
       match decl? with
       | none => []
       | some decl =>
-        let copied := copyBackTags run decl.params args
-        entryTags run decl.params args ++ copied ++
-          (if copied.isEmpty then [] else [Tag.«call.extern.out»]) ++
-          match result with
-          | some lv => Tag.«call.extern.result» :: writeTags run lv
-          | none => []
+        -- The results are written in parameter order, then the return value.
+        let outs := writtenArgs decl.params args
+        entryTags run decl.params args ++ writeBackTags run (outs ++ result.toList) ++
+          (if outs.isEmpty then [] else [Tag.«call.extern.out»]) ++
+          (if outs.length ≥ 2 then [Tag.«call.copyOut.order»] else []) ++
+          (if result.isSome then [Tag.«call.extern.result»] else [])
   | .setValid header =>
     .«stmt.setValid» :: readTags run header ++
       match peek (readLValue header) run with
@@ -878,10 +922,18 @@ def selectTags (run : Run) (keys : List Expr) (cases : List SelectCase) : List T
       | c :: _ => c.sets.map keySetTag ++ [.«select.firstOfSeveral»]
     keyTags ++ multi ++ nonBits ++ taken
 
+/-- What the observer knows about a request beyond the machine it steps. -/
+structure Context where
+  /-- The tables, as `(block, table)`, whose default action the host set in
+  its entries, whatever action it set. -/
+  hostDefaults : List (String × String) := []
+  deriving Inhabited
+
 /-- The tags of a table apply: its key kinds and key expressions, then hit or
 miss as the real `Installed.lookup` reports, and the conditions of the
-longest-prefix and priority rules over the entries that `keyValueMatches`. -/
-def tableTags (run : Run) (name : String) (hit : Option LValue) : List Tag :=
+longest-prefix and priority rules over the entries that `keyValueMatches`.
+The write of `hit` is its own step, `writeHit`, classified there. -/
+def tableTags (ctx : Context) (run : Run) (name : String) (hit : Option LValue) : List Tag :=
   let frame := run.frame
   match frame.scope.tables[name]? with
   | none => []
@@ -891,9 +943,6 @@ def tableTags (run : Run) (name : String) (hit : Option LValue) : List Tag :=
       | .lpm => .«table.key.lpm»
       | .ternary => .«table.key.ternary»
     let keyTags := table.keys.flatMap fun k => exprTags run k.expr
-    let hitTags := match hit with
-      | some lv => .«table.hit.written» :: writeTags run lv
-      | none => []
     let outcome : List Tag :=
       match peek (table.keys.mapM fun k => do expectBits (← evaluate k.expr)) run, run.entries with
       | some keys, some installed =>
@@ -921,14 +970,21 @@ def tableTags (run : Run) (name : String) (hit : Option LValue) : List Tag :=
           behaviors ++ overwritten ++
             if m.hit then [.«table.hit»]
             else
-              let declared := table.defaultAction
-              let installedDefault := installed.defaults.getD ref none
+              -- A declared `NoAction` is empty (ledger: Table miss), so it
+              -- is the same miss as no default at all.
+              let noAction := match installed.defaults.getD ref none with
+                | none => true
+                | some call => call.action == "NoAction"
               .«table.miss» ::
-                (if installedDefault.isSome then [.«table.miss.defaultAction»]
-                  else [.«table.miss.noAction»]) ++
-                (if installedDefault != declared then [.«table.miss.hostDefault»] else [])
+                (if noAction then [.«table.miss.noAction»] else [.«table.miss.defaultAction»]) ++
+                (if ctx.hostDefaults.contains ref then [.«table.miss.hostDefault»] else [])
       | _, _ => []
-    kinds ++ keyTags ++ outcome ++ hitTags
+    kinds ++ keyTags ++ outcome
+
+/-- Whether a block return is pending below the current work item, so that
+the item runs inside a called sub-block. In a parser that is a sub-parser. -/
+def insideCall (rest : List Work) : Bool :=
+  rest.any fun w => match w with | .blockReturn .. => true | _ => false
 
 /-- The tags of entering a parser state: a revisit after progress, or the
 revisit rule's timeout, inside a sub-parser when a block return is pending
@@ -938,14 +994,15 @@ def stateTags (run : Run) (state : State) (rest : List Work) : List Tag :=
   match run.packet, run.visits[key]? with
   | some p, some cursor =>
     if cursor == p.cursor then
-      .«parser.timeout» ::
-        (if rest.any (fun w => match w with | .blockReturn .. => true | _ => false)
-          then [.«parser.timeout.subparser»] else [])
+      .«parser.timeout» :: (if insideCall rest then [.«parser.timeout.subparser»] else [])
     else [.«parser.revisit»]
   | _, _ => []
 
-/-- The tags of a transition: its case, then where the real `transition` goes. -/
-def transitionTags (run : Run) (trans : Transition) : List Tag :=
+/-- The tags of a transition: its case, then where the real `transition`
+goes, and an explicit `reject` inside a sub-parser. A `verify` that raises
+`NoError` rejects the same way but is not a transition, so it is not an
+explicit `reject`. -/
+def transitionTags (run : Run) (trans : Transition) (rest : List Work) : List Tag :=
   let own : List Tag := match trans with
     | .direct _ => [.«parser.transition.direct»]
     | .select keys cases => .«parser.transition.select» :: selectTags run keys cases
@@ -953,15 +1010,21 @@ def transitionTags (run : Run) (trans : Transition) : List Tag :=
     match peek (P4bloIR.transition trans) run with
     | some (.state _) => [.«parser.target.state»]
     | some .accept => [.«parser.target.accept»]
-    | some .reject => [.«parser.target.reject»]
+    | some .reject =>
+      .«parser.target.reject» :: (if insideCall rest then [.«parser.subparser.reject»] else [])
     | none => []
 
 /-- The tags of the work item `task` about to be dispatched on `run`, with the
 pending fault and the rest of the continuation stack. -/
-def workTags (run : Run) (fault : Option Fault) (rest : List Work) : Work → List Tag
+def workTags (ctx : Context) (run : Run) (fault : Option Fault) (rest : List Work) :
+    Work → List Tag
   | .statements _ => []
   | .statement stmt => stmtTags run stmt
-  | .table name hit => tableTags run name hit
+  | .table name hit => tableTags ctx run name hit
+  | .writeHit target _ =>
+    match target with
+    | some lv => .«table.hit.written» :: writeTags run lv
+    | none => []
   | .tableAction call =>
     .«call.tableAction» :: (if call.args.isEmpty then [] else [.«call.param.none»])
   | .action name args =>
@@ -969,9 +1032,13 @@ def workTags (run : Run) (fault : Option Fault) (rest : List Work) : Work → Li
       match run.frame.scope.actions[name]? with
       | some a => entryTags run a.params args
       | none => []
-  | .actionReturn _ copy =>
+  | .actionReturn outer copy =>
     match copy with
-    | some (params, args) => copyBackTags run params args
+    | some (params, args) =>
+      -- `dispatch` restores the caller's action layer before the copyback,
+      -- so the argument names resolve in the caller, not in the callee.
+      let caller := { run.frame with action := outer.action, actionVars := outer.actionVars }
+      copyBackTags { run with frame := caller } params args
     | none => []
   | .block name args =>
     .«call.block» ::
@@ -981,23 +1048,27 @@ def workTags (run : Run) (fault : Option Fault) (rest : List Work) : Work → Li
   | .blockReturn caller params args =>
     -- The copyback runs in the caller's activation.
     copyBackTags { run with frame := caller } params args ++
-      match fault with
-      | some (.parse e) =>
-        .«call.block.faultCopyBack» :: (if e == "NoError" then [.«parser.subparser.reject»] else [])
-      | some (.interp _) => [.«call.block.faultCopyBack»]
-      | none => []
-  | .runBlock _ | .states _ | .writeHit .. => []
+      if fault.isSome then [.«call.block.faultCopyBack»] else []
+  | .runBlock _ | .states _ => []
   | .state _ state => stateTags run state rest
-  | .transition _ trans => transitionTags run trans
+  | .transition _ trans => transitionTags run trans rest
 
 /-- The tags of the step the machine is about to take. A task skipped while
-a fault unwinds exercises nothing, exactly as `step` skips it. -/
-def classify (m : Machine) : List Tag :=
+a fault unwinds exercises nothing, exactly as `step` skips it.
+
+Tags are not withdrawn when the step faults. A step's tags name the rules it
+starts to apply, and for every statement that can fault in a validated
+program, the parser's, the tags classify the fault condition itself, as
+`parser.extract.tooShort` does; withdrawing them would lose exactly those.
+A step that faults for a reason no tag names keeps the tags it started
+with: an extern binding that fails still reports `call.extern.out`. A
+validated control has no such fault today. -/
+def classify (ctx : Context) (m : Machine) : List Tag :=
   match m.work with
   | [] => []
   | task :: rest =>
     if m.fault.isSome && !task.handlesFault then []
-    else workTags m.run m.fault rest task
+    else workTags ctx m.run m.fault rest task
 
 /-- The tags of a finished run: the deparser's zero padding when the emitted
 bits are not whole bytes (docs/ir-semantics.md, "Bit alignment"). -/

@@ -37,11 +37,11 @@ def Tags.add (tags : Tags) (new : List P4bloIR.Coverage.Tag) : Tags :=
 /-- Step `m` to its end, classifying every configuration before its step and
 the final run after the last. The loop is the same as `Execution.drive`'s;
 it is `partial` because a nonterminating program has no trace to report. -/
-partial def trace (m : Machine) (tags : Tags) : Outcome × Tags :=
-  let tags := tags.add (P4bloIR.Coverage.classify m)
+partial def trace (ctx : P4bloIR.Coverage.Context) (m : Machine) (tags : Tags) : Outcome × Tags :=
+  let tags := tags.add (P4bloIR.Coverage.classify ctx m)
   match step m with
   | .inl result => (result, tags.add (P4bloIR.Coverage.finalTags result.2))
-  | .inr next => trace next tags
+  | .inr next => trace ctx next tags
 
 /-- The fresh activation of block `name` with `bindings` set, as the entry
 points of `P4bloIR.Interp` make it; `none` when the block is unknown. -/
@@ -56,7 +56,7 @@ def activation (index : Index) (name : String) (bindings : List Value) :
 /-- The traced outcome and tags of parser `name`, from the configuration
 `runParser` starts: the metadata bound, the headers at zero. -/
 def traceParser (index : Index) (name : String) (packet : ByteArray) (metadata : Value)
-    (externs : Externs) : Option Outcome × Tags :=
+    (externs : Externs) (ctx : P4bloIR.Coverage.Context := {}) : Option Outcome × Tags :=
   match index.blocks[name]? with
   | none => (none, {})
   | some decl =>
@@ -70,29 +70,30 @@ def traceParser (index : Index) (name : String) (packet : ByteArray) (metadata :
       let vars := metadataOnly.foldl (fun vars (n, v) => vars.insert n v) frame.vars
       let run : Run := { index, externs, frame := { frame with vars },
                          packet := some (Packet.ofBytes packet) }
-      let (outcome, tags) := trace { work := [.states decl], run } {}
+      let (outcome, tags) := trace ctx { work := [.states decl], run } {}
       (some outcome, tags)
 
 /-- The traced outcome and tags of control `name`, from the configuration
 `runControl` starts. -/
 def traceControl (index : Index) (name : String) (headers metadata : Value)
-    (entries : Installed) (externs : Externs) : Option Outcome × Tags :=
+    (entries : Installed) (externs : Externs) (ctx : P4bloIR.Coverage.Context := {}) :
+    Option Outcome × Tags :=
   match activation index name [headers, metadata] with
   | none => (none, {})
   | some (decl, frame) =>
     let run : Run := { index, entries := some entries, externs, frame }
-    let (outcome, tags) := trace { work := [.statements decl.body], run } {}
+    let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
     (some outcome, tags)
 
 /-- The traced outcome and tags of deparser `name`, from the configuration
 `runDeparser` starts. -/
-def traceDeparser (index : Index) (name : String) (headers : Value) (externs : Externs) :
-    Option Outcome × Tags :=
+def traceDeparser (index : Index) (name : String) (headers : Value) (externs : Externs)
+    (ctx : P4bloIR.Coverage.Context := {}) : Option Outcome × Tags :=
   match activation index name [headers] with
   | none => (none, {})
   | some (decl, frame) =>
     let run : Run := { index, externs, frame, emitter := some {} }
-    let (outcome, tags) := trace { work := [.statements decl.body], run } {}
+    let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
     (some outcome, tags)
 
 /-- The struct `m` with field `position` set, as `Switch` sets its contract
@@ -117,7 +118,10 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat)
       | _ => pure (.error "unreachable")
     | none => pure (.ok zero)
   let .ok initial := initial | return {}
-  let (_, tags) := traceParser sw.index sw.parser packet initial externs
+  let ctx : P4bloIR.Coverage.Context := {
+    hostDefaults := host.tables.filterMap fun te =>
+      if te.defaultAction.isSome then some (te.block, te.table) else none }
+  let (_, tags) := traceParser sw.index sw.parser packet initial externs ctx
   let .ok parsed := runParser sw.index sw.parser packet initial externs | return tags
   if parsed.consumedBits % 8 != 0 then return tags
   let provided ← match sw.parserError with
@@ -125,12 +129,12 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat)
     | none => pure (.ok parsed.metadata)
   let .ok provided := provided | return tags
   let (_, controlTags) :=
-    traceControl sw.index sw.control parsed.headers provided installed parsed.externs
+    traceControl sw.index sw.control parsed.headers provided installed parsed.externs ctx
   let tags := tags.union controlTags
   let .ok (headers, _, externs) :=
     runControl sw.index sw.control parsed.headers provided installed parsed.externs
     | return tags
-  let (_, deparserTags) := traceDeparser sw.index sw.deparser headers externs
+  let (_, deparserTags) := traceDeparser sw.index sw.deparser headers externs ctx
   tags.union deparserTags
 
 /-- The sorted names of `tags`, as the reply carries them. -/
