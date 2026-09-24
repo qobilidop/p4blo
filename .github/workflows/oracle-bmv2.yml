@@ -53,3 +53,7 @@ jobs:
         run: nix develop -c uv run pytest tests/test_firewall_boundaries.py -k bmv2 -v
       - name: Check original firewall generated flow profiles
         run: nix develop -c uv run pytest tests/test_firewall_generated.py -k bmv2 -v
+      - name: Check forwarding overlap and default profiles
+        run: |
+          nix develop -c uv run python -c 'from tests.oracle.bmv2 import run; reason = run.unavailable(run.default_image()); assert reason is None, reason'
+          nix develop -c uv run pytest tests/test_lean_forwarder_apply.py::test_apply_packets_bmv2 -v
