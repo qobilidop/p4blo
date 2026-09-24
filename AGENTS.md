@@ -42,8 +42,8 @@ an archived note is one command away:
 ## Read first, in this order
 
 1. `.agents/status.md`: where the work stands and what is open. Both
-   finite scopes, [assurance milestone 1](docs/assurance.md) and the
-   [application collection](docs/examples.md), are complete; nothing is
+   finite scopes, assurance milestone 1 and the application collection,
+   are complete; nothing is
    active, and neither completion reopens parked proofs. `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
    not infer broader guarantees from counts.
@@ -112,7 +112,8 @@ so the required CI gate discovers them without a hand-maintained file list.
   new ones up by itself. Sources are written in the typed eDSL
   (`p4blo.edsl`), are type-checked by pyright in CI, and must rebuild
   their golden byte for byte.
-- **Public application examples** follow `docs/examples.md`, with canonical
+- **Public application examples** follow the application section of
+  `docs/workflows.md`, with canonical
   Python source under `examples/` and verification assets under
   `tests/examples/`. Shared checks discover canonical sources and require
   goldens, vectors and demos; both oracle catalogs include example vectors.

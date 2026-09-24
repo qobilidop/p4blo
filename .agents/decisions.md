@@ -202,8 +202,9 @@ these entries record why.
   prefix. p4c vectors that write
   `expect` before `packet` are reordered in the corpus copy, and
   per-table action copies name p4c's elaborated actions. (2026-09-22)
-- **Corpus programs come from p4c's test suite**, chosen by the survey in
-  `docs/corpus-candidates.md`, plus programs of our own where p4c has no
+- **Corpus programs come from p4c's test suite**, chosen by a survey of
+  its STF-bearing v1model programs (archived in git as
+  `docs/corpus-candidates.md`), plus programs of our own where p4c has no
   vector. (2026-09-22)
 - **P4-SpecTec is pinned by commit and translated.** Its simulator has no
   longest-prefix rule, so `tests/oracle/run.py` turns each lpm `add` into a

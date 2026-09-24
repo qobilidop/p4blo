@@ -82,10 +82,13 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
    `import P4blo` for users, `import P4bloIR` for the IR contract.
 6. [`docs/coverage.md`](docs/coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
-7. [`.agents/decisions.md`](.agents/decisions.md): every choice made while
-   building, with its reason.
+7. [`docs/assurance.md`](docs/assurance.md): what is claimed for which
+   programs, what is proved, what is tested against which oracle, and
+   the known disagreements.
 8. [`docs/workflows.md`](docs/workflows.md): the gates, where every
-   external input is pinned, and how to make each kind of change.
+   external input is pinned, and how to make each kind of change. The
+   decisions behind all of it, with their reasons, are in
+   [`.agents/decisions.md`](.agents/decisions.md).
 
 ## Getting started
 
@@ -151,7 +154,7 @@ typechecked with p4c through Docker when it is available.
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
 | `tests/examples/` | application goldens, packet vectors and independent behavior checks |
 | `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
-| `docs/` | design, semantics, coverage, contracts and evidence, written for people |
+| `docs/` | design, semantics, coverage, assurance, quickstart, workflows |
 | `.agents/` | agent state: current status, decisions register, roadmap, live notes and skills; `AGENTS.md` is the entry point |
 | `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |
 

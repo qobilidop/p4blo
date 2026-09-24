@@ -114,7 +114,7 @@ has to change on the way:
 - **Ternary priorities are inverted as `10000 - priority`**, p4c's own
   inversion in `backends/bmv2/bmv2stf.py`, because STF and p4blo have
   the larger priority winning and BMv2 the smaller
-  (`docs/corpus-candidates.md`, section 0; `.agents/decisions.md`,
+  (p4c's `backends/bmv2/bmv2stf.py`; `.agents/decisions.md`,
   "Entry priority: larger wins, everywhere in the IR"). The CLI takes a
   priority exactly on a table whose BMv2 match type is `ternary`, which
   is exactly when p4blo requires one, and a priority above 10000 is an

@@ -1,8 +1,11 @@
 # p4blo website
 
-A responsive landing-page design inspired by the clear research-tool
-presentation at [Veil](https://veil.dev/). The rationale and source mapping
-are in [the design note](../docs/website-design.md).
+A responsive landing page inspired by the research-tool presentation at
+[Veil](https://veil.dev/): a short introduction, the capabilities, real
+code with a scrolling explanation, then a direct next action. It presents
+the project with the same evidence boundaries as `docs/assurance.md` and
+never claims more than the documentation does; the repository documents
+remain the documentation destination.
 
 ## Preview
 

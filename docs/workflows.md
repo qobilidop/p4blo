@@ -198,9 +198,9 @@ misspelled field, state, action or table, an unequal width, or a
 rebuilds the golden from the source, replays every vector under the
 switch, and checks the filter's fate decisions. Then run the oracle and
 the Lean-versus-Python gates, and add a row to the corpus table in
-`docs/assurance.md`. Programs from p4c's test suite are
-listed with their fitness in `docs/corpus-candidates.md`; the
-sources are in p4c under `testdata/p4_16_samples/`.
+`docs/assurance.md`. The sources are in p4c under
+`testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
+the current programs is archived in git as `docs/corpus-candidates.md`.
 
 **An extern.** Add its implementation under `python/p4blo/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
@@ -222,9 +222,28 @@ switch must follow, change `ir/P4bloIR/Switch.lean` in the same commit.
 
 ## Application development
 
-The accepted collection and finite completion criteria are in
-[examples.md](examples.md). Work one complete router through this loop before
-replicating the structure for firewall and load-balancer applications:
+Public applications live under `examples/<name>/` with `program.py` (the
+complete typed eDSL; `build()` returns the IR), `demo.py` (host
+configuration, packet sequence, results) and a README that states the
+problem, the supported packet profile, the command, the expected results
+and the limitations. Their verification lives under
+`tests/examples/<name>/`: independent expectations, the generated golden
+and STF vectors. `tests/examples/test_examples.py` discovers every
+`examples/*/program.py` and requires the golden, exact vectors, the demo
+output and generated real-Lean cases; pyright includes `examples`, and
+both oracle catalogs pick up `tests/examples/*/*.stf`. Each program keeps
+headers, parser, actions, tables, control and deparser together; extract
+shared abstractions only when concrete usage shows a readability benefit.
+
+An application is complete when it has a reviewed contract and runnable
+demo; readable typed source; independent exact packet, fate and state
+expectations; golden reconstruction; Python/Lean comparison and
+applicable oracle evidence with precise exclusions; targeted deliberate
+faults; and a fresh-reader review that runs and modifies the example
+without conversation context. Setup or compilation failures do not count
+as semantic fault detection, and agreement between implementations does
+not replace intended-behavior checks. Work each application through this
+loop:
 
 1. Specify the application story, packet profile, host assumptions and failure
    behavior. Establish independent expected outcomes before relying on replay.

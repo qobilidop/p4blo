@@ -23,5 +23,5 @@ delivery or drop decisions.
 
 Verification lives under [`tests/examples/`](../tests/examples/). Existing
 upstream ports and focused semantic fixtures remain under
-[`tests/corpus/`](../tests/corpus/). The accepted collection and outstanding
-work are recorded in [`docs/examples.md`](../docs/examples.md).
+[`tests/corpus/`](../tests/corpus/). How a new application is organized,
+checked and reviewed is in [`docs/workflows.md`](../docs/workflows.md#application-development).

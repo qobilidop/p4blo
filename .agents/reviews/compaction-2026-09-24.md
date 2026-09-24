@@ -34,7 +34,7 @@ eDSL" section in the register.
   main" after its deletion. Now names the archive command.
 - **M6.** Stale backticked paths in `docs/semantics.md` and
   `docs/assurance.md`; deleted reviews named without the archived marker
-  in `docs/assurance.md`, `docs/website-design.md`, `docs/writeup.md`,
+  in `docs/assurance.md`, `website/README.md`, `docs/writeup.md`,
   `docs/assurance.md`; stale link text in
   `docs/design.md`. Fixed.
 - **M7.** `.agents/reviews/` did not exist. Created by this file.
