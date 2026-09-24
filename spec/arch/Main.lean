@@ -1,6 +1,7 @@
 import P4bloIR
 import P4bloArch
 import P4bloIR.Observe
+import P4bloArch.Coverage
 
 /-!
 `p4blo-lean`: the pipe endpoint for differential testing.
@@ -12,6 +13,10 @@ import P4bloIR.Observe
         Check a bounded execution claim for that exact example. Exit 0 means
         accepted, 1 means mismatch or exhaustion, and 2 means malformed input.
         This is a compiled checker, not an exported kernel proof term.
+
+    p4blo-lean coverage-inventory
+        Print every rule tag of `P4bloIR.Coverage`, one per line, as the
+        tag, a tab, and its docstring on one line.
 
     p4blo-lean <program.json | ->
         Decode the program, build the name index and print a one-line
@@ -36,7 +41,10 @@ import P4bloIR.Observe
         state persists across requests. `--ports N` (default 4) is the
         number of ports a flood reaches.
         Every reply also carries `state`, the abstract extern observations
-        from `P4bloIR.Observe`, including when the request cannot run.
+        from `P4bloIR.Observe`, including when the request cannot run, and
+        `coverage`, the sorted names of the rule tags the request exercised
+        (`P4bloArch.Coverage`): up to the failure on an error reply, and
+        empty when the request line itself does not decode.
 -/
 
 open P4bloIR P4bloArch
@@ -69,15 +77,17 @@ def Request.decode (line : String) : Except String Request := do
   let packet ← hexToBytes? (← Decode.strField "" j "packet")
   pure { entries, ingressPort, packet }
 
-/-- The JSON line answering a request. -/
-def answer (r : Except String SwitchResult) (externs : Externs) : String :=
+/-- The JSON line answering a request, with the rule tags it exercised. -/
+def answer (r : Except String SwitchResult) (externs : Externs) (coverage : List String) :
+    String :=
+  let tags := ("coverage", Lean.Json.arr (coverage.map Lean.Json.str).toArray)
   let j := match r with
-    | .error e => Lean.Json.mkObj [("error", .str e), ("state", externs.observe)]
+    | .error e => Lean.Json.mkObj [("error", .str e), ("state", externs.observe), tags]
     | .ok result =>
       let outputs := result.outputs.map fun ((port, bytes) : Nat × ByteArray) =>
         Lean.Json.arr #[Lean.toJson port, .str (bytesToHex bytes)]
-      Lean.Json.mkObj ([("outputs", Lean.Json.arr outputs.toArray), ("state", externs.observe)] ++
-        (result.diagnostic.map fun d => ("diagnostic", Lean.Json.str d)).toList)
+      Lean.Json.mkObj ([("outputs", Lean.Json.arr outputs.toArray), ("state", externs.observe),
+        tags] ++ (result.diagnostic.map fun d => ("diagnostic", Lean.Json.str d)).toList)
   j.compress
 
 /-- Answer requests from stdin until it ends, threading the extern state. -/
@@ -90,14 +100,19 @@ partial def serve (sw : Switch) (externs : Externs) : IO Unit := do
     if line.isEmpty then break
     let line := line.trimAscii.toString
     if line.isEmpty then continue
+    let request := Request.decode line
+    -- The observer traces the same inputs from the same extern state.
+    let coverage := match request with
+      | .ok r => (Coverage.run sw externs r.entries r.ingressPort r.packet).sorted
+      | .error _ => []
     let outcome := do
-      let request ← Request.decode line
+      let request ← request
       sw.run externs request.entries request.ingressPort request.packet
     match outcome with
     | .ok (result, externs') =>
       externs := externs'
-      stdout.putStrLn (answer (.ok result) externs)
-    | .error e => stdout.putStrLn (answer (.error e) externs)
+      stdout.putStrLn (answer (.ok result) externs coverage)
+    | .error e => stdout.putStrLn (answer (.error e) externs coverage)
     stdout.flush
 
 /-- The `run` mode: parse its flags, load the program, serve. -/
@@ -140,6 +155,10 @@ def main (args : List String) : IO UInt32 := do
     | .error message =>
       IO.println (Lean.Json.mkObj [("error", .str message)]).compress
       return 2
+  | ["coverage-inventory"] =>
+    for info in P4bloIR.Coverage.all do
+      IO.println s!"{info.name}\t{info.doc}"
+    return 0
   | "run" :: rest => runMode rest
   | [path] =>
     match ← loadProgram path with
@@ -150,5 +169,5 @@ def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"error: {e}"
       return 1
   | _ =>
-    IO.eprintln "usage: p4blo-lean <program.json | -> | run [--ports N] <program.json> | certificate-example-program | check-example-certificate <artifact.json | ->"
+    IO.eprintln "usage: p4blo-lean <program.json | -> | run [--ports N] <program.json> | coverage-inventory | certificate-example-program | check-example-certificate <artifact.json | ->"
     return 2
