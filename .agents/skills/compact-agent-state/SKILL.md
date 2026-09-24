@@ -45,8 +45,13 @@ room for a new scope before the old one is recorded as closed.
    `docs/assurance.md` or `impl/lean/ASSURANCE.md` if it is not already there.
 6. **Fix references.** Links into deleted files become plain mentions
    marked archived; links into promoted files follow them. Path strings in
-   tests, docstrings and the website follow too. `docs/` must not link into
-   `.agents/`; `tests/test_docs_links.py` checks both rules.
+   tests, docstrings and the website follow too. `scripts/relink.py` in
+   this skill does the mechanical part from a moves map and a deleted
+   list; it leaves link labels alone and does not see path fragments
+   without a slash, so grep for those and fix labels by hand, and restore
+   `.agents/reviews/` afterwards so review records keep the paths they
+   were written with. `docs/` must not link into `.agents/`;
+   `tests/test_docs_links.py` checks both rules.
 7. **Commit** the compaction separately from the promotion and cite the
    tag in the body. Then run `scripts/check.sh`; Lean and oracle gates are
    unaffected by documentation moves unless a path string in them changed.

@@ -411,6 +411,17 @@ The exact theorem statements, premises and exclusions are in
 - **Obsolete worktrees are archived before removal**, with hashes checked
   independently; branches and reflog-only commits are preserved.
   (2026-09-24)
+- **Unfinished work is parked as a pushed branch, never as an uncommitted
+  worktree**, with a work-in-progress commit that says what it holds and
+  lacks; a branch is retained only after its content is compared with
+  `main`, and a merged or byte-identical one is deleted. Reason: two
+  proof drafts and a set of reviews existed for a day only as untracked
+  files on one machine, and two "unique" branches turned out to hold
+  nothing `main` lacked. (2026-09-24)
+- **The full gate runs before a step is pushed; structural tests are a
+  smoke check.** Reason: during the specification split the layout, link
+  and boundary tests all passed while every codec test was failing on an
+  endpoint path, which only `scripts/check.sh` showed. (2026-09-24)
 - **Documentation is split by subject.** `docs/` describes the artifact
   and is written for people, to be published on its own; `.agents/`
   describes the work and is the resumable state. `docs/` never links into

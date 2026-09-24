@@ -21,6 +21,9 @@ Documentation is split by what it describes, not by who reads it:
   why, what is parked, and the procedures agents follow. It is committed
   narrative state, never runtime state; logs and artifacts stay in the
   ignored `.artifacts/`.
+- Nothing dated goes into `docs/`: no checkpoint prose, no run
+  transcripts, no plans. A reference page cites a revision and links the
+  evidence; the run itself is recorded in `.agents/status.md` and git.
 
 | File | Holds |
 |---|---|
@@ -193,12 +196,32 @@ rebuild the shared oracle image while another agent's tests use it.
 Coordinate other mutable caches, ports and fixtures explicitly; immutable
 pinned caches may be shared.
 
+Unfinished work is never left as an uncommitted worktree. Commit it to
+its branch as a work-in-progress commit whose message says what it holds
+and what it lacks, push the branch, and remove the worktree; the
+parked-proof inventory points at branches. Retain a branch only after
+comparing its content with `main`; a branch whose commits are merged or
+whose files are byte-identical to what `main` has is deleted, not kept
+"in case". Uncommitted drafts on one machine were the most fragile thing
+in this repository for a day.
+
 ## Checkpoints and compaction
 
 At each checkpoint, update `.agents/status.md`, any changed decision, and
 this file when scope or navigation changes. Record the current iteration,
 unresolved findings, active branch or worktree, durable evidence and the
 next action.
+
+Two rules learned the hard way. First, the full gate runs before a step
+is pushed, not a subset: the structural and link tests passed on the day
+the codec tests looked for their endpoint in the wrong package, and only
+`scripts/check.sh` found it. Second, when directories move, search for
+the path in every spelling, not only with a slash: `"ir"` in a
+`git ls-files` call, `-d lean` in a command, and `parents[N]` in a path
+computation all broke silently after a move, and `tests/test_package_layout.py`
+and `tests/test_boundaries.py` exist to pin the paths and the import
+graph a gate depends on. Historical records under `.agents/reviews/`
+keep the paths they were written with; exclude them from rewrites.
 
 When a milestone closes, or when the resume read (status, decisions,
 roadmap and live notes) grows past roughly a thousand lines, compact

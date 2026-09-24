@@ -48,37 +48,21 @@ revision: [CI](https://github.com/qobilidop/p4blo/actions/runs/36036851165),
 Local logs and mutation artifacts under `.artifacts/` are untracked and
 not evidence anyone else can check.
 
-The 2026-09-24 documentation reorganization (this directory, the
-compaction and the promoted contracts under `docs/`) changed no runtime
-source beyond path strings in comments. `scripts/check.sh` passes at
-`2a5638d` with 4839 passed, the same one skip and five xfails, plus the
-new link test; the later review-fix commits touch Markdown only. The Lean
-gate was not rerun: its only change is a doc comment in `Switch.lean`.
-
-**IR and architecture separation (2026-09-24).** The repository is now
-`spec/ir/` (the IR specification, nothing architectural), `spec/arch/`
-(the reference architecture: switch, extern families, certificate
-example, the `p4blo-lean` endpoint), `impl/lean/` and `impl/python/`
-(with `p4blo.arch` holding the extern families and the v1model printer);
-`docs/ir-semantics.md` describes the IR alone and `docs/arch-supports.md`
-what the supplied architectures decide. The IR carries extern state as
-data and takes the model from the architecture at load. No golden, wire
-byte or protocol message changed. At `d2c9400`: `scripts/check-lean.sh`
-passes all three packages with their audits and tests;
-`scripts/check.sh` passes with 4843 tests, the same one skip and five
-xfails; `scripts/check-assurance.py` passes all 28 phases with the split
-scratch builds. The independent review is
-`reviews/spec-split-2026-09-24.md`; its two runner findings are fixed.
-The parked drafts predate the layout and need rebasing before use; they
-now live on pushed branches, as `notes/parked-proofs.md` says.
-
-A second pass the same day reduced `docs/` to six reference files
-(design, semantics, coverage, assurance, quickstart, workflows), folding
-the firewall notes into the corpus README and archiving the rest in git.
-`scripts/check.sh` passes at `093dc26` with the same counts; the two
-review-fix commits after it touch Markdown and a ruff exclusion only,
-rechecked with the link test and `ruff format --check`. The independent
-review is `reviews/docs-consolidation-2026-09-24.md`.
+**Repository reorganization (2026-09-24), revision `2c7632e`.** The
+same day, in order: agent state moved under `.agents/` with a first
+compaction; `docs/` was reduced to seven reference pages; the tree was
+split into `spec/ir/` (the IR specification, nothing architectural),
+`spec/arch/` (the reference architecture: switch, extern families,
+certificate example, the `p4blo-lean` endpoint), `impl/lean/` and
+`impl/python/`; the IR now carries extern state as data and takes the
+model from the architecture at load; and the parked drafts moved from
+worktrees to pushed `work/*` branches, with every merged or duplicate
+branch deleted. No golden, wire byte or protocol message changed. At
+`d2c9400`, `scripts/check-lean.sh` passes all three packages with their
+audits and tests, `scripts/check.sh` passes with 4843 tests and the same
+one skip and five xfails, and `scripts/check-assurance.py` passes all 28
+phases with the split scratch builds. The three independent reviews are
+under `reviews/`; every finding is fixed.
 
 ## Open threads
 
