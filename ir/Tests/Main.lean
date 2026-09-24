@@ -17,6 +17,7 @@ import Tests.PlainCallReturn
 import Tests.DeclarationCodec
 import Tests.TableCodec
 import Tests.ParserCodec
+import Tests.BlockCodec
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -213,6 +214,7 @@ def main (args : List String) : IO UInt32 := do
     DeclarationCodecTests.tests
     TableCodecTests.tests
     ParserCodecTests.tests
+    BlockCodecTests.tests
     ExternFamiliesTests.tests
     FrameInitializationTests.tests
     PlainCallEntryTests.tests

@@ -32,8 +32,14 @@ DeclarationKind = Literal[
 ]
 TableKind = Literal["table_key", "action_call", "entry", "table"]
 ParserKind = Literal["target", "key_set", "select_case", "transition", "state"]
+BlockCodecKind = Literal["action", "block"]
 CodecKind = (
-    LeafKind | DeclarationKind | TableKind | ParserKind | Literal["expr", "lvalue", "arg", "stmt"]
+    LeafKind
+    | DeclarationKind
+    | TableKind
+    | ParserKind
+    | BlockCodecKind
+    | Literal["expr", "lvalue", "arg", "stmt"]
 )
 
 
