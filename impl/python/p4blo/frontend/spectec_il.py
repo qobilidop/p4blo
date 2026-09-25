@@ -318,7 +318,7 @@ class Translator:
             case "HEADER_STACK % [%]":
                 elem = strip_alias(t.node(0))
                 if elem.c != "HEADER % <%> {%}":
-                    raise Excluded("headerStackTypeIR of header unions", "by scope")
+                    raise Excluded("headerUnionTypeIR", "by scope", "a stack of header unions")
                 self.type_of(elem)
                 return pb.Type(stack=pb.StackType(header=elem.text(0), size=t.num(1)))
             case "ENUM % {%}":
@@ -378,9 +378,7 @@ class Translator:
         fields = self._fields(t)
         for f in fields:
             if f.type.WhichOneof("kind") not in ("bits", "boolean"):
-                raise Excluded(
-                    "headerTypeIR field of a non-bit type", "by scope", f"{name}.{f.name}"
-                )
+                raise NotTranslated("headerTypeIR", f"{name}.{f.name} is not bits or bool")
         self.header_types[name] = pb.HeaderType(name=name, fields=fields)
 
     def _struct(self, t: Node) -> None:

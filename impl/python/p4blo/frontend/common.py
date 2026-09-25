@@ -297,7 +297,7 @@ class ParamIL:
         if p.c != "% % % % %":
             raise il.ILError(f"expected a parameter, got {p.c!r}")
         if p.opt(4) is not None:
-            raise Excluded("parameterIR with a default value", "by elaboration", p.text(3))
+            raise NotTranslated("parameterIR", f"{p.text(3)} has a default value")
         return ParamIL(p.text(3), direction(p.node(1)), p.node(2), p)
 
 

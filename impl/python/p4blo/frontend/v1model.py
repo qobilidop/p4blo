@@ -431,8 +431,10 @@ class V1Model(Architecture):
             type_name = self.tr.add_extern_type(decl)
             return ExternInstB(self.tr.add_extern_instance(inst_name, type_name, [size]), type_name)
         if family in V1MODEL_OBJECTS:
-            raise Excluded(
-                "instantiationIR of an extern object", "by thesis", f"v1model's {family}"
+            # The IR has extern types; p4blo's architectures bind no family
+            # for this one.
+            raise NotTranslated(
+                "instantiationIR of an extern object", f"v1model's {family} has no extern family"
             )
         raise NotTranslated(
             "externObjectDeclarationIR", f"{family}: extern objects outside v1model's families"

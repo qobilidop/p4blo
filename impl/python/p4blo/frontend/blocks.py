@@ -93,7 +93,7 @@ class Architecture:
         )
 
     def extern_object(self, cx: BlockCx, inst_name: str, t: Node, args: list[Node]) -> ExternInstB:
-        raise Excluded("instantiationIR of an extern object", "by thesis", inst_name)
+        raise NotTranslated("instantiationIR of an extern object", inst_name)
 
     def is_intrinsic(self, t: Node) -> bool:
         return False
