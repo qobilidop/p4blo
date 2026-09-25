@@ -198,7 +198,7 @@ def checkLiteralArgs (idx : Index) (args : List Literal) (params : List Param) (
     s!"expected {params.length} arguments, got {args.length}"
   each (args.zip params) fun i (a, q) => do
     let t ← checkLiteral idx (at_ path i) a
-    ensure (t == q.type) code (at_ path i) s!"argument {i} has the wrong type"
+    ensure (decide (t = q.type)) code (at_ path i) s!"argument {i} has the wrong type"
 
 -- ---------------------------------------------------------------------------
 -- Expressions and lvalues
@@ -274,7 +274,7 @@ def checkExpr (c : Ctx) (path : String) : Expr → Chk Ty
     let _ ← expect ct isBoolean "boolean" (dot path "mux.condition")
     let at_ ← checkExpr c (dot path "mux.then") a
     let bt ← checkExpr c (dot path "mux.otherwise") b
-    ensure (at_ == bt) .typeMismatch (dot path "mux") "branches differ"
+    ensure (decide (at_ = bt)) .typeMismatch (dot path "mux") "branches differ"
     pure at_
   | .lookahead ty => do
     ensure (c.kind == .parser) .parserOnly (dot path "lookahead") "lookahead is allowed only in a parser"
@@ -313,10 +313,10 @@ def checkArgs (c : Ctx) (args : List Arg) (params : List Param) (path : String) 
     match isOut q.direction, a with
     | true, .lvalue lv => do
       let t ← checkLValue c (dot apath "lvalue") lv
-      ensure (t == q.type) .argType apath s!"argument does not have the type of '{q.name}'"
+      ensure (decide (t = q.type)) .argType apath s!"argument does not have the type of '{q.name}'"
     | false, .expr e => do
       let t ← checkExpr c (dot apath "expr") e
-      ensure (t == q.type) .argType apath s!"argument does not have the type of '{q.name}'"
+      ensure (decide (t = q.type)) .argType apath s!"argument does not have the type of '{q.name}'"
     | true, .expr _ => fail .argDirection apath s!"'{q.name}' is written back; pass an lvalue"
     | false, .lvalue _ => fail .argDirection apath s!"'{q.name}' is an input; pass an expression"
   ensure (noAlias args) .callAlias path "an argument may alias an earlier out argument"
@@ -333,7 +333,7 @@ def checkResult (c : Ctx) (path : String) : Option Ty → Option LValue → Chk 
   | none, none => pure ()
   | some rt, some lv => do
     let t ← checkLValue c (dot path "result") lv
-    ensure (t == rt) .externResult (dot path "result") "result does not have the method's return type"
+    ensure (decide (t = rt)) .externResult (dot path "result") "result does not have the method's return type"
   | some _, none => fail .externResult path "the method returns a value; result is unset"
   | none, some _ => fail .externResult (dot path "result") "the method returns nothing"
 
@@ -367,7 +367,7 @@ def checkStmt (c : Ctx) (path : String) : Stmt → Chk Unit
     ensure (allowed c.kind s) .blockKindStmt path "assign is not allowed here"
     let tt ← checkLValue c (dot path "assign.target") target
     let vt ← checkExpr c (dot path "assign.value") value
-    ensure (tt == vt) .typeMismatch (dot path "assign") "cannot assign a value of another type"
+    ensure (decide (tt = vt)) .typeMismatch (dot path "assign") "cannot assign a value of another type"
   | s@(.conditional cnd yes no) => do
     ensure (allowed c.kind s) .blockKindStmt path "conditional is not allowed here"
     let ct ← checkExpr c (dot path "conditional.condition") cnd
@@ -426,7 +426,7 @@ def checkStmt (c : Ctx) (path : String) : Stmt → Chk Unit
   | s@(.advance e) => do
     ensure (allowed c.kind s) .blockKindStmt path "advance is not allowed here"
     let t ← checkExpr c (dot path "advance.bits") e
-    let _ ← expect t (· == .bits 32) "bit<32>" (dot path "advance.bits")
+    let _ ← expect t (fun t => decide (t = .bits 32)) "bit<32>" (dot path "advance.bits")
   | s@(.verify cnd err) => do
     ensure (allowed c.kind s) .blockKindStmt path "verify is not allowed here"
     let t ← checkExpr c (dot path "verify.condition") cnd
@@ -460,19 +460,19 @@ def checkTarget (c : Ctx) (path : String) : Target → Chk Unit
 def checkKeySet (idx : Index) (key : Ty) (path : String) : KeySet → Chk Unit
   | .exact lit => do
     let t ← checkLiteral idx (dot path "exact") lit
-    ensure (t == key) .selectType (dot path "exact") "the literal does not have the key's type"
+    ensure (decide (t = key)) .selectType (dot path "exact") "the literal does not have the key's type"
   | .masked v m => do
     ensure (isBits key) .selectType path "masked needs a bits key"
     let t ← checkLiteral idx (dot path "masked.value") v
-    ensure (t == key) .selectType (dot path "masked.value") "the literal does not have the key's type"
+    ensure (decide (t = key)) .selectType (dot path "masked.value") "the literal does not have the key's type"
     let t ← checkLiteral idx (dot path "masked.mask") m
-    ensure (t == key) .selectType (dot path "masked.mask") "the literal does not have the key's type"
+    ensure (decide (t = key)) .selectType (dot path "masked.mask") "the literal does not have the key's type"
   | .range lo hi => do
     ensure (isBits key) .selectType path "range needs a bits key"
     let t ← checkLiteral idx (dot path "range.lo") lo
-    ensure (t == key) .selectType (dot path "range.lo") "the literal does not have the key's type"
+    ensure (decide (t = key)) .selectType (dot path "range.lo") "the literal does not have the key's type"
     let t ← checkLiteral idx (dot path "range.hi") hi
-    ensure (t == key) .selectType (dot path "range.hi") "the literal does not have the key's type"
+    ensure (decide (t = key)) .selectType (dot path "range.hi") "the literal does not have the key's type"
   | .dontCare => pure ()
 
 /-- The select keys' types, each selectable. -/
@@ -514,15 +514,19 @@ def checkCall (c : Ctx) (t : Table) (path : String) (call : ActionCall) : Chk Un
     s!"action '{call.action}' is not in the table's action list"
   checkLiteralArgs c.index call.args act.params (dot path "args") .actionArgs
 
+/-- A key's name, when it has one, is not taken yet. -/
+def checkKeyName (seen : List String) (path : String) (k : Key) : Chk Unit :=
+  match keyName k with
+  | some n => ensure (!seen.contains n) .keyName path s!"key name '{n}' used twice"
+  | none => pure ()
+
 /-- A key's type and name, keys in order; the widths (validator,
 `check_keys`). -/
 def checkKeys (c : Ctx) (path : String) (seen : List String) : Nat → List Key → Chk (List Nat)
   | _, [] => pure []
   | i, k :: ks => do
     let kpath := at_ (dot path "keys") i
-    match keyName k with
-    | some n => ensure (!seen.contains n) .keyName (dot kpath "name") s!"key name '{n}' used twice"
-    | none => pure ()
+    checkKeyName seen (dot kpath "name") k
     let t ← checkExpr c (dot kpath "expr") k.expr
     match t with
     | .bits w => pure (w :: (← checkKeys c path ((keyName k).toList ++ seen) (i + 1) ks))
@@ -559,6 +563,23 @@ def checkEntry (c : Ctx) (t : Table) (ws : List Nat) (path : String) (e : Entry)
   each ((t.keys.zip ws).zip e.keys) fun i ((k, w), v) => do
     let _ ← checkKeyValue k w (at_ (dot path "keys") i) v
 
+/-- A table's action list: no action twice, each an action of this block
+with directionless params (validator, `check_table`). -/
+def checkTableActions (c : Ctx) (path : String) (seen : List String) :
+    Nat → List String → Chk Unit
+  | _, [] => pure ()
+  | i, a :: as => do
+    ensure (!seen.contains a) .tableActions (at_ path i) s!"action '{a}' listed twice"
+    let act ← resolveLocal c c.scope.actions[a]? (·.actions.contains a) a "action" (at_ path i)
+    ensure (act.params.all (·.direction == .none)) .paramDirection (at_ path i)
+      s!"action '{a}' is invoked by a table, so its params must be directionless"
+    checkTableActions c path (seen ++ [a]) (i + 1) as
+
+/-- A table's default action, when it has one. -/
+def checkDefault (c : Ctx) (t : Table) (path : String) : Option ActionCall → Chk Unit
+  | some call => checkCall c t path call
+  | none => pure ()
+
 /-- The code of a tie: overlap in a ternary table, duplicate otherwise. -/
 def tieCode (t : Table) : Code := if ternary t then .entryPriority else .entryDuplicate
 
@@ -571,15 +592,8 @@ def checkTable (c : Ctx) (path : String) (t : Table) : Chk Unit := do
   ensure (!(kinds.contains .lpm && kinds.contains .ternary)) .tableKeyMix (dot path "keys")
     "a table with an lpm key has no ternary key"
   ensure (!t.actions.isEmpty) .tableActions (dot path "actions") "table lists no actions"
-  each t.actions.zipIdx fun _ (a, i) => do
-    let apath := at_ (dot path "actions") i
-    ensure (!(t.actions.take i).contains a) .tableActions apath s!"action '{a}' listed twice"
-    let act ← resolveLocal c c.scope.actions[a]? (·.actions.contains a) a "action" apath
-    ensure (act.params.all (·.direction == .none)) .paramDirection apath
-      s!"action '{a}' is invoked by a table, so its params must be directionless"
-  match t.defaultAction with
-  | some call => checkCall c t (dot path "default_action") call
-  | none => pure ()
+  checkTableActions c (dot path "actions") [] 0 t.actions
+  checkDefault c t (dot path "default_action") t.defaultAction
   each t.constEntries fun i e => checkEntry c t ws (at_ (dot path "const_entries") i) e
   ensure (entriesDistinct (ternary t) (entryPatterns t ws)) (tieCode t) (dot path "const_entries")
     "two const entries tie"
@@ -656,6 +670,17 @@ def checkExternType (idx : Index) (path : String) (et : ExternType) : Chk Unit :
     | some t => checkType idx (dot mpath "returns") t
     | none => pure ()
 
+/-- The exports: roles distinct, each block resolved, with the signature
+of its kind (validator, `check_exports`). -/
+def checkExports (p : Program) (idx : Index) (seen : List String) : Nat → List Export → Chk Unit
+  | _, [] => pure ()
+  | i, e :: es => do
+    let path := at_ "exports" i
+    ensure (!seen.contains e.role) .exportDuplicate path s!"role '{e.role}' exported twice"
+    let b ← resolve idx idx.blocks[e.block]? e.block "block" (dot path "block")
+    ensure (signatureOk p b) .exportSignature path s!"'{b.name}' lacks the signature of its kind"
+    checkExports p idx (seen ++ [e.role]) (i + 1) es
+
 /-- Check the program; its index, or the first problem. -/
 def check (p : Program) : Except Diagnostic Index := do
   let idx ← (Index.build p).mapError indexDiagnostic
@@ -688,12 +713,7 @@ def check (p : Program) : Except Diagnostic Index := do
       (dot path "extern_type")
     checkLiteralArgs idx inst.args et.constructorParams (dot path "args") .externArgs
   each p.blocks fun i b => checkBlock idx (at_ "blocks" i) b
-  each p.exports fun i e => do
-    let path := at_ "exports" i
-    ensure (!(p.exports.take i).any (·.role == e.role)) .exportDuplicate path
-      s!"role '{e.role}' exported twice"
-    let b ← resolve idx idx.blocks[e.block]? e.block "block" (dot path "block")
-    ensure (signatureOk p b) .exportSignature path s!"'{b.name}' lacks the signature of its kind"
+  checkExports p idx [] 0 p.exports
   ensure (acyclic (p.blocks.map (·.name))
       (fun n => ((p.blocks.find? (·.name == n)).map blockCallees).getD [])) .callCycle "blocks"
     "block calls form a cycle"

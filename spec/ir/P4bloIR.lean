@@ -31,3 +31,4 @@ import P4bloIR.BlockCodecLaws
 import P4bloIR.Validity.IndexLaws
 import P4bloIR.Validity.Rules
 import P4bloIR.Validity.Check
+import P4bloIR.Validity.Sound

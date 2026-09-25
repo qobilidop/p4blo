@@ -489,3 +489,47 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.DeviationLaws.lookup_longest_lpm' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.DeviationLaws.lookup_longest_lpm
+
+/-- info: 'P4bloIR.Build.index_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Build.index_eq
+
+/-- info: 'P4bloIR.Build.addAll_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Build.addAll_ok
+
+/-- info: 'P4bloIR.Build.scope_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Build.scope_ok
+
+/-- info: 'P4bloIR.Build.index_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Build.index_ok
+
+/-- info: 'P4bloIR.Build.build_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Build.build_ok
+
+/-- info: 'P4bloIR.Validity.checkExpr_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.checkExpr_ok
+
+/-- info: 'P4bloIR.Validity.checkLValue_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.checkLValue_ok
+
+/-- info: 'P4bloIR.Validity.checkStmt_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.checkStmt_ok
+
+/-- info: 'P4bloIR.Validity.checkTable_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.checkTable_ok
+
+/-- info: 'P4bloIR.Validity.checkBlock_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.checkBlock_ok
+
+/-- info: 'P4bloIR.Validity.check_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.check_sound

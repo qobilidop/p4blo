@@ -28,6 +28,22 @@ namespace P4bloIR.Validity
 open Std (HashMap)
 
 -- ---------------------------------------------------------------------------
+-- Equality of the IR's enums
+-- ---------------------------------------------------------------------------
+
+instance : LawfulBEq Direction where
+  eq_of_beq {a b} := by cases a <;> cases b <;> decide
+  rfl {a} := by cases a <;> decide
+
+instance : LawfulBEq BlockKind where
+  eq_of_beq {a b} := by cases a <;> cases b <;> decide
+  rfl {a} := by cases a <;> decide
+
+instance : LawfulBEq MatchKind where
+  eq_of_beq {a b} := by cases a <;> cases b <;> decide
+  rfl {a} := by cases a <;> decide
+
+-- ---------------------------------------------------------------------------
 -- Types
 -- ---------------------------------------------------------------------------
 
@@ -381,10 +397,6 @@ def dottedPath : Expr → Option String
 def keyName (k : Key) : Option String :=
   if k.name.isEmpty then dottedPath k.expr else some k.name
 
-/-- Key names are distinct where they exist. -/
-def keyNamesDistinct (keys : List Key) : Bool :=
-  let names := keys.filterMap keyName
-  names.eraseDups.length == names.length
 
 /-- A key pattern, for the tie rules on const entries (validator,
 `KeyPattern`). -/
@@ -461,9 +473,10 @@ structure TableTyped (c : Ctx) (t : Table) : Prop where
   widths : ∃ ws, KeysTyped c t.keys ws ∧
     (∀ e ∈ t.constEntries, EntryTyped c t ws e) ∧
     entriesDistinct (ternary t) (entryPatterns t ws) = true
-  keyNames : keyNamesDistinct t.keys = true
-  oneLpm : (t.keys.filter (·.matchKind == .lpm)).length ≤ 1
-  noMix : ¬ (t.keys.any (·.matchKind == .lpm) ∧ ternary t)
+  keyNames : (t.keys.filterMap keyName).Nodup
+  oneLpm : ((t.keys.map (·.matchKind)).filter (· == .lpm)).length ≤ 1
+  noMix : (!((t.keys.map (·.matchKind)).contains .lpm &&
+    (t.keys.map (·.matchKind)).contains .ternary)) = true
   actions : t.actions ≠ [] ∧ t.actions.Nodup
   actionsExist : ∀ a ∈ t.actions, ∃ act, c.scope.actions[a]? = some act ∧
     ∀ q ∈ act.params, q.direction = .none
@@ -558,7 +571,7 @@ def signatureOk (p : Program) (b : Block) : Bool :=
   let want := exportSignature b.kind
   b.params.length == want.length &&
     (b.params.zip want).all fun (q, d, h) =>
-      q.direction == d && q.type == .struct (if h then p.headers else p.metadata)
+      q.direction == d && decide (q.type = .struct (if h then p.headers else p.metadata))
 
 /-- An extern type (validator, `check_extern_types`). -/
 def ExternTypeOk (idx : Index) (et : ExternType) : Prop :=

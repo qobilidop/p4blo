@@ -16,6 +16,7 @@ import Tests.BlockCodec
 import Tests.ProgramCodec
 import Tests.EntriesCodec
 import Tests.DeviationLaws
+import Tests.Validity
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -195,6 +196,7 @@ def main (args : List String) : IO UInt32 := do
       forwarderTests p
       roundtripTests p
       indexTests p
+      ValidityTests.tests p
     | .error e =>
       IO.println s!"     got: {e}"
       check "fixture decodes" false
