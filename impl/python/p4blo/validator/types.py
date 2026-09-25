@@ -210,12 +210,6 @@ class TypeChecks(NameChecks):
             if color[name] == white:
                 visit(name, [])
 
-    def check_program_types(self) -> None:
-        if self.resolve(self.program.headers, self.idx.struct_types, "struct type", "headers"):
-            self.headers = pb.Type(struct=self.program.headers)
-        if self.resolve(self.program.metadata, self.idx.struct_types, "struct type", "metadata"):
-            self.metadata = pb.Type(struct=self.program.metadata)
-
     def type_of_literal(self, lit: pb.Literal, path: str) -> pb.Type | None:
         match lit.WhichOneof("value"):
             case "bits":

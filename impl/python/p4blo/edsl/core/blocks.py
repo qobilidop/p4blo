@@ -31,7 +31,7 @@ from p4blo.edsl.core.types import (
 from p4blo.v0 import p4blo_pb2 as pb
 
 if TYPE_CHECKING:
-    from p4blo.edsl.core.program import Program
+    from p4blo.edsl.core.library import LibraryBuilder
 
 
 # ---------------------------------------------------------------------------
@@ -738,7 +738,7 @@ class Block:
 
     kind: pb.BlockKind = pb.BLOCK_KIND_UNSPECIFIED
 
-    def __init__(self, program: Program, name: str, params: Sequence[ParamSpec]) -> None:
+    def __init__(self, program: LibraryBuilder, name: str, params: Sequence[ParamSpec]) -> None:
         if not name:
             raise EdslError("a block needs a name")
         self.program = program
@@ -802,7 +802,7 @@ class Parser(Block):
 
     kind = pb.BLOCK_KIND_PARSER
 
-    def __init__(self, program: Program, name: str, params: Sequence[ParamSpec]) -> None:
+    def __init__(self, program: LibraryBuilder, name: str, params: Sequence[ParamSpec]) -> None:
         super().__init__(program, name, params)
         self.states: list[StateBody] = []
         self.start: str | None = None
@@ -859,7 +859,7 @@ class Control(Block):
 
     kind = pb.BLOCK_KIND_CONTROL
 
-    def __init__(self, program: Program, name: str, params: Sequence[ParamSpec]) -> None:
+    def __init__(self, program: LibraryBuilder, name: str, params: Sequence[ParamSpec]) -> None:
         super().__init__(program, name, params)
         self.actions: list[ActionBody] = []
         self.tables: list[Table] = []

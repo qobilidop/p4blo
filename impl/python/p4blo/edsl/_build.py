@@ -20,7 +20,7 @@ from typing import get_args, get_origin
 
 from p4blo.edsl.blocks import Block, ExternResult
 from p4blo.edsl.core.blocks import Block as CoreBlock
-from p4blo.edsl.core.program import Program as CoreProgram
+from p4blo.edsl.core.library import LibraryBuilder
 from p4blo.edsl.core.types import ExternInstance as CoreExternInstance
 from p4blo.edsl.core.types import ExternType as CoreExternType
 from p4blo.edsl.errors import EdslError, provenance
@@ -36,7 +36,7 @@ class Build:
 
     def __init__(self, name: str) -> None:
         with provenance():
-            self.core = CoreProgram(name)
+            self.core = LibraryBuilder(name)
         self.registered: set[type] = set()
         self.blocks: dict[type[Block], CoreBlock] = {}
         self.extern_types: dict[str, CoreExternType] = {}
@@ -121,7 +121,7 @@ class Build:
         for instance in externs:
             self.extern(instance)
 
-    def finish(self) -> pb.Program:
+    def finish(self) -> pb.BlockLibrary:
         """Return declarations after checking all deferred extern calls."""
         if self.pending:
             result = self.pending[0]
@@ -130,7 +130,7 @@ class Build:
                 f"the result of {result.method}(...) was never assigned{where}", location=None
             )
         with provenance():
-            return self.core.build()
+            return self.core.build_library()
 
 
 __all__ = ["Build"]

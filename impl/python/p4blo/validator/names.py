@@ -2,8 +2,7 @@
 
 `Scope` is where a statement or expression stands. The tables below it are
 the placement rules of the schema as data: which statements each block kind
-allows, which parameter directions each owner allows, and the signature an
-exported block must have. `NameChecks` resolves references, reporting why
+allows and which parameter directions each owner allows. `NameChecks` resolves references, reporting why
 one does not resolve (REF_UNRESOLVED, REF_KIND, SCOPE_VAR, SCOPE_DECL), and
 checks the small namespaces and the error list.
 """
@@ -94,14 +93,6 @@ KIND_NAMES = {
     pb.BLOCK_KIND_PARSER: "parser",
     pb.BLOCK_KIND_CONTROL: "control",
     pb.BLOCK_KIND_DEPARSER: "deparser",
-}
-
-
-# The signature an exported block must have, by kind: (direction, H or M).
-EXPORT_SIGNATURES: dict[int, tuple[tuple[int, str], ...]] = {
-    pb.BLOCK_KIND_PARSER: ((pb.DIRECTION_OUT, "H"), (pb.DIRECTION_INOUT, "M")),
-    pb.BLOCK_KIND_CONTROL: ((pb.DIRECTION_INOUT, "H"), (pb.DIRECTION_INOUT, "M")),
-    pb.BLOCK_KIND_DEPARSER: ((pb.DIRECTION_IN, "H"),),
 }
 
 

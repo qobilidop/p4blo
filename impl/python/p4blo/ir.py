@@ -14,7 +14,7 @@ from google.protobuf import json_format, text_format
 
 from p4blo.v0 import p4blo_pb2 as pb
 
-# Core errors, in the order Program.errors must begin with.
+# Core errors, in the order BlockLibrary.errors must begin with.
 CORE_ERRORS: tuple[str, ...] = (
     "NoError",
     "PacketTooShort",
@@ -26,29 +26,29 @@ CORE_ERRORS: tuple[str, ...] = (
 )
 
 
-def load_text(source: str | Path) -> pb.Program:
+def load_text(source: str | Path) -> pb.BlockLibrary:
     """Parse a program from text format, given the text or a path to it."""
     text = source.read_text() if isinstance(source, Path) else source
-    return text_format.Parse(text, pb.Program())
+    return text_format.Parse(text, pb.BlockLibrary())
 
 
-def dump_text(program: pb.Program) -> str:
+def dump_text(program: pb.BlockLibrary) -> str:
     return text_format.MessageToString(program)
 
 
-def load_binary(data: bytes) -> pb.Program:
-    return pb.Program.FromString(data)
+def load_binary(data: bytes) -> pb.BlockLibrary:
+    return pb.BlockLibrary.FromString(data)
 
 
-def dump_binary(program: pb.Program) -> bytes:
+def dump_binary(program: pb.BlockLibrary) -> bytes:
     return program.SerializeToString(deterministic=True)
 
 
-def load_json(text: str) -> pb.Program:
-    return json_format.Parse(text, pb.Program())
+def load_json(text: str) -> pb.BlockLibrary:
+    return json_format.Parse(text, pb.BlockLibrary())
 
 
-def dump_json(program: pb.Program) -> str:
+def dump_json(program: pb.BlockLibrary) -> str:
     return json_format.MessageToJson(program, preserving_proto_field_name=True)
 
 
@@ -88,7 +88,7 @@ class Index:
     the schema says, and `program_names` holds all of them.
     """
 
-    program: pb.Program
+    program: pb.BlockLibrary
     header_types: dict[str, pb.HeaderType] = field(default_factory=dict)
     struct_types: dict[str, pb.StructType] = field(default_factory=dict)
     enum_types: dict[str, pb.EnumType] = field(default_factory=dict)
@@ -100,7 +100,7 @@ class Index:
     errors: dict[str, int] = field(default_factory=dict)
 
     @classmethod
-    def build(cls, program: pb.Program) -> Index:
+    def build(cls, program: pb.BlockLibrary) -> Index:
         index = cls(program)
 
         def add(table: dict, decl, taken: set[str], where: str) -> None:
@@ -150,12 +150,6 @@ class Index:
                 add(scope.states, s, taken, where)
             index.scopes[b.name] = scope
         return index
-
-    def exported(self, role: str) -> pb.Block:
-        for e in self.program.exports:
-            if e.role == role:
-                return self.blocks[e.block]
-        raise KeyError(role)
 
     def fields(self, type_name: str) -> list[pb.Field]:
         """The fields of a header or struct type."""

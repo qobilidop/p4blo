@@ -123,7 +123,7 @@ from p4blo.edsl.blocks import (
 )
 from p4blo.edsl.errors import EdslError
 from p4blo.edsl.externs import Extern
-from p4blo.edsl.library import BlockLibrary, CompiledLibrary
+from p4blo.edsl.library import BlockLibrary
 from p4blo.edsl.values import (
     Bits,
     Bool,
@@ -234,7 +234,6 @@ __all__ = [
     "Out",
     "Parser",
     "BlockLibrary",
-    "CompiledLibrary",
     "Reject",
     "Stack",
     "State",
