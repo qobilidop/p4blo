@@ -96,8 +96,8 @@ BINARY_OP_GE: BinaryOp
 BINARY_OP_AND: BinaryOp
 BINARY_OP_OR: BinaryOp
 
-class Program(_message.Message):
-    __slots__ = ("name", "errors", "header_types", "struct_types", "enum_types", "extern_types", "extern_instances", "blocks", "headers", "metadata", "exports")
+class BlockLibrary(_message.Message):
+    __slots__ = ("name", "errors", "header_types", "struct_types", "enum_types", "extern_types", "extern_instances", "blocks")
     NAME_FIELD_NUMBER: _ClassVar[int]
     ERRORS_FIELD_NUMBER: _ClassVar[int]
     HEADER_TYPES_FIELD_NUMBER: _ClassVar[int]
@@ -106,9 +106,6 @@ class Program(_message.Message):
     EXTERN_TYPES_FIELD_NUMBER: _ClassVar[int]
     EXTERN_INSTANCES_FIELD_NUMBER: _ClassVar[int]
     BLOCKS_FIELD_NUMBER: _ClassVar[int]
-    HEADERS_FIELD_NUMBER: _ClassVar[int]
-    METADATA_FIELD_NUMBER: _ClassVar[int]
-    EXPORTS_FIELD_NUMBER: _ClassVar[int]
     name: str
     errors: _containers.RepeatedScalarFieldContainer[str]
     header_types: _containers.RepeatedCompositeFieldContainer[HeaderType]
@@ -117,18 +114,7 @@ class Program(_message.Message):
     extern_types: _containers.RepeatedCompositeFieldContainer[ExternType]
     extern_instances: _containers.RepeatedCompositeFieldContainer[ExternInstance]
     blocks: _containers.RepeatedCompositeFieldContainer[Block]
-    headers: str
-    metadata: str
-    exports: _containers.RepeatedCompositeFieldContainer[Export]
-    def __init__(self, name: _Optional[str] = ..., errors: _Optional[_Iterable[str]] = ..., header_types: _Optional[_Iterable[_Union[HeaderType, _Mapping]]] = ..., struct_types: _Optional[_Iterable[_Union[StructType, _Mapping]]] = ..., enum_types: _Optional[_Iterable[_Union[EnumType, _Mapping]]] = ..., extern_types: _Optional[_Iterable[_Union[ExternType, _Mapping]]] = ..., extern_instances: _Optional[_Iterable[_Union[ExternInstance, _Mapping]]] = ..., blocks: _Optional[_Iterable[_Union[Block, _Mapping]]] = ..., headers: _Optional[str] = ..., metadata: _Optional[str] = ..., exports: _Optional[_Iterable[_Union[Export, _Mapping]]] = ...) -> None: ...
-
-class Export(_message.Message):
-    __slots__ = ("role", "block")
-    ROLE_FIELD_NUMBER: _ClassVar[int]
-    BLOCK_FIELD_NUMBER: _ClassVar[int]
-    role: str
-    block: str
-    def __init__(self, role: _Optional[str] = ..., block: _Optional[str] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., errors: _Optional[_Iterable[str]] = ..., header_types: _Optional[_Iterable[_Union[HeaderType, _Mapping]]] = ..., struct_types: _Optional[_Iterable[_Union[StructType, _Mapping]]] = ..., enum_types: _Optional[_Iterable[_Union[EnumType, _Mapping]]] = ..., extern_types: _Optional[_Iterable[_Union[ExternType, _Mapping]]] = ..., extern_instances: _Optional[_Iterable[_Union[ExternInstance, _Mapping]]] = ..., blocks: _Optional[_Iterable[_Union[Block, _Mapping]]] = ...) -> None: ...
 
 class Type(_message.Message):
     __slots__ = ("bits", "boolean", "header", "struct", "enum_type", "error", "stack")

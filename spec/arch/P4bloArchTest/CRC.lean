@@ -12,7 +12,7 @@ def declaration (name : String) (inputWidth outputWidth : Nat) : ExternType :=
       returns := some (.bits outputWidth) }] }
 
 def bindOne (decl : ExternType) : Except String Externs := do
-  let index ← Index.build { (default : Program) with
+  let index ← Index.build { (default : BlockLibrary) with
     externTypes := [decl]
     externInstances := [{ name := "hash", externType := decl.name, args := [] }] }
   P4bloArch.bind index

@@ -47,6 +47,10 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex, assembly_of
+from p4blo.arch.v0 import assembly_pb2 as apb
+
 # Runnable as a script from the repository root without installing anything.
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "impl" / "python"))
@@ -129,7 +133,7 @@ class Generated:
     seed: int
     family: str
     description: str
-    program: pb.Program
+    program: apb.BlockAssembly
     cases: tuple[Case, ...]
     sequence: bool = False
 
@@ -139,7 +143,7 @@ class Generated:
 # ---------------------------------------------------------------------------
 
 
-def byte_aligned(program: pb.Program) -> pb.Program:
+def byte_aligned(program: apb.BlockAssembly) -> apb.BlockAssembly:
     """Pad the one-field Result header of a scalar context to whole bytes.
 
     The pad is a separate field after the value, assigned zero right after
@@ -162,8 +166,8 @@ def byte_aligned(program: pb.Program) -> pb.Program:
     return program
 
 
-def _random_cases(program: pb.Program, rng: random.Random) -> tuple[Case, ...]:
-    index = ir.Index.build(program)
+def _random_cases(program: apb.BlockAssembly, rng: random.Random) -> tuple[Case, ...]:
+    index = BoundIndex.build(program)
     return tuple(generate(index, rng.getrandbits(32), CASES, PORTS))
 
 
@@ -276,7 +280,7 @@ def corpus_family(seed: int, rng: random.Random) -> Generated:
     corpus with the seed, so that consecutive seeds of this family reach
     every program before any repeats."""
     path = CORPUS[(seed // len(FAMILIES)) % len(CORPUS)]
-    program = ir.load_text(path)
+    program = arch_wire.load_text(path)
     name = str(path.parent.relative_to(ROOT))
     return Generated(seed, "corpus", name, program, _random_cases(program, rng))
 
@@ -334,7 +338,7 @@ def vectors(generated: Generated, index: ir.Index) -> list[tuple[str, str]]:
     groups = [generated.cases] if generated.sequence else [(c,) for c in generated.cases]
     files: list[tuple[str, str]] = []
     for number, group in enumerate(groups):
-        loaded = arch.load(generated.program)
+        loaded = arch.reference.load(generated.program)
         lines: list[str] = []
         for case in group:
             outcome = python_outcome(loaded, case, SWITCH_PORTS)
@@ -349,10 +353,10 @@ def vectors(generated: Generated, index: ir.Index) -> list[tuple[str, str]]:
     return files
 
 
-def self_check(program: pb.Program, index: ir.Index, text: str) -> None:
+def self_check(program: apb.BlockAssembly, index: ir.Index, text: str) -> None:
     """The vector must replay on Python from fresh state: it says what
     Python did, and nothing else."""
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     stf.assert_replay(index, stf.parse(text), arch.stf_driver(arch.Switch(SWITCH_PORTS), loaded))
 
 
@@ -411,8 +415,12 @@ RANKS = 1024
 
 
 def table_mask_model(
-    program: pb.Program, entries: pb.Entries, *, reverse: bool = False, real_masks: bool = False
-) -> tuple[pb.Program, pb.Entries]:
+    program: apb.BlockAssembly,
+    entries: pb.Entries,
+    *,
+    reverse: bool = False,
+    real_masks: bool = False,
+) -> tuple[apb.BlockAssembly, pb.Entries]:
     """The program and host entries under which p4blo computes what the
     pinned simulator computes for the `add` lines `run.py` writes.
 
@@ -438,9 +446,9 @@ def table_mask_model(
     that the rewrite and the ranking are known to change nothing but the
     masks (`explained_by_table_mask`).
     """
-    index = ir.Index.build(program)
+    index = BoundIndex.build(program)
     installed = InstalledEntries(index)
-    model = pb.Program()
+    model = apb.BlockAssembly()
     model.CopyFrom(program)
     lpm_only: set[tuple[str, str]] = set()
     ternary: dict[tuple[str, str], pb.Table] = {}
@@ -493,17 +501,17 @@ def table_mask_model(
     return model, host
 
 
-def table_mask_control_agrees(program: pb.Program, case: Case) -> bool:
+def table_mask_control_agrees(program: apb.BlockAssembly, case: Case) -> bool:
     """Whether the table-mask rewrite with the real masks gives Python's real
     outputs under both tie orders."""
-    original = python_outcome(arch.load(program), case, SWITCH_PORTS)
+    original = python_outcome(arch.reference.load(program), case, SWITCH_PORTS)
     try:
         for reverse in (False, True):
             model, entries = table_mask_model(
                 program, case.entries, reverse=reverse, real_masks=True
             )
             control = Case(entries, case.ingress_port, case.packet)
-            outcome = python_outcome(arch.load(model), control, SWITCH_PORTS)
+            outcome = python_outcome(arch.reference.load(model), control, SWITCH_PORTS)
             if outcome.error is not None or outcome.outputs != original.outputs:
                 return False
     except ValueError:
@@ -630,7 +638,7 @@ def defect_winner(lookup: Lookup, *, reverse: bool) -> Winner | None:
     return _winner(best)
 
 
-def table_mask_changes_a_winner(program: pb.Program, case: Case) -> bool:
+def table_mask_changes_a_winner(program: apb.BlockAssembly, case: Case) -> bool:
     """Whether the table-mask defect changes which entry wins some lookup
     of the case, established without the interpreter's matcher.
 
@@ -646,7 +654,7 @@ def table_mask_changes_a_winner(program: pb.Program, case: Case) -> bool:
     a model whose masks equal their values.
     """
     with recording_lookups() as lookups:
-        python_outcome(arch.load(program), case, SWITCH_PORTS)
+        python_outcome(arch.reference.load(program), case, SWITCH_PORTS)
     changed = False
     for lookup in lookups:
         real = real_winner(lookup)
@@ -663,7 +671,7 @@ def table_mask_changes_a_winner(program: pb.Program, case: Case) -> bool:
 
 def explained_by_table_mask(
     oracle: oracle_run.Oracle,
-    program: pb.Program,
+    program: apb.BlockAssembly,
     prepared: Prepared,
     case: Case,
     vector: Path,
@@ -695,10 +703,10 @@ def explained_by_table_mask(
         for reverse in (False, True):
             model, entries = table_mask_model(program, case.entries, reverse=reverse)
             modelled = Case(entries, case.ingress_port, case.packet)
-            outcomes.append(python_outcome(arch.load(model), modelled, SWITCH_PORTS))
+            outcomes.append(python_outcome(arch.reference.load(model), modelled, SWITCH_PORTS))
     except ValueError:
         return False
-    original = python_outcome(arch.load(program), case, SWITCH_PORTS)
+    original = python_outcome(arch.reference.load(program), case, SWITCH_PORTS)
     outcome = outcomes[0]
     if (
         any(o.error is not None for o in outcomes)
@@ -782,11 +790,11 @@ def prepare(generated: Generated, directory: Path) -> Prepared:
     """Validate, print and write the vectors of a program, checking each
     vector against Python first. Needs no oracle; raises on any problem."""
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / "program.txtpb").write_text(ir.dump_text(generated.program))
-    index = ir.Index.build(generated.program)
-    arch.load(generated.program)  # validates; a generator mistake is an error
+    (directory / "program.txtpb").write_text(arch_wire.dump_text(generated.program))
+    index = BoundIndex.build(generated.program)
+    arch.reference.load(generated.program)  # validates; a generator mistake is an error
     p4 = directory / "program.p4"
-    p4.write_text(v1model.print_program(index.program, index=index))
+    p4.write_text(v1model.print_program(assembly_of(index.program, index.bindings), index=index))
     paths: list[Path] = []
     for name, text in vectors(generated, index):
         path = directory / name

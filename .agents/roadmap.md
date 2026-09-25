@@ -31,8 +31,9 @@ p4-spectec-lean"; `decisions.md`, 2026-09-24).
   revisit rule imply `Execution.drive` terminates; with progress, a valid
   program has a defined result. Landed: progress, the revisit check, the
   cursor never moving back.
-- [ ] Codec composition through Program and Export (C3). Landed: component
-  laws through Action and Block, total decoders, independent anchors.
+- [ ] Codec composition through core BlockLibrary and architecture Export
+  and BlockAssembly (C3). Landed: component laws through Action and Block,
+  total decoders, independent anchors.
 - [ ] Checker completeness per fragment; `ResultOk` and the entry-point
   corollaries are landed, `structVar` on the final frame is not.
 - [ ] Typed Lean construction language beyond what landed (closed scalars,

@@ -15,6 +15,8 @@ import pytest
 
 from p4blo import arch, ir, stf
 from p4blo.arch import CONTRACT, Architecture, ContractError, Filter, Switch, stf_driver
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus" / "forwarder"
@@ -54,8 +56,8 @@ def program(
     locals: str = "",
     control: str = "",
     extra: str = "",
-) -> pb.Program:
-    return ir.load_text(f"""
+) -> apb.BlockAssembly:
+    return arch_wire.load_text(f"""
         name: "tiny"
         {CORE_ERRORS}
         header_types {{ name: "h_t" fields {{ name: "f" type {{ bits: {h_width} }} }} }}
@@ -104,7 +106,7 @@ PARSER_ERROR = 'fields { name: "parser_error" type { error {} } }'
 
 @pytest.fixture(scope="module")
 def forwarder() -> arch.Loaded:
-    return arch.load(ir.load_text(CORPUS / "forwarder.txtpb"))
+    return arch.reference.load(arch_wire.load_text(CORPUS / "forwarder.txtpb"))
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +119,7 @@ def test_the_forwarder_declares_three_contract_fields(forwarder: arch.Loaded) ->
 
 
 def test_a_program_may_declare_no_contract_field() -> None:
-    loaded = arch.load(program(metadata='fields { name: "color" type { bits: 3 } }'))
+    loaded = arch.reference.load(program(metadata='fields { name: "color" type { bits: 3 } }'))
     assert CONTRACT.present(loaded.index) == set()
     # Undeclared fields read as their zero value and swallow writes.
     m = loaded.metadata.zero()
@@ -137,27 +139,31 @@ def test_a_program_may_declare_no_contract_field() -> None:
 )
 def test_a_contract_field_of_the_wrong_type_refuses_to_load(field: str, message: str) -> None:
     with pytest.raises(ContractError, match=message):
-        arch.load(program(metadata=field))
+        arch.reference.load(program(metadata=field))
 
 
 def test_a_missing_role_is_refused_at_load() -> None:
     """The validator does not know which roles an architecture needs, so
     the loader resolves them: a program without them never reaches a packet."""
     full = program(metadata=EGRESS)
-    without = pb.Program()
+    without = apb.BlockAssembly()
     without.CopyFrom(full)
     del without.exports[:]
     with pytest.raises(arch.LoadError, match="exports no 'parser' block"):
-        arch.load(without)
+        arch.reference.load(without)
     without.exports.add(role="parser", block="P")
     without.exports.add(role="control", block="C")
     with pytest.raises(arch.LoadError, match="exports no 'deparser' block"):
-        arch.load(without)
+        arch.reference.load(without)
     # The filter runs without a deparser when asked for only what it needs.
-    loaded = arch.load(without, roles=("parser", "control"))
+    loaded = arch.reference.load(without, roles=("parser", "control"))
     assert dict(loaded.blocks) == {"parser": "P", "control": "C"}
     assert Filter().run(loaded, loaded.entries(), 0, b"\x01") == [(0, b"\x01")]
-    assert dict(arch.load(full).blocks) == {"parser": "P", "control": "C", "deparser": "D"}
+    assert dict(arch.reference.load(full).blocks) == {
+        "parser": "P",
+        "control": "C",
+        "deparser": "D",
+    }
 
 
 def test_the_contract_is_the_design_table() -> None:
@@ -248,7 +254,7 @@ def stf_entries(index: ir.Index, text: str) -> pb.Entries:
 
 
 def test_flood_sends_to_every_port_but_the_ingress_one() -> None:
-    loaded = arch.load(
+    loaded = arch.reference.load(
         program(metadata=FLOOD, control=assign(meta("flood"), "literal { boolean: true }"))
     )
     switch = Switch(ports=4)
@@ -266,7 +272,7 @@ def test_flood_sends_to_every_port_but_the_ingress_one() -> None:
 
 
 def test_drop_wins_over_flood() -> None:
-    loaded = arch.load(
+    loaded = arch.reference.load(
         program(
             metadata=DROP + FLOOD + EGRESS,
             control=assign(meta("flood"), "literal { boolean: true }")
@@ -279,7 +285,7 @@ def test_drop_wins_over_flood() -> None:
 
 
 def test_unicast_goes_to_egress_port_with_the_payload_appended() -> None:
-    loaded = arch.load(
+    loaded = arch.reference.load(
         program(
             metadata=EGRESS + INGRESS,
             # egress_port = ingress_port + 1; hdr.h.f = 0x42
@@ -296,7 +302,7 @@ def test_unicast_goes_to_egress_port_with_the_payload_appended() -> None:
     assert Filter().run(loaded, loaded.entries(), 2, b"\x01payload") == [(3, b"\x01payload")]
 
 
-def egress_to(port: int) -> pb.Program:
+def egress_to(port: int) -> apb.BlockAssembly:
     return program(metadata=EGRESS, control=assign(meta("egress_port"), bits(9, port)))
 
 
@@ -304,7 +310,7 @@ def egress_to(port: int) -> pb.Program:
 def test_an_egress_port_the_switch_does_not_have_drops_with_a_diagnostic(port: int) -> None:
     """The filter has no port count and passes any bit<9> port through;
     511, BMv2's drop port, is just an out-of-range port here."""
-    loaded = arch.load(egress_to(port))
+    loaded = arch.reference.load(egress_to(port))
     switch = Switch(ports=4)
     assert switch.run(loaded, loaded.entries(), 0, b"\x01") == []
     assert switch.diagnostics == [f"egress_port {port} is not a port of this switch"]
@@ -312,14 +318,14 @@ def test_an_egress_port_the_switch_does_not_have_drops_with_a_diagnostic(port: i
 
 
 def test_the_last_port_is_a_port() -> None:
-    loaded = arch.load(egress_to(3))
+    loaded = arch.reference.load(egress_to(3))
     switch = Switch(ports=4)
     assert switch.run(loaded, loaded.entries(), 0, b"\x01") == [(3, b"\x01")]
     assert switch.diagnostics == []
 
 
 def test_an_ingress_port_the_switch_does_not_have_is_the_callers_error() -> None:
-    loaded = arch.load(counting_program())
+    loaded = arch.reference.load(counting_program())
     switch = Switch(ports=4)
     with pytest.raises(ValueError, match="ingress_port 4 is not a port of this switch"):
         switch.run(loaded, loaded.entries(), 4, b"\x00")
@@ -330,7 +336,7 @@ def test_an_ingress_port_the_switch_does_not_have_is_the_callers_error() -> None
 
 
 def test_an_ingress_port_wider_than_bit9_is_the_callers_error_under_the_filter() -> None:
-    loaded = arch.load(counting_program())
+    loaded = arch.reference.load(counting_program())
     with pytest.raises(ValueError, match="ingress_port 512 does not fit in bit<9>"):
         Filter().run(loaded, loaded.entries(), 512, b"\x00")
     assert Filter().run(loaded, loaded.entries(), 511, b"\x00") == [(0, b"\x00")]
@@ -343,7 +349,7 @@ def test_an_ingress_port_wider_than_bit9_is_the_callers_error_under_the_filter()
 
 @pytest.mark.parametrize("make", [Filter, lambda: Switch(ports=2)], ids=["filter", "switch"])
 def test_a_misaligned_parse_drops_with_a_diagnostic(make: Callable[[], Architecture]) -> None:
-    loaded = arch.load(program(metadata=EGRESS, h_width=4))
+    loaded = arch.reference.load(program(metadata=EGRESS, h_width=4))
     architecture = make()
     assert architecture.run(loaded, loaded.entries(), 0, b"\x12") == []
     assert architecture.diagnostics == ["parser consumed 4 bits, not whole bytes; packet dropped"]
@@ -358,7 +364,7 @@ PARSER_ERROR_IS_TOO_SHORT = (
 def test_parser_error_reaches_the_control_and_the_wire() -> None:
     """The parser fails on g; the control writes the error into h; the
     switch emits h and the byte g could not take as payload."""
-    loaded = arch.load(
+    loaded = arch.reference.load(
         program(
             metadata=PARSER_ERROR,
             parser_body=EXTRACT_H + EXTRACT_G,
@@ -376,7 +382,7 @@ def test_parser_error_reaches_the_control_and_the_wire() -> None:
 
 
 def test_the_filter_can_drop_on_parser_error() -> None:
-    loaded = arch.load(
+    loaded = arch.reference.load(
         program(
             metadata=PARSER_ERROR + DROP,
             parser_body=EXTRACT_H + EXTRACT_G,
@@ -393,7 +399,7 @@ def test_the_filter_can_drop_on_parser_error() -> None:
 
 
 def test_without_parser_error_the_control_still_runs_after_a_rejection() -> None:
-    loaded = arch.load(
+    loaded = arch.reference.load(
         program(
             metadata=EGRESS,
             parser_body=EXTRACT_H + EXTRACT_G,
@@ -439,7 +445,7 @@ COUNT = (
 )
 
 
-def counting_program() -> pb.Program:
+def counting_program() -> apb.BlockAssembly:
     return program(
         metadata=EGRESS,
         extra=REGISTER,
@@ -449,7 +455,7 @@ def counting_program() -> pb.Program:
 
 
 def test_a_register_counts_across_packets() -> None:
-    loaded = arch.load(counting_program())
+    loaded = arch.reference.load(counting_program())
     switch = Switch(ports=2)
     assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
     assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x02")]
@@ -461,5 +467,5 @@ def test_a_register_counts_across_packets() -> None:
 def test_loading_again_starts_the_register_over() -> None:
     switch = Switch(ports=2)
     for _ in range(2):
-        loaded = arch.load(counting_program())
+        loaded = arch.reference.load(counting_program())
         assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]

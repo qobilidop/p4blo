@@ -12,7 +12,7 @@ the two on accept or reject and on the first code.
 
 Wire problems the Python validator reports (a oneof with no kind, an
 unspecified enum, a bits value that is not decimal) do not reach this
-checker: `Program.fromJsonString` rejects them first.
+checker: `BlockLibrary.fromJsonString` rejects them first.
 
 `check_sound` (in `Validity.Sound`) proves that a program the checker
 accepts satisfies `Valid`.
@@ -670,19 +670,8 @@ def checkExternType (idx : Index) (path : String) (et : ExternType) : Chk Unit :
     | some t => checkType idx (dot mpath "returns") t
     | none => pure ()
 
-/-- The exports: roles distinct, each block resolved, with the signature
-of its kind (validator, `check_exports`). -/
-def checkExports (p : Program) (idx : Index) (seen : List String) : Nat → List Export → Chk Unit
-  | _, [] => pure ()
-  | i, e :: es => do
-    let path := at_ "exports" i
-    ensure (!seen.contains e.role) .exportDuplicate path s!"role '{e.role}' exported twice"
-    let b ← resolve idx idx.blocks[e.block]? e.block "block" (dot path "block")
-    ensure (signatureOk p b) .exportSignature path s!"'{b.name}' lacks the signature of its kind"
-    checkExports p idx (seen ++ [e.role]) (i + 1) es
-
 /-- Check the program; its index, or the first problem. -/
-def check (p : Program) : Except Diagnostic Index := do
+def check (p : BlockLibrary) : Except Diagnostic Index := do
   let idx ← (Index.build p).mapError indexDiagnostic
   ensure (coreErrors.isPrefixOf p.errors) .errorList "errors"
     s!"errors must begin with {", ".intercalate coreErrors}"
@@ -704,8 +693,6 @@ def check (p : Program) : Except Diagnostic Index := do
   each p.structTypes fun i s =>
     ensure (tyDeep idx (fuel idx) (.struct s.name)) .typeInvalid (at_ "struct_types" i)
       "struct contains itself"
-  let _ ← resolve idx idx.structTypes[p.headers]? p.headers "struct type" "headers"
-  let _ ← resolve idx idx.structTypes[p.metadata]? p.metadata "struct type" "metadata"
   each p.externTypes fun i et => checkExternType idx (at_ "extern_types" i) et
   each p.externInstances fun i inst => do
     let path := at_ "extern_instances" i
@@ -713,7 +700,6 @@ def check (p : Program) : Except Diagnostic Index := do
       (dot path "extern_type")
     checkLiteralArgs idx inst.args et.constructorParams (dot path "args") .externArgs
   each p.blocks fun i b => checkBlock idx (at_ "blocks" i) b
-  checkExports p idx [] 0 p.exports
   ensure (acyclic (p.blocks.map (·.name))
       (fun n => ((p.blocks.find? (·.name == n)).map blockCallees).getD [])) .callCycle "blocks"
     "block calls form a cycle"

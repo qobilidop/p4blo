@@ -14,7 +14,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch, ir, stf
+from p4blo import arch, stf
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, save
 from p4blo.drt.run import (
@@ -94,7 +95,7 @@ def entries(policy: Policy) -> pb.Entries:
                 f"add check_ports meta.ingress_port:{ingress} meta.egress_port:{egress} "
                 f"set_direction(dir:{direction})"
             )
-    return stf.to_entries(ir.Index.build(build()), stf.parse("\n".join(lines)))
+    return stf.to_entries(BoundIndex.build(build()), stf.parse("\n".join(lines)))
 
 
 def complete_state(ones: tuple[set[int], set[int]]) -> Snapshot:
@@ -141,7 +142,7 @@ def failure_path(report: Report, directory: Path) -> Path:
 
 
 def check_python(sequence: list[Step]) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     for item in sequence:
         actual = python_outcome(loaded, item.case, 4)
         assert actual.error is None and actual.diagnostic is None

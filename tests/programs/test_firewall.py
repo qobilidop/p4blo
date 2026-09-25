@@ -11,9 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, stf, validator
-from p4blo.arch import v1model
+from p4blo import arch, stf
+from p4blo.arch import v1model, validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.crc import crc16, crc32
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.run import LeanRunner, run_python
 from p4blo.drt.state import Observation, Snapshot, snapshot
@@ -114,7 +117,7 @@ def step(
     data: bytes, ingress: int, egress: int | None, inserted: set[int], *, directions: bool = True
 ) -> Step:
     rules = CONFIGURATION if directions else CONFIGURATION[:2]
-    entries = stf.to_entries(ir.Index.build(build()), stf.parse("\n".join(rules)))
+    entries = stf.to_entries(BoundIndex.build(build()), stf.parse("\n".join(rules)))
     outputs = () if egress is None else ((egress, forwarded(data, egress)),)
     return Step(Case(entries, ingress, data), outputs, expected_state(inserted))
 
@@ -169,7 +172,7 @@ def edges() -> list[Step]:
     miss[24:26] = checksum(bytes(miss[14:34]))
     non_ipv4 = bytearray(packet(seq=41))
     non_ipv4[12:14] = bytes.fromhex("86dd")
-    rules = stf.to_entries(ir.Index.build(build()), stf.parse("\n".join(CONFIGURATION)))
+    rules = stf.to_entries(BoundIndex.build(build()), stf.parse("\n".join(CONFIGURATION)))
     bad_checksum = bytearray(packet(flags=2, seq=43))
     bad_checksum[24:26] = bytes(2)
     return [
@@ -221,7 +224,7 @@ def test_independent_crc_indices(port: int) -> None:
     ],
 )
 def test_known_packets_and_complete_state(sequence: list[Step]) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     assert snapshot(loaded) == expected_state(set())
     for item in sequence:
         assert tuple(run_python(loaded, item.case, 4)) == item.outputs
@@ -244,7 +247,7 @@ def test_lean_agrees_with_independent_firewall_expectations(
     lean_binary: Path, tmp_path: Path, sequence: list[Step]
 ) -> None:
     program_json = tmp_path / "firewall.json"
-    program_json.write_text(ir.dump_json(build()))
+    program_json.write_text(arch_wire.dump_json(build()))
     with LeanRunner([lean_binary], program_json, 4) as runner:
         for item in sequence:
             result = runner.run(item.case)
@@ -416,7 +419,7 @@ def test_firewall_route_miss_on_spectec(tmp_path: Path, printed: bool) -> None:
         source = tmp_path / "printed.p4"
         source.write_text(v1model.print_program(build()))
         translated, _ = spectec.translate(
-            "\n".join(CONFIGURATION) + "\n" + packets, ir.Index.build(build())
+            "\n".join(CONFIGURATION) + "\n" + packets, BoundIndex.build(build())
         )
     else:
         source = original.SOURCE
@@ -530,7 +533,7 @@ def walk(statements: Sequence[pb.Stmt]) -> Iterator[pb.Stmt]:
 MUTATIONS = ["accept-one-filter", "insert-without-syn", "ignore-direction-hit", "unreversed-ports"]
 
 
-def mutant(name: str) -> tuple[pb.Program, list[Step]]:
+def mutant(name: str) -> tuple[apb.BlockAssembly, list[Step]]:
     program = build()
     ingress = next(b for b in program.blocks if b.name == "MyIngress")
     statements = list(walk(ingress.body))
@@ -571,7 +574,7 @@ def mutant(name: str) -> tuple[pb.Program, list[Step]]:
 @pytest.mark.parametrize("name", MUTATIONS)
 def test_firewall_known_answers_kill_valid_semantic_mutations(name: str) -> None:
     program, sequence = mutant(name)
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     detected = False
     for item in sequence:
         outputs = tuple(run_python(loaded, item.case, 4))
@@ -585,7 +588,7 @@ def test_lean_agrees_on_firewall_mutant_detection(
 ) -> None:
     program, sequence = mutant(name)
     path = tmp_path / "mutant.json"
-    path.write_text(ir.dump_json(program))
+    path.write_text(arch_wire.dump_json(program))
     detected = False
     with LeanRunner([lean_binary], path, 4) as runner:
         for item in sequence:

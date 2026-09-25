@@ -103,10 +103,10 @@ one intended authority:
 | Concern | Intended authority | Today |
 |---|---|---|
 | Abstract syntax: expressions, statements, declarations | Lean, `spec/ir/P4bloIR/IR.lean` | in place |
-| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/` | a whole-program checker proved sound for the declarative rules, agreeing with the Python validator on every tested program, with progress proved for valid programs; checker completeness and termination are open |
+| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/` | a core-library checker proved sound for the declarative rules, agreeing with the Python validator on tested libraries, with progress proved for valid libraries; architecture bindings are checked separately; checker completeness and termination are open |
 | Meaning: execution and observable behavior | Lean, `spec/ir/P4bloIR/` | in place |
-| Serialization: messages, field numbers, encoding versions | the protobuf schema, `spec/ir/proto/p4blo/v0/p4blo.proto` | in place |
-| Correspondence between wire values and abstract programs | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; Program and Export composition are open |
+| Serialization: messages, field numbers, encoding versions | the core and architecture protobuf schemas under `spec/ir/proto/` and `spec/arch/proto/` | in place |
+| Correspondence between wire values and abstract libraries | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; BlockLibrary and architecture-binding composition are open |
 
 The text form of the protobuf is the golden format; binary and JSON are
 transports. These are distinct contracts, and passing one does not
@@ -116,10 +116,10 @@ establish the next:
 Serialized data
     | parse: supported, well-formed encoding?
 Wire representation
-    | decode: which abstract program?
-Abstract program
-    | validate: is that program legal?
-Valid program
+    | decode: which abstract library?
+Abstract library
+    | validate: is that library legal?
+Valid library
     | execute: what does it do?
 Observable behavior
 ```
@@ -128,10 +128,12 @@ Parsing a protobuf message does not establish validity: variants may be
 unset, widths illegal, references unresolved. Raw abstract syntax stays
 ordinary, with validity a separate predicate and an executable validator,
 so that raw syntax remains useful for diagnostics, malformed-input
-testing and cross-language correspondence. Whole-program validity is
-defined in Lean over the index, decided by an executable checker proved
-sound, and a valid program's machine never reaches an interpreter
-error: every finite run ends in success or a declared parser error.
+testing and cross-language correspondence. Core library validity is
+defined in Lean over the index and decided by an executable checker proved
+sound; architecture H/M roots and exports have a separate sound binding
+checker. A valid library's well-formed machine never reaches an interpreter
+error: every finite run ends in success or a declared parser error under
+the documented extern, installation and entry premises.
 Checker completeness, termination and the complete codec proofs are the
 obligations that remain, as assurance.md records.
 
@@ -152,16 +154,19 @@ known type, every operator's result is determined by its operands, and
 run-time values carry their width, so no interpreter infers anything and
 the goldens stay half the size.
 
-The schema is package `p4blo.v0`; `v1` is reserved for the RFC-shaped
-form. `buf` lints it and generates the Python bindings, which are
-committed under `impl/python/p4blo/v0/` so that the proto package path and the
-Python import path coincide and contributors without `buf` have a working
-package; CI regenerates them and fails on any diff.
+The core schema is package `p4blo.v0`; architecture assembly uses
+`p4blo.arch.v0`. `v1` is reserved for the RFC-shaped form. `buf` lints
+both schemas and generates the Python bindings, committed under
+`impl/python/p4blo/v0/` and `impl/python/p4blo/arch/v0/` so the proto
+package paths and Python import paths coincide. Contributors without
+`buf` have a working package; CI regenerates them and fails on any diff.
 
 ### Blocks and the P4NAH rule
 
-The one hardcoded thing is a block calling convention and the rule that
-a block performs no effects. That rule is called P4NAH.
+Core blocks declare their own typed parameters. The P4NAH rule separates
+block computation from architecture actions: packet fate is returned as
+data for the caller to interpret. The supplied H/M entry helpers use this
+calling convention:
 
 ```
 parse   : Packet × M → H × M × bits consumed × accepted × error
@@ -169,17 +174,17 @@ control : H × M × TableEntries → H × M
 deparse : H → Packet
 ```
 
-A rejection is an outcome, not an exception: the caller gets the partial
-headers, whether the parser accepted, and the error, and decides what to
-do. A control writes fields of `M`; whoever called it acts on them
-afterwards. Drop, forward, flood, clone and recirculate are decisions
-written as data, executed by the architecture. Tables are inputs
-installed by the host. A block may call another block; that is P4's own
-composition and it is in.
+In this convention, rejection is an outcome, not an exception: the
+caller gets the partial headers, whether the parser accepted, and the
+error, and decides what to do. A control writes fields of `M`; whoever
+called it acts on them afterwards. Drop, forward, flood, clone and
+recirculate are decisions written as data, executed by the
+architecture. Tables are inputs installed by the host. A block may call
+another block; that is P4's own composition and it is in.
 
 There is one `Block` message with a kind tag, parse, control or deparse,
-and one signature. The three kinds differ in which statements they may
-contain, and the validator enforces those rules per kind.
+and an explicit parameter list. The three kinds differ in which statements
+they may contain, and the validator enforces those rules per kind.
 
 A parser may loop, since a state may be revisited while extracting into
 a header stack. The bound is the no-consumption revisit rule: a state
@@ -189,13 +194,14 @@ the meaning of a program depend on a number nobody specifies.
 
 ### Metadata contract
 
-An architecture declares the `M` fields it needs, each with a width and
-whether the architecture provides it before the block runs or consumes it
-after. At load the program's `M` is checked structurally against the
-declaration, by field name and width, and nothing else about `M`
-concerns anyone. A program declares exactly one `H` type and one `M`
-type. The contract vocabulary used by the architectures in this
-repository, each field optional and only checked when present:
+The supplied H/M adapter declares the `M` fields its architecture needs,
+each with a width and whether the architecture provides it before the block
+runs or consumes it after. At load the selected `M` is checked structurally
+against the declaration, by field name and width. Each `BlockBindings`
+selects one `H` type and one `M` type; the core library makes no such choice.
+Other architectures may invoke blocks with their own calling conventions.
+The vocabulary shared by the supplied filter and switch has the following
+fields, each optional and checked only when present:
 
 | Field | Type | Direction | Meaning |
 |---|---|---|---|
@@ -221,14 +227,15 @@ Python callable at load, checks arity, directions and widths, and refuses
 to load on any mismatch. Every extern a corpus program uses ships twice,
 a Python implementation and a Lean model, pinned to each other by
 vectors and by independent known answers; that pair is corpus material,
-not spec material. The builtin families are register, counter,
+not spec material. The supplied families are register, counter,
 checksum16 and the byte-aligned CRC16 and CRC32 services, specified in
 [arch-supports.md](arch-supports.md#extern-families).
 
 ### Architectures
 
-Python functions of one shape: given an ingress port and a packet,
-return egress ports and packets. The filter runs parser then control.
+The supplied packet adapters expose one shape to the STF driver: given an
+ingress port and a packet, return egress ports and packets. The filter runs
+parser then control.
 The switch runs all three blocks over a few ports and implements drop,
 unicast and flood. Neither contains P4; their size is the experiment for
 claim 3. Three things every architecture here does the same way,
@@ -249,8 +256,13 @@ are classes whose annotated fields are real attributes (`ttl: bit8`), so
 a misspelled field is an unknown attribute; parsers, controls and
 deparsers are classes whose states and actions are methods, so a `select`
 target is `self.parse_ipv4` and a table's action list holds the methods
-themselves; a program names its roles as keyword arguments, never as
-strings. Widths are `Literal` type parameters, `Bits[L[8]]`, spelled
+themselves; block classes can be compiled independently or collected in a
+`BlockLibrary` with their shared declarations. Its compiled core protobuf
+value can be validated with any number of blocks of each kind, with no
+pipeline roles or global H/M roots. An architecture binds its selected blocks
+in a separate `BlockAssembly` envelope or with explicit `BlockBindings`.
+The [authoring guide](python-edsl.md) explains
+this boundary. Widths are `Literal` type parameters, `Bits[L[8]]`, spelled
 through the aliases `bit1`..`bit64`; `Var[W]` is a place of that width
 and `Bits[W]` any value, so assigning to an expression is a static error.
 `concat`, slices and `lookahead` have widths the type system cannot
@@ -287,6 +299,11 @@ literal used as a target is caught only at run time; `Bool`, `Enum` and
 any value with the width checked at run time; and a failed `assign`
 surfaces as `reportCallIssue` because `assign` is overloaded over target
 kinds.
+
+The [Python authoring guide](python-edsl.md) explains independent blocks,
+block libraries, readability patterns from the three applications, and the explicit extern
+declaration, registration and binding lifecycle. Concrete extern families
+live in architecture support, outside the generic eDSL.
 
 ### The Lean packages
 
@@ -329,9 +346,10 @@ files of one library per package, `P4bloIRTest`, `P4bloArchTest` and
 `P4bloTest`, named in the singular because Lake module names are global
 across a workspace, so two bare `Tests` would collide. Each test library
 is a default target, so a plain `lake build` checks every audit's
-`#guard_msgs` pins, and `lake test` runs its driver. The IR package also
-keeps its wire schema under `proto/`, and the user package its assurance
-log, `ASSURANCE.md`. `spec/arch/Main.lean` is the `p4blo-lean` endpoint;
+`#guard_msgs` pins, and `lake test` runs its driver. The IR and architecture
+packages also keep their wire schemas under `proto/`, and the user package
+its assurance log, `ASSURANCE.md`. `spec/arch/Main.lean` is the
+`p4blo-lean` endpoint;
 `impl/lean/Main.lean` is the `p4blo` executable, whose subcommands are the
 forwarder and firewall servers and the fixture exporters the
 cross-language tests call. `tests/structure/test_package_layout.py` pins the layout.
@@ -493,6 +511,7 @@ p4blo/
     P4bloArch/                      reference architecture: switch, extern
                                     families, certificate example
     P4bloArchTest/                  tests, proof audit, fixtures
+    proto/p4blo/arch/v0/assembly.proto  architecture binding wire encoding
     Main.lean                       the p4blo-lean conformance endpoint
   impl/lean/                        Lake package p4blo (P4blo): the user library
     P4blo/                          typed source language, authored programs,
@@ -500,17 +519,16 @@ p4blo/
     P4bloTest/                      test driver, proof audit
     Main.lean                       the p4blo executable: servers, exporters
   impl/python/p4blo/                     the Python package
-    v0/                             generated protobuf code, committed
+    v0/                             generated core protobuf code, committed
     ir.py                           load, save, text form
     validator/                      validation, one module per rule group, and
                                     the one expression typer (validator/typer.py)
     interp/                         the reference interpreter
     printer/                        IR to P4-16 text, with no architecture
     edsl/                           the typed eDSL; core/ is the builder beneath it
-    arch/                           contract, filter, switch, the extern
-                                    families, and the printer's two
-                                    bindings: the v1model shim and the
-                                    P4-SpecTec block architecture
+    arch/                           architecture bindings, contract, filter,
+                                    switch, extern families and printer shims
+      v0/                           generated architecture protobuf code
     drt/                            the differential loop and certificates
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs

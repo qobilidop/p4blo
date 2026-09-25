@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4bloArchTest.Check
 
 /-!
@@ -143,10 +144,10 @@ def portRuleTests (sw : Switch) : T Unit := do
     (· == ([], some "egress_port 511 is not a port of this switch"))
   checkOk "the last port is a port" (fate 3) (· == ([3], none))
 
-def forwarderReplayTests (program : Program) (vectorsText : String) : T Unit := do
+def forwarderReplayTests (program : BlockAssembly) (vectorsText : String) : T Unit := do
   let loaded := do
     let index ← Index.build program
-    let sw ← Switch.load index 4
+    let sw ← Switch.load index program.toBlockBindings 4
     let vectors ← StfVector.decodeAll vectorsText
     pure (sw, vectors)
   match loaded with

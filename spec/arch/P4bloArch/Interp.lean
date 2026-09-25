@@ -17,7 +17,8 @@ mutated in place the way the Python bindings are. `Except String` is for
 parse error is an outcome, not a failure.
 -/
 
-namespace P4bloIR
+namespace P4bloArch
+open P4bloIR
 
 /-- What a parser run produced (docs/ir-semantics.md, "Parsers"). Rejection
 and error are separate: `accept` gives `accepted` with `NoError`; an
@@ -28,7 +29,7 @@ structure ParseOutcome where
   metadata : Value
   consumedBits : Nat
   accepted : Bool
-  /-- A name from `Program.errors`. -/
+  /-- A name from `BlockLibrary.errors`. -/
   error : String
   /-- The extern state after the run. -/
   externs : Externs
@@ -100,4 +101,4 @@ def runDeparser (index : Index) (block : String) (headers : Value) (externs : Ex
   let some emitter := run.emitter | throw "the deparser lost its buffer"
   pure (emitter.toBytes, run.externs)
 
-end P4bloIR
+end P4bloArch

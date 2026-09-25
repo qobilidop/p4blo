@@ -29,10 +29,10 @@ from typing import Any
 
 import pytest
 
-from p4blo import ir
-from p4blo import validator as v
+from p4blo.arch import validator as v
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.families import FAMILIES, sample
-from p4blo.v0 import p4blo_pb2 as pb
 from tests.examples import catalog
 from tests.unit import test_validator
 
@@ -112,12 +112,12 @@ def test_the_table_covers_every_code() -> None:
 @dataclass(frozen=True)
 class Case:
     name: str
-    program: pb.Program
+    program: apb.BlockAssembly
 
 
 def positive_cases() -> Iterator[Case]:
     for path in sorted(CORPUS.glob("*/*.txtpb")):
-        yield Case(f"corpus/{path.stem}", ir.load_text(path))
+        yield Case(f"corpus/{path.stem}", arch_wire.load_text(path))
     for name in catalog.NAMES:
         yield Case(f"example/{name}", catalog.build(name))
     for family, profile, seed in itertools.product(FAMILIES, ("lean", "spectec"), SEEDS):
@@ -160,8 +160,11 @@ def validator_cases() -> list[Case]:
     original = v.validate
     current = ""
 
-    def record(program: pb.Program) -> list[v.Diagnostic]:
-        copy = pb.Program()
+    def record(
+        program: apb.BlockAssembly, *, bindings: apb.BlockBindings | None = None
+    ) -> list[v.Diagnostic]:
+        assert bindings is None
+        copy = apb.BlockAssembly()
         copy.CopyFrom(program)
         recorded.append(Case(f"{current}#{len(recorded)}", copy))
         return original(program)
@@ -182,11 +185,11 @@ def validator_cases() -> list[Case]:
     return recorded
 
 
-def lean_verdicts(lean: Path, programs: list[pb.Program], tmp: Path) -> list[str]:
+def lean_verdicts(lean: Path, programs: list[apb.BlockAssembly], tmp: Path) -> list[str]:
     paths = []
     for i, program in enumerate(programs):
         path = tmp / f"p{i}.json"
-        path.write_text(ir.dump_json(program))
+        path.write_text(arch_wire.dump_json(program))
         paths.append(str(path))
     lines: list[str] = []
     # A bounded command line: a few hundred paths per call.
@@ -268,5 +271,5 @@ def test_csum16_fixture_is_the_golden() -> None:
     and the Lean tests check that term against this fixture; the fixture
     must be the corpus golden."""
     fixture = ROOT / "spec/arch/P4bloArchTest/fixtures/csum16.json"
-    golden = ir.load_text(CORPUS / "csum16" / "csum16.txtpb")
-    assert json.loads(fixture.read_text()) == json.loads(ir.dump_json(golden))
+    golden = arch_wire.load_text(CORPUS / "csum16" / "csum16.txtpb")
+    assert json.loads(fixture.read_text()) == json.loads(arch_wire.dump_json(golden))

@@ -26,11 +26,15 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import ir, stf
+from p4blo import stf
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.builder import AssemblyBuilder
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.conformance import Input
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
-from p4blo.edsl.core import Program, bit, boolean
+from p4blo.edsl.core import bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,7 +62,7 @@ def _relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
-def stf_cases(program: pb.Program, vector: Path) -> tuple[Case, ...]:
+def stf_cases(program: apb.BlockAssembly, vector: Path) -> tuple[Case, ...]:
     cases: list[Case] = []
 
     def collect(entries: pb.Entries, port: int, packet: bytes) -> list[tuple[int, bytes]]:
@@ -67,14 +71,14 @@ def stf_cases(program: pb.Program, vector: Path) -> tuple[Case, ...]:
 
     # Replay only groups packets with the entries installed before them;
     # its expectation failures against the empty answers are irrelevant.
-    stf.replay(ir.Index.build(program), stf.parse(vector.read_text()), collect)
+    stf.replay(BoundIndex.build(program), stf.parse(vector.read_text()), collect)
     return tuple(cases)
 
 
 def stf_inputs() -> list[Input]:
     found: list[Input] = []
     for label, golden in programs():
-        program = ir.load_text(golden)
+        program = arch_wire.load_text(golden)
         for vector in sorted(golden.parent.glob("*.stf")):
             source = {"kind": "stf", "program": _relative(golden), "vector": _relative(vector)}
             cases = stf_cases(program, vector)
@@ -85,8 +89,8 @@ def stf_inputs() -> list[Input]:
 def drt_inputs() -> list[Input]:
     found: list[Input] = []
     for label, golden in programs():
-        program = ir.load_text(golden)
-        index = ir.Index.build(program)
+        program = arch_wire.load_text(golden)
+        index = BoundIndex.build(program)
         for seed in DRT_SEEDS:
             source = {
                 "kind": "drt",
@@ -142,12 +146,12 @@ _TO_10_0_2_2 = bytes.fromhex(
 )
 
 
-def fate_program() -> pb.Program:
+def fate_program() -> apb.BlockAssembly:
     """The packet names its own fate: flood, drop and the egress port are
     read from its first four bytes, and the ingress port is written back
     in place of the egress port, so every fate rule of the switch can be
     asked for directly."""
-    p = Program("fate")
+    p = AssemblyBuilder("fate")
     h = p.header("h_t", flood=bit(8), drop=bit(8), port=bit(16))
     p.headers = p.struct("headers", h=h)
     p.metadata = p.struct(
@@ -210,7 +214,7 @@ def contract_inputs() -> list[Input]:
                 "description": "installs the host rejects between accepted ones, and an "
                 "ingress port beyond the switch",
             },
-            ir.load_text(golden),
+            arch_wire.load_text(golden),
             install,
             PORTS,
         ),

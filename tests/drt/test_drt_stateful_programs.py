@@ -17,6 +17,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, save
 from p4blo.drt.run import (
@@ -160,7 +161,7 @@ def test_lean_agrees_on_stateful_known_answer_sequence(lean_binary: Path) -> Non
     spec = StatefulSpec(8, 1, 1, pb.BINARY_OP_ADD)
     fields = [(0, 255), (0, 1), (1, 7), (0, 2)]
     check_sequence(spec, fields, lean_binary)
-    loaded = arch.load(stateful_program(spec))
+    loaded = arch.reference.load(stateful_program(spec))
     outcomes = [python_outcome(loaded, case, 4) for case in cases_for(spec, fields)]
     assert [o.outputs for o in outcomes] == [
         ((0, b"\x00\xff\xff"),),
@@ -201,7 +202,10 @@ def test_stateful_failure_path_saves_the_complete_experiment(
     fields = [(0, 4), (0, 7), (2, 9)]
 
     def fail_comparison(
-        program: pb.Program, cases: Sequence[Case], ports: int, _command: Sequence[str | Path]
+        program: apb.BlockAssembly,
+        cases: Sequence[Case],
+        ports: int,
+        _command: Sequence[str | Path],
     ) -> Report:
         report = Report(program.name, 0, ports, inputs=tuple(cases), program_ir=program, cases=2)
         if protocol_failure:

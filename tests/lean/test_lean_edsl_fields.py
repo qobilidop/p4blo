@@ -16,6 +16,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean, scalar_program
@@ -52,7 +53,9 @@ def target(*names: str) -> pb.LValue:
     return value
 
 
-def field_program(name: str, expression: pb.Expr, width: int | None, valid: bool) -> pb.Program:
+def field_program(
+    name: str, expression: pb.Expr, width: int | None, valid: bool
+) -> apb.BlockAssembly:
     program = scalar_program(bits(8, 0), 8)
     program.name = f"lean-fields-{name}"
     # Reserve H for the source header. Architecture scaffolding is separate.
@@ -144,12 +147,12 @@ def test_field_exporter_is_a_default_target() -> None:
 
 
 @pytest.fixture(scope="module")
-def authored_field_programs(lean_binary: Path) -> dict[str, pb.Program]:
+def authored_field_programs(lean_binary: Path) -> dict[str, apb.BlockAssembly]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
-    result: dict[str, pb.Program] = {}
+    result: dict[str, apb.BlockAssembly] = {}
     completed = subprocess.run(
         [str(exporter), "fieldExpressions"], capture_output=True, text=True, check=True, timeout=30
     )
@@ -167,7 +170,7 @@ def authored_field_programs(lean_binary: Path) -> dict[str, pb.Program]:
 
 @pytest.mark.parametrize("name", EXPECTED)
 def test_lean_agrees_on_authored_field_known_answers(
-    name: str, authored_field_programs: dict[str, pb.Program], lean_binary: Path
+    name: str, authored_field_programs: dict[str, apb.BlockAssembly], lean_binary: Path
 ) -> None:
     program = authored_field_programs[name]
     case = Case(pb.Entries(), 0, b"")
@@ -188,11 +191,11 @@ def test_lean_agrees_on_authored_field_known_answers(
     _, valid, answer = EXPECTED[name]
     # Every source field, the stored validity bit, and an unrelated root.
     expected = b"\xab\x01\x01\x12\x34\x00\x03\x01" + bytes([valid, 165]) + answer
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 def test_lean_agrees_after_retained_field_read_side_effect(
-    authored_field_programs: dict[str, pb.Program],
+    authored_field_programs: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -210,7 +213,7 @@ def test_lean_agrees_after_retained_field_read_side_effect(
     program = authored_field_programs["field-right"]
     # Retain the weaker observer as an explicit adversarial control: it reads
     # left before right corrupts it, and evaluates the expression last.
-    weak = pb.Program()
+    weak = apb.BlockAssembly()
     weak.CopyFrom(program)
     body = list(weak.blocks[1].body)
     selected = next(

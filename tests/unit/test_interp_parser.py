@@ -7,8 +7,12 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from p4blo import interp, ir
-from p4blo.interp import ParseOutcome, values
+from p4blo import ir
+from p4blo.arch import entry
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.entry import ParseOutcome
+from p4blo.interp import values
 from p4blo.interp.values import NO_ERROR, Bits, ErrorValue, Header, Stack
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -69,14 +73,14 @@ ACCEPT = "transition { direct { accept {} } }"
 
 def program(states: str, extra: str = "") -> ir.Index:
     text = TEMPLATE.replace("@STATES@", states).replace("@EXTRA@", extra)
-    return ir.Index.build(ir.load_text(text))
+    return BoundIndex.build(arch_wire.load_text(text))
 
 
 def run(states: str, packet: bytes, extra: str = "") -> ParseOutcome:
     index = program(states, extra)
     metadata = values.zero(pb.Type(struct="M"), index)
     assert isinstance(metadata, values.Struct)
-    return interp.run_parser(index, "P", packet, metadata, {})
+    return entry.run_parser(index, "P", packet, metadata, {})
 
 
 def e(outcome: ParseOutcome) -> Header:
@@ -468,10 +472,10 @@ def test_emit_then_extract_roundtrips_a_header(a: int, flag: bool, b: int, valid
     headers = values.zero(pb.Type(struct="H"), index)
     assert isinstance(headers, values.Struct)
     headers.fields[2] = Header("mixed", valid, [Bits(3, a), flag, Bits(12, b)])
-    emitted = interp.run_deparser(index, "D", headers, {})
+    emitted = entry.run_deparser(index, "D", headers, {})
     metadata = values.zero(pb.Type(struct="M"), index)
     assert isinstance(metadata, values.Struct)
-    out = interp.run_parser(index, "P", emitted, metadata, {})
+    out = entry.run_parser(index, "P", emitted, metadata, {})
     if valid:
         assert len(emitted) == 2
         assert out.accepted

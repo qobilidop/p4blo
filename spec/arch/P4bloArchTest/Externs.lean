@@ -14,8 +14,8 @@ def bits (w v : Nat) : Value := .bits (Bits.wrap w v)
 /-- A program declaring `register` (16-bit cells), `counter` and
 `checksum16` with one instance each, and a control that reads and writes
 them. -/
-def externProgram : Program :=
-  { (default : Program) with
+def externProgram : BlockLibrary :=
+  { (default : BlockLibrary) with
     name := "x", errors := ["NoError"],
     structTypes := [{ name := "H", fields := [] },
                     { name := "M", fields := [{ name := "a", type := .bits 16 }, { name := "c", type := .bits 16 }] }],
@@ -45,8 +45,7 @@ def externProgram : Program :=
         .callExtern "k" "count" [.expr (lit 32 1)] none,
         .callExtern "k" "count" [.expr (lit 32 1)] none,
         .callExtern "k" "count" [.expr (lit 32 9)] none,
-        .callExtern "ck" "compute" [.expr (lit 64 0x0001f203f4f5f6f7)] (some (.member (.var "meta") "c"))] }],
-    headers := "H", metadata := "M" }
+        .callExtern "ck" "compute" [.expr (lit 64 0x0001f203f4f5f6f7)] (some (.member (.var "meta") "c"))] }] }
 
 def tests : T Unit := do
   checkOk "RFC 1071 worked example" (pure (internetChecksum 64 0x0001f203f4f5f6f7) : Except String Nat)

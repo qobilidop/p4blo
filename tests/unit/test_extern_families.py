@@ -5,17 +5,19 @@ from pathlib import Path
 import pytest
 
 from p4blo import arch
+from p4blo.arch.builder import AssemblyBuilder
+from p4blo.arch.externs import declarations as externs
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
 from p4blo.drt.run import compare_program
 from p4blo.edsl import core
-from p4blo.edsl.core import externs
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def family_program(suffix: str) -> pb.Program:
+def family_program(suffix: str) -> apb.BlockAssembly:
     p = scalar_program(bits(8, 42), 8)
-    declarations = core.Program("declarations")
+    declarations = AssemblyBuilder("declarations")
     register = externs.register(declarations, core.bit(8), f"register{suffix}")
     counter = externs.counter(declarations, f"counter{suffix}")
     checksum = externs.checksum16(declarations, core.bit(16), f"checksum16{suffix}")
@@ -31,7 +33,7 @@ def family_program(suffix: str) -> pb.Program:
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])
 def test_python_dispatches_existing_families(suffix: str) -> None:
-    assert set(arch.load(family_program(suffix)).externs) == {"r", "c", "s"}
+    assert set(arch.reference.load(family_program(suffix)).externs) == {"r", "c", "s"}
 
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])

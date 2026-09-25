@@ -9,17 +9,19 @@ checksum computation follows ingress. No flow logic lives in an extern.
 
 from __future__ import annotations
 
+from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.externs.declarations import CRC16, CRC32, Checksum16, Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
-    CRC16,
-    CRC32,
     Bits,
+    BlockLibrary,
     Bool,
     Control,
     Deparser,
     Header,
     L,
     Parser,
-    Program,
     Struct,
     Table,
     Transition,
@@ -35,8 +37,6 @@ from p4blo.edsl import (
     lpm,
     state,
 )
-from p4blo.edsl.externs import Checksum16, Register
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class ethernet_t(Header):
@@ -218,19 +218,20 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.tcp)
 
 
-def build() -> pb.Program:
-    return Program(
-        "tutorial_firewall",
+def build() -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(
+            MyParser,
+            MyIngress,
+            MyDeparser,
+            externs=[bloom_filter_1, bloom_filter_2, hash16, hash32, csum],
+        ),
+        name="tutorial_firewall",
         headers=headers,
         metadata=metadata,
-        parser=MyParser,
-        control=MyIngress,
-        deparser=MyDeparser,
-        externs=[bloom_filter_1, bloom_filter_2, hash16, hash32, csum],
-    ).build()
+        exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser},
+    )
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

@@ -1,8 +1,7 @@
-"""Blocks, their actions, and the exports.
+"""Blocks and their actions.
 
 A block's shape must fit its kind; its actions, tables, states and body are
-then checked by the classes this one builds on. An exported block must have
-the signature of its kind over the program's H and M.
+then checked by the classes this one builds on.
 """
 
 from __future__ import annotations
@@ -10,29 +9,21 @@ from __future__ import annotations
 from p4blo.v0 import p4blo_pb2 as pb
 from p4blo.validator.diagnostics import (
     BLOCK_KIND_SHAPE,
-    EXPORT_DUPLICATE,
-    EXPORT_SIGNATURE,
     NOACTION_RESERVED,
     PARSER_START_STATE,
 )
 from p4blo.validator.names import (
     ACTION_PARAM_DIRECTIONS,
     BLOCK_PARAM_DIRECTIONS,
-    DIRECTION_NAMES,
-    EXPORT_SIGNATURES,
     KIND_NAMES,
     Scope,
 )
 from p4blo.validator.parsers import ParserChecks
 from p4blo.validator.tables import TableChecks
-from p4blo.validator.types import (
-    describe,
-    same_type,
-)
 
 
 class BlockChecks(ParserChecks, TableChecks):
-    """Blocks, actions, and the blocks a program exports."""
+    """Blocks and actions."""
 
     def check_block(self, block: pb.Block, path: str) -> None:
         self.check_params(block.params, BLOCK_PARAM_DIRECTIONS, f"{path}.params", "block")
@@ -85,33 +76,3 @@ class BlockChecks(ParserChecks, TableChecks):
         inner = Scope(scope.block, scope.path, scope.names, action)
         for i, stmt in enumerate(action.body):
             self.check_stmt(stmt, inner, f"{path}.body[{i}]")
-
-    def check_exports(self) -> None:
-        roles: set[str] = set()
-        for i, export in enumerate(self.program.exports):
-            path = f"exports[{i}]"
-            if export.role in roles:
-                self.report(EXPORT_DUPLICATE, f"role {export.role!r} exported twice", path)
-            roles.add(export.role)
-            block = self.resolve(export.block, self.idx.blocks, "block", f"{path}.block")
-            if block is None or block.kind not in EXPORT_SIGNATURES:
-                continue
-            if self.headers is None or self.metadata is None:
-                continue
-            expected = [
-                (direction, self.headers if which == "H" else self.metadata)
-                for direction, which in EXPORT_SIGNATURES[block.kind]
-            ]
-            actual = [(p.direction, p.type) for p in block.params]
-            if len(actual) != len(expected) or any(
-                d != ed or not same_type(t, et)
-                for (d, t), (ed, et) in zip(actual, expected, strict=True)
-            ):
-                want = ", ".join(f"{DIRECTION_NAMES[d]} {describe(t)}" for d, t in expected)
-                got = ", ".join(f"{DIRECTION_NAMES[d]} {describe(t)}" for d, t in actual)
-                self.report(
-                    EXPORT_SIGNATURE,
-                    f"{KIND_NAMES[block.kind]} {block.name!r} must have params ({want}); "
-                    f"got ({got})",
-                    path,
-                )

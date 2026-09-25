@@ -748,30 +748,6 @@ theorem checkExternType_ok (h : checkExternType idx path et = .ok u) : ExternTyp
       rw [hrt] at hret
       exact checkType_ok hret
 
-theorem checkExports_ok (h : checkExports p idx seen i es = .ok u) :
-    (es.map (·.role)).Nodup ∧ (∀ e ∈ es, e.role ∉ seen) ∧
-      ∀ e ∈ es, ∃ b, idx.blocks[e.block]? = some b ∧ signatureOk p b = true := by
-  induction es generalizing seen i with
-  | nil => simp
-  | cons e es ih =>
-    simp only [checkExports, bind_ok, ensure_ok] at h
-    obtain ⟨_, hs, b, hb, _, hsig, hr⟩ := h
-    obtain ⟨h1, h2, h3⟩ := ih hr
-    have hs : e.role ∉ seen := by simpa using hs
-    refine ⟨?_, ?_, ?_⟩
-    · simp only [List.map_cons, List.nodup_cons]
-      refine ⟨fun hm => ?_, h1⟩
-      obtain ⟨x, hx, hxr⟩ := List.mem_map.mp hm
-      exact h2 x hx (by simp [hxr])
-    · intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact hs
-      · exact fun hm => h2 x hx (by simp [hm])
-    · intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact ⟨b, resolve_ok hb, hsig⟩
-      · exact h3 x hx
-
 theorem mapError_ok {x : Except ε α} {f : ε → ε'} : x.mapError f = .ok a ↔ x = .ok a := by
   cases x <;> simp [Except.mapError]
 
@@ -784,11 +760,10 @@ It does not establish that `check` accepts every `Valid` program, nor
 anything about programs that fail to decode, which never reach it. -/
 theorem check_sound (h : check p = .ok idx) : Valid p idx := by
   simp only [check, bind_ok, ensure_ok, pure_ok] at h
-  obtain ⟨idx', hidx, _, herr, _, hhs, _, hss, _, hes, _, hcyc, hh, hhres, hm, hmres, _, hext,
-    _, hinst, _, hblocks, _, hexports, _, hacyc, rfl⟩ := h
+  obtain ⟨idx', hidx, _, herr, _, hhs, _, hss, _, hes, _, hcyc, _, hext,
+    _, hinst, _, hblocks, _, hacyc, rfl⟩ := h
   have hidx := mapError_ok.mp hidx
-  obtain ⟨hroles, -, hexp⟩ := checkExports_ok hexports
-  refine ⟨hidx, herr, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hroles, hexp, hacyc⟩
+  refine ⟨hidx, herr, ?_, ?_, ?_, ?_, ?_, ?_, hacyc⟩
   · intro hd hmem
     obtain ⟨j, hj⟩ := each_ok hhs hd hmem
     simp only [bind_ok] at hj
@@ -809,8 +784,6 @@ theorem check_sound (h : check p = .ok idx) : Valid p idx := by
     simp only [bind_ok, ensure_ok] at hj
     obtain ⟨_, hn, hne⟩ := hj
     exact ⟨checkNames_ok hn, by simpa using hne⟩
-  · simp [resolve_ok hhres]
-  · simp [resolve_ok hmres]
   · intro et het
     obtain ⟨j, hj⟩ := each_ok hext et het
     exact checkExternType_ok hj

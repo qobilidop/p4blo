@@ -1,3 +1,4 @@
+import P4bloArch.Interp
 import P4bloIRTest.Check
 
 /-!
@@ -8,7 +9,7 @@ deparser, tables and the extern models. The cases mirror the Python
 `tests/unit/test_interp_*.py` and `tests/unit/test_externs.py` where they exist.
 -/
 
-open P4bloIR
+open P4bloIR P4bloArch
 
 -- ---------------------------------------------------------------------------
 -- Expressions over an empty program
@@ -120,7 +121,7 @@ def equalityTests : T Unit := do
 
 /-- A program with header `h8` and struct `H { hs : h8[3] }`. -/
 def stackIndex : Except String Index :=
-  Index.build { (default : Program) with
+  Index.build { (default : BlockLibrary) with
     headerTypes := [{ name := "h8", fields := [{ name := "f", type := .bits 8 }] }],
     structTypes := [{ name := "H", fields := [{ name := "hs", type := .stack "h8" 3 }] }] }
 
@@ -177,8 +178,8 @@ bit<8> }` and `mixed { a : bit<3>, flag : bool, b : bit<12> }`, `H { e :
 h8, hs : h8[2], w : mixed }`, `M { n : bit<8>, flag : bool }`, a parser
 `P` of the given states, a deparser `D` emitting `hdr.w`, and `extra`
 blocks. -/
-def parserProgram (states : List State) (extra : List Block := []) : Program :=
-  { (default : Program) with
+def parserProgram (states : List State) (extra : List Block := []) : BlockLibrary :=
+  { (default : BlockLibrary) with
     name := "t", errors := errorList,
     headerTypes := [{ name := "h8", fields := [{ name := "f", type := .bits 8 }] },
                     { name := "mixed", fields := [{ name := "a", type := .bits 3 }, { name := "flag", type := .boolean },
@@ -194,8 +195,7 @@ def parserProgram (states : List State) (extra : List Block := []) : Program :=
                { (default : Block) with
                  name := "D", kind := .deparser,
                  params := [{ name := "hdr", type := .struct "H", direction := .«in» }],
-                 body := [.emit (.member (.var "hdr") "w")] }] ++ extra,
-    headers := "H", metadata := "M" }
+                 body := [.emit (.member (.var "hdr") "w")] }] ++ extra }
 
 def hdrE : Expr := .member (.var "hdr") "e"
 def hdrW : Expr := .member (.var "hdr") "w"
@@ -399,8 +399,8 @@ def metaB : Expr := .member (.var "meta") "b"
 
 /-- The test program of `tests/unit/test_interp_tables.py`, plus a body that
 applies `exact_t` and records `hit` in `meta.h`. -/
-def tableProgram : Program :=
-  { (default : Program) with
+def tableProgram : BlockLibrary :=
+  { (default : BlockLibrary) with
     name := "t", errors := ["NoError"],
     structTypes := [{ name := "H", fields := [] },
                     { name := "M", fields := [{ name := "a", type := .bits 8 }, { name := "b", type := .bits 8 },
@@ -429,8 +429,7 @@ def tableProgram : Program :=
           actions := ["set"], defaultAction := some { action := "set", args := [.bits 8 7] },
           constDefaultAction := true,
           constEntries := [{ keys := [.exact 1], action := { action := "set", args := [.bits 8 1] }, priority := 0 }] }],
-      body := [.apply "exact_t" (some (.member (.var "meta") "h"))] }],
-    headers := "H", metadata := "M" }
+      body := [.apply "exact_t" (some (.member (.var "meta") "h"))] }] }
 
 def call (action : String) (args : List Nat) : ActionCall := { action, args := args.map (.bits 8 ·) }
 def entry (keys : List KeyValue) (action : ActionCall) (priority : Nat := 0) : Entry := { keys, action, priority }

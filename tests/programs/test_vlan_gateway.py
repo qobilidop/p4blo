@@ -6,7 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from p4blo import arch, ir, stf
+from p4blo import arch, stf
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import LeanRunner, Outcome, ProtocolError, compare_cases, python_outcome
@@ -32,7 +34,7 @@ def frame(vid: int = 42, *, flags: int = 0, inner: int = 0x0800, payload: bytes 
 
 def policy(vid: int = 42, port: int = 2) -> pb.Entries:
     return stf.to_entries(
-        ir.Index.build(build()),
+        BoundIndex.build(build()),
         stf.parse(
             f"add access meta.ingress_port:1 hdr.vlan.vid:{vid} "
             f"hdr.ethernet.dst:0x000000000002 deliver(port:{port})"
@@ -99,7 +101,7 @@ def sequence() -> tuple[list[Case], list[Outcome]]:
 
 
 def test_gateway_independent_packets_and_persistent_admissions() -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     cases, expected = sequence()
     for number, (case, answer) in enumerate(zip(cases, expected, strict=True)):
         assert python_outcome(loaded, case, 4) == answer, number
@@ -111,7 +113,7 @@ def test_lean_agrees_gateway_packets_and_persistent_admissions(
     (ROOT / ".artifacts/drt").mkdir(parents=True, exist_ok=True)
     program = build()
     source = tmp_path / "gateway.json"
-    source.write_text(ir.dump_json(program))
+    source.write_text(arch_wire.dump_json(program))
     cases, expected = sequence()
     observations: list[Outcome] = []
     with LeanRunner([lean_binary], source, 4) as runner:
@@ -122,7 +124,7 @@ def test_lean_agrees_gateway_packets_and_persistent_admissions(
             return answer
 
         try:
-            report = compare_cases(program.name, arch.load(program), cases, 4, observe)
+            report = compare_cases(program.name, arch.reference.load(program), cases, 4, observe)
         except ProtocolError as error:
             if error.report is not None:
                 save(error.report, ROOT / ".artifacts/drt/vlan-gateway-protocol.json")

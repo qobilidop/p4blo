@@ -12,7 +12,7 @@ namespace ValidityTests
 open P4bloIR P4bloIR.Validity
 
 /-- `check` that `p` is rejected with `code`. -/
-def rejects (name : String) (p : Program) (code : Code) : T Unit :=
+def rejects (name : String) (p : BlockLibrary) (code : Code) : T Unit :=
   match Validity.check p with
   | .ok _ => check s!"{name} (unexpectedly accepted)" false
   | .error d =>
@@ -22,10 +22,10 @@ def rejects (name : String) (p : Program) (code : Code) : T Unit :=
       check name false
 
 /-- Apply `f` to the block named `name`. -/
-def onBlock (p : Program) (name : String) (f : Block → Block) : Program :=
+def onBlock (p : BlockLibrary) (name : String) (f : Block → Block) : BlockLibrary :=
   { p with blocks := p.blocks.map fun b => if b.name == name then f b else b }
 
-def tests (p : Program) : T Unit := do
+def tests (p : BlockLibrary) : T Unit := do
   check "forwarder is valid" (Validity.check p matches .ok _)
   rejects "core errors out of order" { p with errors := p.errors.reverse } .errorList
   let control := (p.blocks.find? (·.kind == .control)).get!

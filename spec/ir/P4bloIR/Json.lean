@@ -789,23 +789,16 @@ def Block.decode (path : String) (j : Json) : Dec Block := do
          body := ← listField path j "body" Stmt.decode }
 
 open Decode in
-/-- Decode an `Export` message. -/
-def Export.decode (path : String) (j : Json) : Dec Export := do
-  pure { role := ← strField path j "role", block := ← strField path j "block" }
-
-open Decode in
-/-- Decode a `Program` message. The path of the program itself is `""`, so
+/-- Decode a `BlockLibrary` message. The path of the program itself is `""`, so
 that errors read `blocks[0].name: ...`. -/
-def Program.decode (path : String) (j : Json) : Dec Program := do
+def BlockLibrary.decode (path : String) (j : Json) : Dec BlockLibrary := do
   pure { name := ← strField path j "name", errors := ← listField path j "errors" str,
          headerTypes := ← listField path j "header_types" HeaderType.decode,
          structTypes := ← listField path j "struct_types" StructType.decode,
          enumTypes := ← listField path j "enum_types" EnumType.decode,
          externTypes := ← listField path j "extern_types" ExternType.decode,
          externInstances := ← listField path j "extern_instances" ExternInstance.decode,
-         blocks := ← listField path j "blocks" Block.decode,
-         headers := ← strField path j "headers", metadata := ← strField path j "metadata",
-         exports := ← listField path j "exports" Export.decode }
+         blocks := ← listField path j "blocks" Block.decode }
 
 open Decode in
 /-- Decode a `TableEntries` message. -/
@@ -820,8 +813,8 @@ def Entries.decode (path : String) (j : Json) : Dec Entries := do
   pure { tables := ← listField path j "tables" TableEntries.decode }
 
 /-- Parse and decode a program from its JSON text. -/
-def Program.fromJsonString (text : String) : Except String Program := do
-  Program.decode "" (← Json.parse text)
+def BlockLibrary.fromJsonString (text : String) : Except String BlockLibrary := do
+  BlockLibrary.decode "" (← Json.parse text)
 
 /-- Parse and decode host entries from their JSON text. -/
 def Entries.fromJsonString (text : String) : Except String Entries := do
@@ -854,8 +847,7 @@ instance : FromJson Transition := ⟨Transition.decode ""⟩
 instance : FromJson State := ⟨State.decode ""⟩
 instance : FromJson Action := ⟨Action.decode ""⟩
 instance : FromJson Block := ⟨Block.decode ""⟩
-instance : FromJson Export := ⟨Export.decode ""⟩
-instance : FromJson Program := ⟨Program.decode ""⟩
+instance : FromJson BlockLibrary := ⟨BlockLibrary.decode ""⟩
 instance : FromJson TableEntries := ⟨TableEntries.decode ""⟩
 instance : FromJson Entries := ⟨Entries.decode ""⟩
 
@@ -1120,20 +1112,15 @@ def Block.toJson (b : Block) : Json :=
        ofList "body" (b.body.map Stmt.toJson)]
 
 open Encode in
-/-- Encode an `Export` message. -/
-def Export.toJson (e : Export) : Json := obj [ofStr "role" e.role, ofStr "block" e.block]
-
-open Encode in
-/-- Encode a `Program` message. -/
-def Program.toJson (p : Program) : Json :=
+/-- Encode a `BlockLibrary` message. -/
+def BlockLibrary.toJson (p : BlockLibrary) : Json :=
   obj [ofStr "name" p.name, ofList "errors" (p.errors.map Json.str),
        ofList "header_types" (p.headerTypes.map HeaderType.toJson),
        ofList "struct_types" (p.structTypes.map StructType.toJson),
        ofList "enum_types" (p.enumTypes.map EnumType.toJson),
        ofList "extern_types" (p.externTypes.map ExternType.toJson),
        ofList "extern_instances" (p.externInstances.map ExternInstance.toJson),
-       ofList "blocks" (p.blocks.map Block.toJson), ofStr "headers" p.headers,
-       ofStr "metadata" p.metadata, ofList "exports" (p.exports.map Export.toJson)]
+       ofList "blocks" (p.blocks.map Block.toJson)]
 
 open Encode in
 /-- Encode a `TableEntries` message. -/
@@ -1172,8 +1159,7 @@ instance : ToJson Transition := ⟨Transition.toJson⟩
 instance : ToJson State := ⟨State.toJson⟩
 instance : ToJson Action := ⟨Action.toJson⟩
 instance : ToJson Block := ⟨Block.toJson⟩
-instance : ToJson Export := ⟨Export.toJson⟩
-instance : ToJson Program := ⟨Program.toJson⟩
+instance : ToJson BlockLibrary := ⟨BlockLibrary.toJson⟩
 instance : ToJson TableEntries := ⟨TableEntries.toJson⟩
 instance : ToJson Entries := ⟨Entries.toJson⟩
 

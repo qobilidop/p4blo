@@ -16,10 +16,13 @@ from types import ModuleType
 import pytest
 from google.protobuf import text_format
 
-from p4blo import arch, ir, validator
+from p4blo import arch
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.builder import AssemblyBuilder
+from p4blo.arch.externs import declarations as edsl_externs
 from p4blo.edsl.core import (
     EdslError,
-    Program,
     bit,
     boolean,
     concat,
@@ -35,7 +38,6 @@ from p4blo.edsl.core import (
     range_,
     ternary,
 )
-from p4blo.edsl.core import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
@@ -79,9 +81,9 @@ META_X = member(var("meta"), "x")
 META_OK = member(var("meta"), "ok")
 
 
-def base() -> Program:
+def base() -> AssemblyBuilder:
     """A program with a header, a stack and a metadata struct to build on."""
-    p = Program("t")
+    p = AssemblyBuilder("t")
     h = p.header("h", f=bit(8), g=bit(16))
     v = p.header("v", tag=bit(4), bos=bit(1))
     p.headers = p.struct("H", h=h, stack=v[2])
@@ -95,12 +97,12 @@ def base() -> Program:
 
 
 def test_forwarder_equals_the_golden() -> None:
-    golden = ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
+    golden = arch_wire.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
     assert corpus_module("forwarder").build() == golden
 
 
 # ---------------------------------------------------------------------------
-# Program-level declarations
+# AssemblyBuilder-level declarations
 # ---------------------------------------------------------------------------
 
 
@@ -119,7 +121,7 @@ def test_declarations_in_order() -> None:
     )
     assert custom.pb == text_format.Parse('literal { error: "Custom" }', pb.Expr())
     assert r.name == "r"
-    expected = ir.load_text(
+    expected = arch_wire.load_text(
         """
         name: "t"
         errors: "NoError"
@@ -832,7 +834,7 @@ def test_stack_last_is_the_element_at_last_index() -> None:
 
 
 def test_field_reaches_a_field_an_attribute_shadows() -> None:
-    p = Program("t")
+    p = AssemblyBuilder("t")
     eth = p.header("eth", type=bit(16), next=bit(8), src=bit(48))
     p.headers = p.struct("H", eth=eth)
     p.metadata = p.struct("M")
@@ -961,7 +963,7 @@ def test_deparser_emits() -> None:
 
 
 def test_enum_and_error_literals() -> None:
-    p = Program("e")
+    p = AssemblyBuilder("e")
     color = p.enum("color", "RED", "GREEN")
     custom = p.error("Custom")
     p.headers = p.struct("H")
@@ -1038,158 +1040,158 @@ def test_enum_and_error_literals() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _width_mismatch(p: Program) -> None:
+def _width_mismatch(p: AssemblyBuilder) -> None:
     c = p.control("C")
     _ = c.hdr.h.f + c.hdr.h.g
 
 
-def _literal_does_not_fit(p: Program) -> None:
+def _literal_does_not_fit(p: AssemblyBuilder) -> None:
     c = p.control("C")
     _ = c.hdr.h.f + 256
 
 
-def _int_needs_context(p: Program) -> None:
+def _int_needs_context(p: AssemblyBuilder) -> None:
     c = p.control("C")
     mux(c.meta.ok, 1, 2)
 
 
-def _bool_where_bits(p: Program) -> None:
+def _bool_where_bits(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.body().assign(c.meta.x, True)
 
 
-def _unknown_field(p: Program) -> None:
+def _unknown_field(p: AssemblyBuilder) -> None:
     c = p.control("C")
     _ = c.hdr.h.nope
 
 
-def _no_fields(p: Program) -> None:
+def _no_fields(p: AssemblyBuilder) -> None:
     c = p.control("C")
     _ = c.hdr.h.f.bit
 
 
-def _unknown_var(p: Program) -> None:
+def _unknown_var(p: AssemblyBuilder) -> None:
     c = p.control("C")
     _ = c.nope
 
 
-def _missing_start_state(p: Program) -> None:
+def _missing_start_state(p: AssemblyBuilder) -> None:
     ps = p.parser("P")
     ps.state("s").accept()
     p.build()
 
 
-def _unknown_transition_target(p: Program) -> None:
+def _unknown_transition_target(p: AssemblyBuilder) -> None:
     ps = p.parser("P")
     ps.state("start").transition("nowhere")
     p.build()
 
 
-def _state_without_transition(p: Program) -> None:
+def _state_without_transition(p: AssemblyBuilder) -> None:
     p.parser("P").state("start")
     p.build()
 
 
-def _unknown_action_in_table(p: Program) -> None:
+def _unknown_action_in_table(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.table("t", keys=[exact(c.hdr.h.f)], actions=["missing"])
 
 
-def _default_not_among_actions(p: Program) -> None:
+def _default_not_among_actions(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.action("a")
     c.action("b")
     c.table("t", actions=["a"], default="b")
 
 
-def _no_actions(p: Program) -> None:
+def _no_actions(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.table("t", keys=[exact(c.hdr.h.f)], actions=[])
 
 
-def _priority_without_a_ternary_key(p: Program) -> None:
+def _priority_without_a_ternary_key(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.action("a")
     c.table("t", keys=[exact(c.hdr.h.f)], actions=["a"], const_entries=[entry(1, "a", priority=3)])
 
 
-def _entry_arity(p: Program) -> None:
+def _entry_arity(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.action("a")
     c.table("t", keys=[exact(c.hdr.h.f)], actions=["a"], const_entries=[entry((1, 2), "a")])
 
 
-def _select_arity(p: Program) -> None:
+def _select_arity(p: AssemblyBuilder) -> None:
     ps = p.parser("P")
     ps.state("start").select((ps.hdr.h.f, ps.hdr.h.g), {1: ps.accept})
 
 
-def _else_without_if(p: Program) -> None:
+def _else_without_if(p: AssemblyBuilder) -> None:
     b = p.control("C").body()
     with b.else_():
         pass
 
 
-def _assign_to_rvalue(p: Program) -> None:
+def _assign_to_rvalue(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.body().assign(c.hdr.h.f + 1, 0)
 
 
-def _out_arg_not_lvalue(p: Program) -> None:
+def _out_arg_not_lvalue(p: AssemblyBuilder) -> None:
     reg = edsl_externs.register(p, bit(8))
     r = p.extern_instance("r", reg, 1)
     c = p.control("C")
     c.body().call(r, "read", c.meta.x + 1, 0)
 
 
-def _out_arg_wrong_width(p: Program) -> None:
+def _out_arg_wrong_width(p: AssemblyBuilder) -> None:
     reg = edsl_externs.register(p, bit(16))
     r = p.extern_instance("r", reg, 1)
     c = p.control("C")
     c.body().call(r, "read", c.meta.x, 0)
 
 
-def _result_for_void_method(p: Program) -> None:
+def _result_for_void_method(p: AssemblyBuilder) -> None:
     reg = edsl_externs.register(p, bit(8))
     r = p.extern_instance("r", reg, 1)
     c = p.control("C")
     c.body().call(r, "write", 0, 0, result=c.meta.x)
 
 
-def _bad_cast(p: Program) -> None:
+def _bad_cast(p: AssemblyBuilder) -> None:
     p.control("C").meta.ok.cast(bit(8))
 
 
-def _slice_out_of_range(p: Program) -> None:
+def _slice_out_of_range(p: AssemblyBuilder) -> None:
     p.control("C").hdr.h.f[8:0]
 
 
-def _truth_value(p: Program) -> None:
+def _truth_value(p: AssemblyBuilder) -> None:
     c = p.control("C")
     if c.meta.ok:
         pass
 
 
-def _read_next(p: Program) -> None:
+def _read_next(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.body().assign(c.meta.x, c.hdr.stack.next.tag)
 
 
-def _duplicate_name(p: Program) -> None:
+def _duplicate_name(p: AssemblyBuilder) -> None:
     c = p.control("C")
     c.action("a")
     c.local("a", bit(8))
 
 
-def _local_reuses_program_name(p: Program) -> None:
+def _local_reuses_program_name(p: AssemblyBuilder) -> None:
     p.control("C").local("h", bit(8))
 
 
-def _unknown_error(p: Program) -> None:
+def _unknown_error(p: AssemblyBuilder) -> None:
     _ = p.errors.Nope
 
 
-def _unknown_enum_member(p: Program) -> None:
+def _unknown_enum_member(p: AssemblyBuilder) -> None:
     _ = p.enum("color", "RED").BLUE
 
 
@@ -1228,7 +1230,7 @@ def _unknown_enum_member(p: Program) -> None:
     ],
     ids=lambda f: f.__name__.lstrip("_"),
 )
-def test_mistakes_raise(mistake: Callable[[Program], None]) -> None:
+def test_mistakes_raise(mistake: Callable[[AssemblyBuilder], None]) -> None:
     with pytest.raises(EdslError):
         mistake(base())
 
@@ -1252,7 +1254,7 @@ def test_an_int_shift_amount_wider_than_the_left_operand_builds() -> None:
     eDSL gives `4` the smallest width that holds it, bit<3>, instead of
     refusing it as "does not fit in bit<2>". An amount that fits keeps the
     left operand's width, as before."""
-    p = Program("shift")
+    p = AssemblyBuilder("shift")
     h = p.header("h_t", v=bit(2), pad=bit(6))
     p.headers = p.struct("headers", h=h)
     p.metadata = p.struct("metadata")
@@ -1275,7 +1277,7 @@ def test_an_int_shift_amount_wider_than_the_left_operand_builds() -> None:
     shifts = [st.assign.value.binary.right.literal.bits for st in program.blocks[1].body]
     assert (shifts[0].width, shifts[0].value) == (3, "4")
     assert (shifts[1].width, shifts[1].value) == (6, "1")
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     # v = 0b11 << 4 is 0 in bit<2>; pad = 0b111111 >> 1 is 0b011111.
     assert arch.Switch(2).run(loaded, loaded.entries(), 0, b"\xff") == [(0, b"\x1f")]
 

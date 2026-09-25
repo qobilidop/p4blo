@@ -7,7 +7,7 @@
 # gate runs (tests, the proof audit, fixtures) lives under P4bloArchTest/.
 name = "p4blo-arch"
 version = "0.1.0"
-defaultTargets = ["P4bloArch", "p4blo-lean", "P4bloArchTest"]
+defaultTargets = ["P4bloArch", "p4blo-lean", "P4bloArchTest", "codec-leaves"]
 testDriver = "archTests"
 
 [[require]]
@@ -35,3 +35,7 @@ globs = ["P4bloArchTest.+"]
 [[lean_exe]]
 name = "archTests"
 root = "P4bloArchTest.Main"
+
+[[lean_exe]]
+name = "codec-leaves"
+root = "P4bloArchTest.CodecLeaves"

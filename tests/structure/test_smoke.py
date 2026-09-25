@@ -7,6 +7,6 @@ def test_version() -> None:
 
 
 def test_generated_schema_loads() -> None:
-    program = p4blo_pb2.Program(name="smoke")
+    program = p4blo_pb2.BlockLibrary(name="smoke")
     assert program.name == "smoke"
     assert p4blo_pb2.DESCRIPTOR.package == "p4blo.v0"

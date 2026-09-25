@@ -7,7 +7,7 @@ import P4bloIR.CodecObjectLaws
 The actual total codecs compose existing Expr/Literal/KeyValue/list laws.
 Only embedded numeric wire bounds are premises. Names, match-kind combinations,
 arity, canonical masks, const/default combinations and positivity are unrestricted.
-These are not table-selection, semantic-validation or Program codec theorems.
+These are not table-selection, semantic-validation or BlockLibrary codec theorems.
 -/
 
 namespace P4bloIR.CodecLaws

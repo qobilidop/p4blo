@@ -24,7 +24,10 @@ from typing import Any, cast
 
 import pytest
 
-from p4blo import arch, ir, stf
+from p4blo import arch, stf
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import binary, bits, scalar_program
 from p4blo.interp import tables
@@ -112,7 +115,7 @@ def test_every_stateful_sequence_is_one_vector_with_an_expectation_per_request()
     stateful = next(
         g for g in map(generated.materialize, SEEDS) if g.family == "stateful" and len(g.cases) > 2
     )
-    ((name, text),) = generated.vectors(stateful, ir.Index.build(stateful.program))
+    ((name, text),) = generated.vectors(stateful, BoundIndex.build(stateful.program))
     assert name == "sequence.stf"
     lines = [line for line in text.splitlines() if line and not line.startswith("#")]
     packets = [i for i, line in enumerate(lines) if line.startswith("packet ")]
@@ -163,7 +166,7 @@ def test_shift_limit_classifier_accepts_only_the_diagnosed_shape() -> None:
 
 
 def test_table_mask_model_uses_the_base_as_mask_and_ranks_ties() -> None:
-    program = ir.load_text(ROOT / "tests/corpus/priority/priority.txtpb")
+    program = arch_wire.load_text(ROOT / "tests/corpus/priority/priority.txtpb")
     (block, table) = next(
         (b.name, t) for b in program.blocks for t in b.tables if t.name == "t_ternary"
     )
@@ -190,9 +193,9 @@ def test_table_mask_model_uses_the_base_as_mask_and_ranks_ties() -> None:
 
 
 def test_table_mask_model_turns_lpm_into_ternary_with_prefix_priority() -> None:
-    program = ir.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
+    program = arch_wire.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
     written = stf.to_entries(
-        ir.Index.build(program),
+        BoundIndex.build(program),
         stf.parse("add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 drop()\n"),
     )
     model, entries = generated.table_mask_model(program, written)
@@ -206,12 +209,12 @@ def test_table_mask_model_turns_lpm_into_ternary_with_prefix_priority() -> None:
     assert entry.priority == 24 * generated.RANKS
 
 
-def lpm_precedence() -> tuple[pb.Program, Case]:
+def lpm_precedence() -> tuple[apb.BlockAssembly, Case]:
     """The forwarder, the two overlapping entries of lpm_precedence.stf and
     the packet both cover, where the /24 must beat the /16."""
-    program = ir.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
+    program = arch_wire.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
     vector = stf.parse((ROOT / "tests/corpus/forwarder/lpm_precedence.stf").read_text())
-    entries = stf.to_entries(ir.Index.build(program), vector)
+    entries = stf.to_entries(BoundIndex.build(program), vector)
     packet = next(s for s in vector if isinstance(s, stf.Packet))
     return program, Case(entries, packet.port, packet.data)
 
@@ -232,9 +235,9 @@ def test_the_table_mask_control_model_reproduces_python(
     the oracle anything."""
     program, case = lpm_precedence()
     assert generated.table_mask_control_agrees(program, case)
-    right = generated.python_outcome(arch.load(program), case, generated.SWITCH_PORTS)
+    right = generated.python_outcome(arch.reference.load(program), case, generated.SWITCH_PORTS)
     monkeypatch.setattr(tables, "beats", shortest_prefix_wins)
-    wrong = generated.python_outcome(arch.load(program), case, generated.SWITCH_PORTS)
+    wrong = generated.python_outcome(arch.reference.load(program), case, generated.SWITCH_PORTS)
     assert wrong.outputs != right.outputs
     assert not generated.table_mask_control_agrees(program, case)
     unused = cast(Any, None)

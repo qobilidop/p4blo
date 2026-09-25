@@ -1,14 +1,18 @@
 """The const-entry priority program, authored in the eDSL: p4c's
 `table-entries-priority-bmv2.p4`.
 
-`build()` returns the same `pb.Program` that priority.txtpb encodes; the
+`build()` returns the same `apb.BlockAssembly` that priority.txtpb encodes; the
 test suite checks the two are equal. Run as a script to print the text
 format.
 """
 
 from __future__ import annotations
 
+from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
@@ -16,7 +20,6 @@ from p4blo.edsl import (
     InOut,
     Out,
     Parser,
-    Program,
     Struct,
     Table,
     Transition,
@@ -29,7 +32,6 @@ from p4blo.edsl import (
     state,
     ternary,
 )
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class hdr(Header):
@@ -97,18 +99,15 @@ class deparser(Deparser[Header_t]):
         self.emit(self.h.h)
 
 
-def build() -> pb.Program:
-    return Program(
-        "priority",
+def build() -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(p, ingress, deparser),
+        name="priority",
         headers=Header_t,
         metadata=Meta_t,
-        parser=p,
-        control=ingress,
-        deparser=deparser,
-    ).build()
+        exports={"parser": p, "control": ingress, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

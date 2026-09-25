@@ -136,7 +136,7 @@ def tests : T Unit := do
     params := [⟨"packet", .struct "Nested", .inout⟩, ⟨"input", .bits 8, .in⟩,
       ⟨"output", .bits 9, .out⟩, ⟨"data", .boolean, .none⟩]
     locals := [⟨"observer", .bits 65⟩, ⟨"unrelated", .boolean⟩] }
-  match Index.build { (default : Program) with
+  match Index.build { (default : BlockLibrary) with
       headerTypes := index.headerTypes.toList.map Prod.snd
       structTypes := index.structTypes.toList.map Prod.snd
       blocks := [actualBlock] } with

@@ -22,12 +22,24 @@ the sense that the differential tests, the oracles and the proofs about
 authored applications run programs under them, not in the sense of a
 standard anyone else implements.
 
+The generic Python loader, `p4blo.arch.load`, requires an explicit extern
+registry, metadata contract and mapping of required roles to block kinds.
+`p4blo.arch.reference.load` selects the supplied switch/filter environment
+as a convenience; it is not a mandatory architecture. Independent P4 blocks
+are collected in a core `BlockLibrary`, which may have several blocks of each
+kind and no selected pipeline. `reference.assemble` or a custom adapter
+selects wire exports and H/M roots in an architectural `BlockAssembly`.
+The generic loader can also take a compiled library and explicit
+`BlockBindings` directly. Another composition can use the same block
+definitions without the supplied pipeline defaults. See
+[Python authoring](python-edsl.md) for the public API and a custom extern.
+
 ## The metadata contract
 
-An architecture communicates with a program only through the program's
-metadata struct `M`. It names the fields it needs, each with a type and a
+The supplied filter and switch communicate their host policy through the
+selected metadata struct `M`. Each names the fields it needs, with a type and a
 direction: provided fields are written before the blocks run, consumed
-fields are read afterwards. At load the program's `M` is checked
+fields are read afterwards. At load the selected `M` is checked
 structurally against the contract, by field name and type, and nothing
 else about `M` concerns anyone. Every field is optional. A field the
 program does not declare reads as its zero value and ignores writes, so a
@@ -109,9 +121,10 @@ compare whole packets in and out under one architecture on both sides.
 
 ## Extern families
 
-An extern implementation ships twice, a Python implementation and a Lean
-model, pinned to each other by corpus vectors and by independent known
-answers. The IR sees only a shape; these are the families the supplied
+Each supplied extern implementation ships twice, a Python implementation
+and a Lean model, pinned to each other by corpus vectors and independent
+known answers. Custom Python registrations do not acquire a Lean model
+or a P4 printing translation automatically. The IR sees only a shape; these are the families the supplied
 registry binds. A family name is the segment before the first dot:
 `register.8` and `register` bind the same service, subject to the
 declaration's shape, and a suffix neither changes the algorithm nor
@@ -167,26 +180,40 @@ recirculate and multicast groups have no counterpart.
 
 ## Not supported
 
+The supplied architecture and printing adapters have these limits; they
+do not restrict how a custom caller composes core blocks.
+
 - **PSA, PNA, TNA and any other named P4 architecture.** No program
   written against them can be loaded, and no `psa.p4` or similar shim
   exists. Supporting one would be a new architecture module on each side
   plus a printing shim, not a change to the IR.
 - **An egress pipeline, recirculation, cloning, multicast groups,
-  meters, digests and timestamps.** The contract has one control and no
-  notion of a second pass; packet fate is exactly drop, unicast or flood.
+  meters, digests and timestamps.** The supplied pipelines run one control
+  without a second pass; their packet fate is drop, unicast or flood.
 - **Ports outside `bit<9>`**, and any port numbering other than
   `0 .. ports - 1` for the switch.
-- **Architecture-specific match kinds and services.** Only exact, LPM
-  and ternary keys and the five extern families above exist.
+- **Additional match kinds and supplied services.** The core supports exact,
+  LPM and ternary keys. The five extern families above are the supplied
+  implementations; custom families can be registered explicitly, without
+  automatically gaining Lean semantics or P4 printer support.
+
+The block-oracle package named `P4blo` is an isolated P4-SpecTec testing
+adapter. It does not define a required architecture for p4blo programs.
 
 ## Adding an architecture
 
-On the Python side, a module under `impl/python/p4blo/arch/` with a `run`
-method of the shape `run(loaded, entries, ingress_port, packet)` returning
-the egress ports and packets, using `load` for the once-per-program work
-and the `Metadata` view for the contract fields; it may extend the
-contract vocabulary by declaring new fields. If programs must run under
+A custom architecture may live outside p4blo. It assembles a block library,
+loads with an explicit registry and contract, then calls blocks according to
+its own logic. The [custom extern example](../examples/custom_extern.py) runs
+a control without a packet pipeline. Neither ports nor packet fate are
+mandatory inputs to an architecture composition.
+
+To use the supplied STF driver, provide a `run` method of the shape
+`run(loaded, entries, ingress_port, packet)` returning egress ports and
+packets. Use `load` for the once-per-program work and the `Metadata` view
+for contract fields; a contract may declare its own fields. Supplied
+adapters live under `impl/python/p4blo/arch/`. If programs must run under
 it in the differential tests, a Lean twin follows the same rules and the
-`p4blo-lean` endpoint learns to select it. The rules above are the ones a
-new architecture is expected to share unless it has a reason not to,
-recorded in its module and in the decisions register.
+`p4blo-lean` endpoint learns to select it. The shared rules above describe
+the supplied filter and switch. A custom architecture defines its own
+contract and execution policy; document those choices with its adapter.

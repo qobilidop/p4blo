@@ -22,9 +22,11 @@ role gets the same empty block the v1model shim gives it, without
 
 from __future__ import annotations
 
-from p4blo import ir
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.printer import MISSING_ROLE_NAMES, BoundProgramPrinter
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.arch.v1model import V1modelStmtPrinter, print_extern_instance
-from p4blo.printer import MISSING_ROLE_NAMES, PrintError, ProgramPrinter
+from p4blo.printer import PrintError
 from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = ["INCLUDE", "PACKAGE", "BlockPrinter", "PrintError", "print_program"]
@@ -38,14 +40,14 @@ PACKAGE = "P4blo"
 DECLARED = frozenset({PACKAGE, "P4bloParser", "P4bloControl", "P4bloDeparser", "main"})
 
 
-def print_program(program: pb.Program, *, index: ir.Index | None = None) -> str:
+def print_program(program: apb.BlockAssembly, *, index: BoundIndex | None = None) -> str:
     """The complete P4-16 program for the p4blo block architecture."""
     if index is None:
-        index = ir.Index.build(program)
-    return BlockPrinter(index).render()
+        index = BoundIndex.build(program)
+    return BlockPrinter(index, roles={e.role: e.block for e in index.bindings.exports}).render()
 
 
-class BlockPrinter(ProgramPrinter):
+class BlockPrinter(BoundProgramPrinter):
     """The printer bound to the block architecture: its include, the
     extern families' v1model forms, and `main`."""
 

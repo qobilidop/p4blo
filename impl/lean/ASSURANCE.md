@@ -1281,7 +1281,7 @@ parser errors come only from `throwParse`, which outside a parser the
 typing rules and the stack rule out, and `dispatch_np` combined with
 `dispatch_ok`, whose faults are all parser errors, leaves no fault at all.
 
-`spec/ir/P4bloIR/Validity/EntryLaws.lean` states the consequence on the
+`spec/arch/P4bloArch/EntryLaws.lean` states the consequence on the
 actual entry functions, restated publicly and equal by `rfl` because their
 helpers are private. Given a `Valid` program's block of the entry's kind
 and arity, parameter values of their types, externs satisfying the

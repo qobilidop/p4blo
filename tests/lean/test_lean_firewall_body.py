@@ -10,6 +10,7 @@ import pytest
 
 from p4blo import arch
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.run import compare_program
 from p4blo.interp import expr, stmt
@@ -55,9 +56,9 @@ def expected_vars() -> dict[str, Value]:
 
 
 def invalid_env(
-    program: pb.Program, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
+    program: apb.BlockAssembly, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
 ) -> Env:
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     installed = loaded.entries(connection()[0].case.entries)
     packet = Packet(bytes.fromhex("deadbeef"))
     packet.cursor = 3
@@ -119,8 +120,8 @@ def observe_body(env: Env) -> None:
     assert freeze(env) == before, "invalid IPv4 changed complete firewall Env"
 
 
-def test_lean_agrees_firewall_actual_initialization(firewall: pb.Program) -> None:
-    loaded = arch.load(firewall)
+def test_lean_agrees_firewall_actual_initialization(firewall: apb.BlockAssembly) -> None:
+    loaded = arch.reference.load(firewall)
     frame = Env.for_block(loaded.index, loaded.index.blocks["MyIngress"], loaded.externs)
     assert freeze(frame.vars) == freeze(expected_vars())
     assert frame.action is None and frame.action_vars is None
@@ -132,7 +133,7 @@ def test_lean_agrees_firewall_actual_initialization(firewall: pb.Program) -> Non
     list(itertools.product([False, True], [False, True], [False, True], [False, True], range(3))),
 )
 def test_lean_agrees_firewall_invalid_body(
-    firewall: pb.Program, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
+    firewall: apb.BlockAssembly, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
 ) -> None:
     observe_body(invalid_env(firewall, ev, drop, overlay, dirty, tcp_shape))
 
@@ -141,7 +142,7 @@ def test_lean_agrees_firewall_invalid_body(
     "fault", ["local", "tcp", "bloom", "index", "scope", "entries", "cursor-type", "overlay"]
 )
 def test_lean_agrees_firewall_invalid_observer_rejects_effects(
-    firewall: pb.Program, monkeypatch: pytest.MonkeyPatch, fault: str
+    firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch, fault: str
 ) -> None:
     original = stmt.execute_one
     hits = 0
@@ -184,7 +185,7 @@ def test_lean_agrees_firewall_invalid_observer_rejects_effects(
 
 
 def test_lean_agrees_firewall_packet_observer_misses_local_effect(
-    firewall: pb.Program, lean_binary: Path, monkeypatch: pytest.MonkeyPatch
+    firewall: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original = stmt.execute_one
     hits = 0

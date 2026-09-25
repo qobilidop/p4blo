@@ -13,6 +13,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean
@@ -59,7 +60,7 @@ def expected_packet(name: str) -> bytes:
     )
 
 
-def guarded_program(name: str, body: list[pb.Stmt]) -> pb.Program:
+def guarded_program(name: str, body: list[pb.Stmt]) -> apb.BlockAssembly:
     """Reuse declaration/observer layout, not prior policy or expected answers.
 
     Actual authored callee has hdr/meta inout, route in and scratch local.
@@ -120,9 +121,9 @@ def guarded_program(name: str, body: list[pb.Stmt]) -> pb.Program:
     return program
 
 
-def exported_programs(command: list[str]) -> dict[str, pb.Program]:
+def exported_programs(command: list[str]) -> dict[str, apb.BlockAssembly]:
     completed = subprocess.run(command, capture_output=True, text=True, check=True, timeout=30)
-    programs: dict[str, pb.Program] = {}
+    programs: dict[str, apb.BlockAssembly] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
         name = record["name"]
@@ -138,7 +139,7 @@ def exported_programs(command: list[str]) -> dict[str, pb.Program]:
 
 
 @pytest.fixture(scope="module")
-def guarded_programs(lean_binary: Path) -> dict[str, pb.Program]:
+def guarded_programs(lean_binary: Path) -> dict[str, apb.BlockAssembly]:
     root = Path(__file__).resolve().parents[2]
     return exported_programs([str(root / "impl/lean/.lake/build/bin/p4blo"), "guardedForward"])
 
@@ -151,7 +152,7 @@ def test_guarded_forward_exporter_is_a_default_target() -> None:
 
 @pytest.mark.parametrize("name", INPUTS)
 def test_lean_agrees_on_guarded_forwarding(
-    name: str, guarded_programs: dict[str, pb.Program], lean_binary: Path
+    name: str, guarded_programs: dict[str, apb.BlockAssembly], lean_binary: Path
 ) -> None:
     program = guarded_programs[name]
     case = Case(pb.Entries(), 0, PAYLOAD)
@@ -170,11 +171,11 @@ def test_lean_agrees_on_guarded_forwarding(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
     assert report.agreed == 1
-    assert run_python(arch.load(program), case, 4) == [(0, expected_packet(name))]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected_packet(name))]
 
 
 def test_lean_agrees_after_retained_guard_fault(
-    guarded_programs: dict[str, pb.Program],
+    guarded_programs: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -12,9 +12,20 @@ from enum import IntEnum
 import pytest
 from google.protobuf import text_format
 
-from p4blo import validator
+from p4blo.arch import assemble, validator
+from p4blo.arch.builder import AssemblyBuilder as CoreProgram
+from p4blo.arch.externs.declarations import (
+    Checksum16,
+    Counter,
+    Register,
+    checksum16,
+    counter,
+    register,
+)
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     Bits,
+    BlockLibrary,
     Bool,
     Control,
     CoreErrors,
@@ -28,7 +39,6 @@ from p4blo.edsl import (
     L,
     Out,
     Parser,
-    Program,
     Stack,
     Struct,
     Table,
@@ -49,10 +59,7 @@ from p4blo.edsl import (
     state,
     ternary,
 )
-from p4blo.edsl.core import Program as CoreProgram
 from p4blo.edsl.core import bit as core_bit
-from p4blo.edsl.core.externs import checksum16, counter, register
-from p4blo.edsl.externs import Checksum16, Counter, Register
 from p4blo.v0 import p4blo_pb2 as pb
 
 # -- a small program every test builds on ---------------------------------------
@@ -114,16 +121,14 @@ def build(
     control: type[Control[headers, metadata]] = NoControl,
     deparser: type[Deparser[headers]] = NoDeparser,
     **kwargs: object,
-) -> pb.Program:
-    return Program(
-        "t",
+) -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(parser, control, deparser, **kwargs),  # pyright: ignore[reportArgumentType]
+        name="t",
         headers=headers,
         metadata=metadata,
-        parser=parser,
-        control=control,
-        deparser=deparser,
-        **kwargs,  # pyright: ignore[reportArgumentType]
-    ).build()
+        exports={"parser": parser, "control": control, "deparser": deparser},
+    )
 
 
 def control_of(cls: type[Control[headers, metadata]]) -> pb.Block:
@@ -612,7 +617,7 @@ def test_extern_results_must_be_assigned_and_instances_listed() -> None:
         def apply(self) -> None:
             pkts.count(0)
 
-    with pytest.raises(EdslError, match="not listed in Program"):
+    with pytest.raises(EdslError, match="not listed in externs"):
         build(control=Unlisted)
 
 

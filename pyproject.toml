@@ -37,6 +37,7 @@ markers = [
 line-length = 100
 extend-exclude = [
     "impl/python/p4blo/v0",  # generated code
+    "impl/python/p4blo/arch/v0",  # generated architecture bindings
     ".claude",  # worktrees
     ".agents",  # agent notes and campaign recipes
     "tests/pyright",  # pyright fixtures, some of which must fail
@@ -50,6 +51,6 @@ known-first-party = ["p4blo"]
 
 [tool.pyright]
 include = ["impl/python", "tests", "examples", "spec/arch/P4bloArchTest/fixtures/witnesses.py"]
-exclude = ["impl/python/p4blo/v0", "tests/pyright"]  # tests/unit/test_pyright.py runs the fixtures itself
+exclude = ["impl/python/p4blo/v0", "impl/python/p4blo/arch/v0", "tests/pyright"]  # tests/unit/test_pyright.py runs the fixtures itself
 pythonVersion = "3.13"
 typeCheckingMode = "standard"

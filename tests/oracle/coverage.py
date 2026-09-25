@@ -311,8 +311,10 @@ def materialize_corpus(stage: Path) -> list[Program]:
     # The adapter imports the p4blo package; kept local so that `build`
     # runs with nothing but a Python interpreter.
     sys.path.insert(0, str(ROOT))
-    from p4blo import ir, stf
+    from p4blo import stf
     from p4blo.arch import v1model
+    from p4blo.arch import wire as arch_wire
+    from p4blo.arch.bindings import BoundIndex, assembly_of
     from tests.oracle import run as oracle_run
 
     programs: list[Program] = []
@@ -323,10 +325,13 @@ def materialize_corpus(stage: Path) -> list[Program]:
     for group, paths in sources:
         for txtpb in paths:
             ident = f"{group}-{txtpb.parent.name}"
-            index = ir.Index.build(ir.load_text(txtpb))
+            index = BoundIndex.build(arch_wire.load_text(txtpb))
             p4 = stage / "p4" / f"{ident}.p4"
             p4.parent.mkdir(parents=True, exist_ok=True)
-            p4.write_text(v1model.print_program(index.program, index=index), encoding="utf-8")
+            p4.write_text(
+                v1model.print_program(assembly_of(index.program, index.bindings), index=index),
+                encoding="utf-8",
+            )
             program = Program(ident, txtpb.relative_to(ROOT).as_posix(), p4)
             for vector in sorted(txtpb.parent.glob("*.stf")):
                 try:

@@ -3,7 +3,9 @@ docs/ir-semantics.md, "Deparsers"."""
 
 from __future__ import annotations
 
-from p4blo import interp, ir
+from p4blo.arch import entry
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.interp import values
 from p4blo.interp.values import Bits, Header, Stack, Struct
 from p4blo.v0 import p4blo_pb2 as pb
@@ -42,8 +44,8 @@ def emit(*fields: str) -> str:
 
 
 def run(body: str, headers: Struct) -> bytes:
-    index = ir.Index.build(ir.load_text(TEMPLATE.replace("@BODY@", body)))
-    return interp.run_deparser(index, "D", headers, {})
+    index = BoundIndex.build(arch_wire.load_text(TEMPLATE.replace("@BODY@", body)))
+    return entry.run_deparser(index, "D", headers, {})
 
 
 def headers() -> Struct:
@@ -97,7 +99,7 @@ def test_nothing_emitted_is_no_bytes() -> None:
 
 
 def test_the_zero_headers_emit_nothing() -> None:
-    index = ir.Index.build(ir.load_text(TEMPLATE.replace("@BODY@", emit(""))))
+    index = BoundIndex.build(arch_wire.load_text(TEMPLATE.replace("@BODY@", emit(""))))
     zero = values.zero(pb.Type(struct="H"), index)
     assert isinstance(zero, Struct)
-    assert interp.run_deparser(index, "D", zero, {}) == b""
+    assert entry.run_deparser(index, "D", zero, {}) == b""

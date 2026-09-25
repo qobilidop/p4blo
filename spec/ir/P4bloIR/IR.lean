@@ -150,7 +150,7 @@ inductive Literal
   | boolean (value : Bool)
   /-- `EnumLiteral`: member `member` of enum `enumType`. -/
   | enumMember (enumType : String) (member : String)
-  /-- A name from `Program.errors`. -/
+  /-- A name from `BlockLibrary.errors`. -/
   | error (name : String)
   deriving Repr, BEq, DecidableEq, Inhabited
 
@@ -440,18 +440,11 @@ structure Block where
   deriving Repr, BEq, Inhabited
 
 -- ---------------------------------------------------------------------------
--- Program
+-- BlockLibrary
 -- ---------------------------------------------------------------------------
 
-/-- Mirrors `Export`. The role name is a label; the block must have the
-calling convention of its kind. -/
-structure Export where
-  role : String
-  block : String
-  deriving Repr, BEq, DecidableEq, Inhabited
-
-/-- Mirrors `Program`. -/
-structure Program where
+/-- Mirrors `BlockLibrary`. -/
+structure BlockLibrary where
   /-- Human-readable name; carries no meaning. -/
   name : String
   /-- Error values by name. The first seven are core.p4's, in the order
@@ -464,12 +457,6 @@ structure Program where
   externTypes : List ExternType
   externInstances : List ExternInstance
   blocks : List Block
-  /-- The struct type of the headers value H. -/
-  headers : String
-  /-- The struct type of the metadata value M. -/
-  metadata : String
-  /-- The blocks the program offers to an architecture, by role. -/
-  exports : List Export
   deriving Repr, BEq, Inhabited
 
 -- ---------------------------------------------------------------------------

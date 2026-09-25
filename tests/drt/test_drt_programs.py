@@ -17,7 +17,9 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
 from p4blo.drt.programs import (
@@ -59,7 +61,9 @@ def check_expression(expression: pb.Expr, width: int | None, lean_binary: Path) 
 
 
 def check_program(
-    program: pb.Program, lean_binary: Path, cases: Sequence[Case] = (Case(pb.Entries(), 0, b""),)
+    program: apb.BlockAssembly,
+    lean_binary: Path,
+    cases: Sequence[Case] = (Case(pb.Entries(), 0, b""),),
 ) -> None:
     # compare_program validates; generator mistakes fail, never get filtered.
     try:
@@ -150,7 +154,9 @@ def test_lean_agrees_on_faulting_unselected_branches(lean_binary: Path) -> None:
     for condition, expected_error in cases:
         program = parser_condition_program(condition, expected_error)
         check_program(program, lean_binary)
-        assert run_python(arch.load(program), Case(pb.Entries(), 0, b""), 4) == [(0, b"\x80")]
+        assert run_python(arch.reference.load(program), Case(pb.Entries(), 0, b""), 4) == [
+            (0, b"\x80")
+        ]
 
 
 @pytest.mark.parametrize("width", [1, 7, 8, 9, 31, 32, 65])
@@ -204,4 +210,4 @@ def test_lean_agrees_on_shrinking_packet_programs(
     """Leaves that read fields, locals, a stack element and validity of a
     parsed input, so that each packet computes something else."""
     program = packet_scalar_program(data.draw(packet_scalar(width)), width)
-    check_program(program, lean_binary, generate(ir.Index.build(program), seed, 4))
+    check_program(program, lean_binary, generate(BoundIndex.build(program), seed, 4))

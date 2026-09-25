@@ -1,13 +1,76 @@
 # Status
 
-Where the work stands now. Updated at every checkpoint and compacted at
-milestone boundaries, so this file holds current state only; history up
-to this compaction is in git at the archive commit
-`26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and up to the
-previous one at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
+Current truth and resumable work. Earlier history is archived at
+`26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and previously at
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 
-Last updated: 2026-09-25. **Nothing active.** Engineering-practice
-maintenance is merged on `main` at `264fd63` through
+Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
+Branch `work/edsl-ergonomics`, original base `80eba84`; [PR #2](https://github.com/qobilidop/p4blo/pull/2)
+is open. Pushed head `03c35e7` failed only CI's P4-SpecTec job: `ea1ef89`
+put p4blo imports at module level in `tests/oracle/coverage.py`, whose
+`build` step CI runs with a bare `python3`. Fixed at `a6fb0ef` and pinned
+by a structural test of the bare-interpreter scripts (`b43147d` adds the
+XDP check found by [review](reviews/edsl-final-fixes.md)). The uncommitted
+closure-audit prose sweep from the interrupted Codex session was committed
+as `07409ad` and `7082a48`, with `c1bcc39` from review. Before pushing:
+`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` exited 0 (5199 passed, the optional
+XDP image skipped, 4 xfailed), and the CI coverage steps ran locally, each
+exiting 0: `nix develop .#oracle -c python3 tests/oracle/coverage.py build`,
+then `test_spectec_coverage.py` with `P4BLO_REQUIRE_SPECTEC_COVERAGE=1`,
+9 passed, the committed report matching a fresh measurement.
+The user extended the separation through the protobuf and Lean types;
+[wire-boundary plan](notes/edsl-wire-boundary.md) records the accepted design.
+
+Implementation is complete at `37356009137d7f1bad5a284c01d59eace1841726`:
+
+- Typed Python BlockLibrary compiles directly to core protobuf BlockLibrary;
+  Lean uses the same abstraction. It holds arbitrary blocks and declarations,
+  with no global H/M roots, exports or fixed count of any block kind.
+- Architecture BlockBindings owns roots and exports. An optional flat
+  BlockAssembly transport preserves existing payloads; architecture code
+  supplies invocation policy, host contracts and explicit extern binding.
+- Core validity/progress remains proved over libraries. Binding validity and
+  its sound checker, fixed H/M entry helpers and existing entry theorems now
+  live in architecture support. Wrong signatures and role kinds fail at load.
+- The three applications retain exact text/binary goldens and behavior;
+  ordinary aliases/helpers improve readability. A custom extern and a library
+  with two blocks of each kind exercise composition beyond the supplied switch.
+
+Checked local evidence on that implementation tree, all exiting 0:
+
+- All three packages through `scripts/check-lean.sh`, including proof audits.
+- `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: 5195 passed, one optional local XDP
+  image skip, four expected failures; lint/types/schema/generation pass.
+- `python -m p4blo.conformance check-lean`: all 89 retained fixtures reproduce
+  unchanged answers; the original fixture provenance is retained and the new
+  semantics-source digest is reported explicitly, not treated as answer drift.
+- On equivalent oracle-adapter commit `f6ec9ef`: P4-SpecTec block suite
+  67 passed/3 expected failures; frontend suite 98 passed; main corpus 35 passed.
+- At frozen `70b51cdd28b331832fc9a6182b60218e68be38a6`, main P4-SpecTec/BMv2
+  corpus suites passed 79 tests with two documented expected failures.
+- At that same frozen revision, `scripts/check-assurance.py` exited 0:
+  Python fault catalogue, Lean CRC fault, paired codec/observer faults,
+  independent anchors and restored baselines all checked.
+
+Independent review approved exact implementation `70b51cd` with no confirmed
+defects and 43 final focused passes; see
+[boundary review](reviews/library-boundary.md). It checked preserved theorem
+premises, scalar/six-block core acceptance, projection isolation and nine
+malformed bindings against Python and Lean. The earlier typed-compiler review
+found the local-only declaration-closure bug, fixed at `c150d31`; its report
+is [here](reviews/edsl-implementation.md). Independent review also approved
+metadata head `33215d2`; its full local gate exited 0 with the same counts.
+Library source settings remain reassignable; bypassing constructor checks by
+assignment is a nonblocking consistency observation, not a shown runtime bug.
+
+Next: push, update PR #2, pass all remote CI on its exact head and merge. Then
+close the scope, finalize the [reflection](notes/edsl-reflection.md), compact
+state and remove integrated worktrees/branches. Do not resume roadmap work.
+The prior successful assurance at `58275b8` covered the pre-extension API;
+it is not evidence for this final split. Its first attempt was invalidated
+by concurrent tracked documentation edits and never counted as a pass.
+
+Engineering-practice maintenance is merged on `main` at `264fd63` through
 [PR #1](https://github.com/qobilidop/p4blo/pull/1), from base `045f3de`.
 Three semantic scopes remain complete and frozen.
 The user authorized learning from local `p4-spectec-lean` and external
@@ -49,8 +112,8 @@ integration and coverage changes are not part of it.
   progress updates.
 - Temporary implementation/review worktrees and completed branches were
   removed after verifying their content was integrated. No neighboring
-  repository was modified. Next: wait for a new user scope; the roadmap
-  remains backlog.
+  repository was modified. This scope is closed; the newly authorized eDSL
+  scope above is active. The roadmap remains backlog.
 
 ## Current state
 
@@ -68,7 +131,7 @@ The four claims of [design.md](../docs/design.md):
 | 1. The core is small and post-elaboration | green: twelve corpus programs and three applications fit without a new core construct; P4 source now enters through P4-SpecTec's typing and instantiation (`p4blo.frontend`), six corpus goldens reproduce byte for byte from their P4 originals, and 98 of the 191 pinned v1model programs with vectors run from source (`tests/oracle/frontend-census.json`) |
 | 2. Supports the tested real programs | green with explicit exceptions: every corpus and example vector passes both P4 oracles at the pipeline level except the strict BMv2 register and priority divergences and SpecTec's strict mask failure on the printed tutorial firewall, and block by block on SpecTec except three strict expected failures behind checked models; the original-source probes expose the pinned SpecTec CRC and mask defects, all classified; generated programs on SpecTec pass with two classified simulator defects |
 | 3. A block is a function; an architecture is ordinary code | green, frozen: filter 45 lines, switch 50, no P4 in either; every program runs under both |
-| 4. Mechanized and agrees with the reference | green within the stated profile: whole-program validity decided by a checker proved sound, progress (no reachable interpreter error for a valid program) with the extern contract discharged for the reference families, 63 deviation and helper laws, every one of the 157 rule tags of the Lean machine hit by retained differential campaigns, a conformance corpus of 89 fixtures; no universal Python equivalence claim, no termination theorem |
+| 4. Mechanized and agrees with the reference | green within the stated profile: core library validity decided by a checker proved sound and architecture bindings checked separately with a sound checker; progress (no reachable interpreter error for a valid library under the stated execution premises) with the extern contract discharged for the reference families, 63 deviation and helper laws, every one of the 157 rule tags of the Lean machine hit by retained differential campaigns, a conformance corpus of 89 fixtures; no universal Python equivalence claim, no termination theorem |
 
 ## What the IR semantics scope established
 
@@ -168,7 +231,8 @@ These are parked or backlog, not tasks; resuming any needs a scope.
   differs from ours (`2730cfd9`), and its program export replaces patch
   `0002` when it exists.
 - **Termination (C2)** under the acyclic-calls and revisit discipline,
-  and **codec composition through Program and Export (C3)**, are the two
+  and **codec composition through BlockLibrary and architecture Export and
+  BlockAssembly (C3)**, are the two
   proof items the scope left as backlog (`roadmap.md`).
 - **Printer declaration order.** An action that calls one declared after
   it prints P4 that SpecTec's typing rejects; either the printer orders

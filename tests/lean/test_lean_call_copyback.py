@@ -16,8 +16,11 @@ from typing import Literal
 
 import pytest
 
-from p4blo import arch, ir, validator
+from p4blo import arch
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs.crc import crc16
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.run import compare_program, run_python
 from p4blo.v0 import p4blo_pb2 as pb
@@ -61,7 +64,7 @@ def _element(field: str | None = None) -> str:
     return f'member {{ base {{ {element} }} field: "{field}" }}'
 
 
-def copyback_program(kind: CallKind, first: int, second: int, overlap: bool) -> pb.Program:
+def copyback_program(kind: CallKind, first: int, second: int, overlap: bool) -> apb.BlockAssembly:
     """A control that sets `t = first` and calls with `hdr.hs[t]` as an
     `inout` argument; the callee sets `t` to `second` and writes `x.f`.
 
@@ -151,7 +154,7 @@ exports {{ role: "parser" block: "P" }}
 exports {{ role: "control" block: "C" }}
 exports {{ role: "deparser" block: "D" }}
 """
-    return ir.load_text(text)
+    return arch_wire.load_text(text)
 
 
 def expected_copyback(first: int, packet: bytes, overlap: bool) -> bytes:
@@ -163,11 +166,11 @@ def expected_copyback(first: int, packet: bytes, overlap: bool) -> bytes:
     return bytes(out) + packet[2:]
 
 
-def check(program: pb.Program, case: Case, expected: bytes, lean_binary: Path) -> None:
+def check(program: apb.BlockAssembly, case: Case, expected: bytes, lean_binary: Path) -> None:
     assert validator.validate(program) == []
     report = compare_program(program, [case], 4, [lean_binary])
     assert report.passed, report.summary()
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 @pytest.mark.parametrize("kind", ["action", "block"])
@@ -198,7 +201,7 @@ def test_lean_agrees_copyback_with_an_overlapping_in_argument(
     )
 
 
-def extern_program(first: int) -> pb.Program:
+def extern_program(first: int) -> apb.BlockAssembly:
     """`r.read(hdr.hs[t].f, 0)` and `hdr.ws[t].g = crc.compute(hdr.hs[0].f)`
     with `t = first`.
 
@@ -284,7 +287,7 @@ exports {{ role: "parser" block: "P" }}
 exports {{ role: "control" block: "C" }}
 exports {{ role: "deparser" block: "D" }}
 """
-    return ir.load_text(text)
+    return arch_wire.load_text(text)
 
 
 @pytest.mark.parametrize("first", [0, 1, 2])

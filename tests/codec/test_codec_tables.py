@@ -10,8 +10,8 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import ir
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from tests.codec.test_codec_expr import Expression, expressions, var
 from tests.codec.test_codec_leaves import TableKind, assert_leaf, key_leaves, leaves, same_json
 
@@ -378,7 +378,7 @@ def requests() -> list[tuple[dict[str, object], dict[str, object]]]:
 
 
 def protobuf_value(kind: TableKind, wire: dict[str, object]) -> tuple[Message, object]:
-    p = pb.Program()
+    p = apb.BlockAssembly()
     t = p.blocks.add().tables.add()
     match kind:
         case "table_key":
@@ -392,7 +392,7 @@ def protobuf_value(kind: TableKind, wire: dict[str, object]) -> tuple[Message, o
     # Empty messages still have presence; do not let {} erase an optional call.
     value.SetInParent()
     json_format.ParseDict(wire, value)
-    rt = ir.load_json(ir.dump_json(p)).blocks[0].tables[0]
+    rt = arch_wire.load_json(arch_wire.dump_json(p)).blocks[0].tables[0]
     match kind:
         case "table_key":
             recovered = rt.keys[0]

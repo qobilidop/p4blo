@@ -8,20 +8,23 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir
-from p4blo.arch import externs, v1model
+from p4blo import arch
+from p4blo.arch import assemble, externs, v1model
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.builder import AssemblyBuilder
+from p4blo.arch.externs import declarations as core_externs
 from p4blo.arch.externs.crc import crc16, crc32
+from p4blo.arch.externs.declarations import CRC16, CRC32
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import state
 from p4blo.drt.case import Case
 from p4blo.drt.run import compare_program, run_python
 from p4blo.edsl import (
-    CRC16,
-    CRC32,
+    BlockLibrary,
     Control,
     Deparser,
     Header,
     Parser,
-    Program,
     Struct,
     Transition,
     bit8,
@@ -30,7 +33,6 @@ from p4blo.edsl import (
     core,
 )
 from p4blo.edsl import state as parser_state
-from p4blo.edsl.core import externs as core_externs
 from p4blo.interp import InterpError
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
@@ -163,20 +165,18 @@ class TypedDeparser(Deparser[TypedHeaders]):
         self.emit(self.hdr.result)
 
 
-def typed_program() -> pb.Program:
-    return Program(
-        "typed_crc",
+def typed_program() -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(TypedParser, TypedControl, TypedDeparser, externs=[typed16, typed32]),
+        name="typed_crc",
         headers=TypedHeaders,
         metadata=TypedMetadata,
-        parser=TypedParser,
-        control=TypedControl,
-        deparser=TypedDeparser,
-        externs=[typed16, typed32],
-    ).build()
+        exports={"parser": TypedParser, "control": TypedControl, "deparser": TypedDeparser},
+    )
 
 
 def test_typed_crc_authoring_executes() -> None:
-    assert run_python(arch.load(typed_program()), Case(pb.Entries(), 0, b""), 4) == [
+    assert run_python(arch.reference.load(typed_program()), Case(pb.Entries(), 0, b""), 4) == [
         (0, bytes.fromhex("4040ff000000"))
     ]
 
@@ -186,8 +186,8 @@ def test_lean_agrees_on_typed_crc_authoring(lean_binary: Path) -> None:
     assert report.passed, (report.summary(), report.divergences)
 
 
-def program(payloads: list[bytes]) -> pb.Program:
-    p = core.Program("crc_probe")
+def program(payloads: list[bytes]) -> apb.BlockAssembly:
+    p = AssemblyBuilder("crc_probe")
     fields = {f"c{width}_{i}": core.bit(width) for i in range(len(payloads)) for width in (16, 32)}
     result = p.header("Result", **fields)
     p.headers = p.struct("H", result=result)
@@ -260,7 +260,7 @@ def test_known_answers(data: bytes, c16: int, c32: int) -> None:
 
 
 def test_dynamic_authoring_execution_and_observation() -> None:
-    loaded = arch.load(program([data for data, _, _ in KNOWN]))
+    loaded = arch.reference.load(program([data for data, _, _ in KNOWN]))
     before = state.snapshot(loaded)
     assert len(before) == 2 * len(KNOWN)
     assert {item.kind for item in before} == {"crc16", "crc32"}
@@ -280,16 +280,16 @@ def test_stateless_observer_rejects_cells(kind: str) -> None:
 def test_unsupported_input_widths_fail_binding_and_printing(width: int) -> None:
     p = program([b"x"])
     p.extern_types[0].methods[0].params[0].type.bits = width
-    index = ir.Index.build(p)
+    index = BoundIndex.build(p)
     with pytest.raises(externs.BindError, match="positive multiple of 8"):
-        externs.default_registry().bind(index)
+        externs.supplied_registry().bind(index)
     with pytest.raises(v1model.PrintError, match="positive multiple of 8"):
         v1model.print_program(p)
 
 
 @pytest.mark.parametrize("width", [16, 32])
 def test_wrong_bound_argument_width_is_not_padded(width: int) -> None:
-    loaded = arch.load(program([b"x"]))
+    loaded = arch.reference.load(program([b"x"]))
     bound = loaded.externs[f"crc{width}_0"]
     with pytest.raises(InterpError, match="bound width"):
         bound.call("compute", [Bits(16, 1)])
@@ -300,7 +300,7 @@ def test_crc_extra_constructor_arguments_are_not_ignored(index: int) -> None:
     p = program([b"x"])
     p.extern_instances[index].args.add(bits=pb.BitsLiteral(width=8, value="1"))
     with pytest.raises(externs.BindError, match="constructor takes no arguments"):
-        externs.default_registry().bind(ir.Index.build(p))
+        externs.supplied_registry().bind(BoundIndex.build(p))
     with pytest.raises(v1model.PrintError, match="constructor takes no arguments"):
         v1model.print_program(p)
 
@@ -318,7 +318,7 @@ def test_malformed_crc_shapes_are_rejected(bad: str) -> None:
     else:
         decl.methods[0].name = "not_compute"
     with pytest.raises(externs.BindError):
-        externs.default_registry().bind(ir.Index.build(p))
+        externs.supplied_registry().bind(BoundIndex.build(p))
     with pytest.raises(v1model.PrintError, match="wrong shape"):
         v1model.print_program(p)
 
@@ -403,7 +403,7 @@ def test_crc_known_answers_on_bmv2(tmp_path: Path, printed: bool) -> None:
     compiled = bmv2.compile_program(image, v1model.print_program(p) if printed else original_p4())
     vector = tmp_path / "crc.stf"
     vector.write_text(f"packet 0 {PACKET.hex()}\nexpect 0 {(EXPECTED + PACKET).hex()}$\n")
-    verdict = bmv2.run_vector(image, ir.Index.build(p), compiled, vector)
+    verdict = bmv2.run_vector(image, BoundIndex.build(p), compiled, vector)
     assert verdict.status == "pass", verdict
 
 

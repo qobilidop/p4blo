@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.choice import Chooser
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -95,14 +96,14 @@ def binary(op: pb.BinaryOp, left: pb.Expr, right: pb.Expr) -> pb.Expr:
     return pb.Expr(binary=pb.Binary(op=op, left=left, right=right))
 
 
-def scalar_program(expression: pb.Expr, width: int | None) -> pb.Program:
+def scalar_program(expression: pb.Expr, width: int | None) -> apb.BlockAssembly:
     """Emit a bits result of `width`, or a bool (`None`) cast to bit<1>.
 
     The parser consumes nothing, so byte-padding of the output does not
     trigger the architecture's byte-aligned-input requirement. An empty
     input packet exposes precisely the expression result, MSB first.
     """
-    program = ir.load_text(_SCALAR_CONTEXT)
+    program = arch_wire.load_text(_SCALAR_CONTEXT)
     program.header_types[0].fields[0].type.bits = width if width is not None else 1
     value = (
         expression
@@ -113,7 +114,7 @@ def scalar_program(expression: pb.Expr, width: int | None) -> pb.Program:
     return program
 
 
-def parser_condition_program(condition: pb.Expr, expected_error: str) -> pb.Program:
+def parser_condition_program(condition: pb.Expr, expected_error: str) -> apb.BlockAssembly:
     """Expose a parser condition's error outcome as a single emitted bit.
 
     This makes skipped packet reads observable: unlike closed pure scalar
@@ -299,7 +300,7 @@ def has_lookahead(expr: pb.Expr) -> bool:
     )
 
 
-def packet_scalar_program(expression: pb.Expr, width: int | None) -> pb.Program:
+def packet_scalar_program(expression: pb.Expr, width: int | None) -> apb.BlockAssembly:
     """`scalar_program` whose expression may read a parsed input.
 
     The parser extracts `hdr.inp`, a header with one field `w<W>` per width

@@ -66,7 +66,7 @@ def scopeStep (top : HashSet String) (b : Block) (scopes : HashMap String BlockS
   pure (.yield (scopes.insert b.name (← scope b top)))
 
 /-- `Index.build`, restated with its loop bodies named. -/
-def index (program : Program) : Except String Index := do
+def index (program : BlockLibrary) : Except String Index := do
   let where_ := "program"
   let (headerTypes, top) ← addAll {} program.headerTypes HeaderType.name {} where_
   let (structTypes, top) ← addAll {} program.structTypes StructType.name top where_
@@ -80,7 +80,7 @@ def index (program : Program) : Except String Index := do
          scopes, programNames := top, errors }
 
 /-- The restatement is the definition itself. -/
-theorem index_eq (p : Program) : Index.build p = index p := rfl
+theorem index_eq (p : BlockLibrary) : Index.build p = index p := rfl
 
 -- ---------------------------------------------------------------------------
 -- addAll
@@ -352,7 +352,7 @@ theorem scope_ok (h : scope b top = .ok sc) : ScopeLaws b sc := by
 -- ---------------------------------------------------------------------------
 
 /-- What the index holds, read back into the program. -/
-structure IndexLaws (p : Program) (idx : Index) : Prop where
+structure IndexLaws (p : BlockLibrary) (idx : Index) : Prop where
   program : idx.program = p
   header : ∀ (n : String) (h : HeaderType), idx.headerTypes[n]? = some h → h ∈ p.headerTypes ∧ h.name = n
   struct_ : ∀ (n : String) (s : StructType), idx.structTypes[n]? = some s → s ∈ p.structTypes ∧ s.name = n
@@ -361,7 +361,7 @@ structure IndexLaws (p : Program) (idx : Index) : Prop where
   externInstance : ∀ (n : String) (e : ExternInstance), idx.externInstances[n]? = some e →
     e ∈ p.externInstances ∧ e.name = n
   block : ∀ (n : String) (b : Block), idx.blocks[n]? = some b → b ∈ p.blocks ∧ b.name = n
-  /-- Program-level names share one namespace: no name is both a header and
+  /-- BlockLibrary-level names share one namespace: no name is both a header and
   a struct type. -/
   headerNotStruct : ∀ n : String, idx.headerTypes[n]? ≠ none → idx.structTypes[n]? = none
   blockFound : ∀ b ∈ p.blocks, idx.blocks[b.name]? = some b

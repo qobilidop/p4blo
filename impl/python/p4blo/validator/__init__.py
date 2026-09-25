@@ -23,7 +23,7 @@ that builds on the ones it needs, and `_Validator` here joins them; its
   statements    statements
   parsers       parser states, transitions and select
   tables        tables, keys and const entries
-  blocks        blocks, actions and exports
+  blocks        blocks and actions
 
 Every diagnostic carries a protobuf-style path to the offending element, for
 example `blocks[1].states[2].transition.select.cases[0].sets[1]`.
@@ -33,7 +33,7 @@ Codes
 Structure and names
   NAME_EMPTY          a declaration, field, member, method or key has no name
   NAME_DUPLICATE      two names collide in one namespace (Index.build stops here)
-  ERROR_LIST          Program.errors does not begin with core.p4's errors in order
+  ERROR_LIST          BlockLibrary.errors does not begin with core.p4's errors in order
   REF_UNRESOLVED      a reference names no declaration, field, member, method or error
   REF_KIND            a reference names a declaration of the wrong kind
   SCOPE_VAR           a variable that exists is not visible from here
@@ -202,12 +202,12 @@ __all__ = [
 ]
 
 
-def validate(program: pb.Program) -> list[Diagnostic]:
+def validate(program: pb.BlockLibrary) -> list[Diagnostic]:
     """Every problem found in `program`, in the order of the schema."""
     return _Validator(program).run()
 
 
-def check(program: pb.Program) -> ir.Index:
+def check(program: pb.BlockLibrary) -> ir.Index:
     """The program's `ir.Index`, or `ValidationError` listing every problem."""
     validator = _Validator(program)
     diagnostics = validator.run()
@@ -230,13 +230,11 @@ class _Validator(BlockChecks, ExternChecks):
             return self.diagnostics
         self.check_errors()
         self.check_type_declarations()
-        self.check_program_types()
         self.check_extern_types()
         self.check_extern_instances()
         for i, block in enumerate(self.program.blocks):
             self.block_paths[block.name] = f"blocks[{i}]"
         for i, block in enumerate(self.program.blocks):
             self.check_block(block, f"blocks[{i}]")
-        self.check_exports()
         self.check_call_graph()
         return self.diagnostics

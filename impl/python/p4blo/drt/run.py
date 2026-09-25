@@ -58,7 +58,10 @@ from typing import IO
 
 from google.protobuf import json_format
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import assembly_of
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
 from p4blo.drt.coverage import RuleCoverage
@@ -167,7 +170,7 @@ class Report:
     both_errored: int = 0
     divergences: list[Divergence] = field(default_factory=list)
     inputs: tuple[Case, ...] = ()
-    program_ir: pb.Program | None = field(default=None, repr=False)
+    program_ir: apb.BlockAssembly | None = field(default=None, repr=False)
     protocol_error: str | None = None
     # The Lean rule tags accumulated over the cases run so far.
     rule_coverage: RuleCoverage = field(default_factory=RuleCoverage, repr=False)
@@ -442,8 +445,7 @@ def compare_cases(
     seed: int = 0,
 ) -> Report:
     """Run every case on both sides, in order, and collect the divergences."""
-    frozen_program = pb.Program()
-    frozen_program.CopyFrom(loaded.index.program)
+    frozen_program = assembly_of(loaded.index.program, loaded.bindings)
     inputs = tuple(
         Case(pb.Entries.FromString(c.entries.SerializeToString()), c.ingress_port, c.packet)
         for c in cases
@@ -475,24 +477,24 @@ def compare(
 ) -> Report:
     """`count` random cases of the corpus program in `program_dir`, on the
     Python reference and on `lean` (the executable and leading arguments)."""
-    program = ir.load_text(program_dir / f"{program_dir.name}.txtpb")
-    loaded = arch.load(program)
+    program = arch_wire.load_text(program_dir / f"{program_dir.name}.txtpb")
+    loaded = arch.reference.load(program)
     cases = generate(loaded.index, seed, count, ports)
     return compare_program(program, cases, ports, lean, seed)
 
 
 def compare_program(
-    program: pb.Program,
+    program: apb.BlockAssembly,
     cases: Sequence[Case],
     ports: int,
     lean: Sequence[str | Path],
     seed: int = 0,
 ) -> Report:
     """Compare concrete inputs from fresh state, retaining every peer failure."""
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     with tempfile.TemporaryDirectory() as tmp:
         program_json = Path(tmp) / "program.json"
-        program_json.write_text(ir.dump_json(program))
+        program_json.write_text(arch_wire.dump_json(program))
         report: Report | None = None
         try:
             with LeanRunner(lean, program_json, ports) as runner:

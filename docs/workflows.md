@@ -237,7 +237,7 @@ After editing a ledger entry, regenerate its cross-reference table with
 `uv run python scripts/ledger-xref.py`;
 `tests/structure/test_ledger_xref.py` fails until it is current.
 
-**The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
+**The core schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
 `spec/ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules
 (`impl/python/p4blo/validator/`, the module of the rule's group; a new
@@ -248,6 +248,12 @@ the printer and the STF reader also use), the printer
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/unit/test_printer.py`).
 Record the decision in `.agents/decisions.md`.
+
+Architecture binding syntax lives separately in
+`spec/arch/proto/p4blo/arch/v0/assembly.proto`. Mirror changes there in
+`spec/arch/P4bloArch/Assembly.lean` and the architecture codecs, validators
+and adapters, then run the same schema and affected compatibility gates.
+Keep architecture choices outside the core schema and validity rules.
 
 **A corpus program.** Create `tests/corpus/<name>/` with `<name>.py` (the
 source, in the typed eDSL `p4blo.edsl`; `tests/corpus/forwarder/forwarder.py`
@@ -267,17 +273,24 @@ the Lean-versus-Python gates, and add a row to the corpus table in
 `testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
 the current programs is archived in git as `docs/corpus-candidates.md`.
 
-**An extern.** Add its implementation under `impl/python/p4blo/arch/externs/` with
-a `Shape`, register it in `default_registry`, add the Lean model in
+**An extern.** A custom Python extern can live outside this package: declare
+its typed interface, register an `Implementation` with a `Shape` and factory
+in a local `Registry`, and pass that registry to the loader. The runnable
+[custom extern example](../examples/custom_extern.py) and
+[authoring guide](python-edsl.md#declare-register-bind) show the lifecycle.
+Registration alone supplies neither Lean semantics nor P4 printing support.
+
+To extend the supplied, cross-checked families, add the implementation under
+`impl/python/p4blo/arch/externs/`, register it in `supplied_registry`, add the Lean model in
 `spec/arch/P4bloArch/Externs.lean`, its v1model form in
 `impl/python/p4blo/arch/v1model.py` (`print_extern_instance` and
 `V1modelStmtPrinter`, which the block architecture shares), and a typed
 family class in
-`impl/python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
+`impl/python/p4blo/arch/externs/declarations.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
 `Counter` and `Checksum16`, from which the IR `ExternType` is derived.
 The dynamic form for generated programs is a helper in
-`impl/python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
+`impl/python/p4blo/arch/externs/declarations.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
 
 **A test.** Put it in the directory of `tests/` whose README asks the
@@ -292,12 +305,15 @@ file stem in `tests/conftest.py`'s `ORACLE_MODULES`, which marks it
 `oracle`; since the marker is keyed by stem, a new module must not reuse
 the stem of an oracle module in another directory.
 
-**An architecture.** A Python module under `impl/python/p4blo/arch/` with a
-`run(loaded, entries, ingress_port, packet)` method, no P4 in it; the
-contract vocabulary is the table in `docs/design.md`, and the rules
-every architecture follows are in the same section and in
-`.agents/decisions.md` ("Architecture rules", "Port rules"). If the Lean
-switch must follow, change `spec/arch/P4bloArch/Switch.lean` in the same commit.
+**An architecture.** Ordinary code selects and invokes blocks, supplies
+extern implementations, and defines its own contract and execution policy.
+It may live outside p4blo. The optional supplied H/M adapter uses explicit
+bindings, a registry, a metadata contract and role kinds; its usage is in
+[the authoring guide](python-edsl.md). To use the supplied STF driver,
+provide `run(loaded, entries, ingress_port, packet)`. The filter/switch
+vocabulary and policy in `docs/design.md` apply to those supplied adapters.
+If a change affects the cross-checked Lean switch, update
+`spec/arch/P4bloArch/Switch.lean` in the same commit.
 
 ## Application development
 
@@ -326,6 +342,11 @@ loop:
 
 1. Specify the application story, packet profile, host assumptions and failure
    behavior. Establish independent expected outcomes before relying on replay.
+   For an authoring API change, first write representative caller examples
+   and a boundary counterexample: a block library must compile and validate a
+   scalar-only control without inventing a packet pipeline or global H/M roots.
+   Trace that witness through source, wire, validation and execution. Include
+   multiple blocks of each kind so the example cannot hide a fixed pipeline.
 2. Build the smallest complete runnable scenario through public APIs. Record
    concrete authoring, configuration, inspection and diagnostic difficulties.
 3. Challenge correctness with boundary and persistent-sequence tests,
@@ -339,6 +360,8 @@ loop:
 5. Improve the responsible layer: application, eDSL, diagnostics, runtime or
    test infrastructure. Validate a reusable change with concrete usage. Record
    speculative opportunities as backlog rather than expanding acceptance.
+   For behavior-preserving authoring changes, retain the existing IR goldens
+   and compare both their text and binary form before considering new syntax.
 6. Repeat affected checks/review, run required integration gates, and record
    the resulting revision, exact commands, skips and outstanding obligations.
 

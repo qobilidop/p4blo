@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
 from p4blo.drt import replay
 from p4blo.drt.case import Case
@@ -21,7 +22,6 @@ from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Header, Struct, Value
-from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.lean.test_lean_call_body_entry import assert_selected_body
 from tests.lean.test_lean_call_entry import independent_values, shared_snapshot, value_json
@@ -199,7 +199,7 @@ def observe_python_prefix(
     assert sum(s == first_observer for s in block.body) == 1
     values = source_values(name, prior_drop)
     expected = normalized(expected_values(name, prior_drop))
-    index = Index.build(program)
+    index = BoundIndex.build(program)
     packet = Packet(PAYLOAD)
     packet.cursor = 3
     emitter = Emitter()

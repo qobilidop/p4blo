@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.edsl.externs import CRC16, Checksum16
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.arch import reference
+from p4blo.arch.externs.declarations import CRC16, Checksum16
+from p4blo.arch.v0 import assembly_pb2 as apb
+
+ChecksumWords = p4.Bits[p4.L[144]]
+FlowTuple = p4.Bits[p4.L[96]]
 
 
 class Ethernet(p4.Header):
@@ -69,7 +73,7 @@ class Parse(p4.Parser[Headers, Metadata]):
         return self.accept
 
 
-def checksum_data(ip: IPv4) -> p4.Bits[p4.L[144]]:
+def checksum_data(ip: IPv4) -> ChecksumWords:
     """IPv4 header words with the checksum word omitted (equivalent to zero)."""
     return p4.concat(
         ip.version,
@@ -83,11 +87,16 @@ def checksum_data(ip: IPv4) -> p4.Bits[p4.L[144]]:
         ip.protocol,
         ip.src,
         ip.dst,
-    ).as_(p4.Bits[p4.L[144]])
+    ).as_(ChecksumWords)
 
 
-checksum = Checksum16[p4.Bits[p4.L[144]]]("checksum")
-flow_hash = CRC16[p4.Bits[p4.L[96]]]("flow_hash")
+def flow_key(ip: IPv4, udp: UDP) -> FlowTuple:
+    """Build the network-order tuple expression; payload is not part of affinity."""
+    return p4.concat(ip.src, ip.dst, udp.src_port, udp.dst_port).as_(FlowTuple)
+
+
+checksum = Checksum16[ChecksumWords]("checksum")
+flow_hash = CRC16[FlowTuple]("flow_hash")
 
 
 class Balance(p4.Control[Headers, Metadata]):
@@ -126,7 +135,7 @@ class Balance(p4.Control[Headers, Metadata]):
         self.assign(self.meta.drop, True)
         self.assign(self.meta.service_found, False)
         ip, udp = self.hdr.ipv4, self.hdr.udp
-        with self.if_(
+        supported_packet = (
             ip.is_valid()
             & udp.is_valid()
             & (ip.version == 4)
@@ -136,18 +145,15 @@ class Balance(p4.Control[Headers, Metadata]):
             & ((ip.flags & 5) == 0)
             & (ip.fragment_offset == 0)
             & (udp.length >= 8)
-        ):
+        )
+        with self.if_(supported_packet):
             self.assign(self.meta.expected_checksum, checksum.compute(checksum_data(ip)))
             with self.if_(ip.checksum == self.meta.expected_checksum):
                 self.apply_table(self.services)
                 with self.if_(self.meta.service_found):
                     self.assign(
                         self.meta.flow_hash,
-                        flow_hash.compute(
-                            p4.concat(ip.src, ip.dst, udp.src_port, udp.dst_port).as_(
-                                p4.Bits[p4.L[96]]
-                            )
-                        ),
+                        flow_hash.compute(flow_key(ip, udp)),
                     )
                     self.assign(self.meta.bucket, self.meta.flow_hash.cast(p4.bit2))
                     self.apply_table(self.backends)
@@ -160,22 +166,23 @@ class Emit(p4.Deparser[Headers]):
         self.emit(self.hdr.udp)
 
 
-program = p4.Program(
-    "example_load_balancer",
-    headers=Headers,
-    metadata=Metadata,
-    parser=Parse,
-    control=Balance,
-    deparser=Emit,
-    externs=[checksum, flow_hash],
-)
+blocks = p4.BlockLibrary(Parse, Balance, Emit, externs=[checksum, flow_hash])
 
 
-def build() -> pb.Program:
-    return program.build()
+def build() -> apb.BlockAssembly:
+    """Assemble the blocks for the supplied switch and its metadata contract."""
+    return reference.assemble(
+        blocks,
+        name="example_load_balancer",
+        headers=Headers,
+        metadata=Metadata,
+        parser=Parse,
+        control=Balance,
+        deparser=Emit,
+    )
 
 
 if __name__ == "__main__":
-    from p4blo import ir
+    from p4blo.arch import wire
 
-    print(ir.dump_text(build()), end="")
+    print(wire.dump_text(build()), end="")

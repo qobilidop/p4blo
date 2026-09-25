@@ -5,14 +5,16 @@ from __future__ import annotations
 import pytest
 
 from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.interp import values
 from p4blo.interp.values import NO_ERROR, Bits, EnumValue, ErrorValue, Header, Stack, Struct
 from p4blo.v0 import p4blo_pb2 as pb
 
 
 def index() -> ir.Index:
-    return ir.Index.build(
-        ir.load_text(
+    return BoundIndex.build(
+        arch_wire.load_text(
             """
             errors: "NoError"
             header_types {

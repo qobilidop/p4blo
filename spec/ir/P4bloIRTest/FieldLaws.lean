@@ -93,7 +93,7 @@ def tests : T Unit := do
   check "raw missing field is an interpreter error"
     (isError ((fieldOf (.header "H" false values) "absent").run run).1 "H.absent")
   -- Real name-index construction, not only a handcrafted index witness.
-  match Index.build { (default : Program) with
+  match Index.build { (default : BlockLibrary) with
       headerTypes := [⟨"H", fields⟩], structTypes := [⟨"M", fields⟩] } with
   | .error _ => check "field Index.build witnesses" false
   | .ok actual =>

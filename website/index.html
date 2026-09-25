@@ -82,8 +82,10 @@
 <span class="syntax-keyword">from</span> __future__ <span class="syntax-keyword">import</span> annotations
 
 <span class="syntax-keyword">from</span> p4blo <span class="syntax-keyword">import</span> edsl <span class="syntax-keyword">as</span> p4
-<span class="syntax-keyword">from</span> p4blo.edsl.externs <span class="syntax-keyword">import</span> <span class="syntax-function">Counter</span>
-<span class="syntax-keyword">from</span> p4blo.v0 <span class="syntax-keyword">import</span> p4blo_pb2 <span class="syntax-keyword">as</span> pb
+<span class="syntax-keyword">from</span> p4blo.arch <span class="syntax-keyword">import</span> assemble
+<span class="syntax-keyword">from</span> p4blo.arch <span class="syntax-keyword">import</span> wire <span class="syntax-keyword">as</span> arch_wire
+<span class="syntax-keyword">from</span> p4blo.arch.externs.declarations <span class="syntax-keyword">import</span> <span class="syntax-function">Counter</span>
+<span class="syntax-keyword">from</span> p4blo.arch.v0 <span class="syntax-keyword">import</span> assembly_pb2 <span class="syntax-keyword">as</span> apb
 
 
 <span class="syntax-keyword">class</span> <span class="syntax-function">Ethernet</span>(p4.<span class="syntax-function">Header</span>):
@@ -172,25 +174,18 @@
         self.emit(self.hdr.vlan)
 
 
-</span><span class="code-step" id="step-build" data-step="build">program = p4.<span class="syntax-function">Program</span>(
-    <span class="syntax-string">&quot;vlan_gateway&quot;</span>,
-    headers=<span class="syntax-function">Headers</span>,
-    metadata=<span class="syntax-function">Metadata</span>,
-    parser=<span class="syntax-function">Parse</span>,
-    control=<span class="syntax-function">Gateway</span>,
-    deparser=<span class="syntax-function">Emit</span>,
-    externs=[admissions],
-)
-
-
-<span class="syntax-keyword">def</span> build() -&gt; pb.<span class="syntax-function">Program</span>:
-    <span class="syntax-keyword">return</span> program.build()
+</span><span class="code-step" id="step-build" data-step="build"><span class="syntax-keyword">def</span> build() -&gt; apb.<span class="syntax-function">BlockAssembly</span>:
+    <span class="syntax-keyword">return</span> assemble(
+        p4.<span class="syntax-function">BlockLibrary</span>(<span class="syntax-function">Parse</span>, <span class="syntax-function">Gateway</span>, <span class="syntax-function">Emit</span>, externs=[admissions]),
+        name=<span class="syntax-string">&quot;vlan_gateway&quot;</span>,
+        headers=<span class="syntax-function">Headers</span>,
+        metadata=<span class="syntax-function">Metadata</span>,
+        exports={<span class="syntax-string">&quot;parser&quot;</span>: <span class="syntax-function">Parse</span>, <span class="syntax-string">&quot;control&quot;</span>: <span class="syntax-function">Gateway</span>, <span class="syntax-string">&quot;deparser&quot;</span>: <span class="syntax-function">Emit</span>},
+    )
 
 
 <span class="syntax-keyword">if</span> __name__ == <span class="syntax-string">&quot;__main__&quot;</span>:
-    <span class="syntax-keyword">from</span> p4blo <span class="syntax-keyword">import</span> ir
-
-    print(ir.dump_text(build()), end=<span class="syntax-string">&quot;&quot;</span>)
+    print(arch_wire.dump_text(build()), end=<span class="syntax-string">&quot;&quot;</span>)
 </span></code></pre>
     <div class="editor-footer"><span>Complete source · no elisions</span><a href="vlan_gateway.py" download>Download Python source ↗</a></div>
   </div>

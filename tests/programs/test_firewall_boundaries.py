@@ -10,7 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, interp, ir, validator
+from p4blo import arch
+from p4blo.arch import entry, validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import LeanRunner, ProtocolError, compare_program, run_python
@@ -76,10 +79,10 @@ def persistence(length: int) -> list[Step]:
 
 @pytest.mark.parametrize("length", range(55))
 def test_atomic_parser_boundaries(length: int) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     metadata = loaded.metadata.zero()
     loaded.metadata.write(metadata, "ingress_port", 1)
-    result = interp.run_parser(
+    result = entry.run_parser(
         loaded.index, loaded.block("parser"), FRAME[:length], metadata, loaded.externs
     )
     expected = parse_expectation(length)
@@ -96,7 +99,7 @@ def test_atomic_parser_boundaries(length: int) -> None:
 
 @pytest.mark.parametrize("length", range(55))
 def test_unmodified_firewall_packet_and_state_boundaries(length: int) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     item = truncated(length)
     switch = arch.Switch(4)
     assert (
@@ -109,7 +112,7 @@ def test_unmodified_firewall_packet_and_state_boundaries(length: int) -> None:
 
 @pytest.mark.parametrize("length", range(54))
 def test_valid_malformed_valid_state_persists(length: int) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     for item in persistence(length):
         assert tuple(run_python(loaded, item.case, 4)) == item.outputs
         assert snapshot(loaded) == item.state
@@ -119,7 +122,7 @@ def member(base: pb.Expr, name: str) -> pb.Expr:
     return pb.Expr(member=pb.Member(base=base, field=name))
 
 
-def parser_observer() -> pb.Program:
+def parser_observer() -> apb.BlockAssembly:
     """Instrument only the observer, never rewrite the parser under test."""
     program = build()
     original_parser = next(b for b in program.blocks if b.kind == pb.BLOCK_KIND_PARSER)
@@ -177,7 +180,7 @@ def observer_output(length: int) -> bytes:
 
 
 def compare_with_replay(
-    program: pb.Program, cases: Sequence[Case], lean_binary: Path, profile: str
+    program: apb.BlockAssembly, cases: Sequence[Case], lean_binary: Path, profile: str
 ) -> None:
     """Retain the entire sequence before any narrower known-answer assertion."""
     try:
@@ -203,7 +206,7 @@ def test_parser_observer_preserves_the_original_parser() -> None:
     assert [b for b in original.blocks if b.kind == pb.BLOCK_KIND_PARSER] == [
         b for b in observer.blocks if b.kind == pb.BLOCK_KIND_PARSER
     ]
-    loaded = arch.load(observer)
+    loaded = arch.reference.load(observer)
     for length in range(55):
         assert run_python(loaded, Case(pb.Entries(), 1, FRAME[:length]), 4) == [
             (0, observer_output(length))
@@ -218,7 +221,7 @@ def test_lean_agrees_on_parser_error_and_validity_boundaries(
     cases = [Case(pb.Entries(), 1, FRAME[:length]) for length in range(55)]
     compare_with_replay(program, cases, lean_binary, "observer-all-cuts")
     path = tmp_path / "parser-observer.json"
-    path.write_text(ir.dump_json(program))
+    path.write_text(arch_wire.dump_json(program))
     with LeanRunner([lean_binary], path, 4) as runner:
         for length in range(55):
             result = runner.run(Case(pb.Entries(), 1, FRAME[:length]))
@@ -235,7 +238,7 @@ def test_lean_agrees_on_unmodified_boundary_state(
     program = build()
     compare_with_replay(program, [item.case for item in sequence], lean_binary, f"cut-{length}")
     path = tmp_path / "firewall.json"
-    path.write_text(ir.dump_json(program))
+    path.write_text(arch_wire.dump_json(program))
     with LeanRunner([lean_binary], path, 4) as runner:
         for item in sequence:
             result = runner.run(item.case)

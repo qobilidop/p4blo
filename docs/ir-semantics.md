@@ -395,8 +395,8 @@ decision, not the parser's.
   `reject` inside a sub-parser rejects the whole run the same way.
   - P4: §12.7
   - SpecTec: `Call_eval/copyin-cont-parserLocalDeclarationListIR-cont-transition-reject`, `ParserState_trans/reject`
-  - Lean: `Execution.step`, `runParser`
-  - Python: `p4blo.interp.parser.run_parser`, `p4blo.interp.stmt.call_block`
+  - Lean: `Execution.step`, `P4bloArch.runParser`
+  - Python: `p4blo.arch.entry.parser.run_parser`, `p4blo.interp.stmt.call_block`
   - Test: `tests/unit/test_interp_parser.py::test_an_error_keeps_the_partial_headers_and_metadata`, `tests/unit/test_interp_parser.py::test_sub_parser_error_copies_back_before_propagating`, `tests/corpus/parser_error`, `tests/corpus/subparser_stack`
   - Class: same. A rejection propagates from the rule that raised it with the state as it stands, and a sub-parser's rejecting apply still runs `Copy_out`.
 - **Extraction past the packet end.** If fewer bits remain than the
@@ -523,7 +523,7 @@ decision, not the parser's.
   they are reserved so that indices agree with every reader.
   - P4: none
   - SpecTec: `errorValue`
-  - Lean: `Program`
+  - Lean: `BlockLibrary`
   - Python: `p4blo.ir.CORE_ERRORS`
   - Test: `tests/unit/test_validator.py::test_error_list`
   - Class: not representable. In the architecture-free rules a SpecTec `errorValue` is a name with no position, so the order has nothing to correspond to there; SpecTec's control-plane interface in `9-arch` does index errors by position, casting an integer `n` to the `n`th error of the global frame.
@@ -686,8 +686,8 @@ consume is the caller's decision.
   never apply a table, so `deparse : H -> Packet` needs no entries.
   - P4: none
   - SpecTec: `Call_eval/controlApplyMethodCallee`
-  - Lean: `runDeparser`
-  - Python: `p4blo.interp.deparser.run_deparser`, `p4blo.validator.calls.CallChecks.check_call_block`
+  - Lean: `P4bloArch.runDeparser`
+  - Python: `p4blo.arch.entry.deparser.run_deparser`, `p4blo.validator.calls.CallChecks.check_call_block`
   - Test: `tests/unit/test_validator.py::test_deparser_may_call_a_deparser`, `tests/unit/test_validator.py::test_call_kind`
   - Class: same. SpecTec runs a deparser as a control through `Call_eval/controlApplyMethodCallee` and allows it anything a control may do; on the deparsers the IR accepts it computes the same thing.
 - **`emit` of an invalid header** writes nothing (§15.1).

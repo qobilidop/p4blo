@@ -7,7 +7,7 @@ These laws compose the actual total declaration codecs with the existing
 type/literal/array laws. They do not validate declarations: empty, duplicate
 and unresolved names, aggregate header fields, all directions and unconstrained
 extern argument lists are included. Only embedded numeric wire bounds matter.
-No Program, text/binary codec, or Python equivalence theorem is asserted here.
+No BlockLibrary, text/binary codec, or Python equivalence theorem is asserted here.
 -/
 
 namespace P4bloIR.CodecLaws

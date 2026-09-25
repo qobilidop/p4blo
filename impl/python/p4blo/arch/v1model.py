@@ -21,10 +21,11 @@ what the printer or the shim cannot express raises `PrintError`.
 from __future__ import annotations
 
 from p4blo import ir
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.printer import MISSING_ROLE_NAMES, BoundProgramPrinter
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.printer import (
-    MISSING_ROLE_NAMES,
     PrintError,
-    ProgramPrinter,
     StmtPrinter,
     print_arg,
     print_literal,
@@ -57,7 +58,7 @@ STANDARD_METADATA = "standard_metadata"
 
 
 def standard_metadata_binding(
-    index: ir.Index, meta: str, role: str = "control"
+    index: BoundIndex, meta: str, role: str = "control"
 ) -> tuple[list[str], list[str]]:
     """The v1model shim: the metadata contract mapped onto `standard_metadata`.
 
@@ -89,7 +90,7 @@ def standard_metadata_binding(
     """
     if role not in ("parser", "control"):
         raise PrintError(f"no standard_metadata binding for role {role!r}")
-    fields = {f.name: f.type for f in index.fields(index.program.metadata)}
+    fields = {f.name: f.type for f in index.fields(index.bindings.metadata)}
 
     def has(name: str, expected: pb.Type) -> bool:
         actual = fields.get(name)
@@ -217,14 +218,14 @@ class V1modelStmtPrinter(StmtPrinter):
 # ---------------------------------------------------------------------------
 
 
-def print_program(program: pb.Program, *, index: ir.Index | None = None) -> str:
+def print_program(program: apb.BlockAssembly, *, index: BoundIndex | None = None) -> str:
     """The complete P4-16 program for v1model, as text."""
     if index is None:
-        index = ir.Index.build(program)
-    return V1modelPrinter(index).render()
+        index = BoundIndex.build(program)
+    return V1modelPrinter(index, roles={e.role: e.block for e in index.bindings.exports}).render()
 
 
-class V1modelPrinter(ProgramPrinter):
+class V1modelPrinter(BoundProgramPrinter):
     """The printer bound to v1model: its includes, `standard_metadata`,
     the extern families' forms, the shim's own controls and `main`."""
 
@@ -244,6 +245,7 @@ class V1modelPrinter(ProgramPrinter):
     def binding(self, block: pb.Block) -> tuple[list[str], list[str]]:
         role = self.role(block)
         assert role is not None
+        assert isinstance(self.index, BoundIndex)
         return standard_metadata_binding(self.index, block.params[1].name, role)
 
     def postamble(self) -> None:
@@ -252,7 +254,8 @@ class V1modelPrinter(ProgramPrinter):
         self.main()
 
     def shim_controls(self) -> None:
-        h, m = self.p.headers, self.p.metadata
+        assert isinstance(self.index, BoundIndex)
+        h, m = self.index.bindings.headers, self.index.bindings.metadata
         checksum_params = f"inout {h} hdr, inout {m} meta"
         egress_params = f"{checksum_params}, {_sm_param()}"
         for name, params in [

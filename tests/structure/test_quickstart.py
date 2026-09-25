@@ -92,7 +92,7 @@ def test_lean_agrees_quickstart_fragment_and_imports(lean_binary: Path) -> None:
 def test_python_quickstart_diagnostics() -> None:
     with pytest.raises(EdslError, match="no truth value"):
         bool(bit8(1) == bit8(1))
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     with pytest.raises(InstallError, match="no table 'missing'"):
         loaded.entries(
             pb.Entries(

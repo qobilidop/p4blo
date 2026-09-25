@@ -11,8 +11,9 @@ module's docstring states the static rules it provides:
 - `values`: `Bits`, `Var`, `Bool`, `Enum`, `Error`, the aliases, `concat`, `mux`.
 - `views`: `Header`, `Struct`, `Stack`.
 - `blocks`: `Parser`, `Control`, `Deparser`, `state`, `action`, `Table`.
-- `externs`: `Extern` and the families `Register`, `Counter`, `Checksum16`.
-- `program`: `Program`, whose `build()` returns the `pb.Program`.
+- `externs`: generic `Extern`; supplied families are declared by
+  `p4blo.arch.externs.declarations`.
+- `library`: `BlockLibrary`, whose `compile()` records blocks independently.
 - `errors`: `EdslError`, with `(defined at file:line)`.
 
 The two clocks
@@ -21,8 +22,8 @@ The two clocks
 A program written here runs on two clocks, and it helps to keep them apart.
 
 **Build time** is when Python runs: a class body declares a header, a
-`@state` method runs *once*, with a recording `self`, when `Program.build()`
-assembles the block, and each `self.assign(...)`, `self.extract(...)` or
+`@state` method runs *once*, with a recording `self`, when a library is
+compiled or an architecture assembles it, and each `self.assign(...)`, `self.extract(...)` or
 `with self.if_(...)` appends a statement to the IR. Python's own control
 flow at build time is ordinary metaprogramming: a `for` loop emitting five
 `if_` blocks emits five, and an `if` on a Python value decides what to
@@ -121,8 +122,8 @@ from p4blo.edsl.blocks import (
     ternary,
 )
 from p4blo.edsl.errors import EdslError
-from p4blo.edsl.externs import CRC16, CRC32, Extern
-from p4blo.edsl.program import Program
+from p4blo.edsl.externs import Extern
+from p4blo.edsl.library import BlockLibrary
 from p4blo.edsl.values import (
     Bits,
     Bool,
@@ -209,8 +210,6 @@ from p4blo.edsl.values import (
 from p4blo.edsl.views import Header, Stack, Struct, View
 
 __all__ = [
-    "CRC16",
-    "CRC32",
     "Accept",
     "Action",
     "ActionCall",
@@ -234,7 +233,7 @@ __all__ = [
     "L",
     "Out",
     "Parser",
-    "Program",
+    "BlockLibrary",
     "Reject",
     "Stack",
     "State",

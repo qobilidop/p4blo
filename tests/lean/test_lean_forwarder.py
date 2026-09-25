@@ -21,8 +21,12 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import arch, ir, stf, validator
+from p4blo import arch, stf
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
@@ -40,27 +44,27 @@ EXPORTER = ROOT / "impl/lean/.lake/build/bin/p4blo"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 
-def authored_program() -> pb.Program:
+def authored_program() -> apb.BlockAssembly:
     result = subprocess.run(
         [str(EXPORTER), "leanForwarder"], check=True, capture_output=True, text=True, timeout=30
     )
-    return ir.load_json(result.stdout)
+    return arch_wire.load_json(result.stdout)
 
 
-def assert_program_identity(program: pb.Program) -> None:
+def assert_program_identity(program: apb.BlockAssembly) -> None:
     spec = importlib.util.spec_from_file_location("corpus_forwarder", CORPUS / "forwarder.py")
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert program == module.build(), "Lean source differs from independent Python authoring"
-    assert program == ir.load_text(CORPUS / "forwarder.txtpb"), (
+    assert program == arch_wire.load_text(CORPUS / "forwarder.txtpb"), (
         "Lean source differs from frozen golden"
     )
     assert validator.validate(program) == []
 
 
 @pytest.fixture(scope="module")
-def forwarder(lean_binary: Path) -> pb.Program:
+def forwarder(lean_binary: Path) -> apb.BlockAssembly:
     assert lean_binary.is_file()
     assert EXPORTER.is_file(), "build the Lean packages before conformance"
     assert {"forward.stf", "miss.stf", "non_ipv4.stf", "lpm_precedence.stf", "too_short.stf"} <= {
@@ -112,7 +116,9 @@ def fixed_run(cases: list[Case]) -> list[list[tuple[int, bytes]]]:
     return [checked_fixed_reply(reply, process.stderr) for reply in replies]
 
 
-def compare_and_save(program: pb.Program, cases: list[Case], lean_binary: Path, label: str) -> None:
+def compare_and_save(
+    program: apb.BlockAssembly, cases: list[Case], lean_binary: Path, label: str
+) -> None:
     try:
         report = compare_program(program, cases, 4, [lean_binary])
     except ProtocolError as error:
@@ -133,14 +139,16 @@ def test_forwarder_default_target() -> None:
     assert "p4blo" in config["defaultTargets"]
 
 
-def test_lean_agrees_forwarder_program_identity(forwarder: pb.Program) -> None:
+def test_lean_agrees_forwarder_program_identity(forwarder: apb.BlockAssembly) -> None:
     assert_program_identity(forwarder)
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
-def test_lean_agrees_forwarder_stf(forwarder: pb.Program, lean_binary: Path, vector: Path) -> None:
+def test_lean_agrees_forwarder_stf(
+    forwarder: apb.BlockAssembly, lean_binary: Path, vector: Path
+) -> None:
     statements = stf.parse(vector.read_text())
-    index = ir.Index.build(forwarder)
+    index = BoundIndex.build(forwarder)
     cases: list[Case] = []
 
     def collect(entries: pb.Entries, port: int, packet: bytes) -> list[tuple[int, bytes]]:
@@ -155,12 +163,12 @@ def test_lean_agrees_forwarder_stf(forwarder: pb.Program, lean_binary: Path, vec
     fixed = iter(fixed_run(cases))
     stf.assert_replay(index, statements, lambda _entries, _port, _packet: next(fixed))
     assert next(fixed, None) is None
-    loaded = arch.load(forwarder)
+    loaded = arch.reference.load(forwarder)
     stf.assert_replay(index, statements, arch.stf_driver(arch.Switch(ports=4), loaded))
 
 
 def edge_case(ttl: int) -> tuple[Case, list[tuple[int, bytes]]]:
-    index = ir.Index.build(ir.load_text(CORPUS / "forwarder.txtpb"))
+    index = BoundIndex.build(arch_wire.load_text(CORPUS / "forwarder.txtpb"))
     installed = stf.parse(
         "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 ipv4_forward(dstAddr:0x000000000202, port:2)"
     )
@@ -179,20 +187,20 @@ def edge_case(ttl: int) -> tuple[Case, list[tuple[int, bytes]]]:
 
 @pytest.mark.parametrize("ttl", [0, 1])
 def test_lean_agrees_forwarder_wrapping_ttl(
-    forwarder: pb.Program, lean_binary: Path, ttl: int
+    forwarder: apb.BlockAssembly, lean_binary: Path, ttl: int
 ) -> None:
     case, expected = edge_case(ttl)
     compare_and_save(forwarder, [case], lean_binary, f"ttl-{ttl}")
     assert fixed_run([case]) == [expected]
-    assert run_python(arch.load(forwarder), case, 4) == expected
+    assert run_python(arch.reference.load(forwarder), case, 4) == expected
 
 
 @pytest.mark.parametrize("fault", ["guard", "default", "mac-order", "checksum-field"])
 def test_lean_agrees_forwarder_identity_rejects_wrong_intent(
-    forwarder: pb.Program, fault: str
+    forwarder: apb.BlockAssembly, fault: str
 ) -> None:
     """Compiled syntax can be valid but encode the wrong application intent."""
-    bad = pb.Program()
+    bad = apb.BlockAssembly()
     bad.CopyFrom(forwarder)
     control = bad.blocks[1]
     if fault == "guard":
@@ -211,7 +219,7 @@ def test_lean_agrees_forwarder_identity_rejects_wrong_intent(
 
 
 def test_lean_agrees_forwarder_detects_saturating_python_subtraction(
-    forwarder: pb.Program, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """A real evaluator fault: save before checking output; replay live/restored."""
     original = expr.bits_binary
@@ -247,7 +255,7 @@ def test_lean_agrees_forwarder_detects_saturating_python_subtraction(
 
 
 def test_lean_agrees_forwarder_checksum_after_drop(
-    forwarder: pb.Program, lean_binary: Path, monkeypatch: pytest.MonkeyPatch
+    forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A dropped packet cannot reveal this stateless checksum call in its output.
 
@@ -312,8 +320,8 @@ def freeze(value: Any) -> object:
     raise TypeError(f"unobserved runtime value {kind}")
 
 
-def invalid_env(program: pb.Program, valid: bool, drop: bool, port: int, ttl: int) -> Env:
-    loaded = arch.load(program)
+def invalid_env(program: apb.BlockAssembly, valid: bool, drop: bool, port: int, ttl: int) -> Env:
+    loaded = arch.reference.load(program)
     installed = loaded.entries(edge_case(0)[0].entries)
     installed.default_actions[("MyIngress", "ipv4_lpm")] = pb.ActionCall(action="NoAction")
     loaded.externs["sentinel"] = Register(2, 8)
@@ -370,7 +378,7 @@ def observe_invalid_control(env: Env) -> None:
     list(itertools.product([False, True], [False, True], [0, 3], [0, 1, 255])),
 )
 def test_lean_agrees_forwarder_invalid_python_state(
-    forwarder: pb.Program, valid: bool, drop: bool, port: int, ttl: int
+    forwarder: apb.BlockAssembly, valid: bool, drop: bool, port: int, ttl: int
 ) -> None:
     """Same independent profiles as native24; no theorem about the Python host."""
     observe_invalid_control(invalid_env(forwarder, valid, drop, port, ttl))
@@ -378,7 +386,7 @@ def test_lean_agrees_forwarder_invalid_python_state(
 
 @pytest.mark.parametrize("fault", ["ingress", "cursor-type", "entries", "index", "scope", "extern"])
 def test_lean_agrees_forwarder_invalid_observer_kills_hidden_effect(
-    forwarder: pb.Program, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, fault: str
+    forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, fault: str
 ) -> None:
     original = stmt.execute_one
     hits = 0
@@ -422,7 +430,7 @@ def test_lean_agrees_forwarder_invalid_observer_kills_hidden_effect(
             case = Case(pb.Entries(), 0, arp)
             report = compare_program(forwarder, [case], 4, [lean_binary])
             assert hits == 1 and report.passed and report.agreed == 1
-            assert run_python(arch.load(forwarder), case, 4) == [(0, arp)] and hits == 2
+            assert run_python(arch.reference.load(forwarder), case, 4) == [(0, arp)] and hits == 2
         prior = hits
         with pytest.raises(AssertionError, match="complete Python control state"):
             observe_invalid_control(invalid_env(forwarder, True, False, 3, 0))
@@ -444,7 +452,7 @@ def test_forwarder_fixed_reply_rejects_malformed(reply: str, stderr: str) -> Non
 
 
 def test_lean_agrees_forwarder_protocol_error_retains_inputs(
-    forwarder: pb.Program, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Transport-error handling unit test, not a semantic fault/Lean simulation."""
     case, _ = edge_case(0)

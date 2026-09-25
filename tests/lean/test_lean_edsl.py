@@ -17,6 +17,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean, scalar_program
@@ -72,7 +73,7 @@ def test_user_proof_audit_and_exporter_are_default_targets() -> None:
 
 
 @pytest.fixture(scope="module")
-def authored_expressions(lean_binary: Path) -> dict[str, pb.Program]:
+def authored_expressions(lean_binary: Path) -> dict[str, apb.BlockAssembly]:
     # lean_binary enforces the shared absent-vs-broken/required gate policy.
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[2]
@@ -81,7 +82,7 @@ def authored_expressions(lean_binary: Path) -> dict[str, pb.Program]:
     completed = subprocess.run(
         [str(exporter), "scalarExamples"], capture_output=True, text=True, check=True, timeout=30
     )
-    result: dict[str, pb.Program] = {}
+    result: dict[str, apb.BlockAssembly] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
         name = record["name"]
@@ -121,7 +122,7 @@ def authored_expressions(lean_binary: Path) -> dict[str, pb.Program]:
 
 @pytest.mark.parametrize("name", EXPECTED)
 def test_lean_agrees_on_authored_scalar_known_answers(
-    name: str, authored_expressions: dict[str, pb.Program], lean_binary: Path
+    name: str, authored_expressions: dict[str, apb.BlockAssembly], lean_binary: Path
 ) -> None:
     _, expected = EXPECTED[name]
     program = authored_expressions[name]
@@ -143,11 +144,11 @@ def test_lean_agrees_on_authored_scalar_known_answers(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
     # Catch shared mistakes, including valid but unintended source expressions.
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 def test_lean_agrees_after_retained_authoring_mutant(
-    authored_expressions: dict[str, pb.Program],
+    authored_expressions: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -181,7 +182,7 @@ def test_lean_agrees_after_retained_authoring_mutant(
 
 
 def test_lean_agrees_but_wrong_authored_answer_fails(
-    authored_expressions: dict[str, pb.Program],
+    authored_expressions: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

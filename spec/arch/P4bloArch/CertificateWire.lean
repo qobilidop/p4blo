@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4bloArch.Certificate
 import P4bloIR.Json
 import P4bloIR.Hex
@@ -75,7 +76,7 @@ def verify (artifact : Json) : Except String String := do
     throw "unknown certificate version"
   if (← (← artifact.getObjVal? "example").getStr?) != "register-counter-v1" then
     throw "unknown certificate example"
-  let program ← Program.decode "program" (← artifact.getObjVal? "program")
+  let program ← BlockAssembly.decode "program" (← artifact.getObjVal? "program")
   if program != Example.program then throw "certificate program is not the fixed example"
   let (reg, count) ← pair (← artifact.getObjVal? "initial")
   let initial ← Example.initial (← natural reg) (← natural count)

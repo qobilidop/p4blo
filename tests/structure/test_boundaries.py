@@ -13,7 +13,10 @@ describe the same boundary in prose.
 from __future__ import annotations
 
 import ast
+import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "impl/python/p4blo"
@@ -50,8 +53,82 @@ def crossings(files: list[Path], forbidden: tuple[str, ...]) -> list[str]:
     ]
 
 
+# Scripts CI or a container runs with a bare interpreter, before or without
+# the p4blo package: the coverage probe's `build`, the BMv2 and XDP
+# containers' drivers and the website renderer. Their module-level imports must come from
+# the standard library; p4blo imports stay inside the functions that need it.
+BARE_INTERPRETER_SCRIPTS = (
+    "tests/oracle/coverage.py",
+    "tests/oracle/bmv2/driver.py",
+    "tests/oracle/xdp/check.py",
+    "scripts/render-website-example.py",
+)
+
+
+def top_level_non_stdlib(path: Path) -> list[str]:
+    """Modules imported at module level that are not in the standard library."""
+    names: list[str] = []
+    pending: list[ast.AST] = list(ast.parse(path.read_text(encoding="utf-8"), str(path)).body)
+    while pending:
+        node = pending.pop()
+        # Module-level `if`, `try` and `with` bodies run at import too.
+        if isinstance(node, (ast.If, ast.Try, ast.With)):
+            pending.extend(ast.iter_child_nodes(node))
+        elif isinstance(node, ast.ExceptHandler):
+            pending.extend(node.body)
+        elif isinstance(node, ast.Import):
+            names.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            names.append(node.module)
+    return [
+        name
+        for name in names
+        if name != "__future__" and name.split(".")[0] not in sys.stdlib_module_names
+    ]
+
+
+@pytest.mark.parametrize("script", BARE_INTERPRETER_SCRIPTS)
+def test_bare_interpreter_scripts_import_only_stdlib_at_module_level(script: str) -> None:
+    assert top_level_non_stdlib(ROOT / script) == []
+
+
+def test_bare_interpreter_check_detects_a_module_level_package_import(tmp_path: Path) -> None:
+    script = tmp_path / "script.py"
+    script.write_text(
+        "import json\n\nfrom p4blo.arch import wire\n\ntry:\n    import p4blo.ir\n"
+        "except ImportError:\n    pass\n\n\ndef f() -> None:\n"
+        "    from p4blo import stf\n",
+        encoding="utf-8",
+    )
+    assert sorted(top_level_non_stdlib(script)) == ["p4blo.arch", "p4blo.ir"]
+
+
 def test_ir_side_never_imports_architecture_or_harness() -> None:
     assert crossings(modules(*IR_SIDE), ("p4blo.arch", "p4blo.drt")) == []
+
+
+def test_import_boundary_detects_a_concrete_extern_import(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A convenience re-export must not smuggle a family into the core."""
+    candidate = tmp_path / "edsl.py"
+    candidate.write_text("from p4blo.arch.externs.declarations import Register\n")
+    monkeypatch.setitem(crossings.__globals__, "ROOT", tmp_path)
+    assert crossings([candidate], ("p4blo.arch",)) == [
+        "edsl.py imports p4blo.arch.externs.declarations",
+        "edsl.py imports p4blo.arch.externs.declarations.Register",
+    ]
+
+
+def test_core_edsl_has_no_concrete_extern_families() -> None:
+    from p4blo import edsl
+    from p4blo.edsl import externs
+
+    for name in ("Register", "Counter", "Checksum16", "CRC16", "CRC32"):
+        assert not hasattr(edsl, name), name
+        assert not hasattr(externs, name), name
+    assert externs.__all__ == ["Extern"]
+    assert not (PACKAGE / "edsl/core/externs.py").exists()
 
 
 def test_architecture_never_imports_harness() -> None:

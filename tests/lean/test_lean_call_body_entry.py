@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.lean.test_lean_call_entry import independent_values, observe_python_entry, value_json
 from tests.lean.test_lean_edsl_guarded_forwarding import exported_programs
@@ -40,7 +41,7 @@ def body_entry_export(lean_binary: Path) -> dict[str, Any]:
     )
 
 
-def actual_wrapper() -> pb.Program:
+def actual_wrapper() -> apb.BlockAssembly:
     # Independent tracked Python wrapper; the second authored exporter pins
     # the command insertion separately from the complete body-entry exporter.
     return exported_programs([str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "guardedForward"])[
@@ -48,11 +49,11 @@ def actual_wrapper() -> pb.Program:
     ]
 
 
-def assert_selected_body(export: dict[str, Any]) -> tuple[pb.Program, pb.CallBlock]:
+def assert_selected_body(export: dict[str, Any]) -> tuple[apb.BlockAssembly, pb.CallBlock]:
     assert set(export) == {"program", "args", "snapshots"}
     program = actual_wrapper()
     actual = next(block for block in program.blocks if block.name == "RewriteBody")
-    selected = json_format.ParseDict(export["program"], pb.Program())
+    selected = json_format.ParseDict(export["program"], apb.BlockAssembly())
     assert len(selected.blocks) == 1
     # Deliberately do not erase body: this is the full initializer, guarded
     # command and observer list, with exact order/casts/member spellings.
@@ -153,7 +154,7 @@ def test_complete_body_anchor_rejects_wrong_syntax(
     body_entry_export: dict[str, Any], fault: str
 ) -> None:
     corrupted = deepcopy(body_entry_export)
-    selected = json_format.ParseDict(corrupted["program"], pb.Program())
+    selected = json_format.ParseDict(corrupted["program"], apb.BlockAssembly())
     body = selected.blocks[0].body
     if fault == "empty":
         del body[:]

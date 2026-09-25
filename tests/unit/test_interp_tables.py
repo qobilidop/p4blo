@@ -7,6 +7,8 @@ import pytest
 from google.protobuf import text_format
 
 from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.interp.tables import InstalledEntries, InstallError, Match
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
@@ -65,7 +67,7 @@ CONST = ("C", "const_t")
 
 
 def index() -> ir.Index:
-    return ir.Index.build(ir.load_text(PROGRAM))
+    return BoundIndex.build(arch_wire.load_text(PROGRAM))
 
 
 def call(action: str, *args: int) -> pb.ActionCall:
@@ -272,7 +274,7 @@ blocks {
 
 def test_action_data_is_checked_against_the_tables_own_block() -> None:
     # A.t and B.t are byte-identical tables; their `set` actions differ.
-    twins = ir.Index.build(ir.load_text(TWINS))
+    twins = BoundIndex.build(arch_wire.load_text(TWINS))
     wide = pb.ActionCall(action="set", args=[pb.Literal(bits=pb.BitsLiteral(width=16, value="1"))])
     t = InstalledEntries.build(twins)
     t.install(("B", "t"), entry("", wide))

@@ -1,6 +1,6 @@
 """The stateful program, authored in the eDSL.
 
-`build()` returns the same `pb.Program` that stateful.txtpb encodes; the
+`build()` returns the same `apb.BlockAssembly` that stateful.txtpb encodes; the
 test suite checks the two are equal. Run as a script to print the text
 format.
 """
@@ -9,20 +9,22 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.externs.declarations import Counter, Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
     Parser,
-    Program,
     Struct,
     Transition,
     bit8,
     bit32,
     state,
 )
-from p4blo.edsl.externs import Counter, Register
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class myhdr_t(Header):
@@ -90,19 +92,15 @@ class deparser(Deparser[Headers]):
         self.emit(self.hdr.myhdr)
 
 
-def build() -> pb.Program:
-    return Program(
-        "stateful",
+def build() -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(p, pipeline, deparser, externs=[r, pkts]),
+        name="stateful",
         headers=Headers,
         metadata=Meta,
-        parser=p,
-        control=pipeline,
-        deparser=deparser,
-        externs=[r, pkts],
-    ).build()
+        exports={"parser": p, "control": pipeline, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

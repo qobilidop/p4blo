@@ -17,7 +17,11 @@ from typing import Any
 import pytest
 from hypothesis import given, settings
 
-from p4blo import arch, ir, stf, validator
+from p4blo import arch, stf
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
@@ -42,14 +46,16 @@ EXPORTER = ROOT / "impl/lean/.lake/build/bin/p4blo"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 
-def assert_program_identity(program: pb.Program) -> None:
+def assert_program_identity(program: apb.BlockAssembly) -> None:
     assert program == build(), "Lean source differs from independent Python authoring"
-    assert program == ir.load_text(CORPUS / "tutorial_firewall.txtpb"), "frozen golden differs"
+    assert program == arch_wire.load_text(CORPUS / "tutorial_firewall.txtpb"), (
+        "frozen golden differs"
+    )
     assert validator.validate(program) == []
 
 
 @pytest.fixture(scope="module")
-def firewall(lean_binary: Path) -> pb.Program:
+def firewall(lean_binary: Path) -> apb.BlockAssembly:
     assert lean_binary.is_file()
     assert EXPORTER.is_file(), "build the Lean packages before conformance"
     assert {"connection.stf", "collisions.stf"} <= {p.name for p in VECTORS}
@@ -61,7 +67,7 @@ def firewall(lean_binary: Path) -> pb.Program:
         timeout=30,
     )
     assert result.stderr == ""
-    program = ir.load_json(result.stdout)
+    program = arch_wire.load_json(result.stdout)
     assert_program_identity(program)
     return program
 
@@ -101,7 +107,7 @@ def fixed_run(cases: list[Case]) -> list[Outcome]:
         replies = process.stdout.splitlines()
         assert len(replies) == len(cases)
         outcomes = [checked_fixed_reply(reply) for reply in replies]
-        loaded = arch.load(build())
+        loaded = arch.reference.load(build())
         for case, actual in zip(cases, outcomes, strict=True):
             expected = python_outcome(loaded, case, 4)
             assert expected.error is None and actual.error is None
@@ -114,7 +120,7 @@ def fixed_run(cases: list[Case]) -> list[Outcome]:
         # its exact protocol separately, without claiming a generic divergence.
         record = {
             "format": "p4blo.lean-firewall.fixed.v0",
-            "program": json.loads(ir.dump_json(build())),
+            "program": json.loads(arch_wire.dump_json(build())),
             "ports": 4,
             "stdin": requests,
             "stdout": process.stdout,
@@ -130,7 +136,7 @@ def fixed_run(cases: list[Case]) -> list[Outcome]:
         raise AssertionError(f"fixed runner mismatch saved to {path}") from error
 
 
-def compare_and_save(program: pb.Program, cases: list[Case], lean_binary: Path) -> None:
+def compare_and_save(program: apb.BlockAssembly, cases: list[Case], lean_binary: Path) -> None:
     try:
         report = compare_program(program, cases, 4, [lean_binary])
     except ProtocolError as error:
@@ -149,11 +155,11 @@ def compare_and_save(program: pb.Program, cases: list[Case], lean_binary: Path) 
     assert report.agreed == len(cases)
 
 
-def check_sequence(program: pb.Program, sequence: list[Step], lean_binary: Path) -> None:
+def check_sequence(program: apb.BlockAssembly, sequence: list[Step], lean_binary: Path) -> None:
     cases = [item.case for item in sequence]
     # Save real engine inconsistencies before asserting independent policy answers.
     compare_and_save(program, cases, lean_binary)
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     for expected, actual in zip(sequence, fixed_run(cases), strict=True):
         python = python_outcome(loaded, expected.case, 4)
         assert python.error is None and actual.error is None
@@ -167,14 +173,16 @@ def test_firewall_default_target() -> None:
     assert "p4blo" in config["defaultTargets"]
 
 
-def test_lean_agrees_firewall_program_identity(firewall: pb.Program) -> None:
+def test_lean_agrees_firewall_program_identity(firewall: apb.BlockAssembly) -> None:
     assert_program_identity(firewall)
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
-def test_lean_agrees_firewall_stf(firewall: pb.Program, lean_binary: Path, vector: Path) -> None:
+def test_lean_agrees_firewall_stf(
+    firewall: apb.BlockAssembly, lean_binary: Path, vector: Path
+) -> None:
     statements = stf.parse(vector.read_text())
-    index = ir.Index.build(firewall)
+    index = BoundIndex.build(firewall)
     cases: list[Case] = []
 
     def collect(entries: pb.Entries, port: int, packet: bytes) -> list[tuple[int, bytes]]:
@@ -193,7 +201,9 @@ def test_lean_agrees_firewall_stf(firewall: pb.Program, lean_binary: Path, vecto
 
     stf.assert_replay(index, statements, output)
     assert next(replies, None) is None
-    stf.assert_replay(index, statements, arch.stf_driver(arch.Switch(ports=4), arch.load(firewall)))
+    stf.assert_replay(
+        index, statements, arch.stf_driver(arch.Switch(ports=4), arch.reference.load(firewall))
+    )
 
 
 @pytest.mark.parametrize(
@@ -202,28 +212,28 @@ def test_lean_agrees_firewall_stf(firewall: pb.Program, lean_binary: Path, vecto
     ids=["connection", "collision", "reverse-collision", "shapes", "bypass", "edges"],
 )
 def test_lean_agrees_firewall_known_sequences(
-    firewall: pb.Program, lean_binary: Path, sequence: list[Step]
+    firewall: apb.BlockAssembly, lean_binary: Path, sequence: list[Step]
 ) -> None:
     check_sequence(firewall, sequence, lean_binary)
 
 
 @pytest.mark.parametrize("length", range(55))
 def test_lean_agrees_firewall_packet_boundaries(
-    firewall: pb.Program, lean_binary: Path, length: int
+    firewall: apb.BlockAssembly, lean_binary: Path, length: int
 ) -> None:
     check_sequence(firewall, [truncated(length)], lean_binary)
 
 
 @pytest.mark.parametrize("length", range(54))
 def test_lean_agrees_firewall_persistent_boundaries(
-    firewall: pb.Program, lean_binary: Path, length: int
+    firewall: apb.BlockAssembly, lean_binary: Path, length: int
 ) -> None:
     check_sequence(firewall, persistence(length), lean_binary)
 
 
 @pytest.mark.parametrize("events", targeted().values(), ids=targeted().keys())
 def test_lean_agrees_firewall_host_policy(
-    firewall: pb.Program, lean_binary: Path, events: list[Event]
+    firewall: apb.BlockAssembly, lean_binary: Path, events: list[Event]
 ) -> None:
     check_sequence(firewall, model(events), lean_binary)
 
@@ -231,7 +241,7 @@ def test_lean_agrees_firewall_host_policy(
 @settings(max_examples=40, derandomize=True, deadline=None)
 @given(events=campaigns())
 def test_lean_agrees_firewall_generated(
-    firewall: pb.Program, lean_binary: Path, events: list[Event]
+    firewall: apb.BlockAssembly, lean_binary: Path, events: list[Event]
 ) -> None:
     check_sequence(firewall, model(events), lean_binary)
 
@@ -262,7 +272,7 @@ def test_fixed_observer_rejects_incomplete_state(fault: str) -> None:
 
 
 def test_lean_agrees_firewall_fixed_reset_is_retained(
-    firewall: pb.Program, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    firewall: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     cases = [item.case for item in connection()]
     # Generic execution remains correct: this fault belongs solely to the
@@ -294,7 +304,7 @@ def test_lean_agrees_firewall_fixed_reset_is_retained(
     record = strict_loads(artifacts[0].read_text())
     assert isinstance(record, dict)
     assert record["format"] == "p4blo.lean-firewall.fixed.v0"
-    assert ir.load_json(json.dumps(record["program"])) == firewall
+    assert arch_wire.load_json(json.dumps(record["program"])) == firewall
     assert record["stdin"] == "\n".join(request_json(case) for case in cases) + "\n"
     assert record["returncode"] == 0 and record["stderr"] == "" and record["ports"] == 4
     broken = [checked_fixed_reply(line) for line in record["stdout"].splitlines()]

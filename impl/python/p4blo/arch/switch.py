@@ -15,7 +15,7 @@ just an out-of-range port here.
 
 from __future__ import annotations
 
-from p4blo import interp
+from p4blo.arch import entry
 from p4blo.arch.loader import Loaded
 from p4blo.interp.tables import InstalledEntries
 
@@ -38,7 +38,7 @@ class Switch:
 
         m = meta.zero()
         meta.write(m, "ingress_port", ingress_port)
-        parsed = interp.run_parser(index, loaded.block("parser"), packet, m, externs)
+        parsed = entry.run_parser(index, loaded.block("parser"), packet, m, externs)
         if parsed.consumed_bits % 8:
             self.diagnostics.append(
                 f"parser consumed {parsed.consumed_bits} bits, not whole bytes; packet dropped"
@@ -46,11 +46,11 @@ class Switch:
             return []
         meta.write(parsed.metadata, "parser_error", parsed.error)
 
-        headers, m = interp.run_control(
+        headers, m = entry.run_control(
             index, loaded.block("control"), parsed.headers, parsed.metadata, entries, externs
         )
 
-        emitted = interp.run_deparser(index, loaded.block("deparser"), headers, externs)
+        emitted = entry.run_deparser(index, loaded.block("deparser"), headers, externs)
         out = emitted + packet[parsed.consumed_bits // 8 :]
 
         if meta.flag(m, "drop"):

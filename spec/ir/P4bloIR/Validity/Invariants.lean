@@ -61,7 +61,7 @@ def InstalledOk (idx : Index) (inst : Installed) : Prop :=
 
 /-- A valid program, the block kind of the run, and the extern contract. -/
 structure Global where
-  p : Program
+  p : BlockLibrary
   idx : Index
   kind : BlockKind
   valid : Valid p idx

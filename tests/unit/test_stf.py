@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 
 from p4blo import ir, stf
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -205,12 +207,12 @@ STACK_KEY = """
 
 @pytest.fixture(scope="module")
 def forwarder() -> ir.Index:
-    return ir.Index.build(ir.load_text(FORWARDER / "forwarder.txtpb"))
+    return BoundIndex.build(arch_wire.load_text(FORWARDER / "forwarder.txtpb"))
 
 
 @pytest.fixture(scope="module")
 def ternary() -> ir.Index:
-    return ir.Index.build(ir.load_text(TERNARY))
+    return BoundIndex.build(arch_wire.load_text(TERNARY))
 
 
 def resolve(index: ir.Index, text: str) -> pb.Entries:
@@ -272,7 +274,7 @@ def test_a_plain_number_on_a_ternary_key_is_an_exact_match(ternary: ir.Index) ->
 
 
 def test_a_key_on_a_stack_element_resolves_by_its_name() -> None:
-    index = ir.Index.build(ir.load_text(STACK_KEY))
+    index = BoundIndex.build(arch_wire.load_text(STACK_KEY))
     entries = resolve(index, "add ex1 100 extra[0].h:0x25** act1(val:0x25)")
     entry = entries.tables[0].entries[0]
     assert entry.priority == 100

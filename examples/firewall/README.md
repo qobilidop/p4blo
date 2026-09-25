@@ -80,6 +80,42 @@ This avoids a separate validity array and makes it possible to inspect the
 entire state after every packet. Sixteen slots intentionally make capacity
 and collisions easy to reproduce. No custom extern hides the flow policy.
 
+The block classes are reusable independently. For example, compile the
+control and its declared extern dependencies without selecting a pipeline:
+
+```python
+from examples.firewall.program import Filter, checksum, flow_hash, flows
+from p4blo import edsl as p4
+
+compiled = p4.BlockLibrary(Filter, externs=[checksum, flow_hash, flows]).compile()
+```
+
+The `blocks` library collects the three block definitions and their shared
+extern declarations. It does not select an architecture or a complete program;
+`blocks.compile()` produces declarations without global header/metadata roots
+or exported roles. This is a core protobuf `BlockLibrary` that can be
+validated independently. Types follow the blocks' parameter and local
+declarations.
+
+`build()` separately calls `reference.assemble` with that library to select the
+parser, control and deparser of the supplied architecture. Its metadata
+contract gives fields such as `drop` and `egress_port` their host meaning;
+the core sees ordinary block parameters and typed fields. The demo selects
+`reference.load`, passes `supplied_registry()` to bind declared externs to
+their implementations, and chooses `Switch(ports=4)`. Extern declarations
+describe typed calls; the registry supplies their execution.
+
+`ChecksumWords`, `FlowTuple` and `FlowRecord` name the checksum input,
+flow identity and writable register-record types. `orient_flow` is an ordinary
+Python build helper: calling it records the direction branches in place.
+`inspect_flow` is a declared action: calling it records an action call in the
+IR. Neither helper processes a packet while `build()` runs. Symbolic
+conditions such as `supported_packet` still require `with self.if_(...)`.
+
+The demo inspects the `flows` runtime register by name through
+`loaded.externs`. It reuses the same loaded object for all three packets,
+so the cell written by the outbound SYN remains available to the reply.
+
 ## Evidence and boundaries
 
 Verification assets live in [`tests/examples/firewall/`](../../tests/examples/firewall/).

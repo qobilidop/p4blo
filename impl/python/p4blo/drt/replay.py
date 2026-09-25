@@ -17,6 +17,7 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
 from p4blo.drt.run import (
@@ -54,7 +55,7 @@ def save(report: Report, path: Path) -> None:
     )
 
 
-def load(path: Path) -> tuple[pb.Program, list[Case], int, int]:
+def load(path: Path) -> tuple[apb.BlockAssembly, list[Case], int, int]:
     data = strict_json_loads(path.read_text())
     if not isinstance(data, dict):
         raise ValueError("replay must be an object")
@@ -71,7 +72,7 @@ def load(path: Path) -> tuple[pb.Program, list[Case], int, int]:
     if not isinstance(raw_program, dict):
         raise ValueError("replay program must be an object")
     try:
-        program = json_format.ParseDict(raw_program, pb.Program())
+        program = json_format.ParseDict(raw_program, apb.BlockAssembly())
     except json_format.ParseError as error:
         raise ValueError(f"invalid replay program protobuf JSON: {error}") from error
     cases: list[Case] = []

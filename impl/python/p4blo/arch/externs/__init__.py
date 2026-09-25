@@ -1,4 +1,4 @@
-"""The extern registry.
+"""Python extern implementation registry.
 
 At the IR level an extern is a declared type with method signatures, an
 instance with constructor arguments, and call sites. This package binds each
@@ -12,10 +12,13 @@ variable such as `"T"` that the declaration binds consistently. `Register`
 is the example: `read(out T result, in bit<32> index)` and
 `write(in bit<32> index, in T value)` for any width `T`.
 
-The implementations under this package are what the supplied architectures
-provide (docs/arch-supports.md, "Extern families"); each is pinned to its
-Lean model by vectors and independent known answers. They are not part of
-the IR, which sees only the binding.
+An application or architecture creates its own ``Registry`` and explicitly
+registers each ``Implementation``. Binding happens once per program load and
+calls a factory for every extern instance, so state belongs to that loaded
+program and is shared by its packet runs. ``supplied_registry()`` offers the
+five reference families; it is only a convenience and no registry is mutated
+on import. Python registration says nothing about Lean semantics or P4
+printing, which need separate implementations and evidence.
 """
 
 from __future__ import annotations
@@ -128,9 +131,18 @@ class Implementation:
 
 @dataclass
 class Registry:
+    """Implementations offered to one loader, with no process-global state.
+
+    ``register`` adds one family. ``bind`` validates every used declaration's
+    shape and constructor arguments, then creates fresh bindings per instance.
+    A family name may have a suffix (``register.8``), which selects the same
+    implementation while retaining full signature validation.
+    """
+
     implementations: dict[str, Implementation] = field(default_factory=dict)
 
     def register(self, impl: Implementation) -> None:
+        """Offer a Python implementation of ``impl.extern_type`` to this loader."""
         if impl.extern_type in self.implementations:
             raise ValueError(f"{impl.extern_type} registered twice")
         self.implementations[impl.extern_type] = impl
@@ -186,8 +198,8 @@ def fits(value: Value, type: pb.Type) -> bool:
             return False
 
 
-def default_registry() -> Registry:
-    """Every implementation shipped with the corpus."""
+def supplied_registry() -> Registry:
+    """A fresh registry with the five families supplied by this repository."""
     from p4blo.arch.externs import checksum, counter, crc, register
 
     registry = Registry()
@@ -208,7 +220,7 @@ __all__ = [
     "ParamShape",
     "Registry",
     "Shape",
-    "default_registry",
+    "supplied_registry",
     "fits",
     "literal_value",
     "match_shape",

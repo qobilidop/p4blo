@@ -21,8 +21,9 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
-from p4blo import ir
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.replay import save
@@ -111,8 +112,8 @@ def parameters(name: str) -> dict[str, Value]:
     return {"dstAddr": Bits(48, dst), "port": Bits(9, port)}
 
 
-def environment(program: pb.Program, name: str) -> Env:
-    index = ir.Index.build(program)
+def environment(program: apb.BlockAssembly, name: str) -> Env:
+    index = BoundIndex.build(program)
     entries = InstalledEntries(index)
     entries.entries[("MyIngress", "ipv4_lpm")] = [
         pb.Entry(
@@ -141,7 +142,7 @@ def environment(program: pb.Program, name: str) -> Env:
     return env
 
 
-def expected_runs(program: pb.Program, name: str) -> dict[str, Env]:
+def expected_runs(program: apb.BlockAssembly, name: str) -> dict[str, Env]:
     before = environment(program, name)
     after = environment(program, name)
     after.vars.update(values(name, final=True))
@@ -167,7 +168,7 @@ def run_json(env: Env) -> dict[str, Any]:
     return result
 
 
-def selected_action(program: pb.Program) -> pb.Action:
+def selected_action(program: apb.BlockAssembly) -> pb.Action:
     action = next(
         a
         for b in program.blocks
@@ -213,9 +214,9 @@ def selected_action(program: pb.Program) -> pb.Action:
     return action
 
 
-def checked_snapshots(export: Any) -> tuple[pb.Program, dict[str, Any]]:
+def checked_snapshots(export: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
     assert type(export) is dict and set(export) == {"program", "action", "snapshots"}
-    program = json_format.ParseDict(export["program"], pb.Program())
+    program = json_format.ParseDict(export["program"], apb.BlockAssembly())
     assert_program_identity(program)
     assert json_format.ParseDict(export["action"], pb.Action()) == selected_action(program)
     snapshots = export["snapshots"]
@@ -259,11 +260,11 @@ def action_export(lean_binary: Path) -> Any:
 
 
 @pytest.fixture(scope="module")
-def checked(action_export: Any) -> tuple[pb.Program, dict[str, Any]]:
+def checked(action_export: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
     return checked_snapshots(action_export)
 
 
-def observe_action(program: pb.Program, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+def observe_action(program: apb.BlockAssembly, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     outer = environment(program, name)
     expectations = expected_runs(program, name)
     frozen = {phase: freeze(env) for phase, env in expectations.items()}
@@ -312,7 +313,7 @@ def test_forwarder_action_default_target() -> None:
 
 @pytest.mark.parametrize("name", PROFILES)
 def test_lean_agrees_forwarder_action(
-    checked: tuple[pb.Program, dict[str, Any]], name: str, monkeypatch: pytest.MonkeyPatch
+    checked: tuple[apb.BlockAssembly, dict[str, Any]], name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     program, snapshots = checked
     assert name in snapshots
@@ -383,7 +384,7 @@ def test_action_snapshot_observer_rejects_faults(action_export: Any, fault: str)
     ],
 )
 def test_action_observer_rejects_actual_environment_faults(
-    checked: tuple[pb.Program, dict[str, Any]], fault: str, monkeypatch: pytest.MonkeyPatch
+    checked: tuple[apb.BlockAssembly, dict[str, Any]], fault: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original, read, write = Env.enter_action, Env.read, Env.write
     hits = 0
@@ -450,7 +451,7 @@ def test_action_observer_rejects_actual_environment_faults(
 
 @pytest.mark.parametrize("fault", ["old_destination_order", "full_outer_restore", "saturating_ttl"])
 def test_action_observer_rejects_semantic_faults(
-    checked: tuple[pb.Program, dict[str, Any]], fault: str, monkeypatch: pytest.MonkeyPatch
+    checked: tuple[apb.BlockAssembly, dict[str, Any]], fault: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     execute, arithmetic = stmt.execute, expr.bits_binary
     hits = 0
@@ -485,7 +486,7 @@ def test_action_observer_rejects_semantic_faults(
 
 
 def test_lean_agrees_action_wrong_arity(
-    checked: tuple[pb.Program, dict[str, Any]], monkeypatch: pytest.MonkeyPatch
+    checked: tuple[apb.BlockAssembly, dict[str, Any]], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     env = environment(checked[0], "true-true-false-1-false")
     before = freeze(env)
@@ -503,7 +504,7 @@ def test_lean_agrees_action_wrong_arity(
 
 
 def test_lean_agrees_action_field_fault_replay(
-    checked: tuple[pb.Program, dict[str, Any]],
+    checked: tuple[apb.BlockAssembly, dict[str, Any]],
     lean_binary: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

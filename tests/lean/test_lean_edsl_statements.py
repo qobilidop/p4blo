@@ -17,6 +17,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean, scalar_program
 from p4blo.drt.replay import save
@@ -44,7 +45,9 @@ def test_statement_exporter_is_a_default_target() -> None:
     assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
-def statement_program(name: str, body: list[pb.Stmt], inputs: tuple[int, int, bool]) -> pb.Program:
+def statement_program(
+    name: str, body: list[pb.Stmt], inputs: tuple[int, int, bool]
+) -> apb.BlockAssembly:
     """Independent valid wrapper exposing all final local values as bytes."""
     program = scalar_program(bits(8, 0), 8)
     program.name = f"lean-statements-{name}"
@@ -84,7 +87,7 @@ def statement_program(name: str, body: list[pb.Stmt], inputs: tuple[int, int, bo
 
 
 @pytest.fixture(scope="module")
-def authored_programs(lean_binary: Path) -> dict[str, pb.Program]:
+def authored_programs(lean_binary: Path) -> dict[str, apb.BlockAssembly]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
@@ -92,7 +95,7 @@ def authored_programs(lean_binary: Path) -> dict[str, pb.Program]:
     completed = subprocess.run(
         [str(exporter), "scalarCommands"], capture_output=True, text=True, check=True, timeout=30
     )
-    programs: dict[str, pb.Program] = {}
+    programs: dict[str, apb.BlockAssembly] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
         name = record["name"]
@@ -110,7 +113,7 @@ def authored_programs(lean_binary: Path) -> dict[str, pb.Program]:
 
 @pytest.mark.parametrize("name", EXPECTED)
 def test_lean_agrees_on_authored_statement_known_answers(
-    name: str, authored_programs: dict[str, pb.Program], lean_binary: Path
+    name: str, authored_programs: dict[str, apb.BlockAssembly], lean_binary: Path
 ) -> None:
     program = authored_programs[name]
     case = Case(pb.Entries(), 0, b"")
@@ -130,4 +133,4 @@ def test_lean_agrees_on_authored_statement_known_answers(
         )
     # Both interpreters can agree on an unintended but well-typed source
     # command; independent expected bytes are a different essential oracle.
-    assert run_python(arch.load(program), case, 4) == [(0, EXPECTED[name][1])]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, EXPECTED[name][1])]

@@ -95,7 +95,7 @@ STEPS = (
     ),
     (
         "build",
-        "program = p4.Program(",
+        "def build() -> apb.BlockAssembly:",
         "Build once. Inspect every operation.",
         "Assemble the parser, control, deparser and extern into one architecture-free IR. "
         "Running this complete source prints that IR. The linked demo installs the policy "

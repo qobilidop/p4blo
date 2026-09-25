@@ -610,7 +610,7 @@ class Errors:
         class errors(Errors):
             BadChecksum: Error
 
-    `errors.BadChecksum` is the member; `Program(errors=errors)` declares
+    `errors.BadChecksum` is the member; `BlockLibrary(..., errors=errors)` declares
     the set after core.p4's seven, which `CoreErrors` holds.
     """
 

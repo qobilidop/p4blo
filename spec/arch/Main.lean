@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4bloIR
 import P4bloArch
 import P4bloIR.Observe
@@ -20,11 +21,14 @@ import P4bloArch.Coverage
 
     p4blo-lean check <program.json | -> ...
         Decode each program and check its validity with
-        `P4bloIR.Validity.check`. Prints one line per program, in order:
+        `P4bloArch.BlockAssembly.check`. Prints one line per program, in order:
         `accept`, or `reject CODE PATH: MESSAGE` with the first problem,
         where `CODE` is the Python validator's code, or `DECODE` when the
         program does not decode. Exit code 0 means every program was
         accepted, 1 that one was rejected, 2 that an input was unreadable.
+
+    p4blo-lean check-library <library.json | -> ...
+        Check core declarations and blocks without architecture bindings.
 
     p4blo-lean <program.json | ->
         Decode the program, build the name index and print a one-line
@@ -58,20 +62,29 @@ import P4bloArch.Coverage
 open P4bloIR P4bloArch
 
 /-- The one-line summary of a program. -/
-def summary (p : Program) (index : Index) : String :=
+def summary (p : BlockAssembly) (index : Index) : String :=
   let tables := p.blocks.foldl (fun n b => n + b.tables.length) 0
   s!"{p.name}: {p.headerTypes.length} header types, {p.structTypes.length} struct types, " ++
   s!"{p.enumTypes.length} enum types, {p.externTypes.length} extern types, " ++
   s!"{p.blocks.length} blocks, {tables} tables, {index.errors.size} errors"
 
 /-- Read and index a program from `path`, or from stdin with `-`. -/
-def loadProgram (path : String) : IO (Except String (Program × Index)) := do
+def loadProgram (path : String) : IO (Except String (BlockAssembly × Index)) := do
   let text ← if path == "-" then (← IO.getStdin).readToEnd else IO.FS.readFile path
-  pure (Program.fromJsonString text >>= fun p => (p, ·) <$> Index.build p)
+  pure (BlockAssembly.fromJsonString text >>= fun p => (p, ·) <$> Index.build p)
 
 /-- The verdict line for one program text, and whether it was accepted. -/
 def verdict (text : String) : String × Bool :=
-  match Program.fromJsonString text with
+  match BlockAssembly.fromJsonString text with
+  | .error e => (s!"reject DECODE {e}", false)
+  | .ok p =>
+    match p.check with
+    | .ok _ => ("accept", true)
+    | .error d => (s!"reject {d.code.name} {d.path}: {d.message}", false)
+
+/-- Check an architecture-free library without imposing entry bindings. -/
+def libraryVerdict (text : String) : String × Bool :=
+  match BlockLibrary.fromJsonString text with
   | .error e => (s!"reject DECODE {e}", false)
   | .ok p =>
     match Validity.check p with
@@ -80,7 +93,7 @@ def verdict (text : String) : String × Bool :=
 
 /-- The `check` mode: decode, then check validity; one verdict line per
 program. -/
-def checkMode (paths : List String) : IO UInt32 := do
+def checkMode (paths : List String) (library : Bool := false) : IO UInt32 := do
   let mut code : UInt32 := 0
   for path in paths do
     let text ← try
@@ -88,7 +101,7 @@ def checkMode (paths : List String) : IO UInt32 := do
       catch e =>
         IO.eprintln s!"error: {e}"
         return 2
-    let (line, ok) := verdict text
+    let (line, ok) := if library then libraryVerdict text else verdict text
     IO.println line
     if !ok then code := 1
   return code
@@ -164,8 +177,8 @@ def runMode (args : List String) : IO UInt32 := do
   | .error e =>
     IO.eprintln s!"error: {e}"
     return 1
-  | .ok (_, index) =>
-    match Switch.load index ports, P4bloArch.bind index with
+  | .ok (program, index) =>
+    match Switch.load index program.toBlockBindings ports, P4bloArch.bind index with
     | .ok sw, .ok externs =>
       serve sw externs
       return 0
@@ -193,6 +206,7 @@ def main (args : List String) : IO UInt32 := do
     return 0
   | "run" :: rest => runMode rest
   | "check" :: paths@(_ :: _) => checkMode paths
+  | "check-library" :: paths@(_ :: _) => checkMode paths true
   | [path] =>
     match ← loadProgram path with
     | .ok (p, index) =>

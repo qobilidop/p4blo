@@ -50,7 +50,9 @@ creates no git tags.
    finite scopes, assurance milestone 1, the application collection and
    the architecture-free IR semantics scope, are complete and frozen;
    maintenance does not reopen parked proofs. The status file names any
-   active engineering work.
+   active engineering work. The current authoring scope develops independent
+   P4 blocks and optional BlockLibrary bundles; architecture assembly remains
+   separate (see `.agents/notes/edsl-ergonomics.md` while active).
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
    not infer broader guarantees from counts.
@@ -114,8 +116,9 @@ so the required CI gate discovers them without a hand-maintained file list.
   P4-SpecTec algorithms into both p4blo interpreters weakens the oracle.
 - **Pure Python.** No dependency of the `p4blo` package may ship
   native code, and nothing newer than Python 3.13 is used.
-- **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` come
-  from `buf generate`. Never edit them; edit the schema and regenerate.
+- **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` and
+  `impl/python/p4blo/arch/v0/*_pb2.py*` come from `buf generate`. Never edit
+  them; edit the schemas and regenerate.
   CI checks a fresh generation's inventory and bytes against both the
   index and working tree. Stage new deliverables before the full gate;
   a clean diff of tracked files alone cannot detect omitted outputs.
@@ -136,11 +139,15 @@ so the required CI gate discovers them without a hand-maintained file list.
   package, what a client may import lives under `<Root>/`, what only the
   gate runs (tests, proof audits, fixtures) under `<Root>Test/` as one
   default-target library, and at the root only the root module, Lake's
-  files, `README.md` and at most one `Main.lean` (`docs/design.md`, "The
-  Lean packages"). Whole-program validity is decided by a checker proved
-  sound and progress is proved for valid programs; termination and the
-  codec proofs through Program and Export remain open, not guarantees
-  supplied by this organization. A closed behavior is
+  files, `README.md` and at most one `Main.lean`, with the core and
+  architecture protobuf schemas under `spec/ir/proto/` and
+  `spec/arch/proto/` and `impl/lean/ASSURANCE.md` as named exceptions
+  (`docs/design.md`, "The Lean packages"). Core library validity is
+  decided by a checker proved sound and progress is proved for valid
+  libraries; `P4bloArch.Bindings.check_sound` separately covers the
+  H/M and role choices. Termination and codec composition through
+  BlockLibrary, architecture Export and BlockAssembly remain open, not
+  guarantees supplied by this organization. A closed behavior is
   written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both
   interpreters second.
@@ -237,6 +244,17 @@ or pipe protocol, a module many others import). The integrator combines
 reviewed commits on the PR branch in batches, runs the full gate once per
 batch before pushing, then merges the PR only after its final revision
 passes remote CI, and removes the worktrees.
+Before splitting a public API change, agree concrete caller examples and
+an acceptance case that would expose a false abstraction boundary. Follow
+that case through source, wire types, validation, execution and proof premises;
+a clean facade alone is not a boundary. Record cross-agent API signatures
+and commit dependencies in the working note.
+Before the first CI push, review the usage and design prose for universal
+claims that belonged only to the old adapter, as well as moved names and paths.
+When two slices depend on each other, hand off committed patches with
+explicit pending checks, then validate the integrated batch; do not have
+both agents wait for the other's green commit. Never amend a handed-off
+commit: corrections are follow-up commits.
 Spawn sub-agents when useful without waiting for permission; choose a
 model appropriate to the task; create the worktree before delegating and
 put its absolute path and file ownership in the brief. Sub-agents must
@@ -253,7 +271,9 @@ Worktrees do not isolate external resources: use distinct Docker image
 tags and `P4BLO_BMV2_IMAGE` per implementation worktree, and never
 rebuild the shared oracle image while another agent's tests use it.
 Coordinate other mutable caches, ports and fixtures explicitly; immutable
-pinned caches may be shared.
+pinned caches may be shared. Freeze the entire tracked tree during a
+provenance-checked assurance experiment: its inventory includes documentation,
+so even a concurrent note edit invalidates the run.
 
 Unfinished work is never left as an uncommitted worktree. Commit it to
 its branch as a work-in-progress commit whose message says what it holds

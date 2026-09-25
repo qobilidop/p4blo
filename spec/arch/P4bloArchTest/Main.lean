@@ -1,3 +1,7 @@
+import P4bloArchTest.Bindings
+import P4bloArchTest.Interp
+import P4bloArchTest.AssemblyCodec
+import P4bloArch.Assembly
 import P4bloArchTest.Check
 import P4bloArchTest.Forwarder
 import P4bloArchTest.Externs
@@ -27,7 +31,7 @@ specification's copies. The coverage witness table is read from
 `P4bloArchTest/fixtures/csum16.json`.
 -/
 
-open P4bloIR
+open P4bloArch P4bloIR
 
 def main (args : List String) : IO UInt32 := do
   let fixture := args.head?.getD "../ir/P4bloIRTest/forwarder.json"
@@ -35,15 +39,23 @@ def main (args : List String) : IO UInt32 := do
   let text ← IO.FS.readFile fixture
   let vectorsText ← IO.FS.readFile vectors
   let ((), failures) ← (do
-    match Program.fromJsonString text with
+    match BlockAssembly.fromJsonString text with
     | .ok p =>
       check "fixture decodes" true
+      check "headers and metadata" (p.headers == "headers" && p.metadata == "metadata")
+      check "three exports" (p.exports.map Export.role == ["parser", "control", "deparser"])
+      check "exported control" ((do
+        let idx ← (Index.build p).toOption
+        (p.toBlockBindings.exported? idx "control").map Block.name) == some "MyIngress")
       forwarderReplayTests p vectorsText
       CoverageTests.tests p
       CoverageTests.witnessTests "P4bloArchTest/fixtures/witnesses.json"
     | .error e =>
       IO.println s!"     got: {e}"
       check "fixture decodes" false
+    BindingTests.tests
+    interpTests
+    AssemblyCodecTests.tests
     ExternTests.tests
     CRCTests.tests
     ExternFamiliesTests.tests

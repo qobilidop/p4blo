@@ -1,6 +1,6 @@
 """The forwarder, authored in the eDSL.
 
-`build()` returns the same `pb.Program` that forwarder.txtpb encodes; the
+`build()` returns the same `apb.BlockAssembly` that forwarder.txtpb encodes; the
 test suite checks the two are equal. Run as a script to print the text
 format.
 """
@@ -9,15 +9,19 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.externs.declarations import Checksum16
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     Bits,
+    BlockLibrary,
     Bool,
     Control,
     Deparser,
     Header,
     L,
     Parser,
-    Program,
     Struct,
     Table,
     Transition,
@@ -31,8 +35,6 @@ from p4blo.edsl import (
     lpm,
     state,
 )
-from p4blo.edsl.externs import Checksum16
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class ethernet_t(Header):
@@ -149,22 +151,15 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.ipv4)
 
 
-program = Program(
-    "forwarder",
-    headers=headers,
-    metadata=metadata,
-    parser=MyParser,
-    control=MyIngress,
-    deparser=MyDeparser,
-    externs=[csum],
-)
-
-
-def build() -> pb.Program:
-    return program.build()
+def build() -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(MyParser, MyIngress, MyDeparser, externs=[csum]),
+        name="forwarder",
+        headers=headers,
+        metadata=metadata,
+        exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser},
+    )
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

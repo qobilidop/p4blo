@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.programs import binary, bits, boolean, scalar_program
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -66,7 +67,7 @@ def _header_target() -> pb.LValue:
     return pb.LValue(member=pb.LMember(base=pb.LValue(var="hdr"), field="result"))
 
 
-def stateful_program(spec: StatefulSpec) -> pb.Program:
+def stateful_program(spec: StatefulSpec) -> apb.BlockAssembly:
     """A full switch program, with all type/width choices explicit in `spec`."""
     program = scalar_program(bits(spec.width, 0), spec.width)
     program.name = "generated-stateful"

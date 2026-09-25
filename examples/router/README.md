@@ -40,6 +40,36 @@ the switch. This separation is why changing a route does not rebuild the IR.
 The checksum helper is ordinary Python composition of typed eDSL expressions,
 not a separate runtime implementation.
 
+The block classes are reusable independently. For example, compile the
+control and its declared extern dependencies without selecting a pipeline:
+
+```python
+from examples.router.program import Route, checksum
+from p4blo import edsl as p4
+
+compiled = p4.BlockLibrary(Route, externs=[checksum]).compile()
+```
+
+The `blocks` library collects the three block definitions and their shared
+extern declarations. It does not select an architecture or a complete program;
+`blocks.compile()` produces declarations without global header/metadata roots
+or exported roles. This is a core protobuf `BlockLibrary` that can be
+validated independently. Types follow the blocks' parameter and local
+declarations.
+
+`build()` separately calls `reference.assemble` with that library to select the
+parser, control and deparser of the supplied architecture. Its metadata
+contract gives fields such as `drop` and `egress_port` their host meaning;
+the core sees ordinary block parameters and typed fields. The demo selects
+`reference.load`, passes `supplied_registry()` to bind declared externs to
+their implementations, and chooses `Switch(ports=4)`. Extern declarations
+describe typed calls; the registry supplies their execution.
+
+`ChecksumWords` names the 144-bit expression type used by `checksum_data`.
+`supported_packet` names a symbolic condition; `with self.if_(...)` records
+its runtime branch. Ordinary Python names and helper calls compose the IR at
+build time, while `self.assign` records packet-time writes.
+
 ## Exact scope
 
 - Untagged Ethernet with EtherType `0x0800`, version 4, IHL 5 and a complete

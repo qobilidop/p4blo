@@ -11,7 +11,7 @@ def bindChecksum (name : String) (width : Nat := 16) : Except String Nat := do
     methods := [{ name := "compute"
                   params := [{ name := "data", type := .bits width, direction := .«in» }]
                   returns := some (.bits 16) }] }
-  let index ← Index.build { (default : Program) with
+  let index ← Index.build { (default : BlockLibrary) with
     externTypes := [declaration]
     externInstances := [{ name := "sum", externType := name, args := [] }] }
   let externs ← P4bloArch.bind index

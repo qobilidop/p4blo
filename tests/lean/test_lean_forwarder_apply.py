@@ -20,6 +20,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
@@ -80,7 +81,7 @@ def action(name: str) -> pb.ActionCall:
     return result.action
 
 
-def environment(program: pb.Program, name: str, *, actual_entries: bool) -> Env:
+def environment(program: apb.BlockAssembly, name: str, *, actual_entries: bool) -> Env:
     route, address, state = CASES[name]
     state_name = "-".join(str(v).lower() for v in (*state, False))
     env = action_environment(program, state_name)
@@ -99,7 +100,7 @@ def environment(program: pb.Program, name: str, *, actual_entries: bool) -> Env:
     return env
 
 
-def expected_runs(program: pb.Program, name: str) -> dict[str, Env]:
+def expected_runs(program: apb.BlockAssembly, name: str) -> dict[str, Env]:
     before = environment(program, name, actual_entries=False)
     after = environment(program, name, actual_entries=False)
     selected = action(name)
@@ -135,7 +136,7 @@ def count(name: str) -> int:
     return {"ipv4_forward": 13, "drop": 7, "NoAction": 5}[action(name).action]
 
 
-def body(program: pb.Program, name: str) -> list[pb.Stmt]:
+def body(program: apb.BlockAssembly, name: str) -> list[pb.Stmt]:
     wanted = action(name).action
     declarations = next(block for block in program.blocks if block.name == "MyIngress")
     actual = next(a for a in declarations.actions if a.name == wanted)
@@ -158,9 +159,9 @@ def body(program: pb.Program, name: str) -> list[pb.Stmt]:
     return list(actual.body)
 
 
-def checked_snapshots(raw: Any) -> tuple[pb.Program, dict[str, Any]]:
+def checked_snapshots(raw: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
     assert type(raw) is dict and set(raw) == {"program", "snapshots"}
-    program = json_format.ParseDict(raw["program"], pb.Program())
+    program = json_format.ParseDict(raw["program"], apb.BlockAssembly())
     assert_program_identity(program)
     table = next(b for b in program.blocks if b.name == "MyIngress").tables[0]
     assert list(table.keys) == [pb.Key(expr=KEY, match_kind=pb.MATCH_KIND_LPM)]
@@ -208,11 +209,11 @@ def export(lean_binary: Path) -> Any:
 
 
 @pytest.fixture(scope="module")
-def checked(export: Any) -> tuple[pb.Program, dict[str, Any]]:
+def checked(export: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
     return checked_snapshots(export)
 
 
-def observe(program: pb.Program, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+def observe(program: apb.BlockAssembly, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     outer = environment(program, name, actual_entries=True)
     frozen = {phase: freeze(env) for phase, env in expected_runs(program, name).items()}
     assert freeze(outer) == frozen["before"], "actual installer/initial state"
@@ -275,7 +276,7 @@ def observe(program: pb.Program, name: str, monkeypatch: pytest.MonkeyPatch) -> 
 
 @pytest.mark.parametrize("name", CASES)
 def test_lean_agrees_forwarder_apply(
-    checked: tuple[pb.Program, dict[str, Any]],
+    checked: tuple[apb.BlockAssembly, dict[str, Any]],
     name: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -350,7 +351,7 @@ def profile(route: str, address: int) -> str:
     ],
 )
 def test_lean_agrees_apply_observer_faults(
-    checked: tuple[pb.Program, dict[str, Any]],
+    checked: tuple[apb.BlockAssembly, dict[str, Any]],
     monkeypatch: pytest.MonkeyPatch,
     fault: str,
 ) -> None:
@@ -436,7 +437,7 @@ def test_lean_agrees_apply_observer_faults(
 
 @pytest.mark.parametrize("name", list(CASES)[:24])
 def test_lean_agrees_apply_hit_and_error_controls(
-    checked: tuple[pb.Program, dict[str, Any]],
+    checked: tuple[apb.BlockAssembly, dict[str, Any]],
     name: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -542,7 +543,7 @@ def application_output(name: str) -> list[tuple[int, bytes]]:
 
 @pytest.mark.parametrize("name", PACKET_PROFILES)
 def test_lean_agrees_apply_packets(
-    checked: tuple[pb.Program, dict[str, Any]], lean_binary: Path, name: str
+    checked: tuple[apb.BlockAssembly, dict[str, Any]], lean_binary: Path, name: str
 ) -> None:
     program, _ = checked
     case = application_packet(name)
@@ -558,11 +559,11 @@ def test_lean_agrees_apply_packets(
         bundle.parent.mkdir(parents=True, exist_ok=True)
         save(report, bundle)
     assert report.passed and report.agreed == 1
-    assert run_python(arch.load(program), case, 4) == application_output(name)
+    assert run_python(arch.reference.load(program), case, 4) == application_output(name)
 
 
 def test_lean_agrees_skip_default_packet_replay(
-    checked: tuple[pb.Program, dict[str, Any]],
+    checked: tuple[apb.BlockAssembly, dict[str, Any]],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

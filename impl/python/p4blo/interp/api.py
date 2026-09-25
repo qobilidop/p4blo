@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol
 
-from p4blo.interp.values import NO_ERROR, ErrorValue, Struct, Value
+from p4blo.interp.values import Value
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,23 +38,6 @@ class ExternBinding(Protocol):
 
 type Externs = Mapping[str, ExternBinding]
 """Bindings by extern instance name."""
-
-
-@dataclass(slots=True)
-class ParseOutcome:
-    """What a parser run produced (docs/ir-semantics.md, "Parsers").
-
-    Rejection and error are separate: `accept` gives `accepted` with
-    `NoError`; an explicit `reject` gives not accepted with `NoError`; a
-    raised error gives not accepted with that error.
-    """
-
-    headers: Struct
-    metadata: Struct
-    consumed_bits: int
-    accepted: bool = True
-    # A name from Program.errors.
-    error: ErrorValue = NO_ERROR
 
 
 class InterpError(Exception):

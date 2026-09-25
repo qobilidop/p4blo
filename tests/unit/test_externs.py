@@ -2,6 +2,8 @@ import pytest
 
 from p4blo import ir
 from p4blo.arch import externs
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.checksum import internet_checksum
 from p4blo.interp.values import Bits
 
@@ -36,8 +38,8 @@ def instance(*, extern_type: str = "register", arg_width: int = 32) -> str:
 
 
 def program(extern_types: str, instances: str) -> ir.Index:
-    return ir.Index.build(
-        ir.load_text(
+    return BoundIndex.build(
+        arch_wire.load_text(
             f"""
             errors: "NoError"
             struct_types {{ name: "H" }}
@@ -52,7 +54,7 @@ def program(extern_types: str, instances: str) -> ir.Index:
 
 
 def test_register_binds_and_runs() -> None:
-    bound = externs.default_registry().bind(program(register_decl(), instance()))
+    bound = externs.supplied_registry().bind(program(register_decl(), instance()))
     r = bound["r"]
     assert r.call("read", [Bits(16, 0), Bits(32, 1)]).outs == (Bits(16, 0),)
     r.call("write", [Bits(32, 1), Bits(16, 0xABCD)])
@@ -65,24 +67,24 @@ def test_register_binds_and_runs() -> None:
 def test_extra_method_refuses_to_bind() -> None:
     decl = register_decl(extra='methods { name: "clear" }')
     with pytest.raises(externs.BindError, match="methods"):
-        externs.default_registry().bind(program(decl, instance()))
+        externs.supplied_registry().bind(program(decl, instance()))
 
 
 def test_inconsistent_width_variable_refuses_to_bind() -> None:
     decl = register_decl(value_width=8)
     with pytest.raises(externs.BindError, match="T is bit<16> elsewhere"):
-        externs.default_registry().bind(program(decl, instance()))
+        externs.supplied_registry().bind(program(decl, instance()))
 
 
 def test_unknown_extern_refuses_to_bind() -> None:
     decl = register_decl(name="mystery")
     with pytest.raises(externs.BindError, match="no implementation"):
-        externs.default_registry().bind(program(decl, instance(extern_type="mystery")))
+        externs.supplied_registry().bind(program(decl, instance(extern_type="mystery")))
 
 
 def test_constructor_arg_must_fit() -> None:
     with pytest.raises(externs.BindError, match="does not fit"):
-        externs.default_registry().bind(program(register_decl(), instance(arg_width=8)))
+        externs.supplied_registry().bind(program(register_decl(), instance(arg_width=8)))
 
 
 def test_internet_checksum_rfc1071_example() -> None:
@@ -104,6 +106,6 @@ def test_two_widths_of_one_family_bind() -> None:
         'params { name: "result" type { bits: 16 }', 'params { name: "result" type { bits: 8 }'
     )
     inst = instance() + instance(extern_type="register.8").replace('name: "r"', 'name: "r8"')
-    bound = externs.default_registry().bind(program(decl, inst))
+    bound = externs.supplied_registry().bind(program(decl, inst))
     assert bound["r8"].call("read", [Bits(8, 0), Bits(32, 0)]).outs == (Bits(8, 0),)
     assert bound["r"].call("read", [Bits(16, 0), Bits(32, 0)]).outs == (Bits(16, 0),)

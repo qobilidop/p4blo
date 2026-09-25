@@ -1,6 +1,6 @@
 """The ACL, authored in the eDSL: p4c's `ternary2-bmv2.p4`.
 
-`build()` returns the same `pb.Program` that acl.txtpb encodes; the test
+`build()` returns the same `apb.BlockAssembly` that acl.txtpb encodes; the test
 suite checks the two are equal. Run as a script to print the text format.
 """
 
@@ -8,7 +8,11 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
@@ -17,7 +21,6 @@ from p4blo.edsl import (
     L,
     Out,
     Parser,
-    Program,
     Stack,
     Struct,
     Table,
@@ -31,7 +34,6 @@ from p4blo.edsl import (
     state,
     ternary,
 )
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class data_h(Header):
@@ -193,18 +195,15 @@ class deparser(Deparser[packet_t]):
         self.emit(self.hdrs.extra)
 
 
-def build() -> pb.Program:
-    return Program(
-        "acl",
+def build() -> apb.BlockAssembly:
+    return assemble(
+        BlockLibrary(p, ingress, deparser),
+        name="acl",
         headers=packet_t,
         metadata=Meta,
-        parser=p,
-        control=ingress,
-        deparser=deparser,
-    ).build()
+        exports={"parser": p, "control": ingress, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

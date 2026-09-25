@@ -63,7 +63,9 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
 from p4blo.drt.run import (
@@ -147,7 +149,7 @@ class Input:
 
     name: str
     source: Mapping[str, object]
-    program: pb.Program
+    program: apb.BlockAssembly
     cases: tuple[Case, ...]
     ports: int
 
@@ -171,9 +173,9 @@ class Fixture:
     program: Mapping[str, object]
     steps: tuple[Step, ...]
 
-    def program_ir(self) -> pb.Program:
+    def program_ir(self) -> apb.BlockAssembly:
         try:
-            return json_format.ParseDict(dict(self.program), pb.Program())
+            return json_format.ParseDict(dict(self.program), apb.BlockAssembly())
         except json_format.ParseError as e:
             raise ValueError(f"invalid program protobuf JSON: {e}") from e
 
@@ -653,7 +655,7 @@ def _reanswered(fixture: Fixture, lean: Sequence[str | Path]) -> tuple[Step, ...
 
 
 def _answered(item: Input, lean: Sequence[str | Path], provenance: Mapping[str, object]) -> Fixture:
-    program = json.loads(ir.dump_json(item.program))
+    program = json.loads(wire.dump_json(item.program))
     requests = [json.loads(request_json(case)) for case in item.cases]
     replies = answer(lean, program, requests, item.ports)
     steps = tuple(Step(q, sparse_reply(r)) for q, r in zip(requests, replies, strict=True))
@@ -803,7 +805,7 @@ def check_python_fixture(path: Path) -> list[str]:
     except (ValueError, ProtocolError) as e:
         return [*problems, f"{fixture.name}: {e}"]
     try:
-        loaded = arch.load(program)
+        loaded = arch.reference.load(program)
     # Validation, the metadata contract and extern binding each raise their
     # own class; any of them means the recorded program does not load.
     except Exception as e:  # noqa: BLE001

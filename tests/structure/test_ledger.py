@@ -6,7 +6,7 @@ a fixed order: `P4:`, `SpecTec:`, `Lean:`, `Python:`, `Test:`, `Class:`.
 This module checks that shape and that every name an entry cites exists:
 
 - a `Lean:` name is a declaration (`def`, `theorem`, `structure`,
-  `inductive`, `abbrev`, ...) under spec/ir/P4bloIR/, qualified by the
+  `inductive`, `abbrev`, ...) under spec/ir/P4bloIR/ or spec/arch/P4bloArch/, qualified by the
   namespaces it is declared in below `P4bloIR`, so `Installed.lookup`
   resolves only if `lookup` is declared inside `namespace Installed`; a
   `Lean:` line may instead start with `none` and a reason when every
@@ -44,7 +44,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 LEDGER = ROOT / "docs" / "ir-semantics.md"
 CLASS_PIN = ROOT / "tests" / "ledger-classes.json"
-LEAN_DIR = ROOT / "spec" / "ir" / "P4bloIR"
+LEAN_DIRS = (ROOT / "spec/ir/P4bloIR", ROOT / "spec/arch/P4bloArch")
 
 FIELDS = ("P4", "SpecTec", "Lean", "Python", "Test", "Class")
 CLASSES = ("same", "refines undefined", "deviates", "not representable")
@@ -257,10 +257,10 @@ LEAN_END = re.compile(r"^\s*end\b\s*(?P<name>\S*)\s*$")
 
 @cache
 def lean_declarations() -> frozenset[str]:
-    """Every declaration under spec/ir/P4bloIR/, qualified by the namespaces
+    """Every declaration under spec/ir/P4bloIR/ or spec/arch/P4bloArch/, qualified by the namespaces
     it is declared in below `P4bloIR`."""
     declared: set[str] = set()
-    for path in sorted(LEAN_DIR.rglob("*.lean")):
+    for path in sorted(path for directory in LEAN_DIRS for path in directory.rglob("*.lean")):
         text = LEAN_BLOCK_COMMENT.sub("", path.read_text(encoding="utf-8"))
         # Each scope contributes its namespace components, possibly none.
         scopes: list[list[str]] = []
@@ -296,6 +296,8 @@ def test_lean_declarations_are_found() -> None:
     for name in ("evaluate", "Bits.wrap", "Installed.lookup", "Execution.drive", "Value.equal"):
         assert name in declared, f"the scanner lost '{name}'"
     assert "lookup" not in declared, "a namespaced name leaked out of its namespace"
+    assert "P4bloArch.runParser" in declared
+    assert "runParser" not in declared, "architecture names must stay qualified"
 
 
 def test_every_lean_name_is_declared() -> None:
@@ -306,7 +308,9 @@ def test_every_lean_name_is_declared() -> None:
         for name in names_on(e, "Lean")
         if name.removeprefix("P4bloIR.") not in declared
     ]
-    assert not missing, "Lean names declared nowhere under spec/ir/P4bloIR/:\n" + "\n".join(missing)
+    assert not missing, (
+        "Lean names declared nowhere under the specification packages:\n" + "\n".join(missing)
+    )
 
 
 # ---------------------------------------------------------------------------

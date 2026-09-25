@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4bloIR.ExecutionCertificate
 import P4bloArch.Externs
 
@@ -43,7 +44,7 @@ def block : Block := { (default : Block) with
     .callExtern "k" "count" [.expr (.literal (.bits 32 0))] none] }
 
 /-- The real declarations checked by `Index.build` and `P4bloArch.bind`. -/
-def program : Program := { (default : Program) with
+def program : BlockAssembly := { (default : BlockAssembly) with
   name := "execution-certificate",
   externTypes := [
     { name := "register", constructorParams := [{ name := "size", type := .bits 32, direction := .«in» }],

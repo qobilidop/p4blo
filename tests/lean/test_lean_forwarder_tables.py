@@ -19,7 +19,9 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
@@ -126,11 +128,11 @@ def expected_maps(name: str) -> dict[str, Any]:
     }
 
 
-def checked_export(raw: Any) -> tuple[pb.Program, dict[str, dict[str, Any]]]:
+def checked_export(raw: Any) -> tuple[apb.BlockAssembly, dict[str, dict[str, Any]]]:
     assert type(raw) is dict and set(raw) == {"program", "index", "configurations"}
-    program = json_format.ParseDict(raw["program"], pb.Program())
+    program = json_format.ParseDict(raw["program"], apb.BlockAssembly())
     assert_program_identity(program)
-    assert same_json(raw["index"], index_json(ir.Index.build(program))), "complete index"
+    assert same_json(raw["index"], index_json(BoundIndex.build(program))), "complete index"
     assert type(raw["configurations"]) is list and len(raw["configurations"]) == 30
     result: dict[str, dict[str, Any]] = {}
     for record in raw["configurations"]:
@@ -164,12 +166,12 @@ def export(lean_binary: Path) -> dict[str, Any]:
 
 
 @pytest.fixture(scope="module")
-def validated(export: dict[str, Any]) -> tuple[pb.Program, dict[str, dict[str, Any]]]:
+def validated(export: dict[str, Any]) -> tuple[apb.BlockAssembly, dict[str, dict[str, Any]]]:
     return checked_export(export)
 
 
-def observe(program: pb.Program, name: str) -> None:
-    index = ir.Index.build(program)
+def observe(program: apb.BlockAssembly, name: str) -> None:
+    index = BoundIndex.build(program)
     original_index = freeze(index)
     installed = InstalledEntries.build(index, inputs(name))
     assert freeze(index) == original_index, "installer changed source index"
@@ -193,7 +195,7 @@ def observe(program: pb.Program, name: str) -> None:
 
 @pytest.mark.parametrize("name", PROFILES)
 def test_lean_agrees_forwarder_tables(
-    validated: tuple[pb.Program, dict[str, dict[str, Any]]],
+    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
     name: str,
 ) -> None:
     program, snapshots = validated
@@ -251,7 +253,7 @@ def test_lean_agrees_table_snapshot_rejects(export: dict[str, Any], fault: str) 
 
 @pytest.mark.parametrize("fault", ["first", "last", "miss-hit", "default", "mutate", "bool-hit"])
 def test_lean_agrees_lookup_observer_faults(
-    validated: tuple[pb.Program, dict[str, dict[str, Any]]],
+    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
     monkeypatch: pytest.MonkeyPatch,
     fault: str,
 ) -> None:
@@ -279,7 +281,7 @@ def test_lean_agrees_lookup_observer_faults(
     with monkeypatch.context() as patch:
         patch.setattr(InstalledEntries, "lookup", broken)
         if fault == "mutate":
-            weak = InstalledEntries.build(ir.Index.build(program), inputs(name))
+            weak = InstalledEntries.build(BoundIndex.build(program), inputs(name))
             before = freeze(weak)
             answer = weak.lookup(REF, [Bits(32, 0)])
             assert freeze(answer) == freeze(expected(name, 0))
@@ -290,10 +292,10 @@ def test_lean_agrees_lookup_observer_faults(
 
 
 def test_lean_agrees_table_rejections(
-    validated: tuple[pb.Program, dict[str, dict[str, Any]]],
+    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
 ) -> None:
     program, _ = validated
-    index = ir.Index.build(program)
+    index = BoundIndex.build(program)
     for which in ["network", "host"]:
         installed = InstalledEntries.build(index)
         installed.install(REF, entry(which))
@@ -354,7 +356,7 @@ def packet_expected(host: bool = True) -> list[tuple[int, bytes]]:
 
 
 def test_lean_agrees_overlapping_routes_packet(
-    validated: tuple[pb.Program, dict[str, dict[str, Any]]],
+    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
     lean_binary: Path,
 ) -> None:
     """Executable end-to-end anchor, not a newly proved application contract."""
@@ -371,11 +373,11 @@ def test_lean_agrees_overlapping_routes_packet(
         bundle.parent.mkdir(parents=True, exist_ok=True)
         save(report, bundle)
     assert report.passed and report.agreed == 1
-    assert run_python(arch.load(program), packet_case(), 4) == packet_expected()
+    assert run_python(arch.reference.load(program), packet_case(), 4) == packet_expected()
 
 
 def test_lean_agrees_shortest_prefix_fault_replay(
-    validated: tuple[pb.Program, dict[str, dict[str, Any]]],
+    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

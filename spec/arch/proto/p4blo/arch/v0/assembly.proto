@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package p4blo.arch.v0;
+
+import "p4blo/v0/p4blo.proto";
+
+// Optional H/M calling-convention bindings. Role names are chosen by the
+// architecture; there is no fixed number of parsers, controls or deparsers.
+message BlockBindings {
+  string headers = 1;
+  string metadata = 2;
+  repeated Export exports = 3;
+  reserved 100 to 199;
+}
+
+message Export {
+  string role = 1;
+  string block = 2;
+  reserved 100 to 199;
+}
+
+// Compatibility transport for a library plus H/M bindings. The flat field
+// layout preserves existing corpus payloads; this envelope supplies neither
+// execution policy nor extern implementations and is not a complete program.
+message BlockAssembly {
+  string name = 1;
+  repeated string errors = 2;
+  repeated p4blo.v0.HeaderType header_types = 3;
+  repeated p4blo.v0.StructType struct_types = 4;
+  repeated p4blo.v0.EnumType enum_types = 5;
+  repeated p4blo.v0.ExternType extern_types = 6;
+  repeated p4blo.v0.ExternInstance extern_instances = 7;
+  repeated p4blo.v0.Block blocks = 8;
+  string headers = 9;
+  string metadata = 10;
+  repeated Export exports = 11;
+  reserved 100 to 199;
+}

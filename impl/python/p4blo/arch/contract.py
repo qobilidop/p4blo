@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp.values import Bits, ErrorValue, Struct, Value, zero
 from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
@@ -45,25 +47,35 @@ class Contract:
                 return f
         raise KeyError(name)
 
-    def present(self, index: Index) -> set[str]:
+    def present(self, index: Index, metadata: str | None = None) -> set[str]:
         """The contract fields the program's `M` declares."""
-        declared = {f.name for f in index.fields(index.program.metadata)}
+        metadata = _metadata_name(index, metadata)
+        declared = {f.name for f in index.fields(metadata)}
         return {f.name for f in self.fields if f.name in declared}
 
-    def check(self, index: Index) -> None:
+    def check(self, index: Index, metadata: str | None = None) -> None:
         """Raise `ContractError` on a declared contract field of the wrong type."""
-        declared = {f.name: f.type for f in index.fields(index.program.metadata)}
+        metadata = _metadata_name(index, metadata)
+        declared = {f.name: f.type for f in index.fields(metadata)}
         for f in self.fields:
             if f.name in declared and declared[f.name] != f.type:
                 raise ContractError(
-                    f"{index.program.metadata}.{f.name} must be {describe(f.type)}, "
+                    f"{metadata}.{f.name} must be {describe(f.type)}, "
                     f"got {describe(declared[f.name])}"
                 )
 
-    def view(self, index: Index) -> Metadata:
+    def view(self, index: Index, bindings: apb.BlockBindings) -> Metadata:
         """Check the program against the contract and return its view of `M`."""
-        self.check(index)
-        return Metadata(self, index)
+        self.check(index, bindings.metadata)
+        return Metadata(self, index, bindings.metadata)
+
+
+def _metadata_name(index: Index, metadata: str | None) -> str:
+    if metadata is not None:
+        return metadata
+    if isinstance(index, BoundIndex):
+        return index.bindings.metadata
+    raise TypeError("metadata is required for an unbound library index")
 
 
 def describe(type: pb.Type) -> str:
@@ -87,13 +99,12 @@ class Metadata:
     architecture never asks what the program declared.
     """
 
-    def __init__(self, contract: Contract, index: Index) -> None:
+    def __init__(self, contract: Contract, index: Index, metadata: str) -> None:
         self.contract = contract
         self.index = index
-        self.type = pb.Type(struct=index.program.metadata)
+        self.type = pb.Type(struct=metadata)
         self.slots = {
-            name: index.field_index(index.program.metadata, name)
-            for name in contract.present(index)
+            name: index.field_index(metadata, name) for name in contract.present(index, metadata)
         }
 
     def zero(self) -> Struct:

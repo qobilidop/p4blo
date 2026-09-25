@@ -20,17 +20,18 @@ import sys
 from pathlib import Path
 from typing import Literal, NotRequired, TypedDict
 
-from p4blo import ir
-from p4blo.arch.externs import default_registry
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.externs import supplied_registry
 from p4blo.arch.externs.counter import Counter
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.run import default_lean_binary
 from p4blo.interp.api import InterpError
 from p4blo.interp.env import Env
 from p4blo.interp.errors import ParseError
 from p4blo.interp.stmt import execute
 from p4blo.interp.values import Bits
-from p4blo.v0 import p4blo_pb2 as pb
 
 FORMAT = "p4blo.example-certificate"
 EXAMPLE = "register-counter-v1"
@@ -233,14 +234,14 @@ def _object(output: str, mode: str) -> dict[str, object]:
 
 def export_example_program(
     *, lean_binary: str | Path | None = None, timeout: float = DEFAULT_TIMEOUT
-) -> pb.Program:
+) -> apb.BlockAssembly:
     """Fetch and decode the exact AST exported by the fixed Lean example."""
     code, output = _invoke(lean_binary, "certificate-example-program", timeout=timeout)
     if code != 0:
         raise CertificateError(f"Lean program export exited {code}")
     _object(output, "certificate-example-program")
     try:
-        return ir.load_json(output)
+        return arch_wire.load_json(output)
     except (ValueError, TypeError) as error:
         raise CertificateError(f"Lean program export is not a Program: {error}") from error
 
@@ -264,11 +265,11 @@ def _observed_bits(value: Bits) -> list[object]:
     return [value.width, hex(value.value)]
 
 
-def _observe(program: pb.Program, register_value: int, counter_value: int) -> Claim:
+def _observe(program: apb.BlockAssembly, register_value: int, counter_value: int) -> Claim:
     """Execute the imported AST with the real Python statement interpreter."""
-    index = ir.Index.build(program)
+    index = BoundIndex.build(program)
     block = index.blocks["C"]
-    externs = default_registry().bind(index)
+    externs = supplied_registry().bind(index)
     register = externs["r"]
     counter = externs["k"]
     if not isinstance(register, Register) or not isinstance(counter, Counter):
@@ -327,7 +328,7 @@ def create_example_certificate(
     counter = _natural(counter, "counter")
     fuel = _natural(fuel, "fuel")
     program = export_example_program(lean_binary=lean_binary, timeout=timeout)
-    raw_program = _object(ir.dump_json(program), "program encoding")
+    raw_program = _object(arch_wire.dump_json(program), "program encoding")
     return {
         "format": FORMAT,
         "version": VERSION,

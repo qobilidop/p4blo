@@ -37,12 +37,15 @@ from unittest import mock
 
 import pytest
 
-from p4blo import arch, interp, ir, stf
-from p4blo.arch import spectec_block
+from p4blo import arch, ir, stf
+from p4blo.arch import entry, spectec_block
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex, assembly_of
+from p4blo.arch.entry import deparser as interp_deparser
 from p4blo.arch.externs.crc import CRC, crc32
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.state import snapshot
 from p4blo.interp import ExternResult, Externs, stmt
-from p4blo.interp import deparser as interp_deparser
 from p4blo.interp.expr import zero_header
 from p4blo.interp.packet import Emitter
 from p4blo.interp.values import Bits, Header, Stack, Struct, Value, copy, zero
@@ -58,7 +61,7 @@ PROGRAMS = sorted({program_of(v) for v in VECTORS})
 
 
 def load(path: Path) -> arch.Loaded:
-    return arch.load(ir.load_text(path.read_text()))
+    return arch.reference.load(arch_wire.load_text(path.read_text()))
 
 
 @pytest.fixture(scope="module")
@@ -84,18 +87,20 @@ def runner() -> Iterator[oracle_block.BlockRunner]:
 @pytest.mark.parametrize("path", PROGRAMS, ids=lambda p: p.parent.name)
 def test_block_printer_has_no_shim(path: Path) -> None:
     loaded = load(path)
-    text = spectec_block.print_program(loaded.index.program, index=loaded.index)
+    text = spectec_block.print_program(
+        assembly_of(loaded.index.program, loaded.index.bindings), index=loaded.index
+    )
     assert "#include <p4blo.p4>" in text
     assert "v1model" not in text
     assert "standard_metadata" not in text
-    parts = [loaded.block(role) for role in arch.ROLES]
+    parts = [loaded.block(role) for role in arch.reference.ROLES]
     assert text.rstrip().endswith(f"P4blo({', '.join(f'{p}()' for p in parts)}) main;")
 
 
 def test_block_printer_supplies_missing_roles() -> None:
     loaded = load(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
-    program = pb.Program()
-    program.CopyFrom(loaded.index.program)
+    program = apb.BlockAssembly()
+    program.CopyFrom(assembly_of(loaded.index.program, loaded.index.bindings))
     # Export only the control, and free the names the printer gives the
     # blocks it supplies.
     for block in program.blocks:
@@ -111,8 +116,8 @@ def test_block_printer_supplies_missing_roles() -> None:
 
 def test_block_printer_refuses_a_declared_name() -> None:
     loaded = load(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
-    program = pb.Program()
-    program.CopyFrom(loaded.index.program)
+    program = apb.BlockAssembly()
+    program.CopyFrom(assembly_of(loaded.index.program, loaded.index.bindings))
     program.struct_types[0].name = "P4blo"
     with pytest.raises(spectec_block.PrintError, match="P4blo"):
         spectec_block.print_program(program)
@@ -129,7 +134,7 @@ def test_include_declares_what_the_printer_assumes() -> None:
 @pytest.mark.parametrize("path", PROGRAMS, ids=lambda p: p.parent.name)
 def test_values_roundtrip_through_json(path: Path) -> None:
     index = load(path).index
-    for type_ in (pb.Type(struct=index.program.headers), pb.Type(struct=index.program.metadata)):
+    for type_ in (pb.Type(struct=index.bindings.headers), pb.Type(struct=index.bindings.metadata)):
         value = zero(type_, index)
         _set_everything_valid(value)
         encoded = oracle_block.to_json(value, index)
@@ -164,15 +169,16 @@ def test_from_json_refuses_a_foreign_shape() -> None:
 def _with_second_block_declaring(table: str) -> tuple[ir.Index, pb.Entries]:
     """The forwarder with an unexported control that declares a table of the
     same name as the ingress's, and one entry for the ingress's."""
-    program = pb.Program()
-    program.CopyFrom(load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index.program)
+    program = apb.BlockAssembly()
+    original = load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index
+    program.CopyFrom(assembly_of(original.program, original.bindings))
     ingress = next(b for b in program.blocks if b.name == "MyIngress")
     original = next(t for t in ingress.tables if t.name == table)
     other = program.blocks.add(name="Other", kind=pb.BLOCK_KIND_CONTROL)
     other.params.extend(ingress.params)
     other.actions.extend(a for a in ingress.actions if a.name in original.actions)
     other.tables.add().CopyFrom(original)
-    return ir.Index.build(program), _entries_for("MyIngress", table)
+    return BoundIndex.build(program), _entries_for("MyIngress", table)
 
 
 def _entries_for(block: str, table: str) -> pb.Entries:
@@ -195,12 +201,13 @@ def test_entries_for_a_table_two_blocks_declare_are_refused() -> None:
 def test_entries_for_a_valid_key_name_are_refused() -> None:
     # V1Model's STF runner rewrites `$valid$` in a key name to `isValid()`;
     # this architecture does not, so such a key would match differently.
-    program = pb.Program()
-    program.CopyFrom(load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index.program)
+    program = apb.BlockAssembly()
+    original = load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index
+    program.CopyFrom(assembly_of(original.program, original.bindings))
     ingress = next(b for b in program.blocks if b.name == "MyIngress")
     table = ingress.tables[0]
     table.keys[0].name = "hdr.ipv4.$valid$"
-    index = ir.Index.build(program)
+    index = BoundIndex.build(program)
     entries = _entries_for("MyIngress", table.name)
     with pytest.raises(oracle_block.BlockError, match=r"\$valid\$"):
         oracle_block.entries_to_stf(index, entries)
@@ -257,7 +264,7 @@ def _stacks_control_request(runner: oracle_block.BlockRunner, change: Any) -> di
     """A control request on the stacks program whose headers `change` edits."""
     loaded = load(ROOT / "tests/corpus/stacks/stacks.txtpb")
     index = loaded.index
-    headers = oracle_block.to_json(zero(pb.Type(struct=index.program.headers), index), index)
+    headers = oracle_block.to_json(zero(pb.Type(struct=index.bindings.headers), index), index)
     change(headers["struct"]["fields"])
     return {
         "program": str(runner.program_path(index)),
@@ -542,7 +549,7 @@ def run_deparser(
     index: ir.Index, block: str, headers: Struct, externs: Externs
 ) -> tuple[bytes, int]:
     """The reference deparser's bytes and the exact number of bits it
-    emitted, which `interp.run_deparser` pads away; read from its emitter."""
+    emitted, which `entry.run_deparser` pads away; read from its emitter."""
     made: list[Emitter] = []
 
     class Counted(Emitter):
@@ -553,7 +560,7 @@ def run_deparser(
             made.append(self)
 
     with mock.patch.object(interp_deparser, "Emitter", Counted):
-        emitted = interp.run_deparser(index, block, headers, externs)
+        emitted = entry.run_deparser(index, block, headers, externs)
     (emitter,) = made
     return emitted, emitter.width
 
@@ -594,7 +601,7 @@ def _compare(runner: oracle_block.BlockRunner, vector: Path, loaded: arch.Loaded
         # The parser, on zero metadata with the ingress port.
         m = meta.zero()
         meta.write(m, "ingress_port", statement.port)
-        parsed = interp.run_parser(index, loaded.block("parser"), statement.data, m, externs)
+        parsed = entry.run_parser(index, loaded.block("parser"), statement.data, m, externs)
         spec = runner.run_block(
             index,
             "parser",
@@ -616,7 +623,7 @@ def _compare(runner: oracle_block.BlockRunner, vector: Path, loaded: arch.Loaded
         m = copy(parsed.metadata)
         assert isinstance(m, Struct)
         meta.write(m, "parser_error", parsed.error)
-        headers, m_out = interp.run_control(
+        headers, m_out = entry.run_control(
             index, loaded.block("control"), parsed.headers, m, tables, externs
         )
         spec = runner.run_block(

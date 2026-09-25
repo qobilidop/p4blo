@@ -1,10 +1,11 @@
+import P4bloArch.Assembly
 import P4bloArchTest.Check
 import P4bloArch.CertificateWire
 
-open P4bloIR
+open P4bloArch P4bloIR
 
 private def certificateArtifact (seed : String) (fuel : Nat) (cell : String)
-    (program : Program := P4bloArch.Certificate.Example.program) : Lean.Json :=
+    (program : BlockAssembly := P4bloArch.Certificate.Example.program) : Lean.Json :=
   Lean.Json.mkObj [
     ("format", .str "p4blo.example-certificate"), ("version", Lean.toJson (1 : Nat)),
     ("example", .str "register-counter-v1"), ("program", Lean.toJson program),

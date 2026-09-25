@@ -20,7 +20,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Outputs, case_to_stf
 from p4blo.drt.coverage import rule_inventory
 from p4blo.drt.replay import save as save_replay
@@ -83,7 +84,7 @@ def show(report: Report, program_dir: Path, limit: int, save: Path | None) -> No
         print(f"# complete stateful replay: python -m p4blo.drt.replay {bundle}")
     if not report.divergences:
         return
-    index = ir.Index.build(ir.load_text(program_dir / f"{program_dir.name}.txtpb"))
+    index = BoundIndex.build(arch_wire.load_text(program_dir / f"{program_dir.name}.txtpb"))
     for d in report.divergences[:limit]:
         comments = {"python": comment(d.python), "lean": comment(d.lean)}
         header = (
