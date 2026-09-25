@@ -533,3 +533,79 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.Validity.check_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.Validity.check_sound
+
+/-- info: 'P4bloIR.Validity.evaluate_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.evaluate_ok
+
+/-- info: 'P4bloIR.Validity.readLValue_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.readLValue_ok
+
+/-- info: 'P4bloIR.Validity.writeLValue_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.writeLValue_ok
+
+/-- info: 'P4bloIR.Validity.resolveLValue_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.resolveLValue_ok
+
+/-- info: 'P4bloIR.Validity.copyIn_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.copyIn_ok
+
+/-- info: 'P4bloIR.Validity.copyBack_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.copyBack_ok
+
+/-- info: 'P4bloIR.Validity.forBlock_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.forBlock_ok
+
+/-- info: 'P4bloIR.Validity.callExtern_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.callExtern_ok
+
+/-- info: 'P4bloIR.Validity.extract_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.extract_ok
+
+/-- info: 'P4bloIR.Validity.emitValue_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.emitValue_ok
+
+/-- info: 'P4bloIR.Validity.select_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.select_ok
+
+/-- info: 'P4bloIR.Validity.dispatch_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.dispatch_ok
+
+/-- info: 'P4bloIR.Validity.blockReturn_unwind' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.blockReturn_unwind
+
+/-- info: 'P4bloIR.Validity.progress' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.progress
+
+/-- info: 'P4bloIR.Validity.Steps.machineOk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Steps.machineOk
+
+/-- info: 'P4bloIR.Validity.finishes_documented' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.finishes_documented
+
+/-- info: 'P4bloIR.Validity.drive_documented' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.drive_documented
+
+/-- info: 'P4bloIR.Validity.initial_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.initial_ok
+
+/-- info: 'P4bloIR.Validity.entryFrame_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.entryFrame_ok

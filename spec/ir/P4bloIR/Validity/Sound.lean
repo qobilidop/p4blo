@@ -213,7 +213,7 @@ theorem checkExpr_ok (h : checkExpr c path e = .ok t) : ExprTyped c e t := by
     simp only [checkExpr, bind_ok, ensure_ok, pure_ok] at h
     obtain ⟨_, hk, _, hty, _, hkind, rfl⟩ := h
     refine .lookahead (by simpa using hk) (checkType_ok hty) ?_
-    cases ty <;> simp_all [isBits, isBoolean, isHeader]
+    cases ty <;> simp_all [isBits, isBoolean, isHeader, readable]
 
 theorem checkLValue_ok (h : checkLValue c path lv = .ok t) : LValueTyped c lv t := by
   induction lv generalizing path t with

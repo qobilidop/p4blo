@@ -190,6 +190,11 @@ def castOk : Ty → Ty → Bool
   | .bits 1, .boolean => true
   | _, _ => false
 
+/-- What `lookahead` reads: bits, a boolean or a header. -/
+def readable : Ty → Bool
+  | .bits _ | .boolean | .header _ => true
+  | _ => false
+
 /-- Expression typing (validator, `type_of`). -/
 inductive ExprTyped (c : Ctx) : Expr → Ty → Prop
   | literal : LitTyped c.index lit t → ExprTyped c (.literal lit) t
@@ -212,8 +217,8 @@ inductive ExprTyped (c : Ctx) : Expr → Ty → Prop
   | isValid : ExprTyped c h (.header n) → ExprTyped c (.isValid h) .boolean
   | mux : ExprTyped c cnd .boolean → ExprTyped c a t → ExprTyped c b t →
       ExprTyped c (.mux cnd a b) t
-  | lookahead : c.kind = .parser → TyOk c.index ty →
-      (ty matches .bits _ | .boolean | .header _) → ExprTyped c (.lookahead ty) ty
+  | lookahead : c.kind = .parser → TyOk c.index ty → readable ty = true →
+      ExprTyped c (.lookahead ty) ty
 
 /-- Lvalue typing (validator, `type_of_lvalue`): the root is writable, and
 `stack.next` is no general lvalue. -/
