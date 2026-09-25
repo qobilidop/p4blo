@@ -241,6 +241,47 @@ def test_the_table_mask_control_model_reproduces_python(
     assert not generated.explained_by_table_mask(unused, program, unused, case, unused)
 
 
+def exact_where_masked(kv: pb.KeyValue, key: Any) -> bool:
+    """A ternary matching bug that fires only where the mask differs from
+    the value, as a mutant of `tables.key_value_matches`: the key must then
+    equal the value. The table-mask model writes every mask equal to its
+    value, so the bug never runs there."""
+    if kv.WhichOneof("kind") == "ternary" and int(kv.ternary.mask) != int(kv.ternary.value):
+        return key.value == int(kv.ternary.value)
+    return RIGHT_KEY_VALUE_MATCHES(kv, key)
+
+
+RIGHT_KEY_VALUE_MATCHES = tables.key_value_matches
+# Corpus-family seeds (tests/corpus/acl) whose outputs `exact_where_masked`
+# changes on cases the control model reproduces; found by an offline search
+# of seeds below 4000.
+MASK_BUG_SEEDS = (605, 845, 1205)
+
+
+def test_the_table_mask_defect_must_change_a_winner(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Seed 5's diagnosed case is one where the defect's key sets change
+    which entry wins; the other cases of the same seeds are not. A Python
+    matcher that disagrees with the standalone winner is refused even where
+    the control model, which runs through that matcher, agrees."""
+    known = generated.materialize(5)
+    assert [generated.table_mask_changes_a_winner(known.program, c) for c in known.cases] == [
+        False,
+        False,
+        True,
+        False,
+    ]
+    monkeypatch.setattr(tables, "key_value_matches", exact_where_masked)
+    unused = cast(Any, None)
+    for seed in MASK_BUG_SEEDS:
+        seeded = generated.materialize(seed)
+        for case in seeded.cases:
+            assert generated.table_mask_control_agrees(seeded.program, case)
+            assert not generated.table_mask_changes_a_winner(seeded.program, case)
+            assert not generated.explained_by_table_mask(
+                unused, seeded.program, unused, case, unused
+            )
+
+
 # ---------------------------------------------------------------------------
 # The oracle
 # ---------------------------------------------------------------------------
@@ -325,5 +366,18 @@ def test_a_wrong_longest_prefix_rule_is_a_failure_not_a_known_defect(
     monkeypatch.setattr(tables, "beats", shortest_prefix_wins)
     probe = generated.Generated(0, "probe", "shortest prefix wins", program, (case,))
     result = generated.run_generated(oracle, probe, tmp_path)
+    assert result.modelled == {}
+    assert result.status == "fail", result.report()
+
+
+@pytest.mark.parametrize("seed", MASK_BUG_SEEDS)
+def test_a_matching_bug_on_real_masks_is_a_failure_not_a_known_defect(
+    oracle: oracle_run.Oracle, seed: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A Python that matches wrongly only where a mask differs from its
+    value disagrees with the oracle, and the table-mask classifier, whose
+    model never has such a mask, must not explain that away."""
+    monkeypatch.setattr(tables, "key_value_matches", exact_where_masked)
+    result = generated.run_seed(oracle, seed, tmp_path)
     assert result.modelled == {}
     assert result.status == "fail", result.report()

@@ -42,7 +42,8 @@ import shlex
 import sys
 import time
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -75,7 +76,8 @@ from p4blo.drt.stateful_programs import (  # noqa: E402
 )
 from p4blo.drt.stateful_programs import WIDTHS as STATEFUL_WIDTHS  # noqa: E402
 from p4blo.drt.stateful_programs import packet as stateful_packet  # noqa: E402
-from p4blo.interp.tables import InstalledEntries  # noqa: E402
+from p4blo.interp.tables import InstalledEntries, Match, TableRef  # noqa: E402
+from p4blo.interp.values import Bits  # noqa: E402
 from p4blo.v0 import p4blo_pb2 as pb  # noqa: E402
 from tests.oracle import run as oracle_run  # noqa: E402
 
@@ -509,6 +511,156 @@ def table_mask_control_agrees(program: pb.Program, case: Case) -> bool:
     return True
 
 
+@dataclass(frozen=True)
+class Lookup:
+    """One table lookup of a Python run: the table, its installed entries
+    (const entries first, in installation order), the key values and what
+    Python's matcher chose."""
+
+    table: pb.Table
+    entries: tuple[pb.Entry, ...]
+    keys: tuple[Bits, ...]
+    chosen: Match
+
+
+@contextmanager
+def recording_lookups() -> Iterator[list[Lookup]]:
+    """Record every table lookup made inside the block. The lookup itself
+    still runs through the interpreter, so what it chose is recorded as it
+    was, right or wrong."""
+    lookups: list[Lookup] = []
+    lookup = InstalledEntries.lookup
+
+    def recorded(self: InstalledEntries, table: TableRef, keys: list[Bits]) -> Match:
+        chosen = lookup(self, table, keys)
+        entries = tuple(self.entries[table])
+        lookups.append(Lookup(self.table(table), entries, tuple(keys), chosen))
+        return chosen
+
+    InstalledEntries.lookup = recorded  # type: ignore[method-assign]
+    try:
+        yield lookups
+    finally:
+        InstalledEntries.lookup = lookup  # type: ignore[method-assign]
+
+
+# A winner as far as the packet can tell: whether an entry hit, and the
+# action call it chose. Two entries with the same call are the same winner.
+type Winner = tuple[bool, bytes]
+
+
+def _winner(entry: pb.Entry | None) -> Winner:
+    return (False, b"") if entry is None else (True, entry.action.SerializeToString())
+
+
+def _prefix_mask(width: int, length: int) -> int:
+    return ((1 << width) - 1) ^ ((1 << (width - length)) - 1)
+
+
+def real_winner(lookup: Lookup) -> Winner:
+    """The entry docs/ir-semantics.md, "Tables", says wins, computed here
+    from the entries and key values alone: exact equality, prefix equality
+    and equality under the mask; the largest priority in a table with a
+    ternary key, the longest prefix otherwise, the first installed on a
+    tie."""
+    ternary = any(k.match_kind == pb.MATCH_KIND_TERNARY for k in lookup.table.keys)
+    best: pb.Entry | None = None
+    best_rank = 0
+    for entry in lookup.entries:
+        rank = 0
+        for kv, key in zip(entry.keys, lookup.keys, strict=True):
+            match kv.WhichOneof("kind"):
+                case "exact":
+                    mask, base = (1 << key.width) - 1, int(kv.exact)
+                case "lpm":
+                    mask = _prefix_mask(key.width, kv.lpm.prefix_len)
+                    base = int(kv.lpm.value)
+                    rank += kv.lpm.prefix_len
+                case _:
+                    mask, base = int(kv.ternary.mask), int(kv.ternary.value)
+            if key.value & mask != base & mask:
+                break
+        else:
+            rank = entry.priority if ternary else rank
+            if best is None or rank > best_rank:
+                best, best_rank = entry, rank
+    return _winner(best)
+
+
+def defect_winner(lookup: Lookup, *, reverse: bool) -> Winner | None:
+    """The entry the simulator's table-mask defect makes win, computed from
+    the entries and key values alone, as `table_mask_model` describes it: a
+    host entry's ternary or lpm key matches every key with the base's bits
+    set, const entries keep their key sets, an lpm-only table orders by
+    prefix length and any other by priority, and ties go by position,
+    backwards when `reverse`. None where the model does not apply."""
+    kinds = {k.match_kind for k in lookup.table.keys}
+    if not kinds & {pb.MATCH_KIND_LPM, pb.MATCH_KIND_TERNARY}:
+        return real_winner(lookup)
+    lpm_only = pb.MATCH_KIND_TERNARY not in kinds
+    consts = len(lookup.table.const_entries)
+    if lpm_only and consts:
+        return None
+    best: pb.Entry | None = None
+    best_order = (0, 0)
+    count = len(lookup.entries)
+    for position, entry in enumerate(lookup.entries):
+        prefix: int | None = None
+        for kv, key in zip(entry.keys, lookup.keys, strict=True):
+            match kv.WhichOneof("kind"):
+                case "exact":
+                    matched = key.value == int(kv.exact)
+                case "lpm":
+                    base = int(kv.lpm.value) & _prefix_mask(key.width, kv.lpm.prefix_len)
+                    prefix = kv.lpm.prefix_len if prefix is None else prefix
+                    matched = key.value & base == base
+                case _:
+                    mask, value = int(kv.ternary.mask), int(kv.ternary.value)
+                    if position < consts:
+                        matched = key.value & mask == value & mask
+                    else:
+                        matched = key.value & (value & mask) == value & mask
+            if not matched:
+                break
+        else:
+            priority = prefix if lpm_only and prefix is not None else entry.priority
+            order = (priority, count - 1 - position if reverse else position)
+            if best is None or order > best_order:
+                best, best_order = entry, order
+    return _winner(best)
+
+
+def table_mask_changes_a_winner(program: pb.Program, case: Case) -> bool:
+    """Whether the table-mask defect changes which entry wins some lookup
+    of the case, established without the interpreter's matcher.
+
+    Python runs the case once, and every lookup is recorded with its key
+    values. Each lookup's winner is then computed twice from the entries and
+    keys directly: under the real key sets and under the defect's. Python's
+    own choice must be the real winner at every lookup; otherwise Python's
+    table code is in question, whatever the model says. And some lookup's
+    winner must differ under the defect's key sets in both tie orders;
+    otherwise the defect cannot explain a different output. The model, run
+    through the same matcher that is under test, cannot establish either:
+    a bug that fires only where a mask differs from its value never runs on
+    a model whose masks equal their values.
+    """
+    with recording_lookups() as lookups:
+        python_outcome(arch.load(program), case, SWITCH_PORTS)
+    changed = False
+    for lookup in lookups:
+        real = real_winner(lookup)
+        if lookup.chosen.hit != real[0] or (
+            real[0] and lookup.chosen.action.SerializeToString() != real[1]  # type: ignore[union-attr]
+        ):
+            return False
+        defects = [defect_winner(lookup, reverse=reverse) for reverse in (False, True)]
+        if None in defects:
+            return False
+        changed = changed or all(d != real for d in defects)
+    return changed
+
+
 def explained_by_table_mask(
     oracle: oracle_run.Oracle,
     program: pb.Program,
@@ -529,8 +681,13 @@ def explained_by_table_mask(
     like the simulator's defect. So the control model, the same rewrite and
     ranking with the real masks, must first reproduce Python's real outputs
     under both tie orders; if it does not, Python's own table code is in
-    question and the failure stays a failure.
+    question and the failure stays a failure. The control model is itself
+    run through Python's matcher, so it cannot tell a matching bug that
+    fires only on real masks, which it keeps, from none at all; hence
+    `table_mask_changes_a_winner` first, which does not use the matcher.
     """
+    if not table_mask_changes_a_winner(program, case):
+        return False
     if not table_mask_control_agrees(program, case):
         return False
     outcomes: list[Outcome] = []

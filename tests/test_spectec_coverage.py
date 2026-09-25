@@ -46,6 +46,12 @@ MERGED = {
     ("rule", "Callee_eval/abort", "8-dynamic/8.10.1-eval-call-callee.watsup", 255),
     ("rule", "Callee_eval/abort", "8-dynamic/8.10.1-eval-call-callee.watsup", 303),
 }
+# The most exclusions of category `unhit`: in-scope rules the pinned
+# simulator runs that no input yet reaches. Lower it as they are reached;
+# it may only shrink, so that a newly unhit rule cannot be absorbed by
+# adding an exclusion (the Lean side's tests/drt-unhit-tags.json is held
+# the same way).
+UNHIT_CEILING = 2
 # How a reach text would admit that nothing reaches the item.
 UNREACHABLE = re.compile(r"\b(not reachable|unreachable|cannot be reached|never reached)\b", re.I)
 Key = tuple[str, str, str, int]
@@ -146,6 +152,14 @@ def test_exclusions_are_well_formed() -> None:
                 f"{where}: an unhit item must be reachable, but its reach says it is not"
             )
     assert not problems, "\n".join(problems)
+
+
+def test_the_unhit_exclusions_only_shrink() -> None:
+    unhit = [e for e in load(EXCLUSIONS)["exclusions"] if e["category"] == "unhit"]
+    assert len(unhit) <= UNHIT_CEILING, (
+        f"{len(unhit)} unhit exclusions, over the ceiling of {UNHIT_CEILING}; the list may "
+        "only shrink: reach the new rules instead of excluding them"
+    )
 
 
 def test_every_in_scope_rule_has_its_own_leaf() -> None:

@@ -18,20 +18,31 @@ How choices are biased. A decision point's options are weighted, and an
 option's weight is
 
     1 + TARGET_BONUS  if a tag the option aims at (`families.TARGETS`) is unhit
-      + NOVELTY_BONUS * (new tags and pairs per use, over its recent uses)
 
-The first term steers toward the rules nobody has reached yet, as long as
-they stay unhit; the second rewards the options that keep finding new
-contexts for known rules, and fades as they stop doing so, because each
-use's gain is averaged with a decay. Numbers (`integer`) are not weighted.
-Everything is a function of the seed: sample `i` draws from
-`random.Random(f"{seed}/{i}")`, and the guide changes only through the
+which steers toward the rules nobody has reached yet, as long as they stay
+unhit; once every target is hit, choices are uniform. Numbers (`integer`)
+are not weighted. Everything is a function of the seed: sample `i` draws
+from `random.Random(f"{seed}/{i}")`, and the guide changes only through the
 replies, which are deterministic, so a seed names a campaign exactly.
 `--unguided` draws the same way with uniform weights, as the baseline the
 guidance is measured against.
 
+What it is worth. `tests/drt-guided-measurement.json` records, for both
+families over sixteen seeds of 200 programs, guided against uniform: the
+programs until every target tag that all runs reach is hit, the program
+of the last first-hit of any tag, and the tags and pairs reached. Its
+`summary` is the evidence for any claim about the guidance, and
+`python -m p4blo.drt guided measure` regenerates it. The pairs are
+measured, not steered toward. An earlier weighting also added
+`NOVELTY_BONUS * min(gain, 4) / 4` with `NOVELTY_BONUS` 2, where `gain` was
+a decayed average (0.8) of the new tags and pairs per sample that took the
+option. On 32 seeds it reached the targets later than the target term
+alone, in both families, and did not reach more pairs, so it was removed.
+
     python -m p4blo.drt guided <family> <budget> [--seed N] [--profile lean|spectec]
         [--lean PATH | --fake] [--unguided] [--save DIR] [--show-pairs]
+    python -m p4blo.drt guided measure [--seeds A:B] [--budget N] [--jobs N]
+        [--lean PATH] [--out FILE]
 
 Every sample must agree; a disagreement is printed with the path of its
 replay bundle (`python -m p4blo.drt.replay`), and the exit status is 1.
@@ -41,11 +52,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import random
+import statistics
 import sys
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from p4blo.drt.choice import Chooser
 from p4blo.drt.coverage import RuleCoverage, rule_inventory
@@ -53,63 +68,34 @@ from p4blo.drt.families import FAMILIES, TARGETS, Profile, Sample
 from p4blo.drt.replay import save as save_replay
 from p4blo.drt.run import ProtocolError, Report, compare_program, default_lean_binary
 
-__all__ = ["Guide", "GuidedChooser", "GuidedResult", "guided_campaign", "main"]
+__all__ = ["Guide", "GuidedChooser", "GuidedResult", "guided_campaign", "main", "measure"]
 
 TARGET_BONUS = 4.0
-NOVELTY_BONUS = 2.0
-# How much of an option's past average gain survives each new use.
-DECAY = 0.8
 PORTS = 4
 
 
 @dataclass
-class Arm:
-    """What choosing one option has yielded: a decayed average of the new
-    tags and pairs per sample that took it."""
-
-    uses: int = 0
-    gain: float = 0.0
-
-    def record(self, new: int) -> None:
-        self.uses += 1
-        self.gain = new if self.uses == 1 else DECAY * self.gain + (1 - DECAY) * new
-
-
-@dataclass
 class Guide:
-    """The campaign's knowledge: tags and pairs hit, and per-option arms."""
+    """The campaign's knowledge: the tags and the (tag, feature) pairs hit."""
 
     inventory: Mapping[str, str]
     targets: Mapping[str, Sequence[str]] = field(default_factory=lambda: TARGETS)
     tags: set[str] = field(default_factory=set)
     pairs: set[tuple[str, str]] = field(default_factory=set)
-    arms: dict[str, Arm] = field(default_factory=dict)
 
     def weight(self, feature: str) -> float:
         weight = 1.0
         if any(t in self.inventory and t not in self.tags for t in self.targets.get(feature, ())):
             weight += TARGET_BONUS
-        arm = self.arms.get(feature)
-        if arm is not None and arm.uses:
-            weight += NOVELTY_BONUS * min(arm.gain, 4.0) / 4.0
         return weight
 
     def observe(self, features: frozenset[str], tags: Sequence[str] | set[str]) -> tuple[int, int]:
         """Record one sample's tags; the number of new tags and new pairs."""
         new_tags = set(tags) - self.tags
         self.tags |= new_tags
-        gains: dict[str, int] = {f: len(new_tags) for f in features}
-        new_pairs = 0
-        for tag in tags:
-            for feature in features:
-                pair = (tag, feature)
-                if pair not in self.pairs:
-                    self.pairs.add(pair)
-                    gains[feature] += 1
-                    new_pairs += 1
-        for feature, gain in gains.items():
-            self.arms.setdefault(feature, Arm()).record(gain)
-        return len(new_tags), new_pairs
+        new_pairs = {(tag, feature) for tag in tags for feature in features} - self.pairs
+        self.pairs |= new_pairs
+        return len(new_tags), len(new_pairs)
 
 
 class GuidedChooser(Chooser):
@@ -204,7 +190,130 @@ def guided_campaign(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Measurement: guided against uniform
+# ---------------------------------------------------------------------------
+
+ARMS = {"guided": True, "uniform": False}
+MEASURED_FAMILIES = ("control", "parser")
+
+
+def measured_run(
+    family: str, seed: int, arm: str, budget: int, lean: Sequence[str | Path]
+) -> dict[str, Any]:
+    """One campaign's row: the tags and pairs it reached, the program of its
+    last first-hit, and the program at which each target tag was first hit."""
+    inventory = rule_inventory(lean)
+    result = guided_campaign(
+        family, lean, seed=seed, budget=budget, inventory=inventory, guided=ARMS[arm]
+    )
+    assert result.guide is not None
+    if result.failures:
+        raise AssertionError(f"{family} seed {seed} {arm}: a program disagreed")
+    targets = {t for tags in TARGETS.values() for t in tags} & set(inventory)
+    first = {tag: number for number, tag in result.first_hits}
+    return {
+        "family": family,
+        "seed": seed,
+        "arm": arm,
+        "tags": len(result.guide.tags & set(inventory)),
+        "pairs": len(result.guide.pairs),
+        "last_new_tag": max(first.values(), default=None),
+        "target_first_hits": {t: first[t] for t in sorted(targets) if t in first},
+    }
+
+
+def _measured_run(args: tuple[str, int, str, int, Sequence[str | Path]]) -> dict[str, Any]:
+    return measured_run(*args)
+
+
+def summarize(runs: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """Per family and arm, from the rows alone. The common targets are the
+    target tags every run of the family hit, guided or not; `to_targets` is
+    the program at which a run has hit them all, so every run is timed on
+    the same set."""
+    summary: dict[str, Any] = {}
+    for family in sorted({r["family"] for r in runs}):
+        rows = [r for r in runs if r["family"] == family]
+        common = set.intersection(*(set(r["target_first_hits"]) for r in rows))
+        arms: dict[str, Any] = {}
+        for arm in ARMS:
+            mine = sorted((r for r in rows if r["arm"] == arm), key=lambda r: r["seed"])
+            if not mine:
+                continue
+            columns = {
+                "to_targets": [max(r["target_first_hits"][t] for t in common) for r in mine],
+                "last_new_tag": [r["last_new_tag"] for r in mine],
+                "tags": [r["tags"] for r in mine],
+                "pairs": [r["pairs"] for r in mine],
+            }
+            arms[arm] = {
+                name: {
+                    "mean": round(statistics.mean(values), 1),
+                    "median": statistics.median(values),
+                    "per_seed": values,
+                }
+                for name, values in columns.items()
+            }
+        summary[family] = {"common_targets": len(common), "arms": arms}
+    return summary
+
+
+def measure(
+    lean: Sequence[str | Path],
+    *,
+    seeds: Sequence[int],
+    budget: int,
+    families: Sequence[str] = MEASURED_FAMILIES,
+    jobs: int = 1,
+) -> dict[str, Any]:
+    """Guided and uniform campaigns of every family and seed, as the
+    document `tests/drt-guided-measurement.json` holds."""
+    work = [(f, s, arm, budget, lean) for f in families for s in seeds for arm in ARMS]
+    if jobs > 1:
+        with ProcessPoolExecutor(jobs) as pool:
+            runs = list(pool.map(_measured_run, work))
+    else:
+        runs = [_measured_run(w) for w in work]
+    return {
+        "command": "python -m p4blo.drt guided measure",
+        "budget": budget,
+        "seeds": list(seeds),
+        "target_bonus": TARGET_BONUS,
+        "summary": summarize(runs),
+        "runs": runs,
+    }
+
+
+def render(document: Mapping[str, Any]) -> str:
+    return json.dumps(document, indent=1, sort_keys=True) + "\n"
+
+
+def measure_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m p4blo.drt guided measure",
+        description="guided against uniform campaigns, as tests/drt-guided-measurement.json",
+    )
+    parser.add_argument("--seeds", default="1:17", help="`A:B`, half-open")
+    parser.add_argument("--budget", type=int, default=200)
+    parser.add_argument("--jobs", type=int, default=1, help="campaigns run at once")
+    parser.add_argument("--lean", type=Path, default=None, help="the p4blo-lean executable")
+    parser.add_argument("--out", type=Path, default=None, help="write the document here")
+    args = parser.parse_args(argv)
+    start, stop = (int(x) for x in args.seeds.split(":", 1))
+    lean = [args.lean or default_lean_binary()]
+    document = measure(lean, seeds=range(start, stop), budget=args.budget, jobs=args.jobs)
+    text = render(document)
+    if args.out is not None:
+        args.out.write_text(text, encoding="utf-8")
+    print(json.dumps(document["summary"], indent=1))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["measure"]:
+        return measure_main(argv[1:])
     parser = argparse.ArgumentParser(
         prog="python -m p4blo.drt guided",
         description="run a program family against Lean, steered by the rule tags it hits",

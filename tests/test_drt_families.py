@@ -12,6 +12,7 @@ it refuses fails the test, never a filter.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import sys
 from collections.abc import Callable, Sequence
@@ -28,9 +29,11 @@ from p4blo.drt.choice import Chooser
 from p4blo.drt.families import FAMILIES, TARGETS, Profile, Sample, sample
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program
+from p4blo.interp import stmt
 from p4blo.v0 import p4blo_pb2 as pb
 
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
+MEASUREMENT = Path(__file__).resolve().parent / "drt-guided-measurement.json"
 PROFILES: tuple[Profile, ...] = ("lean", "spectec")
 # The seeds the Lean campaigns retain, per family; tests/test_drt_coverage.py
 # reruns the same ones for the unhit list.
@@ -53,10 +56,12 @@ class HypothesisChooser(Chooser):
         return self.draw(st.integers(lo, hi))
 
 
-def check(generated: Sample, lean: Sequence[str | Path]) -> None:
-    """Compare the sample; on disagreement save a replay bundle and fail."""
+def check(generated: Sample, lean: Sequence[str | Path], seed: int | None = None) -> None:
+    """Compare the sample; on disagreement save a replay bundle and fail.
+    The family seed, when the sample has one, names the failure and the
+    bundle, so `families.sample(family, seed)` rebuilds the program."""
     try:
-        report = compare_program(generated.program, generated.cases, 4, lean)
+        report = compare_program(generated.program, generated.cases, 4, lean, seed or 0)
     except ProtocolError as error:
         if error.report is None:
             raise
@@ -65,10 +70,12 @@ def check(generated: Sample, lean: Sequence[str | Path]) -> None:
         target = Path(os.environ.get("P4BLO_DRT_FAILURE_DIR", ".artifacts/drt"))
         target.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(generated.program.SerializeToString()).hexdigest()[:16]
-        bundle = target / f"{generated.family}-{digest}.json"
+        named = "" if seed is None else f"-seed{seed}"
+        bundle = target / f"{generated.family}{named}-{digest}.json"
         save(report, bundle)
+        where = "a Hypothesis example" if seed is None else f"family seed {seed}"
         pytest.fail(
-            f"{generated.describe()}\n{report.summary()}; replay {bundle}\n"
+            f"{generated.describe()} ({where})\n{report.summary()}; replay {bundle}\n"
             + "\n".join(d.describe() for d in report.divergences[:3])
             + f"\n{report.protocol_error or ''}"
         )
@@ -135,8 +142,10 @@ def test_the_spectec_profile_leaves_out_the_ledgers_deviations() -> None:
             assert all(c.packet for c in generated.cases), "STF cannot send an empty packet"
     removed = lean_features - spectec_features
     for feature in [
-        "validity=invalid",
-        "validity=packet",
+        "eq_header.validity=invalid",
+        "eq_header.validity=packet",
+        "parser.stmt=push",
+        "parser.stmt=pop",
         "parser.transition=loop",
         "subparser.transition=loop",
         "eq_stack.push=packet",
@@ -163,12 +172,12 @@ def test_the_guide_prefers_options_whose_targets_are_unhit() -> None:
     guide = guided.Guide(inventory)
     unhit = guide.weight("control.feature=call")
     assert unhit > guide.weight("control.feature=eq_enum") == 1.0
-    guide.observe(frozenset({"control.feature=call"}), {"call.action", "stmt.callAction"})
-    # The targets are hit; what is left is the novelty of the first use.
-    assert 1.0 < guide.weight("control.feature=call") < unhit
-    for _ in range(30):
-        guide.observe(frozenset({"control.feature=call"}), {"call.action"})
-    assert guide.weight("control.feature=call") == pytest.approx(1.0, abs=0.01)
+    guide.observe(frozenset({"control.feature=call"}), {"call.action"})
+    # One target is still unhit.
+    assert guide.weight("control.feature=call") == unhit
+    guide.observe(frozenset({"control.feature=call"}), {"stmt.callAction"})
+    # Both targets are hit: the option is weighted like any other.
+    assert guide.weight("control.feature=call") == 1.0
 
 
 def test_the_guide_counts_tag_feature_pairs() -> None:
@@ -191,6 +200,29 @@ def test_a_guided_campaign_is_a_function_of_its_seed() -> None:
     assert FAMILIES["control"](chooser[0], "lean") == FAMILIES["control"](chooser[1], "lean")
 
 
+def test_the_recorded_measurement_is_whole_and_supports_the_claim() -> None:
+    """tests/drt-guided-measurement.json has a row per family, seed and arm,
+    its summary is what its rows give, and it shows what docs/assurance.md
+    says: guided campaigns hit the common targets in fewer programs than
+    uniform ones, on average and in most seeds, in both families, and
+    reach as many tags."""
+    document = json.loads(MEASUREMENT.read_text(encoding="utf-8"))
+    runs = document["runs"]
+    assert sorted((r["family"], r["seed"], r["arm"]) for r in runs) == sorted(
+        (f, s, a) for f in guided.MEASURED_FAMILIES for s in document["seeds"] for a in guided.ARMS
+    )
+    assert document["summary"] == guided.summarize(runs)
+    assert document["target_bonus"] == guided.TARGET_BONUS
+    for family in guided.MEASURED_FAMILIES:
+        arms = document["summary"][family]["arms"]
+        g, u = arms["guided"], arms["uniform"]
+        assert g["to_targets"]["mean"] < u["to_targets"]["mean"], family
+        pairs = zip(g["to_targets"]["per_seed"], u["to_targets"]["per_seed"], strict=True)
+        fewer = sum(a < b for a, b in pairs)
+        assert fewer > len(document["seeds"]) * 3 // 4, family
+        assert abs(g["tags"]["mean"] - u["tags"]["mean"]) < 1, family
+
+
 def test_the_command_line_runs_a_guided_campaign(capsys: pytest.CaptureFixture[str]) -> None:
     from p4blo.drt.__main__ import main
 
@@ -207,13 +239,13 @@ def test_the_command_line_runs_a_guided_campaign(capsys: pytest.CaptureFixture[s
 @pytest.mark.parametrize("family", sorted(FAMILIES))
 def test_lean_agrees_on_family_seeds(family: str, lean_binary: Path) -> None:
     for seed in SEEDS:
-        check(sample(family, seed), [lean_binary])
+        check(sample(family, seed), [lean_binary], seed)
 
 
 @pytest.mark.parametrize("family", sorted(FAMILIES))
 def test_lean_agrees_on_spectec_profile_seeds(family: str, lean_binary: Path) -> None:
     for seed in range(50):
-        check(sample(family, seed, "spectec"), [lean_binary])
+        check(sample(family, seed, "spectec"), [lean_binary], seed)
 
 
 @settings(max_examples=100, deadline=None, derandomize=True, database=None)
@@ -222,3 +254,72 @@ def test_lean_agrees_on_shrinking_family_programs(
     lean_binary: Path, data: st.DataObject, family: str
 ) -> None:
     check(FAMILIES[family](HypothesisChooser(data.draw), "lean"), [lean_binary])
+
+
+RIGHT_PUSH_FRONT = stmt.push_front
+RIGHT_POP_FRONT = stmt.pop_front
+
+
+def push_unclamped(stack: Any, n: int, index: Any) -> None:
+    """`push_front` whose `nextIndex` grows past the size."""
+    next_index = stack.next_index
+    RIGHT_PUSH_FRONT(stack, n, index)
+    stack.next_index = next_index + n
+
+
+def pop_unclamped(stack: Any, n: int, index: Any) -> None:
+    """`pop_front` whose `nextIndex` shrinks below zero."""
+    next_index = stack.next_index
+    RIGHT_POP_FRONT(stack, n, index)
+    stack.next_index = next_index - n
+
+
+@pytest.mark.parametrize(
+    ("name", "mutant", "feature"),
+    [
+        ("push_front", push_unclamped, "stmt=push"),
+        ("pop_front", pop_unclamped, "stmt=pop"),
+    ],
+    ids=["push", "pop"],
+)
+def test_lean_agrees_only_with_the_stack_clamps(
+    lean_binary: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    mutant: Callable[[Any, int, Any], None],
+    feature: str,
+) -> None:
+    """`stack.push.clamp` and `stack.pop.clamp` are observable: a Python
+    without the clamp disagrees with Lean on some retained parser seed that
+    pushes or pops, because the family reads `nextIndex` afterwards."""
+    monkeypatch.setattr(stmt, name, mutant)
+    for seed in SEEDS:
+        generated = sample("parser", seed)
+        if not any(f.endswith(feature) for f in generated.features):
+            continue
+        report = compare_program(generated.program, generated.cases, 4, [lean_binary], seed)
+        if not report.passed:
+            return
+    pytest.fail(f"no retained parser seed tells {name} without its clamp from Lean")
+
+
+def test_lean_agrees_with_the_recorded_guided_measurement(lean_binary: Path) -> None:
+    """The first seed's rows of tests/drt-guided-measurement.json come out
+    the same when run again, so the document is what `python -m p4blo.drt
+    guided measure` makes today; a change to the families, the guidance or
+    Lean's tags that moves them means regenerating it (and rereading the
+    claim it supports)."""
+    document = json.loads(MEASUREMENT.read_text(encoding="utf-8"))
+    seed = document["seeds"][0]
+    for family in guided.MEASURED_FAMILIES:
+        for arm in guided.ARMS:
+            recorded = next(
+                r
+                for r in document["runs"]
+                if (r["family"], r["seed"], r["arm"]) == (family, seed, arm)
+            )
+            run = guided.measured_run(family, seed, arm, document["budget"], [lean_binary])
+            assert run == recorded, (
+                f"{family} seed {seed} {arm} moved; regenerate with python -m p4blo.drt "
+                "guided measure --jobs 8 --out tests/drt-guided-measurement.json"
+            )

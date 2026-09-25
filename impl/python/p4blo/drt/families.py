@@ -10,7 +10,10 @@ are all about shape: direct and nested action calls, equality on headers,
 structs, stacks and enums, whole-header assignment, stack indices taken
 from the packet, `advance`, `lookahead` of `bool` and headers, selects with
 ranges, several keys, no default and non-`bit` keys, explicit rejection in
-a sub-parser, and parser loops that consume nothing.
+a sub-parser, and parser loops that consume nothing. The parser family also
+pushes and pops the stack, in its lean profile, and then reads `lastIndex`
+and maybe extracts into `hs.next`, the only places where `nextIndex`, and
+so the clamps of `push_front` and `pop_front`, can be seen.
 
 A family is a function of a `Chooser` (`p4blo.drt.choice`), which makes
 every decision and names it. Every option is typed by construction, so any
@@ -22,12 +25,13 @@ smaller one of the same types; `guided.GuidedChooser` weights the options
 by what a campaign has learned.
 
 Every labelled decision a sample took is one of its `features`, spelled
-`point=label`. The points are named by the context the decision is made in
-(`control.feature`, `call.args`, `parser.stmt`, `subparser.stmt`,
-`select.key`), so a feature says which construct encloses what it chose;
-the guided driver pairs each rule tag a run hits with each feature of the
-program, the one-feature-sensitive coverage of ESMeta's JESTfs. `TARGETS`
-names, for the options built to reach a rule, the tags they aim at.
+`point=label`. The points are named by the construct the decision is made
+in (`control.feature`, `call.args`, `eq_header.validity`, `parser.stmt`,
+`subparser.select.key`), and no two constructs share a point, so a feature
+says which construct encloses what it chose; the guided driver pairs each
+rule tag a run hits with each feature of the program, the
+one-feature-sensitive coverage of ESMeta's JESTfs. `TARGETS` names, for the
+options built to reach a rule, the tags they aim at.
 
 Profiles. `lean` draws from everything. `spectec` leaves out the choices
 whose outcome the ledger (docs/ir-semantics.md) records as a deviation
@@ -107,11 +111,16 @@ TARGETS: dict[str, tuple[str, ...]] = {
         "expr.equality.header.bothInvalid",
         "expr.equality.header.invalidFieldsDiffer",
     ),
-    "validity=invalid": (
+    "eq_header.validity=invalid": (
         "expr.equality.header.bothInvalid",
         "expr.equality.header.invalidFieldsDiffer",
     ),
-    "validity=packet": ("expr.equality.header.validityDiffers",),
+    "eq_header.validity=packet": ("expr.equality.header.validityDiffers",),
+    "eq_struct.validity=invalid": (
+        "expr.equality.header.bothInvalid",
+        "expr.equality.header.invalidFieldsDiffer",
+    ),
+    "eq_struct.validity=packet": ("expr.equality.header.validityDiffers",),
     "control.feature=eq_struct": ("expr.equality.struct",),
     "control.feature=eq_stack": ("expr.equality.stack",),
     "eq_stack.push=packet": ("expr.equality.stack.nextIndexDiffers",),
@@ -133,19 +142,30 @@ TARGETS: dict[str, tuple[str, ...]] = {
     "parser.stmt=last_index": ("stack.lastIndex.empty",),
     "parser.stmt=verify": ("parser.verify.fail", "parser.verify.failNoError"),
     "subparser.stmt=verify": ("parser.verify.failNoError",),
-    "verify.error=NoError": ("parser.verify.failNoError",),
+    "parser.verify.error=NoError": ("parser.verify.failNoError",),
+    "subparser.verify.error=NoError": ("parser.verify.failNoError",),
+    "parser.stmt=push": ("stack.push.clamp", "stack.push.oversize"),
+    "subparser.stmt=push": ("stack.push.clamp", "stack.push.oversize"),
+    "parser.stmt=pop": ("stack.pop.clamp", "stack.pop.oversize"),
+    "subparser.stmt=pop": ("stack.pop.clamp", "stack.pop.oversize"),
     "parser.transition=reject": ("parser.target.reject",),
     "subparser.transition=reject": ("parser.subparser.reject",),
     "parser.transition=loop": ("parser.timeout", "parser.revisit"),
     "subparser.transition=loop": ("parser.timeout.subparser",),
     "parser.stmt=call_sp": ("parser.subparser",),
-    "select.keys=two": ("select.multiKey",),
-    "select.key=bool": ("select.nonBitsKey",),
-    "select.key=enum": ("select.nonBitsKey",),
-    "select.key=error": ("select.nonBitsKey",),
-    "select.default=no": ("select.noMatch",),
-    "keyset=range": ("select.range",),
-    "keyset=masked": ("select.masked",),
+    **{
+        f"{where}.{feature}": tags
+        for where in ("parser", "subparser")
+        for feature, tags in {
+            "select.keys=two": ("select.multiKey",),
+            "select.key=bool": ("select.nonBitsKey",),
+            "select.key=enum": ("select.nonBitsKey",),
+            "select.key=error": ("select.nonBitsKey",),
+            "select.default=no": ("select.noMatch",),
+            "keyset=range": ("select.range",),
+            "keyset=masked": ("select.masked",),
+        }.items()
+    },
 }
 
 
@@ -442,22 +462,22 @@ class _Control:
                 return lit(8, self.ch.integer(point, 0, 4))
 
     def feature(self, k: int) -> None:
-        kinds = [
-            "call",
-            "eq_header",
-            "eq_struct",
-            "eq_stack",
-            "eq_enum",
-            "header_assign",
-            "set_valid",
-            "stack_index",
-            "table",
-        ]
-        getattr(self, self.ch.choice("control.feature", kinds))(k)
+        features: dict[str, Callable[[int], None]] = {
+            "call": self.feature_call,
+            "eq_header": self.feature_eq_header,
+            "eq_struct": self.feature_eq_struct,
+            "eq_stack": self.feature_eq_stack,
+            "eq_enum": self.feature_eq_enum,
+            "header_assign": self.feature_header_assign,
+            "set_valid": self.feature_set_valid,
+            "stack_index": self.feature_stack_index,
+            "table": self.feature_table,
+        }
+        features[self.ch.choice("control.feature", list(features))](k)
 
     # -- calls -----------------------------------------------------------------
 
-    def call(self, k: int) -> None:
+    def feature_call(self, k: int) -> None:
         """`f<k>(in x, inout y)` or `f<k>(out y)`, called directly, maybe
         calling a second action; the `in` argument may overlap the other."""
         ch = self.ch
@@ -513,40 +533,40 @@ class _Control:
 
     # -- equality --------------------------------------------------------------
 
-    def validity(self, header: str) -> list[pb.Stmt]:
+    def validity(self, point: str, header: str) -> list[pb.Stmt]:
         """Make a local header valid, leave it invalid, or let the packet decide."""
         options = ("valid",) if self.profile == "spectec" else ("valid", "invalid", "packet")
-        match self.ch.choice("validity", options):
+        match self.ch.choice(f"{point}.validity", options):
             case "valid":
                 return [set_valid(header)]
             case "invalid":
                 return []
             case _:
-                return [if_(self.condition("validity"), [set_valid(header)])]
+                return [if_(self.condition(f"{point}.validity"), [set_valid(header)])]
 
-    def eq_header(self, k: int) -> None:
+    def feature_eq_header(self, k: int) -> None:
         x = self.local(f"f{k}x", H_T)
         y = self.local(f"f{k}y", H_T)
         self.body.append(assign(f"{x}.a", E("hdr.h.a")))
         self.body.append(assign(f"{y}.a", self.operand("eq_header.field")))
-        self.body.extend(self.validity(x))
-        self.body.extend(self.validity(y))
-        op = EQ if self.ch.choice("eq.op", ("eq", "ne")) == "eq" else NE
+        self.body.extend(self.validity("eq_header", x))
+        self.body.extend(self.validity("eq_header", y))
+        op = EQ if self.ch.choice("eq_header.op", ("eq", "ne")) == "eq" else NE
         self.body.append(assign(f"hdr.o.r{k}", as_byte(binary(op, E(x), E(y)))))
 
-    def eq_struct(self, k: int) -> None:
+    def feature_eq_struct(self, k: int) -> None:
         p = self.local(f"f{k}p", S_T)
         q = self.local(f"f{k}q", S_T)
         for name in (p, q):
             self.body.append(assign(f"{name}.v", self.operand("eq_struct.v")))
             self.body.append(assign(f"{name}.x.a", E("hdr.h.a")))
-            self.body.extend(self.validity(f"{name}.x"))
+            self.body.extend(self.validity("eq_struct", f"{name}.x"))
         if self.ch.chance("eq_struct.copy"):
             self.body.append(assign(q, E(p)))
-        op = EQ if self.ch.choice("eq.op", ("eq", "ne")) == "eq" else NE
+        op = EQ if self.ch.choice("eq_struct.op", ("eq", "ne")) == "eq" else NE
         self.body.append(assign(f"hdr.o.r{k}", as_byte(binary(op, E(p), E(q)))))
 
-    def eq_stack(self, k: int) -> None:
+    def feature_eq_stack(self, k: int) -> None:
         size = self.ch.integer("eq_stack.size", 1, 3)
         p = self.local(f"f{k}p", stack_type(size))
         q = self.local(f"f{k}q", stack_type(size))
@@ -556,7 +576,7 @@ class _Control:
                 if self.profile == "spectec":
                     self.body.append(set_valid(f"{name}[{i}]"))
                 else:
-                    self.body.extend(self.validity(f"{name}[{i}]"))
+                    self.body.extend(self.validity("eq_stack", f"{name}[{i}]"))
         if self.profile == "lean":
             # push_front moves nextIndex, which equality ignores.
             match self.ch.choice("eq_stack.push", ("none", "both", "packet")):
@@ -568,22 +588,22 @@ class _Control:
                     self.body.append(if_(self.condition("eq_stack.push"), [push]))
                 case _:
                     pass
-        op = EQ if self.ch.choice("eq.op", ("eq", "ne")) == "eq" else NE
+        op = EQ if self.ch.choice("eq_stack.op", ("eq", "ne")) == "eq" else NE
         self.body.append(assign(f"hdr.o.r{k}", as_byte(binary(op, E(p), E(q)))))
 
-    def eq_enum(self, k: int) -> None:
+    def feature_eq_enum(self, k: int) -> None:
         c = self.local(f"f{k}c", COLOR)
         first, second = (self.ch.choice("eq_enum.member", COLORS) for _ in range(2))
         self.body.append(
             if_(self.condition("eq_enum"), [assign(c, enum(first))], [assign(c, enum(second))])
         )
-        op = EQ if self.ch.choice("eq.op", ("eq", "ne")) == "eq" else NE
+        op = EQ if self.ch.choice("eq_enum.op", ("eq", "ne")) == "eq" else NE
         other = self.ch.choice("eq_enum.other", COLORS)
         self.body.append(assign(f"hdr.o.r{k}", as_byte(binary(op, E(c), enum(other)))))
 
     # -- headers and stacks ------------------------------------------------------
 
-    def header_assign(self, k: int) -> None:
+    def feature_header_assign(self, k: int) -> None:
         """A whole header assigned from a local that may be invalid."""
         x = self.local(f"f{k}x", H_T)
         self.body.append(assign(f"{x}.a", self.operand("header_assign.field")))
@@ -597,7 +617,7 @@ class _Control:
         target = self.ch.choice("header_assign.target", ("hdr.g", "hdr.s[0]"))
         self.body.append(assign(target, E(x)))
 
-    def set_valid(self, k: int) -> None:
+    def feature_set_valid(self, k: int) -> None:
         """setValid on a header that the packet, or an earlier statement,
         may already have made valid."""
         target = self.ch.choice("set_valid.target", ("hdr.g", "hdr.s[0]", "hdr.e"))
@@ -610,7 +630,7 @@ class _Control:
                 pass
         self.body.append(set_valid(target))
 
-    def stack_index(self, k: int) -> None:
+    def feature_stack_index(self, k: int) -> None:
         """An element of `hdr.s` at an index the packet decides."""
         i = self.local(f"f{k}i", BIT32)
         index = self.ch.choice("stack.index", ("masked", "packet"))
@@ -640,7 +660,7 @@ class _Control:
 
     # -- tables ------------------------------------------------------------------
 
-    def table(self, k: int) -> None:
+    def feature_table(self, k: int) -> None:
         """A table on `hdr.h.a` whose actions set a result byte, assign the
         lvalue the apply writes `hit` to, or do nothing."""
         ch = self.ch
@@ -858,6 +878,11 @@ class _Parser:
             "set_error",
             "if",
         ]
+        if self.profile == "lean":
+            # Left out of the spectec profile so that its programs, which
+            # the oracle campaign and the SpecTec coverage report name by
+            # seed, stay what they were.
+            kinds.extend(["push", "pop"])
         if self.may_call and not (self.profile == "spectec" and self.called):
             kinds.append("call_sp")
         kind = ch.choice(self.point("stmt"), kinds)
@@ -912,17 +937,21 @@ class _Parser:
                     # lastIndex of an empty stack deviates; read it after an extract.
                     return [extract("hdr.s.next"), assign(r, last)]
                 return [assign(r, last)]
+            case "push" | "pop":
+                return self.push_pop(kind, r)
             case "verify":
-                name = ch.choice("verify.error", ("NoMatch", "NoError", "BadValue"))
+                name = ch.choice(self.point("verify.error"), ("NoMatch", "NoError", "BadValue"))
                 verify = pb.Verify(condition=self.condition(), error=name)
                 return [pb.Stmt(verify=verify)]
             case "set_enum":
-                first, second = (ch.choice("set_enum.member", COLORS) for _ in range(2))
+                first, second = (ch.choice(self.point("set_enum.member"), COLORS) for _ in range(2))
                 return [
                     if_(self.condition(), [assign("c", enum(first))], [assign("c", enum(second))])
                 ]
             case "set_error":
-                first, second = (ch.choice("set_error.error", ERRORS[:3]) for _ in range(2))
+                first, second = (
+                    ch.choice(self.point("set_error.error"), ERRORS[:3]) for _ in range(2)
+                )
                 return [
                     if_(
                         self.condition(),
@@ -940,6 +969,27 @@ class _Parser:
                 return [if_(self.condition(), then, otherwise)]
             case _:
                 return self.call()
+
+    def push_pop(self, kind: Literal["push", "pop"], r: str) -> list[pb.Stmt]:
+        """`push_front` or `pop_front` on `hdr.s` by up to three, past the
+        size or past `nextIndex` when the draw says so, then a read of
+        `nextIndex`: `lastIndex` into a result byte, and maybe an extract
+        into `hs.next`, which lands in the element `nextIndex` names.
+        Nothing else observes `nextIndex`, so without the read a wrong clamp
+        would go unseen. `lastIndex` is always read, because after a clamped
+        push only it tells the clamp apart: an extract fails at `nextIndex`
+        equal to the size as it would past it."""
+        count = self.ch.integer(self.point(kind), 1, 3)
+        stack = L("hdr.s")
+        if kind == "push":
+            stmts = [pb.Stmt(push=pb.Push(stack=stack, count=count))]
+        else:
+            stmts = [pb.Stmt(pop=pb.Pop(stack=stack, count=count))]
+        last = cast(BIT8, pb.Expr(last_index=pb.LastIndex(stack=E("hdr.s"))))
+        stmts.append(assign(r, last))
+        if self.ch.chance(self.point(f"{kind}.extract")):
+            stmts.append(extract("hdr.s.next"))
+        return stmts
 
     def call(self) -> list[pb.Stmt]:
         """`SP(hdr, k)`, where the key argument may itself read the packet."""
@@ -1007,21 +1057,22 @@ class _Parser:
         if self.ch.choice(self.point("transition.kind"), ("direct", "select")) == "direct":
             return pb.Transition(direct=self.target(i, self.point("transition")))
         keys: list[tuple[str, pb.Expr]] = []
-        for _ in range(2 if self.ch.choice("select.keys", ("one", "two")) == "two" else 1):
+        two = self.ch.choice(self.point("select.keys"), ("one", "two")) == "two"
+        for _ in range(2 if two else 1):
             keys.append(self.key())
         cases: list[pb.SelectCase] = []
-        for _ in range(self.ch.integer("select.cases", 1, 3)):
+        for _ in range(self.ch.integer(self.point("select.cases"), 1, 3)):
             case = pb.SelectCase(target=self.target(i, self.point("transition")))
             case.sets.extend(self.keyset(kind) for kind, _ in keys)
             cases.append(case)
-        if self.ch.choice("select.default", ("yes", "no")) == "yes":
+        if self.ch.choice(self.point("select.default"), ("yes", "no")) == "yes":
             default = pb.SelectCase(target=self.target(i, self.point("transition")))
             default.sets.extend(pb.KeySet(dont_care=pb.DontCare()) for _ in keys)
             cases.append(default)
         return pb.Transition(select=pb.Select(keys=[k for _, k in keys], cases=cases))
 
     def key(self) -> tuple[str, pb.Expr]:
-        match self.ch.choice("select.key", ("bits", "bool", "enum", "error")):
+        match self.ch.choice(self.point("select.key"), ("bits", "bool", "enum", "error")):
             case "bits":
                 return "bits", self.byte()
             case "bool":
@@ -1033,19 +1084,20 @@ class _Parser:
 
     def keyset(self, kind: str) -> pb.KeySet:
         ch = self.ch
+        point = self.point("keyset")
         if kind != "bits":
-            if ch.choice("keyset", ("exact", "dont_care")) == "dont_care":
+            if ch.choice(f"{point}.{kind}", ("exact", "dont_care")) == "dont_care":
                 return pb.KeySet(dont_care=pb.DontCare())
             match kind:
                 case "bool":
-                    value = pb.Literal(boolean=ch.chance("keyset.bool"))
+                    value = pb.Literal(boolean=ch.chance(f"{point}.bool.value"))
                 case "enum":
-                    member = ch.choice("keyset.enum", COLORS)
+                    member = ch.choice(f"{point}.enum.value", COLORS)
                     value = pb.Literal(enum_member=pb.EnumLiteral(enum_type="Color", member=member))
                 case _:
-                    value = pb.Literal(error=ch.choice("keyset.error", ERRORS[:3]))
+                    value = pb.Literal(error=ch.choice(f"{point}.error.value", ERRORS[:3]))
             return pb.KeySet(exact=value)
-        match ch.choice("keyset", ("exact", "masked", "range", "dont_care")):
+        match ch.choice(point, ("exact", "masked", "range", "dont_care")):
             case "exact":
                 return pb.KeySet(exact=bits_literal(8, ch.integer("keyset", 0, 4)))
             case "masked":
