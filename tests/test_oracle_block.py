@@ -22,6 +22,7 @@ simulator skips and says so; the printer and value tests run anyway.
 
 from __future__ import annotations
 
+import json
 import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -151,6 +152,51 @@ def test_from_json_refuses_a_foreign_shape() -> None:
         )
 
 
+def _with_second_block_declaring(table: str) -> tuple[ir.Index, pb.Entries]:
+    """The forwarder with an unexported control that declares a table of the
+    same name as the ingress's, and one entry for the ingress's."""
+    program = pb.Program()
+    program.CopyFrom(load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index.program)
+    ingress = next(b for b in program.blocks if b.name == "MyIngress")
+    original = next(t for t in ingress.tables if t.name == table)
+    other = program.blocks.add(name="Other", kind=pb.BLOCK_KIND_CONTROL)
+    other.params.extend(ingress.params)
+    other.actions.extend(a for a in ingress.actions if a.name in original.actions)
+    other.tables.add().CopyFrom(original)
+    return ir.Index.build(program), _entries_for("MyIngress", table)
+
+
+def _entries_for(block: str, table: str) -> pb.Entries:
+    """Entries naming one table; the refusal comes before any entry is read."""
+    entries = pb.Entries()
+    entries.tables.add(block=block, table=table)
+    return entries
+
+
+def test_entries_for_a_table_two_blocks_declare_are_refused() -> None:
+    # The simulator finds an entry's table by its unqualified name, as
+    # V1Model's STF runner does after its name rewrites, which this
+    # architecture does not repeat; with two tables of that name it would
+    # pick one silently.
+    index, entries = _with_second_block_declaring("ipv4_lpm")
+    with pytest.raises(oracle_block.BlockError, match="ipv4_lpm.*MyIngress, Other"):
+        oracle_block.entries_to_stf(index, entries)
+
+
+def test_entries_for_a_valid_key_name_are_refused() -> None:
+    # V1Model's STF runner rewrites `$valid$` in a key name to `isValid()`;
+    # this architecture does not, so such a key would match differently.
+    program = pb.Program()
+    program.CopyFrom(load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index.program)
+    ingress = next(b for b in program.blocks if b.name == "MyIngress")
+    table = ingress.tables[0]
+    table.keys[0].name = "hdr.ipv4.$valid$"
+    index = ir.Index.build(program)
+    entries = _entries_for("MyIngress", table.name)
+    with pytest.raises(oracle_block.BlockError, match=r"\$valid\$"):
+        oracle_block.entries_to_stf(index, entries)
+
+
 # ---------------------------------------------------------------------------
 # The simulator's own checks
 # ---------------------------------------------------------------------------
@@ -165,6 +211,99 @@ def test_state_from_another_session_is_refused(runner: oracle_block.BlockRunner)
     )
     with pytest.raises(oracle_block.BlockError, match="session"):
         runner.run_block(loaded.index, "parser", inputs)
+
+
+def _stateful_parser_state(runner: oracle_block.BlockRunner) -> Any:
+    loaded = load(ROOT / "tests/corpus/stateful/stateful.txtpb")
+    inputs = oracle_block.BlockInputs(packet=b"\x00" * 64, metadata=loaded.metadata.zero())
+    return runner.run_block(loaded.index, "parser", inputs).state
+
+
+def test_state_from_another_program_is_refused(runner: oracle_block.BlockRunner) -> None:
+    # stateful's register `main.c.r` is renamed nowhere: register_bounds has
+    # an object of the same id, of another size and cell type.
+    state = _stateful_parser_state(runner)
+    loaded = load(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
+    inputs = oracle_block.BlockInputs(
+        packet=b"\x00" * 64, metadata=loaded.metadata.zero(), state=state
+    )
+    with pytest.raises(oracle_block.BlockError, match="extern state of program"):
+        runner.run_block(loaded.index, "parser", inputs)
+
+
+def test_state_that_does_not_parse_is_refused(runner: oracle_block.BlockRunner) -> None:
+    state = _stateful_parser_state(runner)
+    assert state["objects"], "stateful has extern objects"
+    name = next(iter(state["objects"]))
+    state["objects"][name] = {"garbage": 1}
+    loaded = load(ROOT / "tests/corpus/stateful/stateful.txtpb")
+    inputs = oracle_block.BlockInputs(
+        packet=b"\x00" * 64, metadata=loaded.metadata.zero(), state=state
+    )
+    with pytest.raises(oracle_block.BlockError, match=f"the state of {name} does not parse"):
+        runner.run_block(loaded.index, "parser", inputs)
+
+
+def _stacks_control_request(runner: oracle_block.BlockRunner, change: Any) -> dict[str, Any]:
+    """A control request on the stacks program whose headers `change` edits."""
+    loaded = load(ROOT / "tests/corpus/stacks/stacks.txtpb")
+    index = loaded.index
+    headers = oracle_block.to_json(zero(pb.Type(struct=index.program.headers), index), index)
+    change(headers["struct"]["fields"])
+    return {
+        "program": str(runner.program_path(index)),
+        "block": "control",
+        "headers": headers,
+        "metadata": oracle_block.to_json(loaded.metadata.zero(), index),
+        "entries": "",
+        "state": None,
+    }
+
+
+def _set_next_index(value: int) -> Any:
+    def change(fields: dict[str, Any]) -> None:
+        fields["h2"]["stack"]["next_index"] = value
+
+    return change
+
+
+def _set_h1(key: str, value: Any) -> Any:
+    def change(fields: dict[str, Any]) -> None:
+        h1 = fields["h1"]["header"]
+        if key == "type":
+            h1["type"] = value
+        else:
+            h1["fields"][key]["bits"]["value"] = value
+
+    return change
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (_set_next_index(6), "next_index 6 of a stack of 5 elements"),
+        (_set_next_index(-1), "next_index -1 of a stack of 5 elements"),
+        (_set_h1("hdr_type", "256"), "256 does not fit in bit<8>"),
+        (_set_h1("hdr_type", "-1"), "-1 does not fit in bit<8>"),
+        (_set_h1("type", "bogus_t"), "a value of type bogus_t where h1_t is expected"),
+    ],
+    ids=["next-index-above", "next-index-negative", "bits-above", "bits-negative", "type-name"],
+)
+def test_values_outside_their_type_are_refused(
+    runner: oracle_block.BlockRunner, change: Any, message: str
+) -> None:
+    request = _stacks_control_request(runner, change)
+    with pytest.raises(oracle_block.BlockError, match=message):
+        runner.request(request)
+
+
+def test_a_struct_of_another_type_is_refused(runner: oracle_block.BlockRunner) -> None:
+    request = _stacks_control_request(runner, lambda fields: None)
+    request["metadata"] = json.loads(
+        json.dumps(request["metadata"]).replace('"metadata"', '"bogus"')
+    )
+    with pytest.raises(oracle_block.BlockError, match="a value of type bogus"):
+        runner.request(request)
 
 
 def test_an_error_reply_leaves_the_session_usable(runner: oracle_block.BlockRunner) -> None:

@@ -343,10 +343,14 @@ everything but the shim.
 before `make build` and stamps the build with the commit and a digest of
 the patches, so a changed patch resets the checkout to the pin and rebuilds;
 the CI cache key includes the patches. A checkout built before the patches
-existed has a stamp without the digest and rebuilds once. To change the
-plugin, edit it in a scratch checkout built by `build.sh`, then regenerate
-the patch there with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
-.../patches/0001-p4blo-block-architecture.patch && git reset`.
+existed has a stamp without the digest and rebuilds once. `block.py`
+refuses a checkout whose stamp names other patches than the tree's, so
+tests never run on a stale plugin. To change the plugin, edit it in a
+scratch checkout built by `build.sh` (`P4BLO_ORACLE_DIR` elsewhere than the
+shared one), iterate with `make build` there, then regenerate the patch
+with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
+.../patches/0001-p4blo-block-architecture.patch && git reset` and rerun
+`build.sh`, which reapplies it and stamps the build.
 
 `block.py` drives it. A `BlockRunner` keeps one `p4spectec block spec
 <p4blo.watsup> -i p4c/p4include -i tests/oracle/include` process resident,
@@ -367,9 +371,15 @@ deparser pads) and `bits` (the exact count) for a deparser. Every reply
 also has `state`, the simulator's own JSON state of every extern object, to
 pass back unchanged, and `externs`, registers and counters in readable
 form; a failure is `{"error": "<diagnostic>"}` and the session continues.
-State is tagged with the process that made it and refused by any other,
-because a register's cells are spec values whose identities only that
-process can interpret. Scalars take the shape of the IR's wire-format
+State is tagged with the process and the program that made it and refused
+by any other, because a register's cells are spec values whose identities
+only that process can interpret and object names are the program's; an
+object whose state does not parse is refused too. Every value written into
+the simulator must be of its variable's type: the declared type name, the
+width, a number that fits it, the declared fields and a `next_index` from
+0 to the stack's size; anything else is refused rather than run as a
+value no P4 program can hold. `-trace` (or `BlockRunner(..., trace=True)`) writes the
+spec's execution trace to the process's standard error. Scalars take the shape of the IR's wire-format
 `Literal` in protobuf's JSON mapping (`{"bits": {"width": 9, "value":
 "1"}}`, `{"boolean": true}`, `{"error": "NoError"}`, `{"enum_member":
 {...}}`); compound values, which the wire format does not have, are

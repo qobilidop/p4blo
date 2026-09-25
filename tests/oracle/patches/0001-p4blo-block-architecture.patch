@@ -1,8 +1,8 @@
 diff --git a/p4spec/bin/main.ml b/p4spec/bin/main.ml
-index 189b04d..4be966e 100644
+index 189b04d..4f07d4a 100644
 --- a/p4spec/bin/main.ml
 +++ b/p4spec/bin/main.ml
-@@ -354,6 +354,28 @@ let sim_command =
+@@ -354,6 +354,54 @@ let sim_command =
             | Fail (`Syntax diagnostic) -> Error diagnostic
             | Fail (`Runtime failure) -> Error (diagnostic_of_failure failure)))
  
@@ -14,15 +14,41 @@ index 189b04d..4be966e 100644
 +    (let open Core.Command.Let_syntax in
 +     let open Core.Command.Param in
 +     let%map paths_spec = anon (non_empty_sequence_as_list ("path" %: string))
-+     and includes_p4 = flag "-i" (listed string) ~doc:"P4 include paths" in
++     and includes_p4 = flag "-i" (listed string) ~doc:"P4 include paths"
++     and trace =
++       Command.Param.choose_one
++         [
++           flag "-trace" no_arg ~doc:"emit execution trace on standard error"
++           |> map ~f:(fun b -> Core.Option.some_if b (Some Inst.Trace.Simple));
++           flag "-trace-full" no_arg
++             ~doc:"emit full execution trace on standard error"
++           |> map ~f:(fun b -> Core.Option.some_if b (Some Inst.Trace.Full));
++         ]
++         ~if_nothing_chosen:(Default_to None)
++     in
 +     fun () ->
 +       run_with_diagnostics
 +         ~action:(fun () ->
 +           let* spec_sim = P4spectec.spec_of_mode SL_mode paths_spec in
++           (* The simulator module itself is not needed: building it
++              instantiates the p4blo architecture's functor, whose
++              initialization points Pipe.serve at the server built inside
++              it (pipe.ml, `server`). *)
 +           let* _ = P4spectec.build_sim ~arch:"p4blo" spec_sim in
 +           Ok spec_sim)
 +         ~on_success:(fun spec_sim ->
-+           Inst.Hook.register [];
++           (* The trace goes to standard error: standard output carries the
++              replies. *)
++           let handlers =
++             match trace with
++             | Some level ->
++                 let (module TH : Inst.Handler.HANDLER) =
++                   Inst.Trace.make ~level ~fmt:Format.err_formatter ()
++                 in
++                 [ (module TH : Inst.Handler.HANDLER) ]
++             | None -> []
++           in
++           Inst.Hook.register handlers;
 +           Inst.Hook.init_spec spec_sim;
 +           Backend_sim.P4blo.Pipe.serve includes_p4 stdin stdout;
 +           Inst.Hook.finish ();
@@ -31,7 +57,7 @@ index 189b04d..4be966e 100644
  let cover_run_command =
    Core.Command.basic ~summary:"measure coverage of the spec"
      (let open Core.Command.Let_syntax in
-@@ -668,6 +690,7 @@ let command =
+@@ -668,6 +716,7 @@ let command =
        (* Execution *)
        ("run", run_command);
        ("sim", sim_command);
@@ -320,10 +346,10 @@ index 0000000..c7fd59f
 +}
 diff --git a/p4spec/lib/backend-sim/p4blo/pipe.ml b/p4spec/lib/backend-sim/p4blo/pipe.ml
 new file mode 100644
-index 0000000..7401d81
+index 0000000..aa1686f
 --- /dev/null
 +++ b/p4spec/lib/backend-sim/p4blo/pipe.ml
-@@ -0,0 +1,895 @@
+@@ -0,0 +1,944 @@
 +(* The p4blo block architecture.
 +
 +   p4blo (https://github.com/qobilidop/p4blo) is an intermediate
@@ -392,7 +418,11 @@ index 0000000..7401d81
 +   with fields in declaration order. Reading a value the table does not
 +   cover gives {"unknown": <the spec's rendering>}. Writing goes through a
 +   template, the variable's current value, so that only leaves are built
-+   here and every compound keeps the spec's own constructor and type. *)
++   here and every compound keeps the spec's own constructor and type. A
++   written value must be one of the template's type: its width, a number
++   that fits it, its type name, its fields and a `next_index` within the
++   stack; anything else is an error, since the spec would otherwise run on
++   a value no P4 program can hold. *)
 +
 +module Json = struct
 +  type t = Yojson.Safe.t
@@ -535,6 +565,12 @@ index 0000000..7401d81
 +      ]
 +      (fun () -> one "unknown" (`String (Value.to_string value)))
 +
++  (* A compound's type is the template's; the request only confirms it. *)
++  let expect_type (value_type : Value.t) (json : Json.t) : unit =
++    let written = Json.member "type" json |> Json.to_string in
++    if written <> Value.Get.text value_type then
++      fail "a value of type %s where %s is expected" written (Value.Get.text value_type)
++
 +  let rec of_json (template : Value.t) (json : Json.t) : Value.t =
 +    let fields values_field json_fields =
 +      let json_fields = Json.to_assoc json_fields in
@@ -565,6 +601,8 @@ index 0000000..7401d81
 +              let number =
 +                Json.member "value" (body "bits") |> Json.to_string |> Bigint.of_string
 +              in
++              if Bigint.(number < zero || number >= shift_left one width) then
++                fail "%s does not fit in bit<%d>" (Bigint.to_string number) width;
 +              rebuild template [ value_width; Value.Make.int number ]
 +          | _ -> assert false );
 +        ( boolean,
@@ -586,6 +624,7 @@ index 0000000..7401d81
 +          function
 +          | [ value_type; _; values_field ] ->
 +              let json = body "header" in
++              expect_type value_type json;
 +              rebuild template
 +                [
 +                  value_type;
@@ -596,8 +635,9 @@ index 0000000..7401d81
 +        ( struct_,
 +          function
 +          | [ value_type; values_field ] ->
-+              rebuild template
-+                [ value_type; fields values_field (Json.member "fields" (body "struct")) ]
++              let json = body "struct" in
++              expect_type value_type json;
++              rebuild template [ value_type; fields values_field (Json.member "fields" json) ]
 +          | _ -> assert false );
 +        ( stack,
 +          function
@@ -608,11 +648,14 @@ index 0000000..7401d81
 +              if List.length elements <> List.length templates then
 +                fail "a stack of %d elements where %d are expected"
 +                  (List.length elements) (List.length templates);
++              let next_index = Json.member "next_index" json |> Json.to_int in
++              if next_index < 0 || next_index > List.length templates then
++                fail "next_index %d of a stack of %d elements" next_index
++                  (List.length templates);
 +              rebuild template
 +                [
 +                  relist values_element (List.map2 of_json templates elements);
-+                  Json.member "next_index" json |> Json.to_int |> Bigint.of_int
-+                  |> Value.Make.nat;
++                  next_index |> Bigint.of_int |> Value.Make.nat;
 +                ]
 +          | _ -> assert false );
 +      ]
@@ -995,19 +1038,24 @@ index 0000000..7401d81
 +                             (List.map (fun n -> `String (Bigint.to_string n)) counts)
 +                         );
 +                       ] )
-+             | _ -> None))
++             | Ok (PacketIn _ | PacketOut _) -> None
++             | Error message ->
++                 Json.fail "the state of %s does not parse: %s" name message))
 +
 +  (* Extern state crosses the pipe as the simulator's own JSON, tagged with
-+     this process: a register's cells are spec values whose identities are
-+     only meaningful to the process that made them. *)
++     this process, because a register's cells are spec values whose
++     identities are only meaningful to the process that made them, and with
++     the program, because object names are the program's: another
++     program's `main.c.r` may be a register of another size and type. *)
 +  let session =
 +    let state = Random.State.make_self_init () in
 +    Printf.sprintf "%08x%08x" (Random.State.bits state) (Random.State.bits state)
 +
-+  let export_state (value_arch : Value.t) : Yojson.Safe.t =
++  let export_state (program : string) (value_arch : Value.t) : Yojson.Safe.t =
 +    `Assoc
 +      [
 +        ("session", `String session);
++        ("program", `String program);
 +        ( "objects",
 +          `Assoc
 +            (extern_states value_arch
@@ -1015,16 +1063,24 @@ index 0000000..7401d81
 +        );
 +      ]
 +
-+  let import_state (value_arch : Value.t) (json : Yojson.Safe.t) : Value.t =
++  let import_state (program : string) (value_arch : Value.t)
++      (json : Yojson.Safe.t) : Value.t =
 +    match json with
 +    | `Null -> value_arch
 +    | _ ->
 +        let owner = Json.member "session" json |> Json.to_string in
 +        if owner <> session then
 +          Json.fail "extern state from session %s, not this one (%s)" owner session;
++        let origin = Json.member "program" json |> Json.to_string in
++        if origin <> program then
++          Json.fail "extern state of program %s, not this one (%s)" origin program;
 +        Json.member "objects" json |> Json.to_assoc
 +        |> List.fold_left
 +             (fun value_arch (name, json_state) ->
++               (match object_state_of_yojson json_state with
++               | Ok _ -> ()
++               | Error message ->
++                   Json.fail "the state of %s does not parse: %s" name message);
 +               let value_objectId =
 +                 value_objectId (String.split_on_char '.' name)
 +               in
@@ -1061,13 +1117,19 @@ index 0000000..7401d81
 +           | _ -> Json.fail "entries hold only add and setdefault lines")
 +         value_arch
 +
-+  let programs : (string, Value.t * Value.t) Hashtbl.t = Hashtbl.create 8
++  (* Instantiated programs by path, each with the digest of its text, which
++     tags the extern state; a path whose text changed is instantiated
++     again. *)
++  let programs : (string, string * (Value.t * Value.t)) Hashtbl.t =
++    Hashtbl.create 8
 +
-+  let load (includes_p4 : string list) (path : string) : Value.t * Value.t =
++  let load (includes_p4 : string list) (path : string) :
++      string * (Value.t * Value.t) =
++    let digest = Stdlib.Digest.file path |> Stdlib.Digest.to_hex in
 +    match Hashtbl.find_opt programs path with
-+    | Some loaded -> loaded
-+    | None ->
-+        let loaded = init_pipe includes_p4 path in
++    | Some ((cached, _) as loaded) when cached = digest -> loaded
++    | _ ->
++        let loaded = (digest, init_pipe includes_p4 path) in
 +        Hashtbl.replace programs path loaded;
 +        loaded
 +
@@ -1086,10 +1148,15 @@ index 0000000..7401d81
 +    if not (List.mem block [ "parser"; "control"; "deparser" ]) then
 +      Json.fail "unknown block %S: parser, control or deparser" block;
 +    let field key = Json.member_opt key request |> Option.value ~default:`Null in
-+    let value_ctx, value_arch =
++    (* The order below is the whole of this architecture's setup: extern
++       state, then entries (which live in the store beside it), then fresh
++       packet objects, then `hdr` and `meta` recreated by `Var_init`, then
++       the block's arguments written over them. Nothing an extern does
++       today depends on it. *)
++    let program, (value_ctx, value_arch) =
 +      load includes_p4 (Json.member "program" request |> Json.to_string)
 +    in
-+    let value_arch = import_state value_arch (field "state") in
++    let value_arch = import_state program value_arch (field "state") in
 +    let value_arch =
 +      match field "entries" with
 +      | `Null -> value_arch
@@ -1134,10 +1201,15 @@ index 0000000..7401d81
 +      | _ -> assert false
 +    in
 +    let common value_arch =
-+      [ ("state", export_state value_arch); ("externs", observe_externs value_arch) ]
++      [
++        ("state", export_state program value_arch);
++        ("externs", observe_externs value_arch);
++      ]
 +    in
 +    match block with
 +    | "parser" ->
++        (* `hdr` is the parser's `out` argument: it starts as `Var_init`
++           left it and is never taken from the request. *)
 +        let value_ctx =
 +          write_global value_ctx value_arch "meta" (Json.member "metadata" request)
 +        in
@@ -1145,7 +1217,10 @@ index 0000000..7401d81
 +        let accepted, error =
 +          match Value.Get.(value_result |>>? "REJECT errorValue") with
 +          | Some [ value_error ] -> (false, Values.to_json value_error)
-+          | _ -> (true, `Assoc [ ("error", `String "NoError") ])
++          | _ ->
++              (* The spec's accept result carries no error, and p4blo's
++                 accepting parser reports NoError, so this is a constant. *)
++              (true, `Assoc [ ("error", `String "NoError") ])
 +        in
 +        `Assoc
 +          ([
