@@ -74,11 +74,11 @@ from p4blo.frontend.common import (
     NotTranslated,
     Scope,
     Val,
-    _wrap,
     bits_type,
     rename_block_vars,
     strip_alias,
     walk_stmts,
+    wrap,
 )
 from p4blo.frontend.il import Node
 from p4blo.frontend.normalize import drop_self_assignments
@@ -212,7 +212,7 @@ class Translator:
         """A run-time value (`2.1.1-value.watsup`) as a compile-time value."""
         match v.c:
             case "% W %":
-                return _wrap(v.num(0), v.num(1))
+                return wrap(v.num(0), v.num(1))
             case "D %":
                 return Int(v.num(0))
             case "% S %":
@@ -262,7 +262,7 @@ class Translator:
                 n = t.num(0)
                 match v:
                     case Int() | Bits():
-                        return _wrap(n, v.value)
+                        return wrap(n, v.value)
                     case bool():
                         return Bits(1, int(v)) if n == 1 else None
                     case _:
@@ -396,8 +396,11 @@ class Translator:
 
     # -- blocks
 
-    def role_block(self, decl: Node, args: Sequence[Node], kind: str, part: str) -> pb.Block:
-        """The block for one of the package's arguments."""
+    def role_block(
+        self, decl: Node, args: Sequence[Node], kind: str, part: str, meta_index: int | None
+    ) -> pb.Block:
+        """The block for one of the package's arguments; `meta_index` is the
+        position of its metadata parameter, which the architecture knows."""
         from p4blo.frontend.blocks import BlockCx, ctor_value, translate_block
 
         folder = BlockCx(self, decl, "__args__", kind, self.global_scope)
@@ -405,7 +408,6 @@ class Translator:
         name = decl.text(1)
         if name in self.blocks:
             name = self.fresh_program_name(name)
-        meta_index = {"parser": 2, "control": 1}.get(kind)
         cx = translate_block(self, decl, name, kind, values, part, meta_index)
         self.blocks[name] = cx.block
         self.instantiations[(decl.text(1), tuple(values))] = name

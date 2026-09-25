@@ -110,6 +110,10 @@ CONTRACT: dict[str, pb.Type] = {
     "egress_port": bits_type(9),
     "drop": BOOL,
 }
+# Where V1Switch's blocks take M: the parser third, `(packet_in, out H,
+# inout M, inout standard_metadata_t)`, and the four controls second.
+PARSER_META_INDEX = 2
+CONTROL_META_INDEX = 1
 # Every name the architectures read or write in M (p4blo.arch.contract),
 # `flood` included although v1model has no counterpart for it.
 CONTRACT_NAMES = frozenset({*CONTRACT, "flood"})
@@ -555,7 +559,7 @@ def bind(tr: Translator) -> pb.Program:
                 )
 
     _rename_user_contract_fields(tr, arch, roles.parser[0])
-    parser = tr.role_block(roles.parser[0], roles.parser[1], "parser", "ingress")
+    parser = tr.role_block(roles.parser[0], roles.parser[1], "parser", "ingress", PARSER_META_INDEX)
     parts = []
     for part, (decl, cargs) in (
         ("verify", roles.verify),
@@ -563,8 +567,8 @@ def bind(tr: Translator) -> pb.Program:
         ("egress", roles.egress),
         ("compute", roles.compute),
     ):
-        parts.append((part, tr.role_block(decl, cargs, "control", part)))
-    deparser = tr.role_block(roles.deparser[0], roles.deparser[1], "deparser", "ingress")
+        parts.append((part, tr.role_block(decl, cargs, "control", part, CONTROL_META_INDEX)))
+    deparser = tr.role_block(roles.deparser[0], roles.deparser[1], "deparser", "ingress", None)
     control, tail_only = _merge(tr, arch, parts)
 
     headers_t = _param_type(roles.parser[0], 1)

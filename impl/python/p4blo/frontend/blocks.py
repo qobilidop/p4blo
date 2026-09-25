@@ -39,7 +39,6 @@ from p4blo.frontend.common import (
     TableB,
     Val,
     VarB,
-    _wrap,
     access,
     assign,
     binary,
@@ -59,6 +58,7 @@ from p4blo.frontend.common import (
     typed_parts,
     unary,
     var,
+    wrap,
 )
 from p4blo.frontend.il import Node
 from p4blo.v0 import p4blo_pb2 as pb
@@ -92,7 +92,10 @@ class Architecture:
             "externFunctionDeclarationIR: an architecture's functions", "by thesis", name
         )
 
-    def extern_object(self, cx: BlockCx, inst_name: str, t: Node, args: list[Node]) -> ExternInstB:
+    def extern_object(
+        self, cx: BlockCx | None, inst_name: str, t: Node, args: list[Node]
+    ) -> ExternInstB:
+        """An extern instance: in a block `cx`, or at top level when None."""
         raise NotTranslated("instantiationIR of an extern object", inst_name)
 
     def is_intrinsic(self, t: Node) -> bool:
@@ -298,7 +301,7 @@ class BlockCx:
                 bt = strip_alias(base_t)
                 if bt.c == "HEADER_STACK % [%]" and e.text(1) == "size":
                     st = strip_alias(t)
-                    return _wrap(st.num(0), bt.num(1)) if st.c == "BIT <%>" else Int(bt.num(1))
+                    return wrap(st.num(0), bt.num(1)) if st.c == "BIT <%>" else Int(bt.num(1))
                 return None
             case "(%)":
                 return self.fold(e.node(0))
@@ -345,9 +348,9 @@ class BlockCx:
             case "!", bool():
                 return not v
             case "~", Bits():
-                return _wrap(v.width, ~v.value)
+                return wrap(v.width, ~v.value)
             case "-", Bits():
-                return _wrap(v.width, -v.value)
+                return wrap(v.width, -v.value)
             case "-", Int():
                 return Int(-v.value)
             case "+", Bits() | Int():
@@ -398,7 +401,7 @@ class BlockCx:
             w, x, y = a.width, a.value, b.value
             match op:
                 case "<<":
-                    return _wrap(w, x << y) if y < w else Bits(w, 0)
+                    return wrap(w, x << y) if y < w else Bits(w, 0)
                 case ">>":
                     return Bits(w, x >> y)
             if isinstance(b, Int):
@@ -409,11 +412,11 @@ class BlockCx:
                 return None
             match op:
                 case "+":
-                    return _wrap(w, x + y)
+                    return wrap(w, x + y)
                 case "-":
-                    return _wrap(w, x - y)
+                    return wrap(w, x - y)
                 case "*":
-                    return _wrap(w, x * y)
+                    return wrap(w, x * y)
                 case "|+|":
                     return Bits(w, min(x + y, (1 << w) - 1))
                 case "|-|":
@@ -449,7 +452,7 @@ class BlockCx:
         """A compile-time known expression as a literal, an unsized one at `t`."""
         v = self.fold(te)
         if isinstance(v, Int) and t is not None and t.WhichOneof("kind") == "bits":
-            v = _wrap(t.bits, v.value)
+            v = wrap(t.bits, v.value)
         lit = None if v is None else literal_of(v)
         if lit is None:
             raise NotTranslated("literalExpressionIR", f"not a compile-time constant: {te.short()}")
@@ -991,9 +994,6 @@ class BlockCx:
         finally:
             self.scope = saved
 
-    def _expr_lvalue(self, te: Node) -> pb.LValue:
-        return self.lvalue_of_expr(te)
-
     # -- arguments
 
     def ordered_args(self, params: Sequence[ParamIL], args: Sequence[Node]) -> list[Node | None]:
@@ -1327,9 +1327,10 @@ class BlockCx:
 
     @staticmethod
     def _pad(params: Sequence[ParamIL], args: Sequence[Node]) -> list[Node]:
-        # Arguments are positional here once named ones are ordered; a named
-        # argument list is ordered first so that packet arguments drop out
-        # by position.
+        """One argument per parameter, in parameter order, `_` where none
+        is given: the caller then drops the packet parameters and their
+        arguments together, by position. Named arguments are put in order
+        first; `call_args` orders the rest again, which is then a no-op."""
         if any(a.c in ("% = %", "% = _") for a in args):
             order = {p.name: i for i, p in enumerate(params)}
             by_index: list[Node | None] = [None] * len(params)
@@ -1416,14 +1417,14 @@ class BlockCx:
         if bt.c == "HEADER % <%> {%}":
             match method:
                 case "setValid":
-                    return [pb.Stmt(set_valid=pb.SetValid(header=self._expr_lvalue(base)))]
+                    return [pb.Stmt(set_valid=pb.SetValid(header=self.lvalue_of_expr(base)))]
                 case "setInvalid":
-                    return [pb.Stmt(set_invalid=pb.SetInvalid(header=self._expr_lvalue(base)))]
+                    return [pb.Stmt(set_invalid=pb.SetInvalid(header=self.lvalue_of_expr(base)))]
                 case "isValid":
                     return []
         if bt.c == "HEADER_STACK % [%]" and method in ("push_front", "pop_front"):
             count = self.int_of(args[0], f"callStatementIR: hs.{method}(n)")
-            stack = self._expr_lvalue(base)
+            stack = self.lvalue_of_expr(base)
             if method == "push_front":
                 return [pb.Stmt(push=pb.Push(stack=stack, count=count))]
             return [pb.Stmt(pop=pb.Pop(stack=stack, count=count))]
@@ -1923,7 +1924,7 @@ class BlockCx:
     def _set_literal(self, te: Node, kt: pb.Type) -> pb.Literal:
         v = self.fold_keyset(te)
         if isinstance(v, Int) and kt.WhichOneof("kind") == "bits":
-            v = _wrap(kt.bits, v.value)
+            v = wrap(kt.bits, v.value)
         lit = None if v is None else literal_of(v)
         if lit is None:
             raise NotTranslated("selectCaseIR", f"a keyset that is not a constant: {te.short()}")

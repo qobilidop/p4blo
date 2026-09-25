@@ -84,7 +84,8 @@ class EnumVal:
 type Val = Bits | Int | bool | ErrorVal | EnumVal
 
 
-def _wrap(width: int, value: int) -> Bits:
+def wrap(width: int, value: int) -> Bits:
+    """`value` reduced modulo `2^width`, as a `bit<width>`."""
     return Bits(width, value % (1 << width))
 
 
