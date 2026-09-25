@@ -49,7 +49,8 @@ creates no git tags.
 1. `.agents/status.md`: where the work stands and what is open. Three
    finite scopes, assurance milestone 1, the application collection and
    the architecture-free IR semantics scope, are complete and frozen;
-   nothing is active, and no completion reopens parked proofs.
+   maintenance does not reopen parked proofs. The status file names any
+   active engineering work.
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
    not infer broader guarantees from counts.
@@ -102,11 +103,29 @@ so the required CI gate discovers them without a hand-maintained file list.
 - **Agent instructions live in `AGENTS.md` alone.** Never create `CLAUDE.md`
   or `CLAUDE.local.md`; Claude-specific notes belong in `.claude/rules/`.
   Keep this entry point current when the active scope or workflow changes.
+- **Name the project P4-SpecTec.** SpecTec alone is a different project.
+  Distinguish P4 program IR from the specification's IL, AL and SL when
+  discussing interfaces or coverage. Preserve literal upstream names,
+  protocol fields and historical records when they use older terminology.
+- **Make invariants executable at their boundary.** Prefer a small
+  structural check over another reminder when a mistake is mechanically
+  detectable. A checker needs a negative case showing that the forbidden
+  change fails. Preserve independent semantic implementations: copying
+  P4-SpecTec algorithms into both p4blo interpreters weakens the oracle.
 - **Pure Python.** No dependency of the `p4blo` package may ship
   native code, and nothing newer than Python 3.13 is used.
 - **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` come
   from `buf generate`. Never edit them; edit the schema and regenerate.
-  CI fails on drift.
+  CI checks a fresh generation's inventory and bytes against both the
+  index and working tree. Stage new deliverables before the full gate;
+  a clean diff of tracked files alone cannot detect omitted outputs.
+- **Keep generated artifacts small and reproducible.** Tracked files
+  must be at most 5 MiB in both the index and working tree, enforced by
+  `scripts/check-file-sizes.py` through the structure tests. No exceptions.
+  Prefer reproducible generation, small losslessly compressed snapshots
+  with raw-content checksums, or checksum-pinned external artifacts.
+  Consider history growth as well as checkout size; reducing size does
+  not authorize rewriting published history. Logs stay in `.artifacts/`.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
   The IR spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`)
   and holds nothing architectural: no ports, no packet fate, no concrete
@@ -167,11 +186,33 @@ so the required CI gate discovers them without a hand-maintained file list.
   separate mechanical moves and reusable API changes from application policy.
   Once notes are archived, the commit log is the only narrative of how
   the work went, so the body matters.
-- **Commit and push autonomously.** The user authorizes committing and
-  pushing completed, checked work without a separate permission prompt.
-  Inspect the branch and remote first, preserve unrelated changes, and
-  never force-push or bypass failing gates. Record unavailable gates
-  explicitly rather than presenting skips as successful checks.
+- **PRs are the default for substantive changes**, including code,
+  proofs, dependencies, generated data, CI and policy. Direct-to-`main`
+  is limited to trivial non-behavioral maintenance. The user authorizes
+  committing, pushing and merging completed, checked work autonomously;
+  no separate human approval is needed unless repository protections
+  require it. Inspect the branch and remote, preserve unrelated changes,
+  and never force-push or bypass failing gates or review requirements.
+  Independent review and successful applicable remote CI must cover the
+  final PR revision before merge; re-check the head SHA before merging.
+  Run the full local gate before pushing and record unavailable gates
+  as such. A local pass is not remote CI, and a skip is not a pass.
+- **Write PRs for a reader without the conversation.** Lead with the
+  problem and resulting behavior, explain the approach and consequential
+  tradeoffs, then give validation commands/results and meaningful limits.
+  Link supporting evidence without making the links carry all context.
+  Scale detail to the diff; omit empty template sections and progress
+  diaries. Re-read the staged diff, commit message and final PR description
+  before submission; update the description when scope changes.
+  Include one short AI-disclosure sentence naming the authoring agent and
+  model verified by the active-session coauthor helper. Distinguish
+  AI-agent review from human review; never invent attribution.
+- **Preserve meaningful commits when merging.** Use a merge commit for
+  coherent commits whose rationale and identities are worth retaining;
+  squash WIP/fixup sequences with a considered final message preserving
+  rationale and coauthor attribution. Rebase-and-merge only with an explicit
+  linear-history preference. Choose per PR, and keep merge-strategy prose
+  out of the PR description unless requested. Do not bypass protections.
 - **Continue autonomously within the requested direction.** Make scoped
   design decisions without waiting for feedback and record their reasons
   for later review. Prefer reversible steps to waiting for feedback.
@@ -187,14 +228,15 @@ so the required CI gate discovers them without a hand-maintained file list.
 ## Working with agents
 
 Each sub-agent gets its own git worktree (`git worktree add`), owns a
-disjoint set of files named in its brief, builds against interfaces
-already committed on `main`, and hands back with the checks that its
+disjoint set of files named in its brief, builds against an explicit
+committed base revision, and hands back with the checks that its
 change can affect green: lint and types, the test modules that cover its
 files, and the Lean gate when it touched a Lean package. It runs the
 full gate only when the change is cross-cutting (a path move, the wire
-or pipe protocol, a module many others import). The integrator merges
-on `main` in batches, runs the full gate once per batch before pushing,
-and removes the worktrees.
+or pipe protocol, a module many others import). The integrator combines
+reviewed commits on the PR branch in batches, runs the full gate once per
+batch before pushing, then merges the PR only after its final revision
+passes remote CI, and removes the worktrees.
 Spawn sub-agents when useful without waiting for permission; choose a
 model appropriate to the task; create the worktree before delegating and
 put its absolute path and file ownership in the brief. Sub-agents must
@@ -202,8 +244,10 @@ not edit the integrator's working tree.
 
 After each build step an independent, read-only review agent looks for
 confirmed defects with reproducers. Its report goes under
-`.agents/reviews/` and its findings are fixed on `main`. Reviews stay
-there until the next compaction archives them.
+`.agents/reviews/` and its findings are fixed on the working branch before
+integration. Record the reviewed revision or patch, commands and results,
+confirmed findings with reproducers, and any checks the reviewer could not
+run. Reviews stay there until the next compaction archives them.
 
 Worktrees do not isolate external resources: use distinct Docker image
 tags and `P4BLO_BMV2_IMAGE` per implementation worktree, and never

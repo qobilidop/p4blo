@@ -6,9 +6,41 @@ to this compaction is in git at the archive commit
 `26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and up to the
 previous one at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 
-Last updated: 2026-09-25. **Active: nothing.** Three finite scopes are
-complete and frozen; the next work is the joint milestone with
-`p4-spectec-lean` (below) or a backlog item the user scopes.
+Last updated: 2026-09-25. **Engineering-practice implementation complete**
+on `engineering-practices`, from `045f3de`; integration and final-revision
+CI are tracked by [PR #1](https://github.com/qobilidop/p4blo/pull/1).
+Until that PR merges, finish its review and CI before merging; after merge,
+no work is active. Three semantic scopes remain complete and frozen.
+The user authorized learning from local `p4-spectec-lean` and external
+engineering guidance, then improving this repository; P4-SpecTec
+integration and coverage changes are not part of it.
+
+## Engineering checkpoint
+
+- Adopted PR-default integration, final-revision review/CI, durable PR
+  descriptions and verified AI attribution from `p4-spectec-lean`.
+- Added a 5 MiB index/working-tree artifact guard and closed a confirmed
+  protobuf drift-check gap: `git diff` after in-place generation misses
+  new untracked outputs. Sources and boundaries are in
+  [engineering-practices.md](notes/engineering-practices.md).
+- Artifact guards committed as `cd04ba2`. An isolated implementation agent
+  supplied the generation checker and tests; independent review found one
+  conflict in the compaction skill's direct-to-main workflow, corrected
+  and re-reviewed. The skill also no longer treats every same-day archive
+  as an unfinished compaction. See the
+  [review report](reviews/engineering-practices.md).
+- Local full `scripts/check.sh`: 5,157 passed, 1 skipped (optional XDP
+  image unavailable), 4 expected failures; formatting, lint, types, schema,
+  real pinned Buf generation and workflow lint passed. The 18 guard tests
+  pass, including deliberately invalid candidates; targeted Pyright on
+  both scripts and their tests reports no errors or warnings.
+- Lean, assurance and external oracle specialist gates were not rerun
+  locally: their implementations and inputs are unchanged. PR CI runs
+  the dedicated Lean, P4-SpecTec, BMv2 and required XDP workflows before
+  merge. Prior semantic evidence below is retained unchanged.
+- Temporary implementation/review worktrees can be removed after the PR
+  merges and their content is confirmed integrated. No neighboring
+  repository was modified.
 
 ## Current state
 
