@@ -793,7 +793,8 @@ def headers() -> None:
 
 
 def stacks() -> None:
-    """The stack entries; `hdr.h.a` ends as the last index, to show `nextIndex`."""
+    """The stack entries. `hs.lastIndex` is allowed only in a parser, so its
+    witness is a parser that sets `hdr.h.a` to it."""
     last = cast(bits(8), pb.Expr(last_index=pb.LastIndex(stack=E("hdr.s"))))
     idx = [local("idx", bits(32))]
     set_idx = assign("idx", cast(bits(32), E("hdr.h.a")))
@@ -803,22 +804,35 @@ def stacks() -> None:
     p = program("writeOutOfRange", control(set_idx, set_valid("hdr.s[idx]"), locals=idx))
     case(p, [2], ["stack.index.writeOutOfRange", "lvalue.index"])
     case(p, [1], ["lvalue.index"], ["stack.index.writeOutOfRange"])
-    p = program("lastIndexEmpty", result(last, if_(x_below(1), [push("hdr.s", 1)])))
+    # The stack is empty unless x is 0, which extracts one element.
+    p = program(
+        "lastIndexEmpty",
+        parser(
+            state(
+                "start",
+                [extract("hdr.h")],
+                select=["hdr.h.a"],
+                cases=[([exact8(0)], "fill"), ([DONT_CARE], "look")],
+            ),
+            state("fill", [extract("hdr.s.next")], goto="look"),
+            state("look", [assign("hdr.h.a", last)]),
+        ),
+    )
     case(p, [1], ["stack.lastIndex.empty", "expr.lastIndex"])
-    case(p, [0], ["expr.lastIndex"], ["stack.lastIndex.empty"])
+    case(p, [0, 0x0B], ["expr.lastIndex"], ["stack.lastIndex.empty"])
     # push_front(2) clamps after a push of 1 (x = 0); pop_front(1) clamps
     # unless a push of 2 came first (x = 1).
-    p = program("pushClamp", result(last, if_(x_below(1), [push("hdr.s", 1)]), push("hdr.s", 2)))
+    p = program("pushClamp", control(if_(x_below(1), [push("hdr.s", 1)]), push("hdr.s", 2)))
     case(p, [0], ["stack.push.clamp", "stmt.push"])
     case(p, [1], ["stmt.push"], ["stack.push.clamp", "stack.push.oversize"])
-    p = program("popClamp", result(last, if_(x_below(1), [push("hdr.s", 2)]), pop("hdr.s", 1)))
+    p = program("popClamp", control(if_(x_below(1), [push("hdr.s", 2)]), pop("hdr.s", 1)))
     case(p, [1], ["stack.pop.clamp", "stmt.pop"])
     case(p, [0], ["stmt.pop"], ["stack.pop.clamp", "stack.pop.oversize"])
     for name, make, tag in [
         ("pushOversize", push, "stack.push.oversize"),
         ("popOversize", pop, "stack.pop.oversize"),
     ]:
-        p = program(name, result(last, if_(x_below(1), [make("hdr.s", 3)], [make("hdr.s", 2)])))
+        p = program(name, control(if_(x_below(1), [make("hdr.s", 3)], [make("hdr.s", 2)])))
         kind = "stmt.push" if make is push else "stmt.pop"
         case(p, [0], [tag, kind])
         case(p, [1], [kind], [tag])
