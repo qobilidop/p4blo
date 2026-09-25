@@ -245,6 +245,24 @@ def test_lean_agrees_validity_on_the_validator_tests(lean_binary: Path, tmp_path
     assert compare(cases, lean_binary, tmp_path) == []
 
 
+def test_lean_agrees_validity_on_the_rule_each_validator_test_targets(
+    lean_binary: Path, tmp_path: Path
+) -> None:
+    """A validator test breaks one rule on a well-formed wire program, so
+    Lean reaches that rule instead of stopping in its decoder: `DECODE` is
+    accepted only where Python also names a wire problem, never through
+    `corresponds`'s allowance for an index failure that hides one."""
+    cases = validator_cases()
+    verdicts = lean_verdicts(lean_binary, [c.program for c in cases], tmp_path)
+    hidden = [
+        case.name
+        for case, line in zip(cases, verdicts, strict=True)
+        if lean_code(line) == DECODE
+        and not any(DECODE in CODES[d.code] for d in v.validate(case.program))
+    ]
+    assert hidden == []
+
+
 def test_csum16_fixture_is_the_golden() -> None:
     """`spec/arch/ArchTests/NonVacuity.lean` writes csum16 as a Lean term,
     and the Lean tests check that term against this fixture; the fixture
