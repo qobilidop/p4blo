@@ -154,3 +154,40 @@ def test_shared_corpus_discovery_is_not_empty() -> None:
     assert "register_bounds/bounds.stf" in test_oracle_bmv2.KNOWN_DIVERGENCES
     assert not (ROOT / "corpus").exists()
     assert not (ROOT / "oracle").exists()
+
+
+# The test suites, one directory per question of the testing strategy
+# (docs/design.md), and the data and drivers they share; tests/examples
+# also keeps each application's tests beside its assets.
+TEST_SUITES = ("unit", "codec", "programs", "drt", "lean", "external", "structure")
+TEST_DATA = (
+    "corpus",
+    "examples",
+    "oracle",
+    "conformance",
+    "frontend",
+    "assurance",
+    "pyright",
+    "golden",
+)
+
+
+def test_tests_are_grouped_by_question() -> None:
+    tests = ROOT / "tests"
+    assert not sorted(p.name for p in tests.glob("test_*.py")), "no flat test modules"
+    for suite in TEST_SUITES:
+        directory = tests / suite
+        assert (directory / "__init__.py").is_file(), suite
+        assert (directory / "README.md").is_file(), suite
+        assert sorted(directory.glob("test_*.py")), suite
+    for data in TEST_DATA:
+        assert (tests / data).is_dir(), data
+    tracked = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "-z", "tests"],
+        check=True,
+        capture_output=True,
+    ).stdout.split(b"\0")
+    top = {Path(p.decode()).relative_to("tests").parts[0] for p in tracked if p}
+    files = {"__init__.py", "conftest.py", "ledger-classes.json"}
+    files |= {"drt-unhit-tags.json", "drt-guided-measurement.json"}
+    assert top == set(TEST_SUITES) | set(TEST_DATA) | files
