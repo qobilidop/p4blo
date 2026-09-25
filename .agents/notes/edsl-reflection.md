@@ -70,3 +70,10 @@ a new `wire` module alias collided with existing codec parameters. Syntax,
 types, targeted tests and the full gate exposed these, and the final fixes use
 unambiguous aliases and preserve independent fixtures. Assemble and validate
 all edits from an immutable snapshot before writing a migration batch.
+
+Run the final documentation sweep before the first CI push, including prose
+that states universal contracts, not only old symbol names and paths. The
+closure audit found older paragraphs still presenting the supplied H/M and
+STF conventions as mandatory after the code and newer guide had separated
+them. Correcting those late required additional final-head CI runs. Review
+caller workflows and conceptual claims together with the implementation.

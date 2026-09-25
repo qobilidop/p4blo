@@ -249,6 +249,8 @@ an acceptance case that would expose a false abstraction boundary. Follow
 that case through source, wire types, validation, execution and proof premises;
 a clean facade alone is not a boundary. Record cross-agent API signatures
 and commit dependencies in the working note.
+Before the first CI push, review the usage and design prose for universal
+claims that belonged only to the old adapter, as well as moved names and paths.
 When two slices depend on each other, hand off committed patches with
 explicit pending checks, then validate the integrated batch; do not have
 both agents wait for the other's green commit. Never amend a handed-off
