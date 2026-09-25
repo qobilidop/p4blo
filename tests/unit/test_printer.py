@@ -1,7 +1,7 @@
 """The printer: IR in, P4-16 for v1model out.
 
 Golden programs live under tests/golden/printer/<name>.p4; regenerate them
-with `P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`. When
+with `P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/unit/test_printer.py`. When
 Docker and the p4lang/p4c image are available every golden is also
 typechecked with p4test; a Docker problem skips, a p4test error fails.
 """
@@ -24,8 +24,8 @@ from p4blo.arch import v1model
 from p4blo.printer import PrintError, print_expr, print_lvalue, print_stmt, print_type
 from p4blo.v0 import p4blo_pb2 as pb
 
-GOLDEN_DIR = Path(__file__).resolve().parent / "golden" / "printer"
-CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
+GOLDEN_DIR = Path(__file__).resolve().parents[1] / "golden" / "printer"
+CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
 
 
 # ---------------------------------------------------------------------------

@@ -20,8 +20,8 @@ locally before pushing, and check exit codes, not output.
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs the rest with `-n auto`; the oracle suites share one simulator and are run in series) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
-| Original-source SpecTec probes | `uv run pytest tests/test_crc.py tests/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
-| Original-source BMv2 probes | `uv run pytest tests/test_crc.py tests/test_firewall.py tests/test_firewall_boundaries.py tests/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
+| Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
+| Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/test_firewall.py tests/test_firewall_boundaries.py tests/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
 | Forwarding application BMv2 profile | `uv run pytest tests/test_lean_forwarder_apply.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
@@ -147,7 +147,7 @@ and maintenance boundaries are in `website/README.md`.
 | Lean toolchain | `spec/ir/lean-toolchain`, `spec/arch/lean-toolchain`, `impl/lean/lean-toolchain` (must match) | edit all three; user package depends on local `../ir`, manifests committed |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracle/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/test_spectec_rules.py`) |
 | opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
-| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
+| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/unit/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
 | p4c test-suite sources | copies under `tests/corpus/*/` with SPDX headers | not updated; they are the vectors |
 | Original tutorial firewall | `tests/oracle/firewall.py` commit/path/SHA-256; vendored `firewall.p4` | review source/profile and update pin together; both oracle jobs run it directly |
@@ -196,7 +196,7 @@ the printer and the STF reader also use), the printer
 (`impl/python/p4blo/printer/`) and
 `docs/p4-spec-coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
-and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
+and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/unit/test_printer.py`).
 Record the decision in `.agents/decisions.md`.
 
 **A corpus program.** Create `tests/corpus/<name>/` with `<name>.py` (the
@@ -207,7 +207,7 @@ was elaborated away, what is deferred, in the style of the others), and
 Type-check the source with `uv run pyright tests/corpus/<name>/<name>.py`: a
 misspelled field, state, action or table, an unequal width, or a
 `concat` used without `as_` is an error there before the build runs.
-`tests/test_pyright.py` guards those static rules, with a file under
+`tests/unit/test_pyright.py` guards those static rules, with a file under
 `tests/pyright/must_fail/` per mistake and its expected diagnostic.
 `tests/test_corpus.py` picks the directory up by itself: it validates,
 rebuilds the golden from the source, replays every vector under the

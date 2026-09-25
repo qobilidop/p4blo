@@ -38,7 +38,7 @@ from p4blo.edsl.core import (
 from p4blo.edsl.core import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
+CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
 
 
 def corpus_module(name: str) -> ModuleType:

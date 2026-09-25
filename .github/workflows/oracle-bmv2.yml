@@ -46,7 +46,7 @@ jobs:
       - name: Replay the corpus on BMv2
         run: nix develop -c uv run pytest tests/test_oracle_bmv2.py -v
       - name: Check original and printed CRC known answers
-        run: nix develop -c uv run pytest tests/test_crc.py -k bmv2 -v
+        run: nix develop -c uv run pytest tests/unit/test_crc.py -k bmv2 -v
       - name: Check original firewall packets and complete register state
         run: nix develop -c uv run pytest tests/test_firewall.py -k bmv2 -v
       - name: Check original firewall truncation and persistence boundaries

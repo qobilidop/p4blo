@@ -97,7 +97,7 @@ discrepancies; the diagnoses and the exact known answers are in
 [assurance.md](../../../docs/assurance.md#known-disagreements-with-the-oracles).
 Packet-only agreement with an oracle cannot establish hash or state
 semantics for this program; that is why the primitive CRC probes in
-`tests/test_crc.py` and the complete register observations exist.
+`tests/unit/test_crc.py` and the complete register observations exist.
 
 ## Faults the tests catch
 

@@ -267,7 +267,7 @@ The typed surface is a front over `p4blo.edsl.core`, the builder that
 produces the goldens; its plain constructors and string names are the
 documented dynamic API for generated programs. The core's run-time checks
 stay authoritative, and pyright is an earlier line, not a replacement.
-`tests/test_pyright.py` tests the split with must-pass and must-fail
+`tests/unit/test_pyright.py` tests the split with must-pass and must-fail
 fixtures:
 
 | Checked by pyright | Checked at run time only |

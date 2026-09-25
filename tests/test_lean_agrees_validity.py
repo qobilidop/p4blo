@@ -4,7 +4,7 @@
 side proves sound for `Valid` and which progress builds on. This test
 requires the two validators to agree on which programs are valid, over
 every corpus program, every public example, a sample of generated
-programs from the DRT families, and every program `tests/test_validator.py`
+programs from the DRT families, and every program `tests/unit/test_validator.py`
 hands to `validator.validate`: its base program and each program it breaks
 in one place.
 
@@ -33,7 +33,7 @@ from p4blo import ir
 from p4blo import validator as v
 from p4blo.drt.families import FAMILIES, sample
 from p4blo.v0 import p4blo_pb2 as pb
-from tests import test_validator
+from tests.unit import test_validator
 from tests.examples import catalog
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,7 +154,7 @@ def _parameter_sets(fn: Callable[..., Any]) -> list[dict[str, Any]] | None:
 
 
 def validator_cases() -> list[Case]:
-    """Every program `tests/test_validator.py` validates, recorded by
+    """Every program `tests/unit/test_validator.py` validates, recorded by
     running its tests with `validator.validate` wrapped."""
     recorded: list[Case] = []
     original = v.validate

@@ -184,7 +184,7 @@ settles is not repeated here.
   sub-block call arguments are run-time checked. `assign` is overloaded
   over target kinds, so pyright reports a failed assignment as
   `reportCallIssue`, and the must-fail fixtures say so. Everything else in
-  the note's table holds; `tests/test_pyright.py` guards the static rules.
+  the note's table holds; `tests/unit/test_pyright.py` guards the static rules.
   (2026-09-22)
 
 ## Semantics rulings

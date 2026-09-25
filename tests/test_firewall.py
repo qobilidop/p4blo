@@ -22,7 +22,7 @@ from tests.corpus.tutorial_firewall.tutorial_firewall import build
 from tests.oracle import firewall as original
 from tests.oracle import run as spectec
 from tests.oracle.bmv2 import run as bmv2
-from tests.test_crc import known_spectec_mismatch
+from tests.unit.test_crc import known_spectec_mismatch
 
 CORPUS = Path(__file__).parent / "corpus/tutorial_firewall"
 CONFIGURATION = (

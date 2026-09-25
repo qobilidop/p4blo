@@ -34,7 +34,7 @@ import pytest
 from p4blo import validator
 from p4blo.edsl import EdslError, Program, bit8
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SUITE = ROOT / "tests" / "pyright"
 CONFIG = SUITE / "pyrightconfig.json"
 MUST_PASS = sorted((SUITE / "must_pass").glob("*.py"))

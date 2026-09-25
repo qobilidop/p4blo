@@ -17,7 +17,7 @@ from p4blo import arch, ir, stf
 from p4blo.arch import CONTRACT, Architecture, ContractError, Filter, Switch, stf_driver
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus" / "forwarder"
+CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus" / "forwarder"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 # ---------------------------------------------------------------------------

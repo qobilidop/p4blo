@@ -2,7 +2,7 @@
 
 Every test compares what a v2 program builds with hand-written text-format
 IR. The forwarder rebuilding its golden (tests/test_corpus.py) is the
-acceptance test; tests/test_pyright.py covers what pyright rejects.
+acceptance test; tests/unit/test_pyright.py covers what pyright rejects.
 """
 
 from __future__ import annotations

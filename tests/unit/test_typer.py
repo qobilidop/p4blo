@@ -26,7 +26,7 @@ from p4blo.validator.names import Scope
 from p4blo.validator.typer import Typer
 from tests.examples import catalog
 
-CORPUS = Path(__file__).resolve().parent / "corpus"
+CORPUS = Path(__file__).resolve().parents[1] / "corpus"
 SEEDS = range(20)
 
 
