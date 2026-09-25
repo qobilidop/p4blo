@@ -40,6 +40,12 @@ sys.path.insert(0, str(ROOT))
 from tests.oracle import coverage  # noqa: E402
 
 CATEGORIES = {"architecture", "excluded-construct", "not-representable", "unhit"}
+# In-scope rules the structuring pass merges into another rule's leaf, with
+# no leaf of their own (tests/oracle/coverage.py, on merged rules).
+MERGED = {
+    ("rule", "Callee_eval/abort", "8-dynamic/8.10.1-eval-call-callee.watsup", 255),
+    ("rule", "Callee_eval/abort", "8-dynamic/8.10.1-eval-call-callee.watsup", 303),
+}
 # How a reach text would admit that nothing reaches the item.
 UNREACHABLE = re.compile(r"\b(not reachable|unreachable|cannot be reached|never reached)\b", re.I)
 Key = tuple[str, str, str, int]
@@ -136,6 +142,25 @@ def test_exclusions_are_well_formed() -> None:
                 f"{where}: an unhit item must be reachable, but its reach says it is not"
             )
     assert not problems, "\n".join(problems)
+
+
+def test_every_in_scope_rule_has_its_own_leaf() -> None:
+    """A rule is hit through exactly one leaf of its own. An ancestor
+    attribution guesses the owner from a shared case analysis, and a
+    merged rule has no leaf; either would let a hit be credited to the
+    wrong rule, so both fail in scope except for the named merges."""
+    problems = [
+        f"{i['file']}:{i['line']}: {i['name']}: leaves {i['leaves']}"
+        + (", via an ancestor" if "via" in i else "")
+        for i in load(REPORT)["items"]
+        if i["kind"] == "rule"
+        and in_scope(i)
+        and key(i) not in MERGED
+        and (i["leaves"] != 1 or "via" in i)
+    ]
+    assert not problems, "\n".join(problems)
+    merged = {key(i): i["leaves"] for i in load(REPORT)["items"] if key(i) in MERGED}
+    assert merged == dict.fromkeys(MERGED, 0), "a named merge changed; review MERGED"
 
 
 def counts() -> dict[str, Counter[str]]:

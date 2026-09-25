@@ -80,7 +80,12 @@ next declaration or closing brace). Two corrections are needed:
 - A rule with neither outputs nor path premises gets the relation
   signature's region. Its leaf is attributed to the nearest enclosing
   instruction whose region lies in a rule span, and the report says so
-  (`"via": "ancestor"`).
+  (`"via": "ancestor"`). That enclosing instruction is often a case
+  analysis shared with a sibling rule, which then takes the credit: in
+  5-typing, `CallableType_wf/actionTypeIR` holds the leaves of two other
+  rules. No in-scope rule needs it at this pin, and
+  tests/test_spectec_coverage.py fails if one ever does, or has other
+  than one leaf outside the named merges below.
 
 Rules with identical premises and conclusions are merged into one leaf by
 the structuring pass, which keeps one rule's region; the others have no leaf
