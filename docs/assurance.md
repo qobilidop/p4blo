@@ -301,6 +301,20 @@ runner's result, and the reply itself still comes from the runner.
 and compares the unhit rules with `tests/drt-unhit-tags.json`, which
 lists every rule the generators cannot reach yet with the gap behind it;
 a rule that stops being hit fails the test, and the list may only shrink.
+It is empty: two menu-driven program families (`p4blo.drt.families`), a
+control family and a parser family whose every choice is a labelled
+decision, reach all 157 rules, and the retained campaigns hold them at
+fixed seeds beside the corpus and the earlier families. A guided driver
+(`python -m p4blo.drt guided`) steers those choices by the tags each run
+reports, weighting options toward unhit rules and unhit pairs of a rule
+with the decision that led to it, ESMeta's one-feature-sensitive
+criterion; it is deterministic by seed and reaches the last unhit rule in
+fewer programs than uniform choice, and every program it makes is
+validated and compared like any other. Witness pairs in
+`spec/arch/ArchTests/fixtures/` pin each rule's condition from both
+sides, one program that must report it and one that must not, with the
+recorded reply anchoring what actually ran. An independent review of the
+observer and its fixes are filed under the agent reviews.
 
 The conformance corpus under `tests/conformance/` is the Lean semantics'
 answers kept as data: one fixture per input, each a program, an ordered request
@@ -320,10 +334,7 @@ the semantics changes an answer, the behavior is written in the semantics
 documents first, and the fixtures are then re-exported deliberately and
 their diff reviewed; see `tests/conformance/README.md`.
 Validator-only rules, installation checks, extern families and the
-architecture's own rules are outside this inventory. An independent
-review of the observer is under the agent reviews; its confirmed
-defects are being fixed and witness pairs added.
-
+architecture's own rules are outside this inventory. 
 ### Checked against P4-SpecTec
 
 Every closed behavior of the semantics page cites the SpecTec rule that
