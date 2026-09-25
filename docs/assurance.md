@@ -79,10 +79,20 @@ whole-pipeline proof.
 
 Execution evidence concerns finite programs accepted by the Python
 validator, with matching builtin bindings, appropriate architecture
-exports and valid host installations. Preparation and indexing on the
-Lean side are checked by tests, not proved equivalent to the whole Python
-validator. Codec tests intentionally include invalid-but-representable
-IR; successful decoding is not permission to execute it.
+exports and valid host installations. Lean has its own whole-program
+checker, `P4bloIR.Validity.check` (`p4blo-lean check`), in the Python
+validator's order and with its diagnostic codes; it is proved sound for
+the declarative rules `Validity.Valid`, not complete, and it is not
+proved equivalent to the Python validator. The two are compared instead,
+program by program, on every corpus program, example, a sample of both
+DRT families and every program `tests/test_validator.py` validates: they
+agree on acceptance and on the first diagnostic code, up to wire problems
+that Lean's decoder rejects before any rule runs. For a program the
+checker accepts, `P4bloIR.Progress` proves that the step machine never
+reaches an `InterpError`, under an extern-binding contract and a
+successful installation. Codec tests intentionally include
+invalid-but-representable IR; successful decoding is not permission to
+execute it.
 
 Selected typed Lean expressions and commands have checked lowering and
 execution theorems under explicit context, index and frame premises. The
@@ -142,7 +152,10 @@ This is a trusted-input development and simulation profile, not a
 hardened service. uint32 wire bounds can still describe impractically
 large allocations; JSON nesting, host memory and runtime limits apply.
 There is no proved global resource bound or validated-program termination
-theorem, and the Lean runner has no semantic fuel counter. The DRT client
+theorem, and the Lean runner has no semantic fuel counter. Progress is
+proved: a finite run of a valid program ends in success or in a parser
+error the program declares, never in an `InterpError`; that every run is
+finite remains open. The DRT client
 defaults to a ten-second request deadline; a transport deadline is a
 harness failure, never a semantic `ParserTimeout`.
 
@@ -194,6 +207,11 @@ interchangeable confidence score.
 | `DeviationLaws.lookup_hit`, `lookup_miss`, `lookup_longest_prefix`, `lookup_longest_lpm`, `keyValueMatches_exact`, `keyValueMatches_lpm`, `keyValueMatches_ternary`, `prefixLength_eq`, `prefixLength_single`, `rank_lpm` | A hit runs an installed entry matching every key with the longest total prefix, or the largest priority with a ternary key; a miss means none matches and runs the current default. The helpers are pinned: an exact value matches its number, an `lpm` value exactly the keys agreeing with it on their top prefix bits, a ternary value exactly the keys agreeing under its mask; the prefix length is the sum of the installed `lpm` lengths | Installation's canonicity and tie rejection; that the installed entries came from `Installed.build`; key positions past an entry's own key count, which the match does not check |
 | `DeviationLaws.zero_bits`, `zero_boolean`, `zero_error`, `zeroHeader_eq`, with `Frame.forBlock_initialized` | A fresh activation holds zero bits, `false` and `NoError`, and a declared header's zero is invalid with zero fields | Zero enums, structs and stacks beyond their header elements |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
+| `Build.build_ok` | `Index.build`'s maps read back into the program's lists: every declaration found by name is the program's under that name, program-level names share one namespace, and each block's scope is built from that block | That every name the program declares is found (only the directions later proofs use are stated) |
+| `Validity.check_sound` | A program the Lean checker accepts satisfies `Validity.Valid`, the validator's rules as relations over the program and its index | That the checker accepts every `Valid` program; agreement with the Python validator, which `tests/test_lean_agrees_validity.py` tests on finite inputs |
+| `Validity.progress`, `Steps.machineOk`, `finishes_documented`, `drive_documented` | From a well-formed machine of a `Valid` program, every step finishes with success or with a parser error the program declares, or reaches another well-formed machine; so no reachable machine and no finite run carries an `InterpError`. Premises: the extern binding obeys `ExternContract`, the entries satisfy `InstalledOk`, the initial run fits the block kind | Termination; that the reference architecture's extern families obey the contract; the checks the entry points in `P4bloIR.Interp` make outside the machine |
+| `Validity.build_installedOk` | A successful `Installed.build` satisfies `InstalledOk`: every lookup in a program table succeeds and selects an action of its block with data of its parameters' types | That installation succeeds for given host entries |
+| `Validity.initial_ok`, `entryFrame_ok` | The machines the entry points start, from `Frame.forBlock` with each parameter set to a value of its type, are well formed | That the values an architecture passes are typed |
 | `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
 
 The checked theorem inventories are [`spec/ir/ProofAudit.lean`](../spec/ir/ProofAudit.lean),
