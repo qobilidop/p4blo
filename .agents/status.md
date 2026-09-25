@@ -74,11 +74,12 @@ under `reviews/`; every finding is fixed.
 | Phase 0: decisions recorded, `tests/oracle/spectec-rules.json` and `scripts/spectec-rules.py`, `tests/test_spectec_rules.py` | done, `eb0a440` |
 | A3 the ledger: 56 entries, each citing P4, SpecTec, Lean, Python and tests, classes pinned in `tests/ledger-classes.json`; reviewed (`reviews/2026-09-24-ledger.md`), corrections merged | done, `6ac46b2` |
 | B1 Lean rule tags: 157 tags, observer over the step machine, `coverage` in every reply, `tests/drt-unhit-tags.json` (34 unhit); reviewed (`reviews/2026-09-24-lean-coverage.md`) | merged, `0db270b`; the review's six defects are being fixed on `work/coverage-fixes` with witness pairs |
-| A2 SpecTec rule coverage: OCaml probe, `tests/oracle/spectec-coverage.json`, hand-written exclusions, counts on the coverage page, oracle CI step | done, `94cd629` |
-| A1 generated programs on SpecTec: six deterministic families, sixty seeds in CI, 1,100-seed local campaign with no unexplained disagreement | done, `4a3504a` |
+| A2 SpecTec rule coverage: OCaml probe, `tests/oracle/spectec-coverage.json`, hand-written exclusions, counts on the coverage page, oracle CI step; reviewed (`reviews/2026-09-24-spectec-coverage.md`): measurement sound, two exclusions wrong, generated inputs not yet measured, fixes routed to B2 | done, `94cd629` |
+| A1 generated programs on SpecTec: six deterministic families, sixty seeds in CI, 1,100-seed local campaign with no unexplained disagreement; reviewed (`reviews/2026-09-24-generated-programs.md`): the table-mask classifier needs a control model, fix routed to B2 | done, `4a3504a` |
 | Copy-back resolution at copy-in (both interpreters, proofs unchanged, 17 cases confirmed on SpecTec) and parser-only `lastIndex` in the validator | done, `2192fac` |
 | Lean coverage review fixes: the six defects and the doubtful conditions, copy-back classified through the resolved lvalues, witness pairs for all 157 tags (135 requests, replies anchored to the reference interpreter), nine mutants caught, 33 tags still unhit | done, `495268d` |
-| C4 deviation theorems | building on `work/deviation-theorems` |
+| C4 deviation theorems: `P4bloIR.DeviationLaws`, 39 audited theorems over the production definitions for the ten run-time closed behaviors, a general longest-prefix and priority law over `Installed.lookup`, the revisit check of the parser loop bound; nine evaluator mutants each rejected at a named theorem; not proved: that a non-consuming loop always reaches the revisit check | merged, `bc4b8bc`; review pending |
+| B2 coverage-guided generation, with the two Phase 1 review fix lists (the table-mask classifier control model, the sampler gaps, the exclusion corrections, the probe cleanups) | building on `work/guided-generation` |
 | Phases 2 to 4 | see the plan |
 
 The coverage page was renamed `docs/p4-spec-coverage.md` at `bc014a2`.
