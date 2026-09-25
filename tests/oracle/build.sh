@@ -5,11 +5,13 @@
 # what is missing. See tests/oracle/README.md.
 #
 # The patches under tests/oracle/patches/ are applied to the checkout before
-# the build, in name order; they add p4blo's block architecture and the
-# `block` command (tests/oracle/block.py) and change nothing the `sim`
-# command runs. The stamp records the commit and a digest of the patches,
-# so a changed patch rebuilds, and a checkout whose stamp differs is reset
-# to the pinned commit before they are applied again.
+# the build, in name order; they add p4blo's block architecture with the
+# `block` command (tests/oracle/block.py, which passes it
+# tests/oracle/p4blo.watsup) and the `il-export` command
+# (p4blo.frontend.export), and change nothing the `sim` command runs. The
+# stamp records the commit and a digest of the patches, so a changed patch
+# rebuilds, and a checkout whose stamp differs is reset to the pinned commit
+# before they are applied again.
 #
 # Needs: git, make, a C compiler, opam (2.1 or newer), and libgmp with its
 # headers plus pkgconf, which zarith's opam packages probe for. See

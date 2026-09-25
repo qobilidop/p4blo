@@ -328,14 +328,17 @@ architecture, `p4blo`, added to the pinned simulator by
 parser, control or deparser per request on the inputs the request gives and
 returns what the block left, as `p4blo-lean run` does for whole requests.
 
-The patch adds `p4spec/lib/backend-sim/p4blo/` (the architecture in
-`pipe.ml`; its spec relations, `P4blo_init`, `P4blo_parser`,
-`P4blo_control`, `P4blo_deparser` and their helpers, in `p4blo.watsup`),
-one case in `backend-sim/build.ml` that registers the architecture, and a
-`block` command in `p4spec/bin/main.ml` that reads JSON requests line by
-line. Nothing the `sim` command runs changes, and `p4blo.watsup` is passed
-to the command beside the spec directory rather than placed in it, so the
-spec every other test elaborates is untouched. The extern families p4blo
+The architecture's spec relations, `P4blo_init`, `P4blo_parser`,
+`P4blo_control`, `P4blo_deparser` and their helpers, are p4blo's block
+contract and live in this directory as `p4blo.watsup`, a standalone file
+in the spec's own language that other projects can read directly. The
+patch holds only OCaml: `p4spec/lib/backend-sim/p4blo/pipe.ml`, the
+architecture's driver; one case in `backend-sim/build.ml` that registers
+it; and a `block` command in `p4spec/bin/main.ml` that reads JSON requests
+line by line. Nothing the `sim` command runs changes, and `p4blo.watsup`
+is passed to the command beside the spec directory rather than placed in
+it, so the spec every other test elaborates is untouched. The file is read
+when the command starts, so changing it needs no rebuild. The extern families p4blo
 prints (register, counter, and `hash` for checksum16, crc16 and crc32) are
 declared in `include/p4blo.p4` with V1Model's signatures and implemented by
 the V1Model simulator's own code; `impl/python/p4blo/arch/spectec_block.py`
@@ -356,7 +359,7 @@ with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
 `build.sh`, which reapplies it and stamps the build.
 
 `block.py` drives it. A `BlockRunner` keeps one `p4spectec block spec
-<p4blo.watsup> -i p4c/p4include -i tests/oracle/include` process resident,
+tests/oracle/p4blo.watsup -i p4c/p4include -i tests/oracle/include` process resident,
 so the spec is elaborated once (well under a second) and each program is
 instantiated once, and sends requests of this shape:
 
