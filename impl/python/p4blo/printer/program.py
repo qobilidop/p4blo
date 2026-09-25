@@ -20,7 +20,7 @@ all three.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -44,15 +44,8 @@ from p4blo.v0 import p4blo_pb2 as pb
 from p4blo.validator import ValidationError
 from p4blo.validator.typer import expr_type
 
-# The names of the blocks printed for a missing role.
-MISSING_ROLE_NAMES = {
-    "parser": "MyParser",
-    "control": "MyIngress",
-    "deparser": "MyDeparser",
-}
 
-
-def print_program(program: pb.Program, *, index: ir.Index | None = None) -> str:
+def print_program(program: pb.BlockLibrary, *, index: ir.Index | None = None) -> str:
     """The program's declarations and blocks, with no architecture."""
     if index is None:
         index = ir.Index.build(program)
@@ -77,13 +70,13 @@ class ProgramPrinter:
     """
 
     index: ir.Index
+    roles: Mapping[str, str] = field(default_factory=dict)
     out: list[str] = field(default_factory=list)
     stmt_printer: ClassVar[type[StmtPrinter]] = StmtPrinter
 
     def __post_init__(self) -> None:
         self.p = self.index.program
         self.stmts = self.stmt_printer(self.index)
-        self.roles = {e.role: e.block for e in self.p.exports}
         self.exported = set(self.roles.values())
         self.top_level_externs, self.block_externs = self._place_externs()
 
@@ -446,35 +439,3 @@ class ProgramPrinter:
         for s in epilogue:
             self.line(2, s)
         self.line(1, "}")
-
-    # -- blocks for the roles no block is exported as
-
-    def missing_roles(self) -> None:
-        h, m = self.p.headers, self.p.metadata
-        for role, name in MISSING_ROLE_NAMES.items():
-            if role in self.roles:
-                continue
-            if name in self.index.program_names:
-                raise PrintError(f"no block exported as {role!r} and the name {name!r} is taken")
-            self.line(0)
-            extra = self.role_params(role)
-            match role:
-                case "parser":
-                    params = ", ".join(
-                        [f"packet_in {PACKET}", f"out {h} hdr", f"inout {m} meta", *extra]
-                    )
-                    self.line(0, f"parser {name}({params}) {{")
-                    self.line(1, "state start {")
-                    self.line(2, "transition accept;")
-                    self.line(1, "}")
-                case "control":
-                    params = ", ".join([f"inout {h} hdr", f"inout {m} meta", *extra])
-                    self.line(0, f"control {name}({params}) {{")
-                    self.line(1, "apply {")
-                    self.line(1, "}")
-                case _:
-                    params = ", ".join([f"packet_out {PACKET}", f"in {h} hdr", *extra])
-                    self.line(0, f"control {name}({params}) {{")
-                    self.line(1, "apply {")
-                    self.line(1, "}")
-            self.line(0, "}")
