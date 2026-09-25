@@ -88,6 +88,8 @@ from dataclasses import dataclass, field
 from p4blo import ir
 from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.validator import ValidationError
+from p4blo.validator.typer import expr_type
 
 __all__ = [
     "Add",
@@ -454,35 +456,11 @@ def key_name(key: pb.Key) -> str:
     return name
 
 
-def _type_of(index: Index, block: str, expr: pb.Expr) -> pb.Type:
-    """The type of a key expression, enough of it to get a key's width."""
-    match expr.WhichOneof("kind"):
-        case "var":
-            return index.scopes[block].vars[expr.var].type
-        case "member":
-            base = _type_of(index, block, expr.member.base)
-            owner = base.header or base.struct
-            if not owner:
-                raise StfError(f"{dotted(expr.member.base) or 'the base'} has no fields")
-            fields = index.fields(owner)
-            return fields[index.field_index(owner, expr.member.field)].type
-        case "index":
-            base = _type_of(index, block, expr.index.base)
-            if base.WhichOneof("kind") != "stack":
-                raise StfError(f"{dotted(expr.index.base) or 'the base'} is not a stack")
-            return pb.Type(header=base.stack.header)
-        case "slice":
-            return pb.Type(bits=expr.slice.hi - expr.slice.lo + 1)
-        case "cast":
-            return expr.cast.to
-        case "literal" if expr.literal.WhichOneof("value") == "bits":
-            return pb.Type(bits=expr.literal.bits.width)
-        case kind:
-            raise StfError(f"cannot take the width of a {kind} key")
-
-
 def _key_width(index: Index, block: str, key: pb.Key) -> int:
-    width = _type_of(index, block, key.expr).bits
+    try:
+        width = expr_type(key.expr, index, index.scopes[block]).bits
+    except ValidationError as e:
+        raise StfError(f"key {key_name(key)!r}: {e}") from None
     if width == 0:
         raise StfError(f"key {key_name(key)!r} is not a bit<N>")
     return width

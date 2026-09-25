@@ -189,7 +189,11 @@ step line is a changed answer (`tests/conformance/README.md`).
 
 **The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
-`spec/ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules and
+`spec/ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules
+(`impl/python/p4blo/validator/`, the module of the rule's group; a new
+expression kind is typed in `validator/typer.py`, which the interpreter,
+the printer and the STF reader also use), the printer
+(`impl/python/p4blo/printer/`) and
 `docs/p4-spec-coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/test_printer.py`).
@@ -215,8 +219,10 @@ the current programs is archived in git as `docs/corpus-candidates.md`.
 
 **An extern.** Add its implementation under `impl/python/p4blo/arch/externs/` with
 a `Shape`, register it in `default_registry`, add the Lean model in
-`spec/arch/P4bloArch/Externs.lean`, the printer's v1model form in
-`impl/python/p4blo/arch/v1model.py`, and a typed family class in
+`spec/arch/P4bloArch/Externs.lean`, its v1model form in
+`impl/python/p4blo/arch/v1model.py` (`print_extern_instance` and
+`V1modelStmtPrinter`, which the block architecture shares), and a typed
+family class in
 `impl/python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
 `Counter` and `Checksum16`, from which the IR `ExternType` is derived.

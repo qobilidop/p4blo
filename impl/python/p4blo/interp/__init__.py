@@ -16,7 +16,7 @@ The package reads as one explanation, bottom up:
     values.py    run-time values and their zero, copy and equality
     api.py       what a caller exchanges with the interpreter
     errors.py    parse errors as an exception
-    widths.py    static types and widths of IR expressions
+    widths.py    widths of IR types; expression types from the validator's typer
     packet.py    the packet under a parser; the emit buffer of a deparser
     tables.py    installed entries and the match algorithm
     env.py       variable storage for one block activation

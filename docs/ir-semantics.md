@@ -234,7 +234,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - P4: §8.18
   - SpecTec: `Expr_eval/stack-lastIndex`, `Expr_ok/headerStack-lastIndex`
   - Lean: `evaluate`, `DeviationLaws.evaluate_lastIndex`, `DeviationLaws.lastIndex_empty`, `DeviationLaws.lastIndex_nonempty`
-  - Python: `p4blo.interp.expr.last_index`, `p4blo.validator._Validator.type_of`
+  - Python: `p4blo.interp.expr.last_index`, `p4blo.validator.typer.Typer.type_of`
   - Test: `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`, `tests/test_validator.py::test_parser_only`, `tests/test_validator.py::test_last_index_in_a_parser_is_fine`
   - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, and p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only in a parser, as the validator does.
 - **`hs.last` on an empty stack.** The IR has no `last`; `hs.last` is
@@ -282,7 +282,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - P4: §8.18
   - SpecTec: `Lvalue_eval/stack-next-out-of-bounds`, `Lvalue_write/stack-next`, `Lvalue_write/stack-out-of-bounds`
   - Lean: `extract`, `readLValue`
-  - Python: `p4blo.interp.stmt.extract`, `p4blo.validator._Validator.check_extract`
+  - Python: `p4blo.interp.stmt.extract`, `p4blo.validator.statements.StatementChecks.check_extract`
   - Test: `tests/test_interp_parser.py::test_extract_into_a_full_stack_is_stack_out_of_bounds`, `tests/test_interp_parser.py::test_a_full_stack_is_reported_before_a_short_packet`, `tests/test_interp_expr.py::test_next_is_not_an_lvalue_outside_extract`, `tests/test_validator.py::test_next_only_extract_in_a_parser`, `tests/corpus/stacks`
   - Class: same. SpecTec resolves the `out` argument `hs.next` while copying in, so a full stack rejects with `StackOutOfBounds` before the packet is read, and the copy-out through `Lvalue_write/stack-next` fills the element and increments the index; SpecTec also accepts `hs.next` elsewhere, which the IR excludes.
 
@@ -319,7 +319,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - P4: §6.8
   - SpecTec: `Call_eval/controlApplyMethodCallee`, `Call_eval/parserApplyMethodCallee`, `Copy_in`, `Copy_out`
   - Lean: `argumentValue`, `copyIn`, `copyBack`, `Execution.dispatch`
-  - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.validator._Validator.check_args`
+  - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.validator.calls.CallChecks.check_args`
   - Test: `tests/test_interp_control.py::test_sub_control_call_copies_in_and_out`, `tests/test_interp_control.py::test_an_in_argument_overlapping_an_inout_one_is_copied_in_first`, `tests/test_validator.py::test_call_alias`, `tests/test_validator.py::test_no_alias`
   - Class: same. `Copy_in` evaluates every argument into the callee's frame before the body runs and `Copy_out` writes `out` and `inout` parameters back in parameter order; where a copy-back lands is the next entry.
 - **Copy-back target.** An `out` or `inout` argument is resolved once,
@@ -368,7 +368,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - P4: none
   - SpecTec: none
   - Lean: none; the Lean definitions assume the validator's check and do not repeat it.
-  - Python: `p4blo.validator._Validator.check_call_graph`
+  - Python: `p4blo.validator.calls.CallChecks.check_call_graph`
   - Test: `tests/test_validator.py::test_call_cycle`, `tests/test_validator.py::test_action_call_cycle`, `tests/test_validator.py::test_actions_may_call_actions_without_a_cycle`
   - Class: not representable. P4 has no recursive calls, so no IL program SpecTec evaluates contains one: its typing rejects an action that calls itself, declaration before use rules out mutual recursion between actions, and instantiation rules it out between blocks.
 
@@ -593,7 +593,7 @@ A table match is evaluated over the installed entries; the program's
   - P4: §14.2.1.4 (entry priorities)
   - SpecTec: `$get_tableEntryPriority`, `$select_action`, `$set_priorities_of_tableEntryListIR`
   - Lean: `Installed.install`, `Installed.sameKeys`
-  - Python: `p4blo.interp.tables.InstalledEntries.install`, `p4blo.validator._Validator.check_keys`
+  - Python: `p4blo.interp.tables.InstalledEntries.install`, `p4blo.validator.tables.TableChecks.check_keys`
   - Test: `tests/test_validator.py::test_entry_priority_on_non_ternary_table`, `tests/test_validator.py::test_table_key_mix`, `tests/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`
   - Class: same. On the entries p4blo accepts, an exact table matches at most one entry, and `$select_action` with a single match returns that entry's action whatever its priority; SpecTec also accepts a priority on these tables, and p4blo's refusal of one is a restriction of its input, not a disagreement.
 - **Table miss.** The default action runs. A table always has a
@@ -606,7 +606,7 @@ A table match is evaluated over the installed entries; the program's
   - P4: §14.2.1.4
   - SpecTec: `$select_action`
   - Lean: `Installed.lookup`, `Table`, `DeviationLaws.lookup_miss`
-  - Python: `p4blo.interp.tables.InstalledEntries.lookup`, `p4blo.validator._Validator.check_action`
+  - Python: `p4blo.interp.tables.InstalledEntries.lookup`, `p4blo.validator.blocks.BlockChecks.check_action`
   - Test: `tests/test_interp_tables.py::test_a_table_without_a_default_falls_back_to_no_action`, `tests/test_interp_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`, `tests/test_validator.py::test_noaction_reserved`
   - Class: same. `$select_action` with no match returns the table's default action; a missing default being `NoAction` is P4's rule, settled before SpecTec's dynamic rules run.
 - **`hit`** is `true` when an entry matched and `false` on a miss,
@@ -629,7 +629,7 @@ A table match is evaluated over the installed entries; the program's
   - P4: none
   - SpecTec: `TableKeys_eval`, `TableMatches_eval`, `$match_keyset`
   - Lean: `Execution.dispatch`, `Installed.build`, `Installed.checkKeyValue`
-  - Python: `p4blo.interp.stmt.apply`, `p4blo.validator._Validator.check_entry`
+  - Python: `p4blo.interp.stmt.apply`, `p4blo.validator.tables.TableChecks.check_entry`
   - Test: `tests/test_interp_tables.py::test_exact_hit_and_miss_without_a_default`, `tests/test_validator.py::test_lpm_entry_must_be_canonical`, `tests/test_validator.py::test_ternary_entry_must_be_canonical`
   - Class: same. `TableKeys_eval` evaluates each key once before `TableMatches_eval`, as p4blo does, and on the canonical `const entries` p4blo accepts, `$match_keyset` masking both sides gives the same matches; rejecting a non-canonical one is a restriction of p4blo's input, not a disagreement.
 - **Host entries are canonical.** An entry value wider than the key is
@@ -668,7 +668,7 @@ A table match is evaluated over the installed entries; the program's
   - P4: none
   - SpecTec: `TableMatch_eval/match`, `$match_keyset`
   - Lean: `Installed.keyWidths`
-  - Python: `p4blo.validator._Validator.check_keys`
+  - Python: `p4blo.validator.tables.TableChecks.check_keys`
   - Test: `tests/test_validator.py::test_table_keys_are_bits_only`, `tests/test_validator.py::test_key_type`
   - Class: same. `$match_keyset` compares keys of any type with `$bin_eq`, and casting a `bool` key to `bit<1>` or an enum key to its member index preserves which entries match, so the difference is elaboration.
 
@@ -683,7 +683,7 @@ consume is the caller's decision.
   - P4: none
   - SpecTec: `Call_eval/controlApplyMethodCallee`
   - Lean: `runDeparser`
-  - Python: `p4blo.interp.deparser.run_deparser`, `p4blo.validator._Validator.check_call_block`
+  - Python: `p4blo.interp.deparser.run_deparser`, `p4blo.validator.calls.CallChecks.check_call_block`
   - Test: `tests/test_validator.py::test_deparser_may_call_a_deparser`, `tests/test_validator.py::test_call_kind`
   - Class: same. SpecTec runs a deparser as a control through `Call_eval/controlApplyMethodCallee` and allows it anything a control may do; on the deparsers the IR accepts it computes the same thing.
 - **`emit` of an invalid header** writes nothing (§15.1).

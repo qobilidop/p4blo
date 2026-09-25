@@ -347,9 +347,15 @@ can establish the wrong specification.
 ### Printer and oracles
 
 The printer turns IR into P4-16 text. It pays twice: it feeds the
-oracles, and it is a frontend in reverse. The oracles run the printed
-programs wrapped in a v1model shim that maps the metadata contract onto
-`standard_metadata`, replaying the corpus vectors. The first oracle is
+oracles, and it is a frontend in reverse. It has no architecture of its
+own (`p4blo.printer`): it prints declarations and blocks, and an
+architecture binds them to its package through a few hooks. The v1model
+shim (`p4blo.arch.v1model`) maps the metadata contract onto
+`standard_metadata`, prints the extern families in their v1model form and
+adds V1Switch's other blocks; the block architecture
+(`p4blo.arch.spectec_block`) keeps each block's own signature for
+P4-SpecTec's one-block-per-request runs. The oracles run the printed
+programs, replaying the corpus vectors. The first oracle is
 P4-SpecTec's simulator, the specification's own mechanization, which
 needs no Docker and runs natively; the second is BMv2's `simple_switch`
 in a pinned Docker image, the implementation P4 programmers actually run.
@@ -485,11 +491,16 @@ p4blo/
     Main.lean                       the p4blo executable: servers, exporters
   impl/python/p4blo/                     the Python package
     v0/                             generated protobuf code, committed
-    ir.py, validator.py             load, save, text form; validation
+    ir.py                           load, save, text form
+    validator/                      validation, one module per rule group, and
+                                    the one expression typer (validator/typer.py)
     interp/                         the reference interpreter
+    printer/                        IR to P4-16 text, with no architecture
     edsl/                           the typed eDSL; core/ is the builder beneath it
     arch/                           contract, filter, switch, the extern
-                                    families, and the v1model printer
+                                    families, and the printer's two
+                                    bindings: the v1model shim and the
+                                    P4-SpecTec block architecture
     drt/                            the differential loop and certificates
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs
