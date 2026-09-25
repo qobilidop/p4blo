@@ -616,6 +616,17 @@ The exact theorem statements, premises and exclusions are in
   smoke check.** Reason: during the specification split the layout, link
   and boundary tests all passed while every codec test was failing on an
   endpoint path, which only `scripts/check.sh` showed. (2026-09-24)
+- **A builder hands back with targeted checks; the integrator gates a
+  batch once.** A sub-agent runs lint, types, the test modules that
+  cover its files and the Lean gate when it touched Lean, and the full
+  gate only for a cross-cutting change; the integrator merges several
+  branches, then runs the full gate once before the push. Reason: on
+  2026-09-24 every item was gated twice, once on its branch and once
+  after its merge, serialized, at nine to seventeen minutes a run; the
+  builder-side full gate caught cross-cutting breakage a few times but
+  never anything the merge gate would not have caught one cycle later.
+  The gate itself runs the non-oracle suites in parallel (`-n auto`), so
+  a batch gate costs minutes. (2026-09-25)
 - **Documentation is split by subject.** `docs/` describes the artifact
   and is written for people, to be published on its own; `.agents/`
   describes the work and is the resumable state. `docs/` never links into

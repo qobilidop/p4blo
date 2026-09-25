@@ -185,8 +185,13 @@ so the required CI gate discovers them without a hand-maintained file list.
 
 Each sub-agent gets its own git worktree (`git worktree add`), owns a
 disjoint set of files named in its brief, builds against interfaces
-already committed on `main`, and finishes with the gates green. The
-integrator merges on `main`, reruns the gates and removes the worktree.
+already committed on `main`, and hands back with the checks that its
+change can affect green: lint and types, the test modules that cover its
+files, and the Lean gate when it touched a Lean package. It runs the
+full gate only when the change is cross-cutting (a path move, the wire
+or pipe protocol, a module many others import). The integrator merges
+on `main` in batches, runs the full gate once per batch before pushing,
+and removes the worktrees.
 Spawn sub-agents when useful without waiting for permission; choose a
 model appropriate to the task; create the worktree before delegating and
 put its absolute path and file ownership in the brief. Sub-agents must
