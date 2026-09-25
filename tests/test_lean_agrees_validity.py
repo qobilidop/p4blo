@@ -42,6 +42,8 @@ CORPUS = ROOT / "tests" / "corpus"
 SEEDS = range(40)
 
 DECODE = "DECODE"
+# The type of `pytest.param(...)`, which pytest does not export.
+PARAM: Any = type(pytest.param(None))
 
 # Python's code to the Lean codes that may name the same first problem.
 CODES: dict[str, frozenset[str]] = {
@@ -124,18 +126,26 @@ def positive_cases() -> Iterator[Case]:
 def _parameter_sets(fn: Callable[..., Any]) -> list[dict[str, Any]] | None:
     """Every keyword set pytest would call `fn` with, or None when it needs
     a fixture."""
-    marks = [m for m in getattr(fn, "pytestmark", []) if m.name == "parametrize"]
+    marks: list[Any] = [m for m in getattr(fn, "pytestmark", []) if m.name == "parametrize"]
     axes: list[list[dict[str, Any]]] = []
     for mark in marks:
-        names = mark.args[0]
-        names = [n.strip() for n in names.split(",")] if isinstance(names, str) else list(names)
-        values = []
-        for value in mark.args[1]:
-            if isinstance(value, type(pytest.param(None))):
-                value = value.values if len(names) > 1 else value.values[0]
-            values.append(dict(zip(names, value, strict=True)) if len(names) > 1 else {names[0]: value})
+        spec: Any = mark.args[0]
+        names: list[str] = (
+            [n.strip() for n in spec.split(",")] if isinstance(spec, str) else list(spec)
+        )
+        values: list[dict[str, Any]] = []
+        for raw in mark.args[1]:
+            value: Any = raw.values if isinstance(raw, PARAM) else raw
+            if isinstance(raw, PARAM) and len(names) == 1:
+                value = value[0]
+            values.append(
+                dict(zip(names, value, strict=True)) if len(names) > 1 else {names[0]: value}
+            )
         axes.append(values)
-    sets = [dict(itertools.chain.from_iterable(d.items() for d in combo)) for combo in itertools.product(*axes)]
+    sets = [
+        dict(itertools.chain.from_iterable(d.items() for d in combo))
+        for combo in itertools.product(*axes)
+    ]
     wanted = set(inspect.signature(fn).parameters)
     if any(set(s) != wanted for s in sets):
         return None
