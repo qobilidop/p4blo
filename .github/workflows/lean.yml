@@ -33,8 +33,37 @@ jobs:
           # The $(cat) must expand in the inner shell, not here.
           # shellcheck disable=SC2016
           nix develop -c sh -c 'elan toolchain install "$(cat spec/ir/lean-toolchain)"'
+      # Lake's compiled modules (`lib`, `ir`), not its linked executables
+      # (`bin`, about 100 MB each), which relink in seconds. Lake checks every
+      # restored module against its sources and rebuilds what changed, so a
+      # PR restores main's latest build and compiles only its own changes.
+      # Only main saves: the repository's Actions cache is at its size limit.
+      - name: Restore the Lean build
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            spec/ir/.lake/build/lib
+            spec/ir/.lake/build/ir
+            spec/arch/.lake/build/lib
+            spec/arch/.lake/build/ir
+            impl/lean/.lake/build/lib
+            impl/lean/.lake/build/ir
+          key: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-${{ hashFiles('spec/**/*.lean', 'impl/lean/**/*.lean', 'spec/*/lakefile.toml', 'impl/lean/lakefile.toml', 'spec/*/lake-manifest.json', 'impl/lean/lake-manifest.json') }}
+          restore-keys: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-
       - name: Build, audit and test the three Lean packages
         run: nix develop -c scripts/check-lean.sh
+      - name: Save the Lean build
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            spec/ir/.lake/build/lib
+            spec/ir/.lake/build/ir
+            spec/arch/.lake/build/lib
+            spec/arch/.lake/build/ir
+            impl/lean/.lake/build/lib
+            impl/lean/.lake/build/ir
+          key: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-${{ hashFiles('spec/**/*.lean', 'impl/lean/**/*.lean', 'spec/*/lakefile.toml', 'impl/lean/lakefile.toml', 'spec/*/lake-manifest.json', 'impl/lean/lake-manifest.json') }}
       - name: Differential test against the Python reference
         env:
           P4BLO_REQUIRE_LEAN: "1"

@@ -35,7 +35,14 @@ A decision the design document already settles is not repeated here.
 - **Fresh Lean caches across package moves; build before testing.** A
   copied build cache once shadowed renamed modules. Rebuild from empty
   build directories after a move, and never rebuild Lean while a test in
-  the same worktree runs the executable. (2026-09-23)
+  the same worktree runs the executable. (2026-09-23) CI's Lean job is the
+  one exception: it restores main's latest compiled modules (`lib`, `ir`,
+  never `bin`) and saves only from main, because the from-scratch build
+  was 346 s of a 21-minute job. The shadowing risk is standalone queries,
+  which no gate runs; `lake build` rejects an import of a deleted source
+  even with its stale `.olean` restored (checked 2026-09-25 by removing
+  `P4bloIR/Coverage.lean`: "bad import"). Revisit if a gate starts
+  querying Lean outside `lake build` and `lake test`. (2026-09-25)
 - **CI runs the Lean differential suite with `-n auto --dist loadgroup`**,
   as the local gate does: 3,045 tests took 259 s serially and 86 s on four
   workers locally, and were 851 s serial in CI. (2026-09-25)
