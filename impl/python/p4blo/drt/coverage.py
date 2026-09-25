@@ -39,7 +39,8 @@ class RuleCoverage:
     hits: Counter[str] = field(default_factory=Counter)
     # Requests whose reply carried a coverage list, possibly empty.
     reported: int = 0
-    # Requests whose reply carried none: an older peer, or the fake.
+    # Requests whose reply carried none: a peer older than the `coverage`
+    # field. The fake sends an empty list, so its replies count as reported.
     unreported: int = 0
 
     def add(self, tags: Iterable[str] | None) -> None:

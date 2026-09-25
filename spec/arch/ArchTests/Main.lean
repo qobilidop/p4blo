@@ -13,7 +13,8 @@ Tests for the reference architecture: the forwarder's vectors replayed under
 the switch, the extern families, the certificate example and its wire
 adapter. Run by `lake test` from the `spec/arch/` directory; the fixture
 paths may also be given as arguments (the program JSON, then the vectors
-JSON), and default to the IR specification's copies.
+JSON), and default to the IR specification's copies. The coverage witness
+table is read from `ArchTests/fixtures/witnesses.json`.
 -/
 
 open P4bloIR
@@ -29,6 +30,7 @@ def main (args : List String) : IO UInt32 := do
       check "fixture decodes" true
       forwarderReplayTests p vectorsText
       CoverageTests.tests p
+      CoverageTests.witnessTests "ArchTests/fixtures/witnesses.json"
     | .error e =>
       IO.println s!"     got: {e}"
       check "fixture decodes" false

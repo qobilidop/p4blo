@@ -15,13 +15,17 @@ the criterion.
 `<category>.<construct>` for a plain evaluator case and
 `<category>.<construct>.<case>` for a closed behavior of
 docs/ir-semantics.md, all segments lower camel case. The categories are
-`expr` (one case of `evaluate`, and the value rules of "Values"), `value`,
+`expr` (one case of `evaluate`, and the rules of "Values and operations"), `value`,
 `header`, `stack`, `lvalue` (one case of `writeLValue`), `stmt` (one case of
 `executeOne`), `parser`, `select`, `table`, `call` and `emit`. A tag is
 never renamed: a new rule gets a new tag, and a retired rule's tag is
 deleted with it. The docstring of each constructor says the rule it stands
 for; `Coverage.all` lists every tag with that docstring, read from the
 environment at compile time, so the list and the docstrings cannot drift.
+A docstring that stands for an entry of the ledger, docs/ir-semantics.md,
+opens with `ledger: <entry>`, where the entry is named by a bold phrase
+that opens it, without its final period, so that a test can join the tags
+to the entries; a plain evaluator case names its Lean definition instead.
 
 **Conditions.** `classify` is a pure function of the configuration the
 step machine is about to step: the head work item and the current `Run`.
@@ -134,105 +138,123 @@ tag_inventory Tag
   «expr.mux»
   /-- `evaluate`, `lookahead<T>`. -/
   «expr.lookahead»
-  -- Values: the closed behaviors of "Values".
-  /-- Values, "Arithmetic": `+` whose true sum is at least `2^N`, so it wraps. -/
+  -- Values and operations: the closed behaviors of that section.
+  /-- ledger: Arithmetic on `bit<N>`. `+` whose true sum is at least `2^N`,
+  so it wraps. -/
   «expr.add.wrap»
-  /-- Values, "Arithmetic": `-` with the right operand larger, so it wraps. -/
+  /-- ledger: Arithmetic on `bit<N>`. `-` with the right operand larger, so
+  it wraps. -/
   «expr.sub.wrap»
-  /-- Values, "Arithmetic": `*` whose true product is at least `2^N`, so it wraps. -/
+  /-- ledger: Arithmetic on `bit<N>`. `*` whose true product is at least
+  `2^N`, so it wraps. -/
   «expr.mul.wrap»
-  /-- Values, "Arithmetic": `|+|` whose true sum exceeds `2^N - 1`, so it saturates. -/
+  /-- ledger: Arithmetic on `bit<N>`. `|+|` whose true sum exceeds
+  `2^N - 1`, so it saturates. -/
   «expr.addSat.clamp»
-  /-- Values, "Arithmetic": `|-|` with the right operand larger, so it saturates at 0. -/
+  /-- ledger: Arithmetic on `bit<N>`. `|-|` with the right operand larger,
+  so it saturates at 0. -/
   «expr.subSat.clamp»
-  /-- Values, "Shifts": `<<` by an amount at least the width, which gives 0. -/
+  /-- ledger: Shifts. `<<` by an amount at least the width, which gives 0. -/
   «expr.shl.overflow»
-  /-- Values, "Shifts": `>>` by an amount at least the width, which gives 0. -/
+  /-- ledger: Shifts. `>>` by an amount at least the width, which gives 0. -/
   «expr.shr.overflow»
-  /-- Values, "Shifts": `<<` by less than the width that shifts set bits out,
+  /-- ledger: Shifts. `<<` by less than the width that shifts set bits out,
   so the result is truncated to `N` bits. -/
   «expr.shl.truncate»
-  /-- Values, "Shifts": a shift whose amount has a different width from the
+  /-- ledger: Shifts. A shift whose amount has a different width from the
   shifted value; the amount's width does not affect the result. -/
   «expr.shift.otherWidth»
-  /-- Values, "Comparison": `==` or `!=` on two `bit<N>` values. -/
+  /-- ledger: Comparison. `==` or `!=` on two `bit<N>` values, at the top
+  or inside a struct. -/
   «expr.equality.bits»
-  /-- Values, "Comparison": `==` or `!=` on two booleans. -/
+  /-- ledger: Comparison. `==` or `!=` on two booleans, at the top or
+  inside a struct. -/
   «expr.equality.bool»
-  /-- Values, "Comparison": `==` or `!=` on two enum members, by member. -/
+  /-- ledger: Comparison. `==` or `!=` on two enum members, by member. -/
   «expr.equality.enum»
-  /-- Values, "Comparison": `==` or `!=` on two errors, by member. -/
+  /-- ledger: Comparison. `==` or `!=` on two errors, by member. -/
   «expr.equality.error»
-  /-- Headers, "Header equality": two valid headers, compared fieldwise. -/
+  /-- ledger: Header equality. Two valid headers, compared fieldwise, at the
+  top or inside a struct or stack. -/
   «expr.equality.header.bothValid»
-  /-- Headers, "Header equality": one valid and one invalid header, unequal. -/
+  /-- ledger: Header equality. One valid and one invalid header, unequal. -/
   «expr.equality.header.validityDiffers»
-  /-- Headers, "Header equality": two invalid headers, equal regardless of fields. -/
+  /-- ledger: Header equality. Two invalid headers, equal regardless of
+  fields. -/
   «expr.equality.header.bothInvalid»
-  /-- Headers, "Header equality": two invalid headers whose stored fields
+  /-- ledger: Header equality. Two invalid headers whose stored fields
   differ, still equal. -/
   «expr.equality.header.invalidFieldsDiffer»
-  /-- Values, "Comparison": `==` or `!=` on two structs, fieldwise. -/
+  /-- ledger: Comparison. `==` or `!=` on two structs, fieldwise. -/
   «expr.equality.struct»
-  /-- Values, "Comparison": `==` or `!=` on two stacks, elementwise. -/
+  /-- ledger: Comparison. `==` or `!=` on two stacks, elementwise. -/
   «expr.equality.stack»
-  /-- Values, "Comparison": two stacks with different `nextIndex`, which
+  /-- ledger: Comparison. Two stacks with different `nextIndex`, which
   equality does not compare. -/
   «expr.equality.stack.nextIndexDiffers»
-  /-- Values, "Casts": `bit<N>` to a narrower `bit<M>`, truncating. -/
+  /-- ledger: Casts. `bit<N>` to a narrower `bit<M>`, truncating. -/
   «expr.cast.truncate»
-  /-- Values, "Casts": `bit<N>` to a wider `bit<M>`, zero-extending. -/
+  /-- ledger: Casts. `bit<N>` to a wider `bit<M>`, zero-extending. -/
   «expr.cast.extend»
-  /-- Values, "Casts": `bit<N>` to `bit<N>`. -/
+  /-- ledger: Casts. `bit<N>` to `bit<N>`. -/
   «expr.cast.sameWidth»
-  /-- Values, "Casts": `bool` to `bit<1>`. -/
+  /-- ledger: Casts. `bool` to `bit<1>`. -/
   «expr.cast.boolToBits»
-  /-- Values, "Casts": `bit<1>` to `bool`. -/
+  /-- ledger: Casts. `bit<1>` to `bool`. -/
   «expr.cast.bitsToBool»
-  /-- `evaluate`: `&&` whose left operand is false, so the right is not evaluated. -/
+  /-- ledger: Evaluation order. `&&` whose left operand is false, so the
+  right is not evaluated. -/
   «expr.and.shortCircuit»
-  /-- `evaluate`: `||` whose left operand is true, so the right is not evaluated. -/
+  /-- ledger: Evaluation order. `||` whose left operand is true, so the
+  right is not evaluated. -/
   «expr.or.shortCircuit»
-  /-- Parsers, "lookahead": a `bit<N>` read. -/
+  /-- ledger: `lookahead<T>`. A `bit<N>` read. -/
   «expr.lookahead.bits»
-  /-- Parsers, "lookahead": a `bool` read, one bit. -/
+  /-- ledger: `lookahead<T>`. A `bool` read, one bit. -/
   «expr.lookahead.bool»
-  /-- Parsers, "lookahead": a header read, whose result is valid. -/
+  /-- ledger: `lookahead<T>`. A header read, whose result is valid. -/
   «expr.lookahead.header»
-  /-- Parsers, "lookahead": fewer bits remain than the width, `PacketTooShort`. -/
+  /-- ledger: `lookahead<T>`. Fewer bits remain than the width,
+  `PacketTooShort`. -/
   «expr.lookahead.tooShort»
-  /-- Values, "Uninitialized variables": a read of a block local or an `out`
-  parameter that holds its type's zero value. A witness, not the exact
-  behavior: a variable explicitly written with zero also counts. -/
+  /-- ledger: Uninitialized variables. A read of a block local, a block's
+  `out` parameter or an action's `out` parameter that holds its type's
+  zero value. A witness, not the exact behavior: a variable explicitly
+  written with zero also counts. -/
   «value.uninitialized»
-  -- Headers.
-  /-- Headers, "Reading a field of an invalid header": the stored value is returned. -/
+  -- Headers: entries of Expressions, Lvalues and assignment, and
+  -- Statements and calls.
+  /-- ledger: Reading a field of an invalid header. The stored value is
+  returned. -/
   «header.field.readInvalid»
-  /-- Headers, "Writing a field of an invalid header": stored, validity unchanged. -/
+  /-- ledger: Writing a field of an invalid header. Stored, validity
+  unchanged. -/
   «header.field.writeInvalid»
-  /-- Headers, "Assigning a header": an invalid header is assigned, so the
+  /-- ledger: Assigning a header. An invalid header is assigned, so the
   target becomes invalid and the fields are copied anyway. -/
   «header.assign.invalid»
-  /-- Headers, "`setValid` on a valid header": no effect on the fields. -/
+  /-- ledger: `setValid` on a valid header. No effect on the fields. -/
   «header.setValid.alreadyValid»
-  /-- Headers, "`setInvalid` on an invalid one": no effect on the fields. -/
+  /-- ledger: `setInvalid` on an invalid one. No effect on the fields. -/
   «header.setInvalid.alreadyInvalid»
-  -- Header stacks.
-  /-- Header stacks, "Index out of range": a read of `hs[i]` with `i >= S`
-  gives a zero invalid header. -/
+  -- Header stacks: entries of Expressions and Statements and calls.
+  /-- ledger: Index out of range. A read of `hs[i]` with `i >= S` gives a
+  zero invalid header. -/
   «stack.index.readOutOfRange»
-  /-- Header stacks, "Index out of range": a write through `hs[i]` with
-  `i >= S` does nothing. -/
+  /-- ledger: Index out of range. A write through `hs[i]` with `i >= S`
+  does nothing. -/
   «stack.index.writeOutOfRange»
-  /-- Header stacks, "`hs.lastIndex`": `nextIndex == 0`, so the value wraps to `2^32 - 1`. -/
+  /-- ledger: `hs.lastIndex`. `nextIndex == 0`, so the value wraps to
+  `2^32 - 1`. -/
   «stack.lastIndex.empty»
-  /-- Header stacks, "`push_front`": `nextIndex + n` exceeds the size, so it clamps at `S`. -/
+  /-- ledger: `push_front(n)`. `nextIndex + n` exceeds the size, so it
+  clamps at `S`. -/
   «stack.push.clamp»
-  /-- Header stacks, "`push_front`": `n > S`, which behaves as `n = S`. -/
+  /-- ledger: `push_front(n)`. `n > S`, which behaves as `n = S`. -/
   «stack.push.oversize»
-  /-- Header stacks, "`pop_front`": `n` exceeds `nextIndex`, so it clamps at 0. -/
+  /-- ledger: `pop_front(n)`. `n` exceeds `nextIndex`, so it clamps at 0. -/
   «stack.pop.clamp»
-  /-- Header stacks, "`pop_front`": `n > S`, which behaves as `n = S`. -/
+  /-- ledger: `pop_front(n)`. `n > S`, which behaves as `n = S`. -/
   «stack.pop.oversize»
   -- Lvalues: one tag per case of `writeLValue` at the top of a write.
   /-- `writeLValue`, a variable. -/
@@ -275,151 +297,163 @@ tag_inventory Tag
   /-- `executeOne`, `emit`. -/
   «stmt.emit»
   -- Parsers.
-  /-- Parsers, "Extract sets the target valid": an extract into a header lvalue. -/
+  /-- ledger: Extract sets the target valid. An extract into a header
+  lvalue. -/
   «parser.extract.header»
-  /-- Header stacks, "`hs.next`": an extract into `hs.next`. -/
+  /-- ledger: `hs.next`. An extract into `hs.next`. -/
   «parser.extract.next»
-  /-- Parsers, "Extraction past the packet end": fewer bits remain than the
+  /-- ledger: Extraction past the packet end. Fewer bits remain than the
   header's width, `PacketTooShort`, nothing consumed. -/
   «parser.extract.tooShort»
-  /-- Parsers, "Extract sets the target valid": a header of width zero,
-  which consumes nothing even at the end of the packet. -/
+  /-- ledger: Extract sets the target valid. A header of width zero, which
+  consumes nothing even at the end of the packet. -/
   «parser.extract.zeroWidth»
-  /-- Header stacks, "`hs.next`": `nextIndex == S`, `StackOutOfBounds`. -/
+  /-- ledger: `hs.next`. `nextIndex == S`, `StackOutOfBounds`. -/
   «parser.extract.next.full»
-  /-- Header stacks, "`hs.next`": a full stack and a short packet together,
-  which report `StackOutOfBounds`. -/
+  /-- ledger: `hs.next`. A full stack and a short packet together, which
+  report `StackOutOfBounds`. -/
   «parser.extract.next.fullAndShort»
-  /-- Header stacks, "`hs.next`": an extract into `hs[i]` with `i >= S`,
-  which consumes the bits and stores nothing. -/
+  /-- ledger: `hs.next`. An extract into `hs[i]` with `i >= S`, which
+  consumes the bits and stores nothing. -/
   «parser.extract.indexOutOfRange»
-  /-- Parsers, "`advance(n)`": past the end, `PacketTooShort`, the cursor stays. -/
+  /-- ledger: `advance(n)`. Past the end, `PacketTooShort`, the cursor
+  stays. -/
   «parser.advance.tooShort»
-  /-- Parsers, "`verify`": the condition holds. -/
+  /-- ledger: `verify(cond, err)`. The condition holds. -/
   «parser.verify.pass»
-  /-- Parsers, "`verify`": the condition fails and the error is raised. -/
+  /-- ledger: `verify(cond, err)`. The condition fails and the error is
+  raised. -/
   «parser.verify.fail»
-  /-- Parsers, "`verify`": the condition fails with error `NoError`, the
-  same outcome as an explicit `reject`. -/
+  /-- ledger: `verify(cond, err)`. The condition fails with error
+  `NoError`, the same outcome as an explicit `reject`. -/
   «parser.verify.failNoError»
-  /-- The parser's transition case, a direct target. -/
+  /-- `Execution.dispatch`, a transition with a direct target. -/
   «parser.transition.direct»
-  /-- The parser's transition case, a `select`. -/
+  /-- `Execution.dispatch`, a transition by `select`. -/
   «parser.transition.select»
-  /-- A transition to a state. -/
+  /-- `Execution.dispatch`, a transition to a state. -/
   «parser.target.state»
-  /-- A transition to `accept`. -/
+  /-- `Execution.dispatch`, a transition to `accept`. -/
   «parser.target.accept»
-  /-- Parsers, "`reject`": a transition to `reject` reached explicitly,
-  which rejects with `NoError`. -/
+  /-- ledger: `reject`. A transition to `reject` reached explicitly, which
+  rejects with `NoError`. -/
   «parser.target.reject»
-  /-- Parsers, "Parser loop bound": a state entered again after the cursor
+  /-- ledger: Parser loop bound. A state entered again after the cursor
   advanced, which is allowed. -/
   «parser.revisit»
-  /-- Parsers, "Parser loop bound": a state entered again with the cursor
+  /-- ledger: Parser loop bound. A state entered again with the cursor
   where it was, `ParserTimeout`. -/
   «parser.timeout»
-  /-- Parsers, "Parser loop bound": a `ParserTimeout` inside a sub-parser,
+  /-- ledger: Parser loop bound. A `ParserTimeout` inside a sub-parser,
   whose states count as states of the enclosing run. -/
   «parser.timeout.subparser»
-  /-- Parsers: a call of a sub-parser. -/
+  /-- ledger: A raised error stops the parser. A call of a sub-parser. -/
   «parser.subparser»
-  /-- Parsers: an explicit `reject` inside a sub-parser, which rejects the
-  whole run after the copyback. -/
+  /-- ledger: A raised error stops the parser. An explicit `reject`
+  transition inside a sub-parser, which rejects the whole run after the
+  copyback. A `verify` that raises `NoError` is not one. -/
   «parser.subparser.reject»
   -- Select.
-  /-- Parsers, "`select`": the taken case has an exact key set. -/
+  /-- ledger: `select`. The taken case has an exact key set. -/
   «select.exact»
-  /-- Parsers, "`select`": the taken case has a masked key set. -/
+  /-- ledger: `select`. The taken case has a masked key set. -/
   «select.masked»
-  /-- Parsers, "`select`": the taken case has a range key set. -/
+  /-- ledger: `select`. The taken case has a range key set. -/
   «select.range»
-  /-- Parsers, "`select`": the taken case has a don't-care key set. -/
+  /-- ledger: `select`. The taken case has a don't-care key set. -/
   «select.dontCare»
-  /-- Parsers, "`select`": a later case also matches; the first one wins. -/
+  /-- ledger: `select`. A later case also matches; the first one wins. -/
   «select.firstOfSeveral»
-  /-- Parsers, "`select`": no case matches, `NoMatch`. -/
+  /-- ledger: `select`. No case matches, `NoMatch`. -/
   «select.noMatch»
-  /-- Parsers, "`select`": a key that is a `bool`, enum or error. -/
+  /-- ledger: `select`. A key that is a `bool`, enum or error. -/
   «select.nonBitsKey»
-  /-- Parsers, "`select`": more than one key, evaluated once in order. -/
+  /-- ledger: `select`. More than one key, evaluated once in order. -/
   «select.multiKey»
   -- Tables.
-  /-- Tables, "Exact keys": an applied table has an exact key. -/
+  /-- ledger: Exact keys. An applied table has an exact key. -/
   «table.key.exact»
-  /-- Tables, "LPM": an applied table has an lpm key. -/
+  /-- ledger: LPM. An applied table has an lpm key. -/
   «table.key.lpm»
-  /-- Tables, "Ternary": an applied table has a ternary key. -/
+  /-- ledger: Ternary. An applied table has a ternary key. -/
   «table.key.ternary»
-  /-- Tables, "`hit`": an entry matched. -/
+  /-- ledger: `hit`. An entry matched. -/
   «table.hit»
-  /-- Tables, "Table miss": no entry matched and the default action runs. -/
+  /-- ledger: Table miss. No entry matched and the default action runs. -/
   «table.miss»
-  /-- Tables, "Table miss": the default action on a miss is an action. -/
+  /-- ledger: Table miss. The default action on a miss is an action other
+  than `NoAction`. -/
   «table.miss.defaultAction»
-  /-- Tables, "Table miss": the default on a miss is `NoAction`, nothing. -/
+  /-- ledger: Table miss. The default on a miss is `NoAction`, declared or
+  not, which does nothing. -/
   «table.miss.noAction»
-  /-- Tables, "Host default action": a miss runs a default the host replaced. -/
+  /-- ledger: Host default action. A miss in a table whose default the
+  host set, even to the action the program declares. -/
   «table.miss.hostDefault»
-  /-- Tables, "LPM": two matching entries with different prefix lengths;
+  /-- ledger: LPM. Two matching entries with different prefix lengths;
   the longest wins. -/
   «table.lpm.longest»
-  /-- Tables, "Ternary": two matching entries; the largest priority wins. -/
+  /-- ledger: Ternary. Two matching entries; the largest priority wins. -/
   «table.ternary.priority»
-  /-- Tables, "Ternary": a matching entry has priority 0, an ordinary one. -/
+  /-- ledger: Ternary. A matching entry has priority 0, an ordinary one. -/
   «table.ternary.priorityZero»
-  /-- Tables: a program's const entry matches. -/
+  /-- `Installed.lookup`: a program's const entry matches. The Tables
+  section of the ledger opens with const entries; no entry is theirs. -/
   «table.constEntry»
-  /-- Tables, "`hit`": the apply writes whether it hit. -/
+  /-- ledger: `hit`. The apply writes whether it hit. -/
   «table.hit.written»
-  /-- Tables, "`hit`": the chosen action assigns the same lvalue the apply
+  /-- ledger: `hit`. The chosen action assigns the same lvalue the apply
   writes `hit` to, and is overwritten. A syntactic witness over the
   action's body. -/
   «table.hit.overwritesAction»
   -- Calls.
-  /-- Controls, "Block calls": a sub-block call enters. -/
+  /-- ledger: Block calls. A sub-block call enters. -/
   «call.block»
-  /-- Controls, "Action calls": a direct action call enters. -/
+  /-- ledger: Action calls. A direct action call enters. -/
   «call.action»
-  /-- Tables: a table runs an action with its action data. -/
+  /-- ledger: Action calls. A table runs an action with its action data. -/
   «call.tableAction»
-  /-- Externs, "Extern calls": a method call on an extern instance. -/
+  /-- ledger: Extern calls. A method call on an extern instance. -/
   «call.extern»
-  /-- Controls, "Block calls": an `in` parameter, copied in. -/
+  /-- ledger: Block calls. An `in` parameter, copied in. -/
   «call.param.in»
-  /-- Controls, "Block calls": an `out` parameter, starting at zero. -/
+  /-- ledger: Block calls. An `out` parameter, starting at zero. -/
   «call.param.out»
-  /-- Controls, "Block calls": an `inout` parameter, copied in and back. -/
+  /-- ledger: Block calls. An `inout` parameter, copied in and back. -/
   «call.param.inout»
-  /-- Controls, "Action calls": a directionless parameter, read-only action data. -/
+  /-- ledger: Action calls. A directionless parameter, read-only action
+  data. -/
   «call.param.none»
-  /-- Controls, "Block calls": two or more `out` or `inout` arguments are
+  /-- ledger: Block calls. Two or more `out` or `inout` arguments are
   copied back, in parameter order. -/
   «call.copyOut.order»
-  /-- Controls, "Block calls": an `in` argument reads storage that an `out`
-  or `inout` argument of the same call writes; it is copied in first. A
+  /-- ledger: Block calls. An `in` argument reads storage that an `out` or
+  `inout` argument of the same call writes; it is copied in first. A
   syntactic witness: the paths share a prefix. -/
   «call.copyIn.overlap»
-  /-- Controls, "Recursion": an action called from inside an action. -/
+  /-- ledger: Recursion. An action called from inside an action. -/
   «call.action.nested»
-  /-- Parsers: a block return that copies arguments back while a fault is
-  being unwound, as a sub-parser's error propagates. -/
+  /-- ledger: A raised error stops the parser. A block return that copies
+  arguments back while a fault is being unwound, as a sub-parser's error
+  propagates. -/
   «call.block.faultCopyBack»
-  /-- Externs, "Extern calls": results written back to `out` or `inout` arguments. -/
+  /-- ledger: Extern calls. Results written back to `out` or `inout`
+  arguments. -/
   «call.extern.out»
-  /-- Externs, "Extern calls": the return value written after the results. -/
+  /-- ledger: Extern calls. The return value written after the results. -/
   «call.extern.result»
   -- Deparsers.
-  /-- Deparsers: `emit` of a valid header. -/
+  /-- ledger: `emit` of an invalid header. The other case: `emit` of a
+  valid header writes its fields. -/
   «emit.header.valid»
-  /-- Deparsers, "`emit` of an invalid header": writes nothing. -/
+  /-- ledger: `emit` of an invalid header. Writes nothing. -/
   «emit.header.invalid»
-  /-- Deparsers, "`emit` of a struct": its fields in declaration order. -/
+  /-- ledger: `emit` of a struct. Its fields in declaration order. -/
   «emit.struct»
-  /-- Deparsers, "`emit` of a stack": elements from 0 to `S - 1`. -/
+  /-- ledger: `emit` of a stack. Elements from 0 to `S - 1`. -/
   «emit.stack»
-  /-- Deparsers, "Bit alignment": the emitted total is not a multiple of
-  eight, so it is padded with zero bits. -/
+  /-- ledger: Bit alignment. The emitted total is not a multiple of eight,
+  so it is padded with zero bits. -/
   «emit.padding»
 end_tag_inventory
 
@@ -493,8 +527,12 @@ def bitsBehaviors (op : BinaryOp) (x y : Bits) : List Tag :=
   | .shr => otherWidth ++ if y.value ≥ n then [.«expr.shr.overflow»] else []
   | _ => []
 
-/-- The kind of an `==` or `!=` on two evaluated operands. -/
-def equalityBehaviors : Value → Value → List Tag
+/-- The kind of an `==` or `!=` on two evaluated operands, and of every
+comparison it makes inside them. A struct compares its fields and a stack
+its elements by the same rule, so a header nested in either is compared by
+the header rule and reports its case, as a top-level one does. A header's
+own fields are part of the header rule and are not walked. -/
+partial def equalityBehaviors : Value → Value → List Tag
   | .bits _, .bits _ => [.«expr.equality.bits»]
   | .bool _, .bool _ => [.«expr.equality.bool»]
   | .enum .., .enum .. => [.«expr.equality.enum»]
@@ -504,37 +542,50 @@ def equalityBehaviors : Value → Value → List Tag
     else if va != vb then [.«expr.equality.header.validityDiffers»]
     else [.«expr.equality.header.bothInvalid»] ++
       (if fa != fb then [.«expr.equality.header.invalidFieldsDiffer»] else [])
-  | .struct .., .struct .. => [.«expr.equality.struct»]
-  | .stack _ _ na, .stack _ _ nb =>
-    [.«expr.equality.stack»] ++ (if na != nb then [.«expr.equality.stack.nextIndexDiffers»] else [])
+  | .struct _ fa, .struct _ fb =>
+    .«expr.equality.struct» :: (fa.zip fb).flatMap fun (a, b) => equalityBehaviors a b
+  | .stack _ ea na, .stack _ eb nb =>
+    [.«expr.equality.stack»] ++
+      (if na != nb then [.«expr.equality.stack.nextIndexDiffers»] else []) ++
+      (ea.zip eb).flatMap fun (a, b) => equalityBehaviors a b
   | _, _ => []
 
-/-- The kind of a cast of an evaluated operand. -/
+/-- The kind of a cast of an evaluated operand. Only the casts the ledger
+names are tagged; the validator admits no other. -/
 def castBehaviors : Ty → Value → List Tag
-  | .bits _, .bool _ => [.«expr.cast.boolToBits»]
+  | .bits 1, .bool _ => [.«expr.cast.boolToBits»]
   | .bits m, .bits x =>
     if m < x.width then [.«expr.cast.truncate»]
     else if m > x.width then [.«expr.cast.extend»] else [.«expr.cast.sameWidth»]
   | .boolean, .bits _ => [.«expr.cast.bitsToBool»]
   | _, _ => []
 
-/-- Whether `name`, read in the current activation, is a block local or an
-`out` parameter holding its type's zero value: the witness of
-`value.uninitialized`. -/
+/-- Whether `name`, read in the current activation, is a block local, an
+`out` parameter of the block or an `out` parameter of the running action,
+holding its type's zero value: the witness of `value.uninitialized`. An
+action's parameter shadows the block's name, as `Frame.read?` reads it. -/
 def zeroLocal (run : Run) (name : String) : Bool :=
   let frame := run.frame
-  if (frame.actionVars.bind (·[name]?)).isSome then false
-  else
+  let isZero (ty : Ty) (v : Value) : Bool :=
+    match Value.zero ty run.index with
+    | .ok z => v == z
+    | .error _ => false
+  match frame.actionVars.bind (·[name]?) with
+  | some v =>
+    let param? : Option Param := do
+      let action ← frame.scope.actions[← frame.action]?
+      action.params.find? (·.name == name)
+    match param? with
+    | some p => p.direction == .out && isZero p.type v
+    | none => false
+  | none =>
     let decl? := frame.scope.vars[name]?
     let candidate := match decl? with
       | some (.var _) => true
       | some (.param p) => p.direction == .out
       | none => false
     match decl?, frame.vars[name]? with
-    | some decl, some v =>
-      candidate && match Value.zero decl.type run.index with
-        | .ok z => v == z
-        | .error _ => false
+    | some decl, some v => candidate && isZero decl.type v
     | _, _ => false
 
 /-- The tags of evaluating `e` on `run`, walked in evaluation order: the
@@ -627,15 +678,19 @@ def readTags (run : Run) : LValue → List Tag
 
 /-- The closed behaviors of writing through `lv`, as `writeLValue` recurses:
 a field of an invalid header, and a stack index past the end, where the
-recursion stops because the write does nothing. -/
+recursion stops because the write does nothing. A field of an element past
+the end reads as an invalid header, but nothing is written, so it is not a
+write to an invalid header. -/
 def writeBehaviors (run : Run) : LValue → List Tag
   | .var _ => []
   | .member base _ =>
+    let below := writeBehaviors run base
     readTags run base ++
-      (match peek (readLValue base) run with
+      (if below.contains .«stack.index.writeOutOfRange» then []
+      else match peek (readLValue base) run with
         | some (.header _ false _) => [.«header.field.writeInvalid»]
         | _ => []) ++
-      writeBehaviors run base
+      below
   | .index base idx =>
     readTags run base ++ exprTags run idx ++
       match peek (readLValue base) run, peek (evaluate idx) run with
@@ -682,6 +737,14 @@ def overlaps (params : List Param) (args : List Arg) : Bool :=
     | .lvalue _ => none
   read.any fun r => written.any fun w => r.isPrefixOf w || w.isPrefixOf r
 
+/-- The tags of resolving `lv`, as `resolveLValue` walks it: each index
+expression on its path, evaluated where the lvalue is resolved. -/
+def resolveTags (run : Run) : LValue → List Tag
+  | .var _ => []
+  | .member base _ => resolveTags run base
+  | .index base idx => resolveTags run base ++ exprTags run idx
+  | .next _ => []
+
 /-- The direction tag of a parameter. -/
 def directionTag : Direction → Tag
   | .«in» => .«call.param.in»
@@ -691,23 +754,47 @@ def directionTag : Direction → Tag
 
 /-- The tags of entering a call with `params` bound to `args`: each
 parameter's direction, the arguments evaluated for `in` and read for
-`inout`, and the copy-in overlap witness. -/
+`inout`, the indices of `out` arguments resolved, as `copyIn` resolves
+them, and the copy-in overlap witness. An `inout` argument is read through
+its resolved lvalue, which evaluates the same index expressions. -/
 def entryTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
   let perArg := (params.zip args).flatMap fun (p, a) =>
     directionTag p.direction ::
-      if p.direction == .out then []
+      if p.direction == .out then
+        match a with
+        | .lvalue lv => resolveTags run lv
+        | .expr _ => []
       else match a with
         | .expr e => exprTags run e
         | .lvalue lv => readTags run lv
   perArg ++ (if overlaps params args then [.«call.copyIn.overlap»] else [])
 
-/-- The tags of copying `out` and `inout` arguments back, in parameter order. -/
-def copyBackTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
-  let written := (params.zip args).filterMap fun (p, a) =>
+/-- The tags of writing `lvalues` back, in order, into `run`: each write as
+`writeTags` classifies it. Every copy-back goes through here: an action's
+or a block's `out` and `inout` arguments, and an extern call's results and
+return value.
+
+It assumes the lvalues are already resolved: every index inside them is a
+literal fixed at copy-in, as P4 resolves an argument once (§6.8). Then the
+tags of one write depend only on its lvalue and the storage it lands in,
+and the writes of one call land in disjoint storage, which the validator's
+alias rule guarantees, so classifying them all against `run` is exact. -/
+def writeBackTags (run : Run) (lvalues : List LValue) : List Tag :=
+  lvalues.flatMap (writeTags run)
+
+/-- The lvalues of the `out` and `inout` arguments of a call, in parameter
+order. -/
+def writtenArgs (params : List Param) (args : List Arg) : List LValue :=
+  (params.zip args).filterMap fun (p, a) =>
     match a with
     | .lvalue lv => if p.direction == .out || p.direction == .inout then some lv else none
     | .expr _ => none
-  written.flatMap (writeTags run) ++
+
+/-- The tags of copying `out` and `inout` arguments back into `run`, in
+parameter order. -/
+def copyBackTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
+  let written := writtenArgs params args
+  writeBackTags run written ++
     (if written.length ≥ 2 then [.«call.copyOut.order»] else [])
 
 /-- The tags of emitting an evaluated value, as `emitValue` recurses. -/
@@ -797,12 +884,19 @@ def stmtTags (run : Run) : Stmt → List Tag
       match decl? with
       | none => []
       | some decl =>
-        let copied := copyBackTags run decl.params args
-        entryTags run decl.params args ++ copied ++
-          (if copied.isEmpty then [] else [Tag.«call.extern.out»]) ++
-          match result with
-          | some lv => Tag.«call.extern.result» :: writeTags run lv
-          | none => []
+        -- `callExtern` resolves the result target first, then the `out`
+        -- arguments at copy-in, and writes the outputs in parameter order,
+        -- then the return value, through those resolved lvalues.
+        let outs := writtenArgs decl.params args
+        let resolved := peek (do
+          let target ← result.mapM resolveLValue
+          let written ← outs.mapM resolveLValue
+          pure (written ++ target.toList)) run
+        (result.map (resolveTags run)).getD [] ++ entryTags run decl.params args ++
+          (resolved.map (writeBackTags run)).getD [] ++
+          (if outs.isEmpty then [] else [Tag.«call.extern.out»]) ++
+          (if outs.length ≥ 2 then [Tag.«call.copyOut.order»] else []) ++
+          (if result.isSome then [Tag.«call.extern.result»] else [])
   | .setValid header =>
     .«stmt.setValid» :: readTags run header ++
       match peek (readLValue header) run with
@@ -878,10 +972,18 @@ def selectTags (run : Run) (keys : List Expr) (cases : List SelectCase) : List T
       | c :: _ => c.sets.map keySetTag ++ [.«select.firstOfSeveral»]
     keyTags ++ multi ++ nonBits ++ taken
 
+/-- What the observer knows about a request beyond the machine it steps. -/
+structure Context where
+  /-- The tables, as `(block, table)`, whose default action the host set in
+  its entries, whatever action it set. -/
+  hostDefaults : List (String × String) := []
+  deriving Inhabited
+
 /-- The tags of a table apply: its key kinds and key expressions, then hit or
 miss as the real `Installed.lookup` reports, and the conditions of the
-longest-prefix and priority rules over the entries that `keyValueMatches`. -/
-def tableTags (run : Run) (name : String) (hit : Option LValue) : List Tag :=
+longest-prefix and priority rules over the entries that `keyValueMatches`.
+The write of `hit` is its own step, `writeHit`, classified there. -/
+def tableTags (ctx : Context) (run : Run) (name : String) (hit : Option LValue) : List Tag :=
   let frame := run.frame
   match frame.scope.tables[name]? with
   | none => []
@@ -891,9 +993,6 @@ def tableTags (run : Run) (name : String) (hit : Option LValue) : List Tag :=
       | .lpm => .«table.key.lpm»
       | .ternary => .«table.key.ternary»
     let keyTags := table.keys.flatMap fun k => exprTags run k.expr
-    let hitTags := match hit with
-      | some lv => .«table.hit.written» :: writeTags run lv
-      | none => []
     let outcome : List Tag :=
       match peek (table.keys.mapM fun k => do expectBits (← evaluate k.expr)) run, run.entries with
       | some keys, some installed =>
@@ -921,14 +1020,21 @@ def tableTags (run : Run) (name : String) (hit : Option LValue) : List Tag :=
           behaviors ++ overwritten ++
             if m.hit then [.«table.hit»]
             else
-              let declared := table.defaultAction
-              let installedDefault := installed.defaults.getD ref none
+              -- A declared `NoAction` is empty (ledger: Table miss), so it
+              -- is the same miss as no default at all.
+              let noAction := match installed.defaults.getD ref none with
+                | none => true
+                | some call => call.action == "NoAction"
               .«table.miss» ::
-                (if installedDefault.isSome then [.«table.miss.defaultAction»]
-                  else [.«table.miss.noAction»]) ++
-                (if installedDefault != declared then [.«table.miss.hostDefault»] else [])
+                (if noAction then [.«table.miss.noAction»] else [.«table.miss.defaultAction»]) ++
+                (if ctx.hostDefaults.contains ref then [.«table.miss.hostDefault»] else [])
       | _, _ => []
-    kinds ++ keyTags ++ outcome ++ hitTags
+    kinds ++ keyTags ++ outcome
+
+/-- Whether a block return is pending below the current work item, so that
+the item runs inside a called sub-block. In a parser that is a sub-parser. -/
+def insideCall (rest : List Work) : Bool :=
+  rest.any fun w => match w with | .blockReturn .. => true | _ => false
 
 /-- The tags of entering a parser state: a revisit after progress, or the
 revisit rule's timeout, inside a sub-parser when a block return is pending
@@ -938,14 +1044,15 @@ def stateTags (run : Run) (state : State) (rest : List Work) : List Tag :=
   match run.packet, run.visits[key]? with
   | some p, some cursor =>
     if cursor == p.cursor then
-      .«parser.timeout» ::
-        (if rest.any (fun w => match w with | .blockReturn .. => true | _ => false)
-          then [.«parser.timeout.subparser»] else [])
+      .«parser.timeout» :: (if insideCall rest then [.«parser.timeout.subparser»] else [])
     else [.«parser.revisit»]
   | _, _ => []
 
-/-- The tags of a transition: its case, then where the real `transition` goes. -/
-def transitionTags (run : Run) (trans : Transition) : List Tag :=
+/-- The tags of a transition: its case, then where the real `transition`
+goes, and an explicit `reject` inside a sub-parser. A `verify` that raises
+`NoError` rejects the same way but is not a transition, so it is not an
+explicit `reject`. -/
+def transitionTags (run : Run) (trans : Transition) (rest : List Work) : List Tag :=
   let own : List Tag := match trans with
     | .direct _ => [.«parser.transition.direct»]
     | .select keys cases => .«parser.transition.select» :: selectTags run keys cases
@@ -953,15 +1060,21 @@ def transitionTags (run : Run) (trans : Transition) : List Tag :=
     match peek (P4bloIR.transition trans) run with
     | some (.state _) => [.«parser.target.state»]
     | some .accept => [.«parser.target.accept»]
-    | some .reject => [.«parser.target.reject»]
+    | some .reject =>
+      .«parser.target.reject» :: (if insideCall rest then [.«parser.subparser.reject»] else [])
     | none => []
 
 /-- The tags of the work item `task` about to be dispatched on `run`, with the
 pending fault and the rest of the continuation stack. -/
-def workTags (run : Run) (fault : Option Fault) (rest : List Work) : Work → List Tag
+def workTags (ctx : Context) (run : Run) (fault : Option Fault) (rest : List Work) :
+    Work → List Tag
   | .statements _ => []
   | .statement stmt => stmtTags run stmt
-  | .table name hit => tableTags run name hit
+  | .table name hit => tableTags ctx run name hit
+  | .writeHit target _ =>
+    match target with
+    | some lv => .«table.hit.written» :: writeTags run lv
+    | none => []
   | .tableAction call =>
     .«call.tableAction» :: (if call.args.isEmpty then [] else [.«call.param.none»])
   | .action name args =>
@@ -969,9 +1082,14 @@ def workTags (run : Run) (fault : Option Fault) (rest : List Work) : Work → Li
       match run.frame.scope.actions[name]? with
       | some a => entryTags run a.params args
       | none => []
-  | .actionReturn _ copy =>
+  | .actionReturn outer copy =>
     match copy with
-    | some (params, args) => copyBackTags run params args
+    | some (params, args) =>
+      -- `dispatch` restores the caller's action layer before the copyback,
+      -- so the argument names resolve in the caller, not in the callee.
+      -- The arguments are the ones `copyIn` resolved, as copy-back uses.
+      let caller := { run.frame with action := outer.action, actionVars := outer.actionVars }
+      copyBackTags { run with frame := caller } params args
     | none => []
   | .block name args =>
     .«call.block» ::
@@ -979,28 +1097,33 @@ def workTags (run : Run) (fault : Option Fault) (rest : List Work) : Work → Li
       | some b => entryTags run b.params args
       | none => []
   | .blockReturn caller params args =>
-    -- The copyback runs in the caller's activation.
+    -- The copyback runs in the caller's activation, through the arguments
+    -- `copyIn` resolved.
     copyBackTags { run with frame := caller } params args ++
-      match fault with
-      | some (.parse e) =>
-        .«call.block.faultCopyBack» :: (if e == "NoError" then [.«parser.subparser.reject»] else [])
-      | some (.interp _) => [.«call.block.faultCopyBack»]
-      | none => []
-  | .runBlock _ | .states _ | .writeHit .. => []
+      if fault.isSome then [.«call.block.faultCopyBack»] else []
+  | .runBlock _ | .states _ => []
   | .state _ state => stateTags run state rest
-  | .transition _ trans => transitionTags run trans
+  | .transition _ trans => transitionTags run trans rest
 
 /-- The tags of the step the machine is about to take. A task skipped while
-a fault unwinds exercises nothing, exactly as `step` skips it. -/
-def classify (m : Machine) : List Tag :=
+a fault unwinds exercises nothing, exactly as `step` skips it.
+
+Tags are not withdrawn when the step faults. A step's tags name the rules it
+starts to apply, and for every statement that can fault in a validated
+program, the parser's, the tags classify the fault condition itself, as
+`parser.extract.tooShort` does; withdrawing them would lose exactly those.
+A step that faults for a reason no tag names keeps the tags it started
+with: an extern binding that fails still reports `call.extern.out`. A
+validated control has no such fault today. -/
+def classify (ctx : Context) (m : Machine) : List Tag :=
   match m.work with
   | [] => []
   | task :: rest =>
     if m.fault.isSome && !task.handlesFault then []
-    else workTags m.run m.fault rest task
+    else workTags ctx m.run m.fault rest task
 
 /-- The tags of a finished run: the deparser's zero padding when the emitted
-bits are not whole bytes (docs/ir-semantics.md, "Bit alignment"). -/
+bits are not whole bytes (ledger: Bit alignment). -/
 def finalTags (run : Run) : List Tag :=
   match run.emitter with
   | some e => if e.width % 8 != 0 then [.«emit.padding»] else []

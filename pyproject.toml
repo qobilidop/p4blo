@@ -44,7 +44,7 @@ select = ["E", "F", "I", "UP", "B"]
 known-first-party = ["p4blo"]
 
 [tool.pyright]
-include = ["impl/python", "tests", "examples"]
+include = ["impl/python", "tests", "examples", "spec/arch/ArchTests/fixtures/witnesses.py"]
 exclude = ["impl/python/p4blo/v0", "tests/pyright"]  # tests/test_pyright.py runs the fixtures itself
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
