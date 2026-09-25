@@ -123,15 +123,20 @@ def test_multiple_blocks_per_kind_need_no_selected_pipeline() -> None:
         )
         assert parsed.accepted
         headers, metadata = entry.run_control(
-            loaded.index, loaded.block(control_role), parsed.headers, parsed.metadata,
-            loaded.entries(), loaded.externs,
+            loaded.index,
+            loaded.block(control_role),
+            parsed.headers,
+            parsed.metadata,
+            loaded.entries(),
+            loaded.externs,
         )
         choice = metadata.fields[0]
         assert isinstance(choice, Bits)
         assert choice.value == expected
-        assert entry.run_deparser(
-            loaded.index, loaded.block(deparser_role), headers, loaded.externs
-        ) == b""
+        assert (
+            entry.run_deparser(loaded.index, loaded.block(deparser_role), headers, loaded.externs)
+            == b""
+        )
 
     with pytest.raises(arch.LoadError, match="must be"):
         arch.load(

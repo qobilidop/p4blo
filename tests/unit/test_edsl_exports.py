@@ -113,7 +113,7 @@ def test_scalar_block_compiles_without_program_roots_or_exports() -> None:
     assert [(p.name, p.direction) for p in compiled.blocks[0].params] == [
         ("value", pb.DIRECTION_INOUT)
     ]
-    assert compiled.struct_types == ()
+    assert not compiled.struct_types
     assert not hasattr(compiled, "headers")
     assert not hasattr(compiled, "metadata")
     assert not hasattr(compiled, "exports")

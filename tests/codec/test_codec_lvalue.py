@@ -9,6 +9,7 @@ from typing import Literal
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_expr import Expression, expressions, node, var
@@ -180,11 +181,15 @@ def protobuf_value(kind: Kind, wire: dict[str, object]) -> tuple[pb.LValue | pb.
     if kind == "lvalue":
         value = json_format.ParseDict(wire, pb.LValue())
         statement.assign.target.CopyFrom(value)
-        recovered = wire.load_json(wire.dump_json(program)).blocks[0].body[0].assign.target
+        recovered = (
+            arch_wire.load_json(arch_wire.dump_json(program)).blocks[0].body[0].assign.target
+        )
     else:
         value = json_format.ParseDict(wire, pb.Arg())
         statement.call_action.args.add().CopyFrom(value)
-        recovered = wire.load_json(wire.dump_json(program)).blocks[0].body[0].call_action.args[0]
+        recovered = (
+            arch_wire.load_json(arch_wire.dump_json(program)).blocks[0].body[0].call_action.args[0]
+        )
     assert value == recovered
     return recovered, json_format.MessageToDict(value, preserving_proto_field_name=True)
 

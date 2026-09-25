@@ -29,8 +29,6 @@ Regenerate with `uv run python spec/arch/P4bloArchTest/fixtures/witnesses.py`.
 
 from __future__ import annotations
 
-from p4blo.arch.v0 import assembly_pb2 as apb
-from p4blo.arch import wire as arch_wire
 import functools
 import json
 import re
@@ -41,6 +39,8 @@ from pathlib import Path
 from google.protobuf import json_format
 
 from p4blo import arch, ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.run import python_outcome
 from p4blo.v0 import p4blo_pb2 as pb

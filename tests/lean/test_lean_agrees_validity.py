@@ -160,7 +160,10 @@ def validator_cases() -> list[Case]:
     original = v.validate
     current = ""
 
-    def record(program: apb.BlockAssembly) -> list[v.Diagnostic]:
+    def record(
+        program: apb.BlockAssembly, *, bindings: apb.BlockBindings | None = None
+    ) -> list[v.Diagnostic]:
+        assert bindings is None
         copy = apb.BlockAssembly()
         copy.CopyFrom(program)
         recorded.append(Case(f"{current}#{len(recorded)}", copy))

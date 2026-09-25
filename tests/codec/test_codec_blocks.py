@@ -11,6 +11,7 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from tests.codec import test_codec_declarations as declaration
 from tests.codec import test_codec_parser as parser
@@ -283,7 +284,7 @@ def protobuf_value(kind: BlockCodecKind, wire: dict[str, object]) -> tuple[Messa
     value = wrapper if kind == "block" else wrapper.actions.add()
     value.SetInParent()
     json_format.ParseDict(wire, value)
-    recovered_block = wire.load_json(wire.dump_json(program)).blocks[0]
+    recovered_block = arch_wire.load_json(arch_wire.dump_json(program)).blocks[0]
     recovered = recovered_block if kind == "block" else recovered_block.actions[0]
     assert recovered == value
     return recovered, json_format.MessageToDict(recovered, preserving_proto_field_name=True)

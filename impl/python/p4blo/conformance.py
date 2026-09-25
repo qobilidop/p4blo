@@ -47,8 +47,6 @@ The input set itself is repository data, not part of this package: the
 
 from __future__ import annotations
 
-from p4blo.arch.v0 import assembly_pb2 as apb
-from p4blo.arch import wire
 import argparse
 import datetime
 import hashlib
@@ -65,7 +63,9 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
 from p4blo.drt.run import (

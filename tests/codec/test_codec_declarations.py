@@ -10,6 +10,7 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from tests.codec.test_codec_expr import Expression
 from tests.codec.test_codec_leaves import DeclarationKind, assert_leaf, leaves, same_json
@@ -320,7 +321,7 @@ def protobuf_value(kind: DeclarationKind, wire: dict[str, object]) -> tuple[Mess
         case "extern_instance":
             value = program.extern_instances.add()
     json_format.ParseDict(wire, value)
-    p = wire.load_json(wire.dump_json(program))
+    p = arch_wire.load_json(arch_wire.dump_json(program))
     match kind:
         case "field":
             recovered = p.header_types[0].fields[0]

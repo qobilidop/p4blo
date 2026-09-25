@@ -60,6 +60,7 @@ from google.protobuf import json_format
 
 from p4blo import arch
 from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import assembly_of
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
@@ -444,8 +445,7 @@ def compare_cases(
     seed: int = 0,
 ) -> Report:
     """Run every case on both sides, in order, and collect the divergences."""
-    frozen_program = apb.BlockAssembly()
-    frozen_program.CopyFrom(loaded.index.program)
+    frozen_program = assembly_of(loaded.index.program, loaded.bindings)
     inputs = tuple(
         Case(pb.Entries.FromString(c.entries.SerializeToString()), c.ingress_port, c.packet)
         for c in cases

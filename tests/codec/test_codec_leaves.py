@@ -13,6 +13,7 @@ from typing import Literal
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads
 from p4blo.v0 import p4blo_pb2 as pb
@@ -113,9 +114,9 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
     if kind == "literal":
         value = json_format.ParseDict(wire, pb.Literal())
         program.extern_instances.add().args.add().CopyFrom(value)
-        recovered = wire.load_json(wire.dump_json(program)).extern_instances[0].args[0]
+        recovered = arch_wire.load_json(arch_wire.dump_json(program)).extern_instances[0].args[0]
         assert recovered == value
-        encoded = json.loads(wire.dump_json(program))["extern_instances"][0]["args"][0]
+        encoded = json.loads(arch_wire.dump_json(program))["extern_instances"][0]["args"][0]
         match value.WhichOneof("value"):
             case "bits":
                 observed = {"tag": "bits", "width": value.bits.width, "value": value.bits.value}
@@ -134,9 +135,9 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
     elif kind == "type":
         value = json_format.ParseDict(wire, pb.Type())
         program.struct_types.add().fields.add().type.CopyFrom(value)
-        recovered = wire.load_json(wire.dump_json(program)).struct_types[0].fields[0].type
+        recovered = arch_wire.load_json(arch_wire.dump_json(program)).struct_types[0].fields[0].type
         assert recovered == value
-        encoded = json.loads(wire.dump_json(program))["struct_types"][0]["fields"][0]["type"]
+        encoded = json.loads(arch_wire.dump_json(program))["struct_types"][0]["fields"][0]["type"]
         match value.WhichOneof("kind"):
             case "bits":
                 observed = {"tag": "bits", "width": value.bits}
@@ -152,12 +153,16 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
         value = json_format.ParseDict(wire, pb.KeyValue())
         program.blocks.add().tables.add().const_entries.add().keys.add().CopyFrom(value)
         recovered = (
-            wire.load_json(wire.dump_json(program)).blocks[0].tables[0].const_entries[0].keys[0]
+            arch_wire.load_json(arch_wire.dump_json(program))
+            .blocks[0]
+            .tables[0]
+            .const_entries[0]
+            .keys[0]
         )
         assert recovered == value
-        encoded = json.loads(wire.dump_json(program))["blocks"][0]["tables"][0]["const_entries"][0][
-            "keys"
-        ][0]
+        encoded = json.loads(arch_wire.dump_json(program))["blocks"][0]["tables"][0][
+            "const_entries"
+        ][0]["keys"][0]
         match value.WhichOneof("kind"):
             case "exact":
                 observed = {"tag": "exact", "value": value.exact}

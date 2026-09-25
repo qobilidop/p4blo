@@ -111,7 +111,10 @@ bindings = apb.BlockBindings(
     ],
 )
 loaded = arch.load(
-    library, bindings=bindings, registry=Registry(), contract=Contract(()),
+    library,
+    bindings=bindings,
+    registry=Registry(),
+    contract=Contract(()),
     roles={"left": pb.BLOCK_KIND_CONTROL, "right": pb.BLOCK_KIND_CONTROL},
 )
 ```

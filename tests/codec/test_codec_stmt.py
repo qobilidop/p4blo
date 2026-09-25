@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_expr import Expression, expressions, node, var
@@ -235,7 +236,7 @@ def protobuf_value(wire: dict[str, object]) -> tuple[pb.Stmt, object]:
     value = json_format.ParseDict(wire, pb.Stmt())
     program = apb.BlockAssembly()
     program.blocks.add().body.add().CopyFrom(value)
-    recovered = wire.load_json(wire.dump_json(program)).blocks[0].body[0]
+    recovered = arch_wire.load_json(arch_wire.dump_json(program)).blocks[0].body[0]
     assert recovered == value
     return recovered, json_format.MessageToDict(value, preserving_proto_field_name=True)
 
