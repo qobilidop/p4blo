@@ -1,86 +1,57 @@
 # Roadmap
 
-The research backlog beyond the completed finite scopes. Accepted
-2026-09-23 with the design in [design.md](../docs/design.md);
-Python and Lean only. Full architecture-independent P4 is the north star,
-not a completion criterion. Nothing here is active: assurance
-[milestone 1](../docs/assurance.md) and the [application collection](../examples/README.md)
-are complete, and an item below becomes work only when the user scopes it.
-Landed results are summarized in [assurance.md](../docs/assurance.md) and
-`impl/lean/ASSURANCE.md`; the step-by-step record is in git.
+The research backlog beyond the completed finite scopes. Python and Lean
+only; full architecture-independent P4 is the north star, not a
+completion criterion. Nothing here is active: an item becomes work only
+when the user scopes it. Landed results are summarized in
+[assurance.md](../docs/assurance.md) and `impl/lean/ASSURANCE.md`; the
+step-by-step record is in git.
 
 The mechanized relation to P4-SpecTec is a joint milestone with
-`p4-spectec-lean`, the user's project that compiles SpecTec into Lean; this repository
-supplies the IR, the elaboration, the block contract `p4blo.watsup` and
-the validation suite, and builds no rendering of SpecTec itself
-(`decisions.md`, 2026-09-24).
+`p4-spectec-lean`, the user's project that compiles SpecTec into Lean;
+this repository supplies the IR, the elaboration, the block contract
+`tests/oracle/p4blo.watsup` and the validation suite, and builds no
+rendering of SpecTec itself (`docs/design.md`, "Relation to
+p4-spectec-lean"; `decisions.md`, 2026-09-24).
 
-Work autonomously in small reviewed increments. Record uncertain decisions
-with confidence and a revisit trigger in `decisions.md`; prefer reversible
-choices. Keep every gate green; a skipped oracle is not passing evidence.
+## Joint milestone with p4-spectec-lean
 
-## Foundation
+- [ ] Its executable rendering answers every conformance fixture and
+  block-level request as the OCaml simulator does. Prerequisites on this
+  side: bump the P4-SpecTec pin to that project's once fixed; read its
+  program export in `p4blo.frontend.il` and retire patch `0002`.
+- [ ] The simulation theorem between the rendered `p4blo.watsup`
+  relations and `P4bloIR.Exec` under the bridge's elaboration, with each
+  ledger deviation an explicit exception. Needs an elaboration relation
+  in Lean and, for its premises, validity (landed) and termination (open).
 
-- [x] Lean semantics and wire schema in `spec/ir/`; separate user package in
-  `impl/lean/`; shared corpus and oracles under `tests/`; `P4blo` reserved for
-  the user library.
-- [ ] Typed Lean construction language with independent source semantics,
-  lowering-validity and semantic-preservation theorems. Landed: closed
-  scalars, typed variable reads, scalar and field commands, named paths,
-  list sequencing, header-validity reads, initialization, call entry and
-  normal return, a guarded control call, the forwarder's selected action,
-  bounded table installation and application, the firewall's
-  initialization and Bloom insertion. Open: complete applications and their
-  parser, checksum and architecture boundaries; the parked readback and
-  ingress drafts.
-- [ ] Ergonomic Lean surface and interpreter API. Landed: checked
-  constructors and diagnostics, unified read adapter. Open: notation, if a
-  real application still needs it.
-- [ ] Versioned interchange profile and representability predicate with
-  codec proofs. Landed: component codec laws through Action/Block, total
-  decoders, independent wire anchors, complete Program/Export and host
-  Entries fixtures. Open: Program/Export composition, text parsing,
-  resource limits, semantic-version and unknown-field policy.
-- [ ] Validator beyond closed scalars with soundness and completeness per
-  fragment. Landed: contextual scalar checking, a scoped scalar statement
-  typing relation. Open: a complete statement checker, whole-program
-  validity, the assumptions needed for machine progress and termination
-  (acyclic calls, well-formed stores and externs, finite input, the
-  no-consumption revisit rule).
-- [ ] Generated action and sub-block calls with changing host table
-  snapshots across sequences; challenge copy-in/copyback ordering,
-  aliasing and fault paths. Landed: bounded copy-in/out and aggregate-copy
-  profiles. Open: parser-error copyback and table-invoked actions.
-- [ ] Generalize the execution-claim checker beyond its fixed fragment,
-  following explicit validity and observation contracts.
+## Proofs
 
-## Application milestones
+- [ ] Termination (C2): the acyclic call graph and the no-consumption
+  revisit rule imply `Execution.drive` terminates; with progress, a valid
+  program has a defined result. Landed: progress, the revisit check, the
+  cursor never moving back.
+- [ ] Codec composition through Program and Export (C3). Landed: component
+  laws through Action and Block, total decoders, independent anchors.
+- [ ] Checker completeness per fragment; `ResultOk` and the entry-point
+  corollaries are landed, `structVar` on the final frame is not.
+- [ ] Typed Lean construction language beyond what landed (closed scalars,
+  fields, initialization, calls, the forwarder's selected action, the
+  firewall's initialization and Bloom insertion): complete applications
+  and their parser, checksum and architecture boundaries; the parked
+  readback and ingress drafts.
+- [ ] Generalize the execution-claim checker beyond its fixed fragment.
 
-Each requires a pinned source, explicit environment and exclusions,
-readable Python and Lean programs, original-program oracle comparison on
-sequences and state, scoped proofs, mutation evidence and an IR-minimality
-review.
+## Interchange
 
-- [ ] Tutorial stateful firewall. Landed: typed Python port with full-state
-  BMv2 comparison, exhaustive byte cuts, generated flow and policy changes,
-  the Lean port with initialization and Bloom-insertion proofs. Open: the
-  two-read prefix (parked draft), drop/no-op composition, hash bounds,
-  control composition. No exact connection-tracking claim.
-- [ ] xdp-filter. Landed: pinned compile-only build with offline map/BTF
-  checks and required CI. Open: kernel execution, the p4blo port,
-  behavioral equivalence, capability and licensing handling.
-- [ ] Conditional flowlet bridge: needs a controlled time/randomness oracle
-  first.
-- [ ] Bounded Katran: needs a profile audit first; no whole-Katran or
-  general eBPF-translator claim.
+- [ ] Text parsing, resource limits, semantic-version and unknown-field
+  policy for the wire profile.
 
-## Checkpoint protocol
+## Applications (frozen scopes; extend only with a new scope)
 
-For each increment: state its contract, implement, run the relevant and
-full gates, obtain an independent read-only review in an isolated
-worktree, resolve findings, record exact evidence and the next action in
-`status.md`, commit and push. Larger semantic steps include mutants of the
-implementation, specification, lowering and observers; proof failures and
-runtime mismatch detections are distinct evidence. Keep interfaces
-committed before delegating implementation. Missing external capabilities
-must not silently weaken acceptance.
+- [ ] Tutorial stateful firewall: the two-read prefix (parked draft),
+  drop/no-op composition, hash bounds, control composition.
+- [ ] xdp-filter: kernel execution, the p4blo port, behavioral equivalence.
+- [ ] Conditional flowlet bridge: needs a controlled time/randomness oracle.
+- [ ] Bounded Katran: needs a profile audit first.
+- [ ] The p4c backend, the experiment that would really test claim 1.
