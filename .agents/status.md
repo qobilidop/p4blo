@@ -6,9 +6,18 @@ Current truth and resumable work. Earlier history is archived at
 
 Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
 Branch `work/edsl-ergonomics`, original base `80eba84`; [PR #2](https://github.com/qobilidop/p4blo/pull/2)
-is open; implementation head `33215d298615bcfa7f8cf8e4c236b3312aa8813e`
-was pushed and its remote CI is running. A final documentation correction
-updates stale proof names and schema paths before the final CI run.
+is open. Pushed head `03c35e7` failed only CI's P4-SpecTec job: `ea1ef89`
+put p4blo imports at module level in `tests/oracle/coverage.py`, whose
+`build` step CI runs with a bare `python3`. Fixed at `a6fb0ef` and pinned
+by a structural test of the bare-interpreter scripts (`b43147d` adds the
+XDP check found by [review](reviews/edsl-final-fixes.md)). The uncommitted
+closure-audit prose sweep from the interrupted Codex session was committed
+as `07409ad` and `7082a48`, with `c1bcc39` from review. Before pushing:
+`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` exited 0 (5198 passed, the optional
+XDP image skipped, 4 xfailed), and the CI coverage steps ran locally, each
+exiting 0: `nix develop .#oracle -c python3 tests/oracle/coverage.py build`,
+then `test_spectec_coverage.py` with `P4BLO_REQUIRE_SPECTEC_COVERAGE=1`,
+9 passed, the committed report matching a fresh measurement.
 The user extended the separation through the protobuf and Lean types;
 [wire-boundary plan](notes/edsl-wire-boundary.md) records the accepted design.
 
@@ -54,8 +63,7 @@ metadata head `33215d2`; its full local gate exited 0 with the same counts.
 Library source settings remain reassignable; bypassing constructor checks by
 assignment is a nonblocking consistency observation, not a shown runtime bug.
 
-Next: review the documentation correction, run the full local gate, update
-PR #2, pass CI on its exact head and merge. Then
+Next: push, update PR #2, pass all remote CI on its exact head and merge. Then
 close the scope, finalize the [reflection](notes/edsl-reflection.md), compact
 state and remove integrated worktrees/branches. Do not resume roadmap work.
 The prior successful assurance at `58275b8` covered the pre-extension API;
