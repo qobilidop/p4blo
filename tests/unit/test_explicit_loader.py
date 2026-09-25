@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from p4blo import arch
 from p4blo.arch import reference
 from p4blo.arch.contract import Contract
 from p4blo.arch.externs import Registry
 from p4blo.arch.loader import LoadError, load
-from p4blo.edsl import Control, Program, Struct
+from p4blo.edsl import BlockLibrary, Control, Struct
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -25,9 +26,13 @@ class Policy(Control[Headers, Metadata]):
 
 
 def program() -> pb.Program:
-    return Program(
-        "control_only", headers=Headers, metadata=Metadata, exports={"policy": Policy}
-    ).build()
+    return arch.assemble(
+        BlockLibrary(Policy),
+        name="control_only",
+        headers=Headers,
+        metadata=Metadata,
+        exports={"policy": Policy},
+    )
 
 
 def test_explicit_loader_accepts_control_only_role() -> None:

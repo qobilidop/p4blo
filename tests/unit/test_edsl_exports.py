@@ -1,11 +1,24 @@
-"""Typed programs export named blocks without choosing a packet pipeline."""
+"""Block libraries compile without an architecture; assembly adds roles."""
 
 from __future__ import annotations
 
 import pytest
 
-from p4blo import validator
-from p4blo.edsl import Control, Deparser, EdslError, Parser, Program, Struct, Transition, state
+from p4blo import arch, validator
+from p4blo.edsl import (
+    BlockLibrary,
+    Control,
+    Deparser,
+    EdslError,
+    In,
+    InOut,
+    Parser,
+    Struct,
+    Transition,
+    bit8,
+    state,
+)
+from p4blo.edsl.externs import Extern
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -35,24 +48,69 @@ class Emit(Deparser[Headers]):
     pass
 
 
-def test_control_only_program_has_one_named_export() -> None:
-    source = Program(
-        "single_control", headers=Headers, metadata=Metadata, exports={"policy": Apply}
-    )
-    program = source.build()
-    validator.check(program)
-    assert [(e.role, e.block) for e in program.exports] == [("policy", "Apply")]
-    assert [(b.name, b.kind) for b in program.blocks] == [("Apply", pb.BLOCK_KIND_CONTROL)]
-    assert source.build() == program
+class Scalar(Control):
+    value: InOut[bit8]
+
+    def apply(self) -> None:
+        self.assign(self.value, self.value + 1)
 
 
-def test_arbitrary_export_names_preserve_order_and_kind() -> None:
-    program = Program(
-        "named_exports",
+class Shared(Control[Headers, Metadata]):
+    pass
+
+
+class Caller(Control[Headers, Metadata]):
+    def apply(self) -> None:
+        self.call(Shared, self.hdr, self.meta)
+        signal.touch(bit8(1))
+
+
+class AnotherCaller(Control[Headers, Metadata]):
+    def apply(self) -> None:
+        self.call(Shared, self.hdr, self.meta)
+        signal.touch(bit8(2))
+
+
+class Signal(Extern):
+    def touch(self, value: In[bit8]) -> None:
+        raise NotImplementedError
+
+
+signal = Signal("signal")
+
+
+def test_scalar_block_compiles_without_program_roots_or_exports() -> None:
+    compiled = BlockLibrary(Scalar).compile()
+    assert [(block.name, block.kind) for block in compiled.blocks] == [
+        ("Scalar", pb.BLOCK_KIND_CONTROL)
+    ]
+    assert [(p.name, p.direction) for p in compiled.blocks[0].params] == [
+        ("value", pb.DIRECTION_INOUT)
+    ]
+    assert compiled.struct_types == ()
+    assert not hasattr(compiled, "headers")
+    assert not hasattr(compiled, "metadata")
+    assert not hasattr(compiled, "exports")
+
+
+def test_shared_subblock_and_extern_are_declared_once() -> None:
+    library = BlockLibrary(Caller, AnotherCaller, externs=[signal])
+    first = library.compile()
+    assert first == library.compile()
+    assert [block.name for block in first.blocks] == ["Shared", "Caller", "AnotherCaller"]
+    assert [item.name for item in first.extern_instances] == ["signal"]
+    assert [item.name for item in first.extern_types] == ["Signal"]
+
+
+def test_architecture_selects_named_exports_from_library() -> None:
+    library = BlockLibrary(Parse, Apply, AlsoApply, Emit)
+    program = arch.assemble(
+        library,
+        name="named_exports",
         headers=Headers,
         metadata=Metadata,
         exports={"first": Parse, "ingress": Apply, "egress": AlsoApply, "emit": Emit},
-    ).build()
+    )
     validator.check(program)
     assert [(e.role, e.block) for e in program.exports] == [
         ("first", "Parse"),
@@ -60,14 +118,44 @@ def test_arbitrary_export_names_preserve_order_and_kind() -> None:
         ("egress", "AlsoApply"),
         ("emit", "Emit"),
     ]
+    assert [block.name for block in library.compile().blocks] == [
+        block.name for block in program.blocks
+    ]
 
 
-@pytest.mark.parametrize("exports", [{"": Apply}, {"policy": object}])
-def test_invalid_export_is_reported(exports: dict[str, object]) -> None:
-    with pytest.raises(EdslError, match="export|role"):
-        Program(
-            "invalid",
+def test_reference_assembly_keeps_conventional_role_order() -> None:
+    program = arch.reference.assemble(
+        BlockLibrary(Parse, Apply, Emit),
+        name="reference",
+        headers=Headers,
+        metadata=Metadata,
+        parser=Parse,
+        control=Apply,
+        deparser=Emit,
+    )
+    validator.check(program)
+    assert [(e.role, e.block) for e in program.exports] == [
+        ("parser", "Parse"),
+        ("control", "Apply"),
+        ("deparser", "Emit"),
+    ]
+
+
+def test_export_requires_library_member_identity() -> None:
+    class SameName(Control[Headers, Metadata], name="Apply"):
+        pass
+
+    with pytest.raises(EdslError, match="must name a block in this BlockLibrary"):
+        arch.assemble(
+            BlockLibrary(Apply),
+            name="wrong_export",
             headers=Headers,
             metadata=Metadata,
-            exports=exports,  # type: ignore[arg-type]
+            exports={"policy": SameName},
         )
+
+
+@pytest.mark.parametrize("members", [(), (object,)])
+def test_library_rejects_missing_or_invalid_blocks(members: tuple[object, ...]) -> None:
+    with pytest.raises(EdslError, match="BlockLibrary"):
+        BlockLibrary(*members)  # type: ignore[arg-type]

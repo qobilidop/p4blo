@@ -6,6 +6,7 @@ and packets, that calls the program's blocks and acts on the metadata they
 leave. Two are here, a filter and a switch, and neither contains P4.
 
     contract.py   the metadata contract and the view of M it gives
+    assembly.py   compose a block library with chosen H/M and exports
     loader.py     validate and bind with explicit registry, contract and
                   role kinds; once per program
     reference.py optional defaults for the supplied switch and filter
@@ -23,6 +24,7 @@ from typing import Protocol
 
 from p4blo import stf
 from p4blo.arch import reference
+from p4blo.arch.assembly import assemble
 from p4blo.arch.contract import CONTRACT, Contract, ContractError, Field, Metadata
 from p4blo.arch.filter import Filter
 from p4blo.arch.loader import Loaded, LoadError, load
@@ -56,6 +58,7 @@ def stf_driver(arch: Architecture, loaded: Loaded) -> stf.RunPacket:
 __all__ = [
     "CONTRACT",
     "Architecture",
+    "assemble",
     "Contract",
     "ContractError",
     "Field",

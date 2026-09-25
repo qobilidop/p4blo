@@ -1,26 +1,13 @@
-# expect: reportArgumentType line 25
-"""An export value must be a parser, control or deparser class."""
+# expect: reportArgumentType line 13
+"""A library member must be a parser, control or deparser class."""
 
 from __future__ import annotations
 
-from p4blo.edsl import Program, Struct
-
-
-class Headers(Struct):
-    pass
-
-
-class Metadata(Struct):
-    pass
+from p4blo.edsl import BlockLibrary
 
 
 class NotABlock:
     pass
 
 
-program = Program(
-    "bad_export",
-    headers=Headers,
-    metadata=Metadata,
-    exports={"policy": NotABlock},
-)
+library = BlockLibrary(NotABlock)

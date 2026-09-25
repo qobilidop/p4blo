@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from p4blo.edsl import Control, Program, Struct
+from p4blo import arch
+from p4blo.edsl import BlockLibrary, Control, Struct
 
 
 class Headers(Struct):
@@ -17,6 +18,12 @@ class Policy(Control[Headers, Metadata]):
     pass
 
 
-program = Program(
-    "named_control", headers=Headers, metadata=Metadata, exports={"policy": Policy}
+library = BlockLibrary(Policy)
+fragment = library.compile()
+program = arch.assemble(
+    library,
+    name="named_control",
+    headers=Headers,
+    metadata=Metadata,
+    exports={"policy": Policy},
 )

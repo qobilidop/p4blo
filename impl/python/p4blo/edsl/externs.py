@@ -65,7 +65,7 @@ from p4blo.edsl.views import direction_of, pb_type_of
 from p4blo.v0 import p4blo_pb2 as pb
 
 if TYPE_CHECKING:
-    from p4blo.edsl.program import Build
+    from p4blo.edsl._build import Build
 
 
 def _substitute(annotation: object, mapping: dict[Any, object]) -> object:

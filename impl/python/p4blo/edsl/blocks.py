@@ -59,7 +59,7 @@ The static rules:
 - Control flow is explicit: `with self.if_(c):`, `elif_`, `else_`.
 
 The two clocks are documented in `p4blo.edsl.__init__`: a block class is
-assembled once per `Program.build()`, when its methods run with a recording
+assembled once per library compilation, when its methods run with a recording
 `self`; the IR they record runs per packet.
 """
 
@@ -131,7 +131,7 @@ from p4blo.edsl.views import (
 from p4blo.v0 import p4blo_pb2 as pb
 
 if TYPE_CHECKING:
-    from p4blo.edsl.program import Build
+    from p4blo.edsl._build import Build
 
 
 # -- the recording context ----------------------------------------------------
@@ -642,7 +642,7 @@ class Block:
         for _, _, t in defaults:
             if t is None:
                 raise EdslError(
-                    f"{cls._kind} {cls.__ir_name__}: give the program's types, "
+                    f"{cls._kind} {cls.__ir_name__}: give the block's types, "
                     f"{cls._kind.capitalize()}[headers, metadata], or declare its parameters"
                 )
         return cast("list[ParamDecl]", defaults)
@@ -1005,7 +1005,7 @@ class Parser[H: Struct, M: Struct](Block):
         if name not in stmts.types.errors:
             raise EdslError(
                 f"error {name} is not declared by this program: pass its Errors class "
-                "to Program(errors=...)"
+                "to BlockLibrary(errors=...)"
             )
         with provenance():
             stmts.verify(operand(condition), name)

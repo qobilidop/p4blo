@@ -1,19 +1,10 @@
 # pyright: strict
-"""The program: named block exports, classes and instances as references.
+"""Private compilation context shared by block and architecture builders.
 
-    program = Program("forwarder", headers=headers, metadata=metadata,
-                      exports={"parser": MyParser, "control": MyIngress,
-                               "deparser": MyDeparser},
-                      externs=[csum], errors=errors)
-    program.build()  # a pb.Program
-
-`build()` runs the second clock once (see `p4blo.edsl.__init__`): it makes
-a core `Program`, declares the errors, registers the headers and metadata
-structs and every type they reach, declares the externs in the order
-given, then assembles the exported blocks in mapping order, each a class
-instantiated once with its methods run against a
-recording `self`. A sub-block is built when first called, ahead of its
-caller. Each `build()` starts afresh, so a program may be built twice.
+One Build owns the core type table, extern instances and assembled blocks.
+A block is assembled on first use, with sub-blocks ahead of their caller.
+An architecture uses one Build for all exports, retaining shared declaration
+identity and deterministic order.
 
 Types are registered on first use: a header or struct class the first
 time a program meets it (through `headers`, `metadata`, a parameter, a
@@ -24,10 +15,10 @@ classes given, after core.p4's seven.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import get_args, get_origin
 
-from p4blo.edsl.blocks import Block, Control, Deparser, ExternResult, Parser
+from p4blo.edsl.blocks import Block, ExternResult
 from p4blo.edsl.core.blocks import Block as CoreBlock
 from p4blo.edsl.core.program import Program as CoreProgram
 from p4blo.edsl.core.types import ExternInstance as CoreExternInstance
@@ -111,70 +102,35 @@ class Build:
         core = self.externs.get(id(instance))
         if core is None:
             name = instance.name if isinstance(instance, Extern) else repr(instance)
-            raise EdslError(f"extern instance {name!r} is not listed in Program(externs=[...])")
+            raise EdslError(f"extern instance {name!r} is not listed in externs=[...]")
         return core
 
-
-class Program:
-    """A program: its name, types, named block exports, externs and errors.
-
-    Export names are labels chosen by the caller's architecture. A program
-    may export any number of parser, control or deparser blocks, including
-    just one control. The eDSL assigns no packet pipeline roles.
-    """
-
-    def __init__(
-        self,
-        name: str,
-        *,
-        headers: type[Struct],
-        metadata: type[Struct],
-        exports: Mapping[str, type[Block]],
-        externs: Sequence[Extern] = (),
-        errors: type[Errors] | Sequence[type[Errors]] = (),
-    ) -> None:
-        self.name = name
-        self.headers = headers
-        self.metadata = metadata
-        self.exports = tuple(exports.items())
-        self.externs = list(externs)
-        self.errors: list[type[Errors]] = [errors] if isinstance(errors, type) else list(errors)
-        for role, cls in self.exports:
-            if not role:
-                raise EdslError("an export needs a role")
-            if not (isinstance(cls, type) and issubclass(cls, (Parser, Control, Deparser))):  # pyright: ignore[reportUnnecessaryIsInstance]
-                raise EdslError(
-                    f"export {role!r} must be a Parser, Control or Deparser class, got {cls!r}"
-                )
-
-    def build(self) -> pb.Program:
-        """The IR of the program, built afresh."""
-        build = Build(self.name)
-        for errors in self.errors:
+    def declare_errors(self, errors: type[Errors] | Sequence[type[Errors]]) -> None:
+        """Register user errors before any block body is assembled."""
+        classes = [errors] if isinstance(errors, type) else errors
+        for errors in classes:
             if not (isinstance(errors, type) and issubclass(errors, Errors)):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise EdslError(f"errors are Errors classes, got {errors!r}")
             if errors is CoreErrors:
                 continue
             for member in errors.__members__:
                 with provenance():
-                    build.core.error(member)
-        with provenance():
-            build.core.headers = build.core.types.structs[build.struct(self.headers, "headers")]
-            build.core.metadata = build.core.types.structs[build.struct(self.metadata, "metadata")]
-        for instance in self.externs:
-            build.extern(instance)
-        for role, cls in self.exports:
-            block = build.block(cls)
-            with provenance():
-                build.core.export(role, block)
-        if build.pending:
-            result = build.pending[0]
+                    self.core.error(member)
+
+    def declare_externs(self, externs: Sequence[Extern]) -> None:
+        for instance in externs:
+            self.extern(instance)
+
+    def finish(self) -> pb.Program:
+        """Return declarations after checking all deferred extern calls."""
+        if self.pending:
+            result = self.pending[0]
             where = f" (defined at {result.location})" if result.location else ""
             raise EdslError(
                 f"the result of {result.method}(...) was never assigned{where}", location=None
             )
         with provenance():
-            return build.core.build()
+            return self.core.build()
 
 
-__all__ = ["Build", "Program"]
+__all__ = ["Build"]
