@@ -329,7 +329,7 @@ class Translator:
             case "STRING":
                 raise Excluded("stringTypeIR (STRING)", "by scope", what)
             case "INT":
-                raise Excluded("intTypeIR (INT)", "by elaboration", what)
+                raise NotTranslated("intTypeIR (INT)", f"an int-typed {what or 'value'}")
             case "INT <%>":
                 raise Excluded("fixedIntTypeIR (INT<n>)", "by scope", what)
             case "VARBIT <%>":

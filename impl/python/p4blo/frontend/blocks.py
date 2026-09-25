@@ -510,7 +510,7 @@ class BlockCx:
                 assert lit is not None
                 return pb.Expr(literal=lit)
             case "D %":
-                raise Excluded("intTypeIR (INT)", "by elaboration", f"unsized {e.num(0)}")
+                raise NotTranslated("intTypeIR (INT)", f"the unsized {e.num(0)} has no width here")
             case "% S %":
                 raise Excluded("literalExpressionIR: nat S int (signed)", "by scope")
             case '" % "':
