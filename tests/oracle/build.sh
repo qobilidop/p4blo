@@ -90,13 +90,14 @@ if [ "$(git -C "$DIR" rev-parse HEAD 2>/dev/null || true)" != "$P4_SPECTEC_COMMI
 fi
 
 # 1b. The patches, onto a clean tree: tracked files back to the commit and
-#     untracked sources under p4spec/ removed (the build tree, _build/, is
-#     ignored and kept), then every patch in order. Only the unstamped path
+#     untracked files under p4spec/ and spec/ removed, the plugin's sources
+#     and anything stray in the spec every oracle elaborates (the build
+#     tree, _build/, is ignored and kept), then every patch in order. Only the unstamped path
 #     gets here, so a finished build is never touched.
 log "applying ${#PATCHES[@]} patch(es) from $PATCHES_DIR"
 rm -f "$STAMP"
 git -C "$DIR" reset -q --hard "$P4_SPECTEC_COMMIT"
-git -C "$DIR" clean -q -fd -- p4spec
+git -C "$DIR" clean -q -fd -- p4spec spec
 for patch in "${PATCHES[@]}"; do
     git -C "$DIR" apply --whitespace=nowarn "$patch"
 done
