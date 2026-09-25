@@ -363,10 +363,7 @@ def execute(run: Run) -> None:
     binary = ROOT / "spec/arch/.lake/build/bin/p4blo-lean"
     for path in (
         binary,
-        *(
-            ROOT / "impl/lean/.lake/build/bin" / name
-            for name in ("forwarderApply", "forwarderTables", "leanTutorialFirewall")
-        ),
+        ROOT / "impl/lean/.lake/build/bin/p4blo",
     ):
         require(path.is_file(), f"missing {path}; run scripts/check-lean.sh first")
     tracked = subprocess.check_output(
@@ -389,7 +386,7 @@ def execute(run: Run) -> None:
                 },
                 "kind": {"file": "spec/ir/P4bloIR/Json.lean", "old": KIND_OLD, "new": KIND_NEW},
                 "observer": {
-                    "file": "spec/ir/Tests/BlockCodec.lean",
+                    "file": "spec/ir/P4bloIRTest/BlockCodec.lean",
                     "old": OBSERVER_OLD,
                     "new": OBSERVER_NEW,
                 },
@@ -409,7 +406,7 @@ def execute(run: Run) -> None:
     lake = ["lake", "+" + toolchain, "build"]
     run.command(
         "scratch-baseline-build",
-        [*lake, "ProofAudit", "CodecProofAudit", "codec-leaves"],
+        [*lake, "+P4bloIRTest.ProofAudit", "+P4bloIRTest.CodecProofAudit", "codec-leaves"],
         cwd=spec,
     )
     # The endpoint belongs to the architecture package, whose scratch copy
@@ -446,7 +443,7 @@ def execute(run: Run) -> None:
     restored_fault = replay.replay(run.output / "crc-runtime-fault.json", [scratch_binary])
     require(restored_fault.passed and restored_fault.cases == 4, restored_fault.summary())
     run.phases.append({"name": "crc-retained-restored", "summary": restored_fault.summary()})
-    source, observer = spec / "P4bloIR/Json.lean", spec / "Tests/BlockCodec.lean"
+    source, observer = spec / "P4bloIR/Json.lean", spec / "P4bloIRTest/BlockCodec.lean"
 
     def codec(name: str) -> object:
         _, stdout, stderr = run.command(
@@ -464,7 +461,9 @@ def execute(run: Run) -> None:
     )
     with mutate(source, KIND_OLD, KIND_NEW):
         run.phases.append({"name": "codec-source", "sha256": digest(source.read_bytes())})
-        run.command("codec-paired-build", [*lake, "CodecProofAudit", "codec-leaves"], cwd=spec)
+        run.command(
+            "codec-paired-build", [*lake, "+P4bloIRTest.CodecProofAudit", "codec-leaves"], cwd=spec
+        )
         reply = codec("codec-paired-reply")
         expected_wrong = json.loads(canonical(CODEC_EXPECTED))
         expected_wrong["value"]["kind"] = "BLOCK_KIND_CONTROL"
@@ -475,7 +474,9 @@ def execute(run: Run) -> None:
         with mutate(observer, OBSERVER_OLD, OBSERVER_NEW):
             run.phases.append({"name": "observer-source", "sha256": digest(observer.read_bytes())})
             run.command(
-                "observer-paired-build", [*lake, "CodecProofAudit", "codec-leaves"], cwd=spec
+                "observer-paired-build",
+                [*lake, "+P4bloIRTest.CodecProofAudit", "codec-leaves"],
+                cwd=spec,
             )
             require(
                 canonical(codec("observer-paired-reply")) == canonical(CODEC_EXPECTED),
@@ -486,7 +487,9 @@ def execute(run: Run) -> None:
             )
             checked_native_failure(code, stdout.decode(), stderr.decode())
     run.command(
-        "final-restored-build", [*lake, "ProofAudit", "CodecProofAudit", "codec-leaves"], cwd=spec
+        "final-restored-build",
+        [*lake, "+P4bloIRTest.ProofAudit", "+P4bloIRTest.CodecProofAudit", "codec-leaves"],
+        cwd=spec,
     )
     run.command("final-restored-endpoint-build", [*lake, "p4blo-lean"], cwd=arch)
     run.command("final-restored-native", [str(native), "--self-test"], cwd=spec)

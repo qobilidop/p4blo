@@ -453,7 +453,8 @@ these entries record why.
   rules mid-sequence, so revisit that limitation before claiming
   original-oracle coverage of host changes. (2026-09-23)
 - **Proof trust is a build gate.** Warnings are errors; default
-  `ProofAudit` targets check advertised theorems' transitive axioms, which
+  audit modules of the default `<Root>Test` libraries check advertised
+  theorems' transitive axioms, which
   catches imported axioms and native shortcuts that grepping for `sorry`
   would miss. It checks dependencies, not whether a theorem states the
   intended property; that is review's job. (2026-09-23)
@@ -632,6 +633,20 @@ The exact theorem statements, premises and exclusions are in
   deleted and its commit is `9e8f7d47`. Notes that turn out to describe the artifact are promoted into
   `docs/` instead. Reason: the resume read had grown to a diary, stale
   plans sat beside live ones, and git already kept every byte.
+  (2026-09-24)
+- **Lean package roots follow the Mathlib and Batteries layout.** Under
+  `<Root>/` if a client may import it; under `<Root>Test/` if only the
+  gate runs it (tests, proof audits and probes alike), as one `lean_lib`
+  named `<Root>Test`, singular, because Lake module names are global
+  across a workspace and a bare `Tests` in two packages collides; at the
+  root only what Lake requires (the root module, `lakefile.toml`,
+  `lean-toolchain`, `lake-manifest.json`, `README.md`, at most one
+  `Main.lean`), with `spec/ir/proto/` and `impl/lean/ASSURANCE.md` as the
+  named exceptions. The user package's executables are subcommands of
+  one `p4blo` binary. Acronyms stay capitalized (`P4bloIR`, as Lean
+  core's `Lean.Compiler.IR`). `tests/test_package_layout.py` pins the
+  roots. Reason: three flat packages with unregistered probes and
+  sixteen executable roots gave no answer to "where does this file go".
   (2026-09-24)
 - **Skills live in `.agents/skills/`**, the location the Agent Skills
   convention and Codex, Cursor, Gemini CLI and Copilot read. Claude Code

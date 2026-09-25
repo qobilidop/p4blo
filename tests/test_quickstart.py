@@ -117,10 +117,10 @@ def test_python_quickstart_diagnostics() -> None:
 @pytest.mark.parametrize("name", ["leanForwarder", "leanTutorialFirewall"])
 def test_lean_agrees_quickstart_server_errors(lean_binary: Path, name: str) -> None:
     assert lean_binary.is_file()
-    command = [str(ROOT / "impl/lean/.lake/build/bin" / name)]
+    command = [str(ROOT / "impl/lean/.lake/build/bin/p4blo"), name]
     usage = subprocess.run(command + ["unknown"], capture_output=True, text=True, timeout=30)
     assert usage.returncode == 2 and usage.stdout == ""
-    assert usage.stderr == f"usage: {name} [run]\n"
+    assert usage.stderr == f"usage: p4blo {name} [run]\n"
     stream = subprocess.run(
         command + ["run"],
         input='{"ingress_port":4,"packet":""}\n',

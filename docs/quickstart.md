@@ -100,14 +100,15 @@ they are separate from persistent extern state.
 
 ## Run the Lean-authored programs
 
-After editing either Lean source, rebuild its existing executable:
+After editing either Lean source, rebuild the user package's executable:
 
 ```sh
-lake +leanprover/lean4:v4.34.0 -d impl/lean build leanForwarder leanTutorialFirewall
+lake +leanprover/lean4:v4.34.0 -d impl/lean build p4blo
 ```
 
-With no arguments each executable exports its authored Program as JSON.
-With `run`, it executes that **compiled in-memory Program** and accepts one
+Its subcommands `leanForwarder` and `leanTutorialFirewall` each export their
+authored Program as JSON when given no further arguments.
+With `run`, each executes that **compiled in-memory Program** and accepts one
 snake_case JSON request per line: `entries`, `ingress_port`, and hex `packet`.
 The servers have four ports. Returned extern state persists within one server
 process; starting a new process resets it. Requests do not accept a replacement
@@ -129,7 +130,7 @@ for name, executable, vector in [
     ("forwarder", "leanForwarder", "forward.stf"),
     ("tutorial_firewall", "leanTutorialFirewall", "connection.stf"),
 ]:
-    command = [str(root / "impl/lean/.lake/build/bin" / executable)]
+    command = [str(root / "impl/lean/.lake/build/bin/p4blo"), executable]
     exported = subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
     assert not exported.stderr, exported.stderr
     index = ir.Index.build(ir.load_json(exported.stdout))

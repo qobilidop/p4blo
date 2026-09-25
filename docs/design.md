@@ -318,6 +318,23 @@ processes. Each boundary has its own kind of assurance:
 | Lean source language to IR | validity and semantic-preservation proofs |
 | Lean execution to IR semantics | the reference interpreter is reused; refinement proofs would accompany a distinct implementation |
 | protobuf to and from abstract IR | codec proofs on the representable domain plus cross-language tests |
+
+Each package root follows the Mathlib and Batteries layout, so which
+directory a Lean file goes in has a one-line answer: under `<Root>/` if a
+client may import it, under `<Root>Test/` if only the gate runs it, and
+at the root only what Lake requires there: the root module,
+`lakefile.toml`, `lean-toolchain`, `lake-manifest.json`, `README.md` and
+at most one `Main.lean`. Tests, proof audits and fixtures are modules and
+files of one library per package, `P4bloIRTest`, `P4bloArchTest` and
+`P4bloTest`, named in the singular because Lake module names are global
+across a workspace, so two bare `Tests` would collide. Each test library
+is a default target, so a plain `lake build` checks every audit's
+`#guard_msgs` pins, and `lake test` runs its driver. The IR package also
+keeps its wire schema under `proto/`, and the user package its assurance
+log, `ASSURANCE.md`. `spec/arch/Main.lean` is the `p4blo-lean` endpoint;
+`impl/lean/Main.lean` is the `p4blo` executable, whose subcommands are the
+forwarder and firewall servers and the fixture exporters the
+cross-language tests call. `tests/test_package_layout.py` pins the layout.
 | Python execution to IR semantics | differential and property tests, adversarial mutations, scoped certificates |
 | authored program to intended behavior | independent expected answers, and application proofs where they exist |
 
@@ -460,13 +477,18 @@ p4blo/
   .agents/                          agent working state: status, decisions, roadmap
   spec/ir/                          Lake package p4blo-ir (P4bloIR): the IR
     P4bloIR/                        abstract IR, semantics, codecs, proofs
+    P4bloIRTest/                    tests, proof audits, fixtures
     proto/p4blo/v0/p4blo.proto      versioned wire encoding
   spec/arch/                        Lake package p4blo-arch (P4bloArch): the
     P4bloArch/                      reference architecture: switch, extern
                                     families, certificate example
+    P4bloArchTest/                  tests, proof audit, fixtures
     Main.lean                       the p4blo-lean conformance endpoint
-  impl/lean/                        Lake package p4blo (P4blo): typed source
-                                    language, authored programs, execution API
+  impl/lean/                        Lake package p4blo (P4blo): the user library
+    P4blo/                          typed source language, authored programs,
+                                    execution API
+    P4bloTest/                      test driver, proof audit
+    Main.lean                       the p4blo executable: servers, exporters
   impl/python/p4blo/                     the Python package
     v0/                             generated protobuf code, committed
     ir.py                           load, save, text form

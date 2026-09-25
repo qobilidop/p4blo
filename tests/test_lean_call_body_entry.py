@@ -23,7 +23,7 @@ PAIRS = list(itertools.product([False, True], repeat=2))
 
 def test_body_entry_exporter_is_default() -> None:
     package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "callEntry", "callBodyEntry"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +31,7 @@ def body_entry_export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
     return json.loads(
         subprocess.run(
-            [str(ROOT / "impl/lean/.lake/build/bin/callBodyEntry")],
+            [str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "callBodyEntry"],
             check=True,
             capture_output=True,
             text=True,
@@ -43,7 +43,7 @@ def body_entry_export(lean_binary: Path) -> dict[str, Any]:
 def actual_wrapper() -> pb.Program:
     # Independent tracked Python wrapper; the second authored exporter pins
     # the command insertion separately from the complete body-entry exporter.
-    return exported_programs(ROOT / "impl/lean/.lake/build/bin/guardedForward")[
+    return exported_programs([str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "guardedForward"])[
         "guard-false-false-true-2"
     ]
 

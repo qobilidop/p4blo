@@ -72,8 +72,12 @@ What is claimed, for which programs, and what backs it is
 [assurance.md](assurance.md). Keep proved properties, tested agreement and
 open obligations separate in every checkpoint; passing differential tests
 is not a proof of equivalence.
-Lean treats warnings as errors. Its default `ProofAudit` target checks the
-transitive axiom sets of advertised theorems; `sorry`, custom axioms and
+Lean treats warnings as errors. The proof audits,
+`spec/ir/P4bloIRTest/ProofAudit.lean` and `CodecProofAudit.lean`,
+`spec/arch/P4bloArchTest/ArchProofAudit.lean` and
+`impl/lean/P4bloTest/UserProofAudit.lean`, pin the transitive axiom sets
+of advertised theorems with `#guard_msgs`, and every default `lake build`
+checks them as modules of the test libraries; `sorry`, custom axioms and
 native-evaluation escapes cannot silently replace those proofs. Update an
 audit expectation only after reviewing the changed trust boundary.
 

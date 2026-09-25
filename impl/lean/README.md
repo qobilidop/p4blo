@@ -5,6 +5,13 @@ and `p4blo-arch` from `../../spec/arch`.
 Import `P4blo` for the user API. Reference definitions remain under
 `P4bloIR`; frontend/library definitions use `P4blo` to avoid collisions.
 
+Everything a client may import lives under `P4blo/`. `Main.lean` is the one
+executable, `p4blo`, whose subcommands are the application servers
+`leanForwarder` and `leanTutorialFirewall` and the test fixture exporters the
+cross-language tests call; run it without arguments for the list.
+`P4bloTest/` holds what only the gate runs, as the `P4bloTest` library: the
+test driver `lake test` runs and the proof audit `UserProofAudit.lean`.
+
 `prepareSwitch` performs indexing, extern binding and architecture contract
 checks, not complete validation. `runSwitch` and the block entry points reuse
 the reference functions. Pass returned extern state to the next call. There
@@ -47,7 +54,8 @@ The source denotation is compositional over `Fin (2 ^ width)` and `Bool`;
 it does not call lowering or the IR evaluator. `lower_typed` proves scalar
 typing, `evaluate_lower` proves the exact value correspondence, and
 `evaluate_lower_run` proves successful execution with the entire initial
-`Run` unchanged. All are checked by the default `UserProofAudit` target.
+`Run` unchanged. All are audited by `P4bloTest/UserProofAudit.lean`, which every default
+`lake build` checks.
 
 For open expressions, bind named references once and pass an independent
 heterogeneous environment:
@@ -88,7 +96,7 @@ Run `scripts/check-lean.sh` from the repo root to build and test all three packa
 and their audits. Testing this package alone does not run the specification's
 audit or tests. After building, run
 `P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl.py` for the 21
-cross-language known answers. `scalarExamples` is a test fixture exporter,
+cross-language known answers. `p4blo scalarExamples` is a test fixture exporter,
 not a new general-purpose interpreter or wire protocol.
 
 `Fields.Shape.zero` and `Layout.zero` independently construct initial source
