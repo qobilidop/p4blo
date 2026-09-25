@@ -38,8 +38,9 @@ its reason in prose, then six lines in this order:
   used: a rule is `Relation/rule`, a function starts with `$`. Behavior
   that SpecTec implements in its simulator's OCaml code rather than in
   its rules, such as `packet_in.extract`, is named in the class line.
-- `Lean:` the definitions under `spec/ir/P4bloIR/` that implement it,
-  or `none` and the reason when only the validator does.
+- `Lean:` the definitions under `spec/ir/P4bloIR/` that implement it
+  and the theorems, if any, that state what they do on the case; or
+  `none` and the reason when only the validator does.
 - `Python:` the dotted names in the `p4blo` package that implement it.
 - `Test:` the tests or corpus programs that exercise it.
 - `Class:` one of four classes, then one sentence saying what SpecTec
@@ -559,7 +560,7 @@ A table match is evaluated over the installed entries; the program's
   [assurance.md](assurance.md#known-disagreements-with-the-oracles).
   - P4: none; P4Runtime §9.1
   - SpecTec: `$select_action`, `$largest_priority_wins`
-  - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`
+  - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.overlaps`, `p4blo.interp.tables.InstalledEntries.install`
   - Test: `tests/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/test_validator.py::test_entry_priority_overlap`, `tests/corpus/priority`
   - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.
@@ -588,7 +589,7 @@ A table match is evaluated over the installed entries; the program's
   (`NOACTION_RESERVED`).
   - P4: §14.2.1.4
   - SpecTec: `$select_action`
-  - Lean: `Installed.lookup`, `Table`
+  - Lean: `Installed.lookup`, `Table`, `DeviationLaws.lookup_miss`
   - Python: `p4blo.interp.tables.InstalledEntries.lookup`, `p4blo.validator._Validator.check_action`
   - Test: `tests/test_interp_tables.py::test_a_table_without_a_default_falls_back_to_no_action`, `tests/test_interp_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`, `tests/test_validator.py::test_noaction_reserved`
   - Class: same. `$select_action` with no match returns the table's default action; a missing default being `NoAction` is P4's rule, settled before SpecTec's dynamic rules run.
