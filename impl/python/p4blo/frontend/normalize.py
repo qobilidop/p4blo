@@ -9,8 +9,10 @@ block's parameters and locals, and assignments of a variable to itself.
   sorted by name, and so are a block's locals once renamed;
 - a block's parameters are renamed `p0`, `p1`, ... by position and its
   locals `v0`, `v1`, ... in the order of their first use, reading states
-  in order, then the body, then actions in order; an action parameter
-  keeps its name, since table entries name action data by it;
+  in order, then the body, then actions in order, skipping any name an
+  action parameter of the block has, which would capture the variable
+  inside that action; an action parameter keeps its name, since table
+  entries name action data by it;
 - an instance of a stateless extern family (`checksum16`, `crc16`,
   `crc32`; docs/arch-supports.md, "Extern families") is renamed after its
   type, `checksum16#0`, in the order of first use: it has no state to
@@ -129,8 +131,11 @@ def _normalize_block(block: pb.Block) -> None:
     for a in block.actions:
         note(a)
     unused = sorted(local_names - set(order))
-    mapping = {p.name: f"p{i}" for i, p in enumerate(block.params)}
-    mapping |= {name: f"v{i}" for i, name in enumerate([*order, *unused])}
+    reserved = {p.name for a in block.actions for p in a.params}
+    params = _numbered("p", len(block.params), reserved)
+    mapping = {p.name: params[i] for i, p in enumerate(block.params)}
+    locals_named = [*order, *unused]
+    mapping |= dict(zip(locals_named, _numbered("v", len(locals_named), reserved), strict=True))
     by_name = {v.name: v for v in block.locals}
     locals_ = [by_name[n] for n in [*order, *unused]]
     del block.locals[:]
@@ -149,6 +154,18 @@ def _normalize_block(block: pb.Block) -> None:
         _rename_all(a.body, {k: v for k, v in mapping.items() if k not in shadow})
         drop_self_assignments(a.body)
     drop_self_assignments(block.body)
+
+
+def _numbered(prefix: str, count: int, reserved: set[str]) -> list[str]:
+    """`count` names `prefix0`, `prefix1`, ..., skipping reserved ones."""
+    out: list[str] = []
+    i = 0
+    while len(out) < count:
+        name = f"{prefix}{i}"
+        i += 1
+        if name not in reserved:
+            out.append(name)
+    return out
 
 
 def _rename_all(messages: Iterable[Message], mapping: dict[str, str]) -> None:

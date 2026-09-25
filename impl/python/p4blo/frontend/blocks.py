@@ -39,7 +39,6 @@ from p4blo.frontend.common import (
     TableB,
     Val,
     VarB,
-    _wrap,
     access,
     assign,
     binary,
@@ -59,6 +58,7 @@ from p4blo.frontend.common import (
     typed_parts,
     unary,
     var,
+    wrap,
 )
 from p4blo.frontend.il import Node
 from p4blo.v0 import p4blo_pb2 as pb
@@ -92,7 +92,10 @@ class Architecture:
             "externFunctionDeclarationIR: an architecture's functions", "by thesis", name
         )
 
-    def extern_object(self, cx: BlockCx, inst_name: str, t: Node, args: list[Node]) -> ExternInstB:
+    def extern_object(
+        self, cx: BlockCx | None, inst_name: str, t: Node, args: list[Node]
+    ) -> ExternInstB:
+        """An extern instance: in a block `cx`, or at top level when None."""
         raise NotTranslated("instantiationIR of an extern object", inst_name)
 
     def is_intrinsic(self, t: Node) -> bool:
@@ -184,6 +187,10 @@ class BlockCx:
         # Actions bound in some table and also used unbound.
         self.bound_actions: set[str] = set()
         self.pre: list[pb.Stmt] = []
+        # True while translating a parser state, an action or an inlined
+        # function: code P4 enters afresh each time, whose declarations
+        # without an initializer start at their default on every entry.
+        self.reentered = False
 
     # -- names
 
@@ -203,6 +210,48 @@ class BlockCx:
 
     def hoist(self, stmts: Iterable[pb.Stmt]) -> None:
         self.pre.extend(stmts)
+
+    def zero(self, target: pb.LValue, t: pb.Type) -> list[pb.Stmt]:
+        """Statements that give `target` the IR's zero value of `t`
+        (docs/ir-semantics.md, "Uninitialized variables"): zero bits,
+        `false`, `NoError`, an enum's first member, a header invalid with
+        zero fields, a struct field by field, and a stack emptied by popping
+        all of it, which leaves every element invalid with zero fields and
+        `nextIndex` at 0."""
+        tr = self.tr
+        match t.WhichOneof("kind"):
+            case "bits":
+                return [assign(target, lit_bits(t.bits, 0))]
+            case "boolean":
+                return [assign(target, pb.Expr(literal=pb.Literal(boolean=False)))]
+            case "error":
+                return [assign(target, pb.Expr(literal=pb.Literal(error="NoError")))]
+            case "enum_type":
+                first = tr.enum_types[t.enum_type].members[0]
+                lit = pb.EnumLiteral(enum_type=t.enum_type, member=first)
+                return [assign(target, pb.Expr(literal=pb.Literal(enum_member=lit)))]
+            case "header":
+                out = [pb.Stmt(set_invalid=pb.SetInvalid(header=target))]
+                for f in tr.header_types[t.header].fields:
+                    out.extend(self.zero(lmember(target, f.name), f.type))
+                return out
+            case "struct":
+                out: list[pb.Stmt] = []
+                for f in tr.struct_types[t.struct].fields:
+                    out.extend(self.zero(lmember(target, f.name), f.type))
+                return out
+            case "stack":
+                return [pb.Stmt(pop=pb.Pop(stack=target, count=t.stack.size))]
+            case kind:
+                raise il.ILError(f"no zero value for a {kind}")
+
+    def _reentered[T](self, f: Callable[[], T]) -> T:
+        saved = self.reentered
+        self.reentered = True
+        try:
+            return f()
+        finally:
+            self.reentered = saved
 
     # -- types and values
 
@@ -252,7 +301,7 @@ class BlockCx:
                 bt = strip_alias(base_t)
                 if bt.c == "HEADER_STACK % [%]" and e.text(1) == "size":
                     st = strip_alias(t)
-                    return _wrap(st.num(0), bt.num(1)) if st.c == "BIT <%>" else Int(bt.num(1))
+                    return wrap(st.num(0), bt.num(1)) if st.c == "BIT <%>" else Int(bt.num(1))
                 return None
             case "(%)":
                 return self.fold(e.node(0))
@@ -299,9 +348,9 @@ class BlockCx:
             case "!", bool():
                 return not v
             case "~", Bits():
-                return _wrap(v.width, ~v.value)
+                return wrap(v.width, ~v.value)
             case "-", Bits():
-                return _wrap(v.width, -v.value)
+                return wrap(v.width, -v.value)
             case "-", Int():
                 return Int(-v.value)
             case "+", Bits() | Int():
@@ -352,7 +401,7 @@ class BlockCx:
             w, x, y = a.width, a.value, b.value
             match op:
                 case "<<":
-                    return _wrap(w, x << y) if y < w else Bits(w, 0)
+                    return wrap(w, x << y) if y < w else Bits(w, 0)
                 case ">>":
                     return Bits(w, x >> y)
             if isinstance(b, Int):
@@ -363,11 +412,11 @@ class BlockCx:
                 return None
             match op:
                 case "+":
-                    return _wrap(w, x + y)
+                    return wrap(w, x + y)
                 case "-":
-                    return _wrap(w, x - y)
+                    return wrap(w, x - y)
                 case "*":
-                    return _wrap(w, x * y)
+                    return wrap(w, x * y)
                 case "|+|":
                     return Bits(w, min(x + y, (1 << w) - 1))
                 case "|-|":
@@ -403,7 +452,7 @@ class BlockCx:
         """A compile-time known expression as a literal, an unsized one at `t`."""
         v = self.fold(te)
         if isinstance(v, Int) and t is not None and t.WhichOneof("kind") == "bits":
-            v = _wrap(t.bits, v.value)
+            v = wrap(t.bits, v.value)
         lit = None if v is None else literal_of(v)
         if lit is None:
             raise NotTranslated("literalExpressionIR", f"not a compile-time constant: {te.short()}")
@@ -679,9 +728,7 @@ class BlockCx:
             v = self.fold(right_te)
             if isinstance(v, Int):
                 _, lt, _ = typed_parts(e.node(0))
-                w = self.width_of(lt)
-                width = w if v.value < (1 << w) else max(1, v.value.bit_length())
-                right = lit_bits(width, v.value)
+                right = self._shift_amount(v, lt)
             else:
                 right, right_pre = self.captured(right_te)
                 left = self.snapshot(left, right_pre, e.node(0))
@@ -691,6 +738,14 @@ class BlockCx:
         left = self.snapshot(left, right_pre, e.node(0))
         self.pre.extend(right_pre)
         return binary(BINOPS[op], left, right)
+
+    def _shift_amount(self, v: Int, lt: Node) -> pb.Expr:
+        """An unsized shift amount as a literal: at the shifted operand's
+        width `lt` when it fits, else just wide enough, since an amount of
+        the width or more still means a result of zero."""
+        w = self.width_of(lt)
+        width = w if v.value < (1 << w) else max(1, v.value.bit_length())
+        return lit_bits(width, v.value)
 
     def captured(self, te: Node) -> tuple[pb.Expr, list[pb.Stmt]]:
         """An expression and the statements its calls were hoisted into,
@@ -939,9 +994,6 @@ class BlockCx:
         finally:
             self.scope = saved
 
-    def _expr_lvalue(self, te: Node) -> pb.LValue:
-        return self.lvalue_of_expr(te)
-
     # -- arguments
 
     def ordered_args(self, params: Sequence[ParamIL], args: Sequence[Node]) -> list[Node | None]:
@@ -1129,13 +1181,18 @@ class BlockCx:
             self.scope = inner
 
     def _var_decl(self, s: Node) -> list[pb.Stmt]:
+        """A declaration inside a body, hoisted to a block local. Without
+        an initializer it is re-zeroed where it stood when the body is
+        entered afresh each time (a state, an action, an inlined function):
+        P4 gives it its default on every entry, while a block local keeps
+        its value (docs/ir-semantics.md, "State-local variables")."""
         name = s.text(2)
         t = self.tr.type_of(s.node(1), name)
         local = self.add_local(name, t)
         self.scope.bind(name, VarB(local))
         init = s.opt(3)
         if init is None:
-            return []
+            return self.zero(lvar(local), t) if self.reentered else []
         assert isinstance(init, Node)
         return [assign(lvar(local), self.expr(init.node(0)))]
 
@@ -1158,10 +1215,8 @@ class BlockCx:
             direct = self._hit_into(value, lv)
             if direct is not None:
                 return direct
-        rhs = self.expr(value)
-        if op != "=":
-            rhs = self._compound(op, lvalue_to_expr(lv), rhs, value, lt)
-        return [assign(lv, rhs)]
+            return [assign(lv, self.expr(value))]
+        return [assign(lv, self._compound(op, lvalue_to_expr(lv), value, lt))]
 
     def _hit_into(self, value: Node, lv: pb.LValue) -> list[pb.Stmt] | None:
         """`x = t.apply().hit` is `Apply.hit` into `x`, with no temporary."""
@@ -1177,15 +1232,18 @@ class BlockCx:
             out.append(assign(lv, unary(pb.UNARY_OP_NOT, lvalue_to_expr(lv))))
         return out
 
-    def _compound(self, op: str, current: pb.Expr, rhs: pb.Expr, value: Node, lt: Node) -> pb.Expr:
+    def _compound(self, op: str, current: pb.Expr, value: Node, lt: Node) -> pb.Expr:
+        """`x op= e` as `x = x op e`. A shift's amount may be an unsized
+        constant, which has no IR type of its own; it is sized before it is
+        translated, as in a plain shift."""
         base = COMPOUND.get(op)
         if base is None or base in ("/", "%"):
             raise NotTranslated("assignmentStatementIR", f"compound {op}")
         if base in ("<<", ">>"):
             v = self.fold(value)
             if isinstance(v, Int):
-                rhs = lit_bits(self.width_of(lt), v.value)
-        return binary(BINOPS[base], current, rhs)
+                return binary(BINOPS[base], current, self._shift_amount(v, lt))
+        return binary(BINOPS[base], current, self.expr(value))
 
     def _slice_target(
         self, base: Node, hi_te: Node, sliceop: str, lo_te: Node
@@ -1231,10 +1289,11 @@ class BlockCx:
         target, hi, lo, n = self._slice_target(
             lv_node.node(0), lv_node.node(1), lv_node.node(2).c, lv_node.node(3)
         )
-        rhs = self.expr(value)
-        if op != "=":
+        if op == "=":
+            rhs = self.expr(value)
+        else:
             current = pb.Expr(slice=pb.Slice(operand=lvalue_to_expr(target), hi=hi, lo=lo))
-            rhs = self._compound(op, current, rhs, value, lt)
+            rhs = self._compound(op, current, value, lt)
         return [self._rmw(target, n, hi, lo, rhs)]
 
     def _direct_apply(self, s: Node) -> list[pb.Stmt]:
@@ -1268,9 +1327,10 @@ class BlockCx:
 
     @staticmethod
     def _pad(params: Sequence[ParamIL], args: Sequence[Node]) -> list[Node]:
-        # Arguments are positional here once named ones are ordered; a named
-        # argument list is ordered first so that packet arguments drop out
-        # by position.
+        """One argument per parameter, in parameter order, `_` where none
+        is given: the caller then drops the packet parameters and their
+        arguments together, by position. Named arguments are put in order
+        first; `call_args` orders the rest again, which is then a no-op."""
         if any(a.c in ("% = %", "% = _") for a in args):
             order = {p.name: i for i, p in enumerate(params)}
             by_index: list[Node | None] = [None] * len(params)
@@ -1357,14 +1417,14 @@ class BlockCx:
         if bt.c == "HEADER % <%> {%}":
             match method:
                 case "setValid":
-                    return [pb.Stmt(set_valid=pb.SetValid(header=self._expr_lvalue(base)))]
+                    return [pb.Stmt(set_valid=pb.SetValid(header=self.lvalue_of_expr(base)))]
                 case "setInvalid":
-                    return [pb.Stmt(set_invalid=pb.SetInvalid(header=self._expr_lvalue(base)))]
+                    return [pb.Stmt(set_invalid=pb.SetInvalid(header=self.lvalue_of_expr(base)))]
                 case "isValid":
                     return []
         if bt.c == "HEADER_STACK % [%]" and method in ("push_front", "pop_front"):
             count = self.int_of(args[0], f"callStatementIR: hs.{method}(n)")
-            stack = self._expr_lvalue(base)
+            stack = self.lvalue_of_expr(base)
             if method == "push_front":
                 return [pb.Stmt(push=pb.Push(stack=stack, count=count))]
             return [pb.Stmt(pop=pb.Pop(stack=stack, count=count))]
@@ -1527,12 +1587,16 @@ class BlockCx:
                 and a is not None
             ):
                 out.append(assign(lvar(local), self.expr(a)))
+            else:
+                # An `out` parameter starts at its default on every call,
+                # like a local declared without an initializer.
+                out.extend(self.zero(lvar(local), t))
             if p.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT) and a is not None:
                 copy_out.append((self.lvalue_of_expr(a), local))
         self.scope = fscope
         try:
             stmts = body[:-1] if returns else body
-            out.extend(self.stmts(stmts))
+            out.extend(self._reentered(lambda: self.stmts(stmts)))
             if returns and tail is not None and tail.c == "RETURN % ;":
                 value = self.expr(tail.node(0))
                 if result is not None:
@@ -1587,7 +1651,7 @@ class BlockCx:
                             "tableActionIR", f"{name}: a bound argument the body also reaches"
                         )
                     self.scope.bind(pname, BoundArgB(te, saved_scope))
-            action.body.extend(self.stmts(decl.node(3).nodes(1)))
+            action.body.extend(self._reentered(lambda: self.stmts(decl.node(3).nodes(1))))
             for local, number in marker:
                 action.body.append(assign(lvar(local), lit_bits(8, number)))
         finally:
@@ -1800,7 +1864,7 @@ class BlockCx:
 
     def state(self, st: Node) -> pb.State:
         name = st.text(1)
-        body = self.stmts(st.nodes(2))
+        body = self._reentered(lambda: self.stmts(st.nodes(2)))
         trans = st.node(3).node(0)
         state = pb.State(name=name, body=body)
         if trans.c == "% ;":
@@ -1860,7 +1924,7 @@ class BlockCx:
     def _set_literal(self, te: Node, kt: pb.Type) -> pb.Literal:
         v = self.fold_keyset(te)
         if isinstance(v, Int) and kt.WhichOneof("kind") == "bits":
-            v = _wrap(kt.bits, v.value)
+            v = wrap(kt.bits, v.value)
         lit = None if v is None else literal_of(v)
         if lit is None:
             raise NotTranslated("selectCaseIR", f"a keyset that is not a constant: {te.short()}")
@@ -2309,11 +2373,27 @@ def block_kind(decl: Node) -> str:
     return "deparser" if any(is_packet_type(p.type) == "packet_out" for p in params) else "control"
 
 
-def owns_state(decl: Node) -> bool:
-    return any(
-        d.t == "instantiationIR" and strip_alias(d.node(1)).c == "EXTERN % <%> %"
-        for d in decl.nodes(6)
-    )
+def owns_state(tr: Translator, decl: Node) -> bool:
+    """Whether an instance of `decl` has extern state of its own: an extern
+    it instantiates, or one owned by a parser or control it instantiates or
+    applies directly, however deep. Each instantiation of such a block is
+    its own block, so that its instances keep separate state."""
+    for d in decl.nodes(6):
+        if d.t != "instantiationIR":
+            continue
+        t = strip_alias(d.node(1))
+        if t.c == "EXTERN % <%> %":
+            return True
+        if t.c in ("PARSER % <%> (%)", "CONTROL % <%> (%)"):
+            sub = tr.block_decls.get(prefixed_name(d.node(2).node(0))[0])
+            if sub is not None and owns_state(tr, sub):
+                return True
+    for n in il.walk(decl):
+        if n.c == "% . APPLY (%) ;":
+            sub = tr.block_decls.get(prefixed_name(n.node(0).node(0))[0])
+            if sub is not None and owns_state(tr, sub):
+                return True
+    return False
 
 
 def ctor_value(cx: BlockCx, a: Node) -> Val:

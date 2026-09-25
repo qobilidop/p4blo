@@ -91,8 +91,9 @@ __all__ = [
 
 # Where p4blo.p4 lives; passed to the simulator as an include directory.
 INCLUDE_DIR = Path(__file__).resolve().parent / "include"
-# Where the patch puts the architecture's relations, inside the checkout.
-WATSUP = Path("p4spec/lib/backend-sim/p4blo/p4blo.watsup")
+# The architecture's relations, p4blo's block contract, which the `block`
+# command reads at start; tracked here rather than patched into the checkout.
+WATSUP = Path(__file__).resolve().parent / "p4blo.watsup"
 # The patches build.sh applies, and the stamp it writes after a build:
 # "<commit> <digest of the patches>".
 PATCHES_DIR = Path(__file__).resolve().parent / "patches"
@@ -134,7 +135,7 @@ class BlockOracle:
 
     @property
     def watsup(self) -> Path:
-        return self.root / WATSUP
+        return WATSUP
 
     def command(self, *, trace: bool = False) -> list[str]:
         """The server's command line; `trace` makes it write the spec's
@@ -156,11 +157,6 @@ class BlockOracle:
         reason = self.oracle.missing()
         if reason is not None:
             return reason
-        if not self.watsup.is_file():
-            return (
-                f"{self.watsup} is missing: the checkout was built without "
-                "tests/oracle/patches; rerun tests/oracle/build.sh"
-            )
         # A checkout built from another version of the patch would run, and
         # answer for a plugin that is not the one in this tree.
         stamp = self.root / STAMP

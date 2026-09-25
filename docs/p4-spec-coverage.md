@@ -53,7 +53,8 @@ IR (see [design.md](design.md#printer-and-oracles)): *translated* for an
 in-row; *performed* when it carries out the row's elaboration, *partial*
 when it does so for the cases named; *refused by name* when it raises an
 error naming the row; *not attempted* when the IR could hold the construct
-and the bridge does not yet translate it. Where the bridge performs the
+and the bridge does not yet translate it; *unreachable* when the bridge has
+code for it that nothing it translates can reach. Where the bridge performs the
 rewrite of a row that was *excluded, by elaboration*, the row is now
 *elaborated*, since the rewrite has been performed; fourteen rows moved on
 2026-09-24 for that reason alone, and their notes are unchanged. The
@@ -134,7 +135,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `indexAccessExpressionIR` (`hs[e]`) | in | `Index` | Run-time index; out of range closed in ir-semantics.md. | translated |
 | `sliceAccessExpressionIR` with `sliceop` `:` | in | `Slice{hi, lo}` | Bounds are constants; the validator checks `lo <= hi < N`. | translated |
 | `sliceAccessExpressionIR` with `sliceop` `+:` | elaborated | `[lo + w - 1 : lo]` | P4 1.2.5's `e[lo +: w]`; both operands are compile-time known. | performed |
-| `callExpressionIR`: extern method in expression position | elaborated | `CallExtern.result` into a fresh local | Schema: "The IR has no discarded results; the frontend introduces a local." | performed; under `&&`, `\|\|` or `?:` the call is guarded by an `If` |
+| `callExpressionIR`: extern method in expression position | elaborated | `CallExtern.result` into a fresh local | Schema: "The IR has no discarded results; the frontend introduces a local." | unreachable: neither object the bridge binds, v1model's `register` and `counter`, has a method that returns a value; the code would guard the call by an `If` under `&&`, `\|\|` or `?:` |
 | `callExpressionIR`: `h.isValid()` | in | `IsValid` | Decision: dedicated packet and header nodes. | translated |
 | `callExpressionIR`: `packet.lookahead<T>()` | in | `Lookahead{type}` | Parser only. | translated; in statement position its value goes to a fresh local, since it can still reject |
 | `callExpressionIR`: `packet.length()` | excluded, by scope | none | Declared in core.p4's `packet_in`; no design list names it and no corpus program uses it. | refused by name |
@@ -164,7 +165,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 |---|---|---|---|---|
 | `emptyStatementIR` | elaborated | none | | performed |
 | `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Assigning a header). | translated |
-| `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | elaborated | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. | performed; `/=` and `%=` on values not known at compile time are not attempted |
+| `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | elaborated | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. | performed, a shift's unsized amount sized as in a plain shift; `/=` and `%=` on values not known at compile time are not attempted |
 | `callStatementIR`: action call from a control body | in | `CallAction` | | translated |
 | `callStatementIR`: extern method on an instance | in | `CallExtern` | `result` present exactly when the method returns. | translated |
 | `callStatementIR`: `t.apply()` | in | `Apply` | Forwarder README. Not inside an action. | translated |
@@ -187,7 +188,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `switchStatementIR` on `t.apply().action_run` (with `switchLabelIR`, `switchCaseIR`) | elaborated | each action records which one ran in a local; an `If` chain dispatches | Implemented by the acl program; its README describes the exact action marker and dispatch. | performed; a `NoAction` label, whose IR body must stay empty, starts the marker at its number and the table's other actions overwrite it |
 | `switchStatementIR` on an expression | elaborated | an `If` chain | Design: other sugar. Precedent: p4c `SimplifySwitch`. | performed |
 | `constantDeclarationIR` inside a block | elaborated | folded into literals | Forwarder README (`TYPE_IPV4`); stacks README (`MAX_H2_HEADERS`). | performed |
-| `variableDeclarationIR` | in | `Var` in `Block.locals` | An initializer becomes an `Assign` where the declaration stood (stacks README: `op1 = hdr.h1.op1`). Reading before writing gives zero (ir-semantics.md). | translated; a local declared inside a parser state is hoisted without re-zeroing (see `parserLocalDeclarationIR`) |
+| `variableDeclarationIR` | in | `Var` in `Block.locals` | An initializer becomes an `Assign` where the declaration stood (stacks README: `op1 = hdr.h1.op1`). Reading before writing gives zero (ir-semantics.md). | translated; a local declared without an initializer inside a parser state, an action or an inlined function gets its zero value where the declaration stood, as does an inlined function's `out` parameter, so it re-defaults on every entry (ir-semantics.md, State-local variables) |
 
 ## Parser declarations and states
 
@@ -198,7 +199,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. | refused by name |
 | its `constructorParameterListIR` | elaborated | one block per instantiation, arguments substituted | The block-instances decision covers extern state but does not say what a constructor argument becomes. No corpus program has one. | performed for scalar constant arguments; others not attempted |
 | `parserLocalDeclarationIR`: `constantDeclarationIR` | elaborated | folded | As in blocks. | performed |
-| `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. A local declared inside a state without an initializer is hoisted the same way, but P4-SpecTec re-defaults it on every entry of the state; whether the elaboration must insert a zeroing assignment at the state's entry is undecided (ir-semantics.md, State-local variables). | translated; an initializer of a parser-scoped local runs in the start state, or in an entry state when `start` is re-entered |
+| `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. A local declared inside a state without an initializer is hoisted the same way, and since P4-SpecTec re-defaults it on every entry of the state, the elaboration writes its zero value where the declaration stood (ir-semantics.md, State-local variables). | translated; an initializer of a parser-scoped local runs in the start state, or in an entry state when `start` is re-entered |
 | `parserLocalDeclarationIR`: `instantiationIR` | see the declarations section | | | |
 | `valueSetDeclarationIR` | excluded, by scope | none | Design. | refused by name |
 | `parserStateIR` | in | `State` | `accept` and `reject` are `Target`s, not states. | translated |
@@ -223,7 +224,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `tableKeyIR`: match kinds `range`, `optional` | excluded, by thesis | none | Declared by v1model and PSA, not core.p4. Nothing rules. | refused by name |
 | `tableActionsPropertyIR`, `tableActionIR`: the action reference | in | `Table.actions` | Names of actions of the block. | translated |
 | `tableActionIR`: bound arguments in `tableActionReferenceIR` | elaborated | one action copy per table, the bound lvalue substituted | Decision: per-table action copies (`setbyte`, `setbyte_1`, ...). | performed; a bound expression the action body also reaches is not attempted |
-| `controlPlaneNameIR` (`@name` on an action reference) | elaborated | the copy's name | Same decision: the corpus STF names the elaborated actions directly. | partial: copies are named as p4c names them; an explicit `@name` is not read |
+| `controlPlaneNameIR` (`@name` on an action reference) | elaborated | the copy's name | Same decision: the corpus STF names the elaborated actions directly. | partial: copies are named as p4c's frontend names them (`setbyte_1`), not by the control-plane name (`setbyte`) p4c's STF and P4Runtime use; an explicit `@name` is not read |
 | `tableActionIR` note `# ( parameterListIR , parameterListIR )` | elaborated | none | A typing note splitting bound from control-plane parameters. | performed: the note is dropped |
 | `tableDefaultActionPropertyIR` | in | `Table.default_action`, `Table.const_default_action` | Absent means `NoAction` (ir-semantics.md, Table miss). `NoAction` is declared with an empty body (forwarder README). | translated |
 | `tableEntriesPropertyIR` with `const` | in | `Table.const_entries` | Installed before any host entry. | translated |
@@ -259,11 +260,11 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `typedefDeclarationIR` with `TYPEDEF` | elaborated | replaced by its definition | Forwarder README. | performed |
 | `typedefDeclarationIR` with `TYPE` | elaborated | as `newTypeIR` | As `newTypeIR`. | performed |
 | `externFunctionDeclarationIR`: core.p4's `verify` | in | `Verify` | Decision: dedicated nodes. | translated |
-| `externFunctionDeclarationIR`: an architecture's functions | excluded, by thesis | none | Design: packet fate as externs. The corpus routes: `mark_to_drop` is `meta.drop = true` (forwarder), `update_checksum` is a `checksum16` instance (forwarder, csum16), `verify_checksum` deferred pending a contract field. | `mark_to_drop`, `hash`, `update_checksum` mapped as the v1model shim maps them back; `verify_checksum` left out while nothing reads `checksum_error`; others refused |
+| `externFunctionDeclarationIR`: an architecture's functions | excluded, by thesis | none | Design: packet fate as externs. The corpus routes: `mark_to_drop` is `meta.drop = true` (forwarder), `update_checksum` is a `checksum16` instance (forwarder, csum16), `verify_checksum` deferred pending a contract field. | `mark_to_drop` as v1model defines it, writing only the drop port 511 to `egress_spec` (`M.egress_port`) in ingress, so that a later write of a port undoes it, and setting `drop` in egress; `hash`, `update_checksum` mapped as the v1model shim maps them back; `verify_checksum` left out while nothing reads `checksum_error`; others refused |
 | `externObjectDeclarationIR` | in | `ExternType` | Type parameters: one type per instantiation (decision: monomorphic externs). | translated for v1model's `register` and `counter` |
 | `externConstructorPrototypeIR` | in | `ExternType.constructor_params` | | translated for v1model's `register` and `counter` |
 | `externMethodPrototypeIR` (non-abstract) | in | `Method` | | translated for v1model's `register` and `counter` |
-| `controlDeclarationIR`, `controlBodyIR` | in | `Block` with `BLOCK_KIND_CONTROL` or `BLOCK_KIND_DEPARSER`; `Block.body` | The kind decides the statement set. | translated; V1Switch's verify, ingress, egress and compute controls merge into the control role, the egress part guarded by `!drop` |
+| `controlDeclarationIR`, `controlBodyIR` | in | `Block` with `BLOCK_KIND_CONTROL` or `BLOCK_KIND_DEPARSER`; `Block.body` | The kind decides the statement set. | translated; V1Switch's verify, ingress, egress and compute controls merge into the control role; when there is an egress part, the ingress part ends with v1model's drop decision `drop = (egress_port == 511)` and the egress part is guarded by `!drop`; without one, 511 is no port of p4blo's switch, which drops the packet as v1model does |
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. | refused by name |
 | its `constructorParameterListIR` | elaborated | as for parsers | As for parsers. | performed for scalar constant arguments; others not attempted |
 | its `packet_out` parameter | elaborated | carried by the block's kind | Every corpus README. | performed |
@@ -271,7 +272,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `controlLocalDeclarationIR`: `constantDeclarationIR`, `instantiationIR` | see the rows above | | | |
 | `controlTypeDeclarationIR`, `packageTypeDeclarationIR` | excluded, by thesis | `Export` and `BlockKind` | The architecture's interface. | set aside |
 | `parameterListIR`, `parameterIR` with a direction | in | `Param` with `Direction` | `DIRECTION_NONE` is action data. | translated |
-| `standard_metadata` and other intrinsic metadata parameters (no IL production; the architecture's parameter) | excluded, by thesis | fields of the program's `M` under the metadata contract | Design, Metadata contract; forwarder README: `egress_spec` is `meta.egress_port`. | mapped: `ingress_port`, `parser_error`, `egress_spec` and `egress_port` onto the contract; other fields refused; a user field named like a contract field is renamed |
+| `standard_metadata` and other intrinsic metadata parameters (no IL production; the architecture's parameter) | excluded, by thesis | fields of the program's `M` under the metadata contract | Design, Metadata contract; forwarder README: `egress_spec` is `meta.egress_port`. | mapped: `ingress_port`, `parser_error`, `egress_spec` and `egress_port` onto the contract, `egress_spec` read in egress being 511 once `mark_to_drop` has run there; other fields refused; a user field of `M` named like a contract field is renamed, and is the contract field only where the source copies it to or from `standard_metadata` exactly as the printer's shim does |
 
 ## Annotations and misc
 

@@ -98,9 +98,9 @@ index 0000000..68281c7
 +     ExternV j           {"extern": j}
 +
 +   <type> is the name of the value's syntax type (`expressionIR`, `typeIR`,
-+   ...) and <mixop> the constructor as the spec writes it, with `%` for each
-+   argument (`BinE % % %` is written "BinE%%%"). Struct fields keep their
-+   order. Nothing is normalized or dropped. *)
++   ...) and <mixop> the constructor with `%` for each argument and atoms
++   spaced as the spec writes them: a typed expression is "% # %". Struct
++   fields keep their order. Nothing is normalized or dropped. *)
 +
 +open Lang
 +module Mixfix = Domain.Mixfix

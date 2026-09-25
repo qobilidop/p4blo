@@ -1,7 +1,7 @@
 """The P4 sources the IL bridge is checked on, pinned.
 
-Every file under tests/frontend/ is a verbatim copy, checked here by
-SHA-256 so that an edit cannot pass unnoticed:
+Every file under tests/frontend/ but `probes/` is a verbatim copy, checked
+here by SHA-256 so that an edit cannot pass unnoticed:
 
 - `p4c/`: p4lang/p4c at the commit P4-SpecTec's pin records as its `p4c`
   submodule, `testdata/p4_16_samples/`. The first eight are the original
@@ -14,6 +14,10 @@ SHA-256 so that an edit cannot pass unnoticed:
 
 Both repositories are Apache-2.0; the files keep their SPDX headers where
 upstream has them.
+
+`probes/` holds small programs written here, each naming what it probes,
+with vectors whose expectations are P4-SpecTec's output
+(tests/test_frontend_spectec.py, section 5).
 """
 
 from __future__ import annotations
@@ -89,7 +93,7 @@ CORPUS: tuple[CorpusSource, ...] = (
     CorpusSource("stacks", HERE / "p4c/header-stack-ops-bmv2.p4", "identical"),
     CorpusSource("stateful", HERE / "p4c/issue1097-2-bmv2.p4", "documented"),
     CorpusSource("subparser_stack", HERE / "p4c/subparser-with-header-stack-bmv2.p4", "identical"),
-    CorpusSource("tutorial_firewall", ROOT / "tests/oracle/firewall.p4", "normalized"),
+    CorpusSource("tutorial_firewall", ROOT / "tests/oracle/firewall.p4", "documented"),
     CorpusSource("verify_error", HERE / "p4c/issue1824-bmv2.p4", "identical"),
 )
 

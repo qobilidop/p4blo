@@ -328,14 +328,17 @@ architecture, `p4blo`, added to the pinned simulator by
 parser, control or deparser per request on the inputs the request gives and
 returns what the block left, as `p4blo-lean run` does for whole requests.
 
-The patch adds `p4spec/lib/backend-sim/p4blo/` (the architecture in
-`pipe.ml`; its spec relations, `P4blo_init`, `P4blo_parser`,
-`P4blo_control`, `P4blo_deparser` and their helpers, in `p4blo.watsup`),
-one case in `backend-sim/build.ml` that registers the architecture, and a
-`block` command in `p4spec/bin/main.ml` that reads JSON requests line by
-line. Nothing the `sim` command runs changes, and `p4blo.watsup` is passed
-to the command beside the spec directory rather than placed in it, so the
-spec every other test elaborates is untouched. The extern families p4blo
+The architecture's spec relations, `P4blo_init`, `P4blo_parser`,
+`P4blo_control`, `P4blo_deparser` and their helpers, are p4blo's block
+contract and live in this directory as `p4blo.watsup`, a standalone file
+in the spec's own language that other projects can read directly. The
+patch holds only OCaml: `p4spec/lib/backend-sim/p4blo/pipe.ml`, the
+architecture's driver; one case in `backend-sim/build.ml` that registers
+it; and a `block` command in `p4spec/bin/main.ml` that reads JSON requests
+line by line. Nothing the `sim` command runs changes, and `p4blo.watsup`
+is passed to the command beside the spec directory rather than placed in
+it, so the spec every other test elaborates is untouched. The file is read
+when the command starts, so changing it needs no rebuild. The extern families p4blo
 prints (register, counter, and `hash` for checksum16, crc16 and crc32) are
 declared in `include/p4blo.p4` with V1Model's signatures and implemented by
 the V1Model simulator's own code; `impl/python/p4blo/arch/spectec_block.py`
@@ -356,7 +359,7 @@ with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
 `build.sh`, which reapplies it and stamps the build.
 
 `block.py` drives it. A `BlockRunner` keeps one `p4spectec block spec
-<p4blo.watsup> -i p4c/p4include -i tests/oracle/include` process resident,
+tests/oracle/p4blo.watsup -i p4c/p4include -i tests/oracle/include` process resident,
 so the spec is elaborated once (well under a second) and each program is
 instantiated once, and sends requests of this shape:
 
@@ -503,6 +506,22 @@ backend, edit it in a scratch checkout built by `build.sh`, stage the new
 directory with `git add -N p4spec/lib/backend-il`, and regenerate the patch
 with `git diff` against the tree with `0001` applied, as for the block
 runner.
+
+`frontend_census.py` measures the bridge beyond the corpus. It is a local
+tool, run by hand and never by CI: it takes every program of p4c's
+`testdata/p4_16_samples/` that includes `v1model.p4` and has an STF vector,
+at the p4c commit P4-SpecTec's pin records as its submodule (the one
+`tests/frontend/catalog.py` pins; fetched once, sparsely, into
+`~/.cache/p4blo/p4c-census`), translates each through `il-export`, replays
+p4c's vector on the Python interpreter as `tests/frontend/p4c_stf.py` does,
+and writes one outcome per program to `frontend-census.json`: pass, fail,
+replay-error (the STF adapter cannot replay the vector), excluded (with
+the coverage row), not-translated (with the production), invalid, crash,
+or spectec-rejects. The file is sorted and holds no paths or timings, so
+`uv run python tests/oracle/frontend_census.py --check` reproduces it byte
+for byte on the same pins and fails on any difference; a change to the
+bridge that moves a program reruns it without `--check` and commits the
+new file. It takes about thirty seconds with six exports at a time.
 
 ## Results
 
