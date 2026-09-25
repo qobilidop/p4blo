@@ -12,22 +12,28 @@ control; the bytes for a deparser; and after every block the registers and
 counters. Extern state is carried from request to request in the
 simulator's own form, as the reference interpreter carries it in `Loaded`.
 
-The blocks are chained as the switch chains them (`p4blo.arch.Switch`):
-the parser gets zero metadata with `ingress_port`, the control the parser's
-headers and metadata with `parser_error`, the deparser the control's
-headers. That choice only picks the inputs; nothing architectural runs on
-the simulator's side. Without a patched build every test that needs the
-simulator skips and says so; the printer and value tests run anyway.
+The blocks' inputs are chained as the switch chains them
+(`p4blo.arch.Switch`): the parser gets zero metadata with `ingress_port`,
+the control the parser's headers and metadata with `parser_error`, the
+deparser the control's headers. Unlike the switch, the harness runs all
+three blocks for every packet, even one the switch would drop before its
+control (a parse that ended inside a byte); both sides get the same
+inputs, so this only adds block runs. That choice only picks the inputs;
+nothing architectural runs on the simulator's side. Without a patched build
+every test that needs the simulator skips and says so; the printer and
+value tests run anyway.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -35,7 +41,10 @@ from p4blo import arch, interp, ir, stf
 from p4blo.arch import spectec_block
 from p4blo.arch.externs.crc import CRC, crc32
 from p4blo.drt.state import snapshot
-from p4blo.interp import ExternResult
+from p4blo.interp import ExternResult, Externs, stmt
+from p4blo.interp import deparser as interp_deparser
+from p4blo.interp.expr import zero_header
+from p4blo.interp.packet import Emitter
 from p4blo.interp.values import Bits, Header, Stack, Struct, Value, copy, zero
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -322,14 +331,12 @@ def test_an_error_reply_leaves_the_session_usable(runner: oracle_block.BlockRunn
 
 @dataclass(frozen=True)
 class Finding:
-    """One block output that differs. `tag` names a documented kind of
-    difference when the value paths show one, and is None otherwise."""
+    """One block output that differs."""
 
     where: str
     what: str
     python: object
     spectec: object
-    tag: str | None = None
 
     def __str__(self) -> str:
         return (
@@ -338,61 +345,59 @@ class Finding:
         )
 
 
-# The ledger entry for push_front and pop_front (docs/ir-semantics.md,
-# "Statements and calls", class deviates): the simulator invalidates the
-# vacated elements with `$invalidate_value`, which keeps their stored
-# fields, and pops to `nextIndex = S - n`. An element invalid on both sides
-# with different stored fields, and a different `next_index`, are those.
-STACK_FIELD = "stack-invalid-element-field"
-STACK_INDEX = "stack-next-index"
+FieldNames = dict[str, list[str]]
+
+
+def field_names(index: ir.Index) -> FieldNames:
+    """Every header and struct type's field names, for reporting paths."""
+    return {
+        decl.name: [f.name for f in decl.fields]
+        for decl in [*index.program.header_types, *index.program.struct_types]
+    }
 
 
 def differences(
-    ours: Value, theirs: Value, path: str = "", *, in_stack: bool = False
-) -> Iterator[tuple[str, object, object, str | None]]:
+    ours: Value, theirs: Value, names: FieldNames, path: str = ""
+) -> Iterator[tuple[str, object, object]]:
     """Every leaf, validity bit and stack index where two values differ, by
-    path (`.ipv4.ttl`, `.hs[1].valid`, `.hs.next_index`), each tagged when it
-    is one of the stack differences above."""
+    path (`.ipv4.ttl`, `.hs[1].valid`, `.hs.next_index`)."""
+
+    def named(value: Header | Struct) -> list[str]:
+        return names.get(value.type_name) or [str(i) for i in range(len(value.fields))]
+
     match ours, theirs:
         case Struct(_, fs), Struct(_, gs) if len(fs) == len(gs):
-            for name, f, g in zip(_field_names(ours), fs, gs, strict=True):
-                yield from differences(f, g, f"{path}.{name}")
+            for name, f, g in zip(named(ours), fs, gs, strict=True):
+                yield from differences(f, g, names, f"{path}.{name}")
         case Header(_, va, fs), Header(_, vb, gs) if len(fs) == len(gs):
             if va != vb:
-                yield f"{path}.valid", va, vb, None
-            tag = STACK_FIELD if in_stack and not va and not vb else None
-            for name, f, g in zip(_field_names(ours), fs, gs, strict=True):
+                yield f"{path}.valid", va, vb
+            for name, f, g in zip(named(ours), fs, gs, strict=True):
                 if f != g:
-                    yield f"{path}.{name}", f, g, tag
+                    yield f"{path}.{name}", f, g
         case Stack(_, es, na), Stack(_, fs, nb) if len(es) == len(fs):
             if na != nb:
-                yield f"{path}.next_index", na, nb, STACK_INDEX
+                yield f"{path}.next_index", na, nb
             for i, (e, f) in enumerate(zip(es, fs, strict=True)):
-                yield from differences(e, f, f"{path}[{i}]", in_stack=True)
+                yield from differences(e, f, names, f"{path}[{i}]")
         case _:
             if ours != theirs:
-                yield path, ours, theirs, None
-
-
-_NAMES: dict[str, list[str]] = {}
-
-
-def _field_names(value: Header | Struct) -> list[str]:
-    return _NAMES.get(value.type_name) or [str(i) for i in range(len(value.fields))]
+                yield path, ours, theirs
 
 
 class Findings:
     """Disagreements, each with where it happened; empty means agreement."""
 
-    def __init__(self) -> None:
+    def __init__(self, names: FieldNames) -> None:
+        self.names = names
         self.items: list[Finding] = []
 
     def check(self, where: str, what: str, python: object, spectec: object) -> None:
         if python == spectec:
             return
         if isinstance(python, Struct) and isinstance(spectec, Struct):
-            for path, ours, theirs, tag in differences(python, spectec):
-                self.items.append(Finding(where, f"{what}{path}", ours, theirs, tag))
+            for path, ours, theirs in differences(python, spectec, self.names):
+                self.items.append(Finding(where, f"{what}{path}", ours, theirs))
             return
         self.items.append(Finding(where, what, python, spectec))
 
@@ -400,7 +405,9 @@ class Findings:
         self, where: str, python: dict[str, tuple[int, ...]], spectec: dict[str, tuple[int, ...]]
     ) -> None:
         """Registers and counters, reported by the cells that differ, since
-        whole arrays are too long to read."""
+        whole arrays are too long to read. The simulator's instances are
+        matched to the reference interpreter's by their last name part."""
+        spectec = by_ir_name(spectec)
         if python.keys() != spectec.keys():
             self.check(where, "extern instances", sorted(python), sorted(spectec))
             return
@@ -412,9 +419,6 @@ class Findings:
             for i, (a, b) in enumerate(zip(ours, theirs, strict=True)):
                 self.check(where, f"{name}[{i}]", a, b)
 
-    def untagged(self) -> list[Finding]:
-        return [f for f in self.items if f.tag is None]
-
     def report(self, vector: Path, items: list[Finding] | None = None) -> str:
         items = self.items if items is None else items
         listed = "\n".join(str(f) for f in items[:40])
@@ -423,20 +427,35 @@ class Findings:
 
 
 def observe_spectec(externs: dict[str, Any], index: ir.Index) -> dict[str, tuple[int, ...]]:
-    """The simulator's registers and counters by instance name. Object ids
-    are qualified by where the printer instantiated them (`main.c.r` inside
-    an exported block, `r` at top level); the last part is the IR name."""
+    """The simulator's registers and counters by their full object id,
+    qualified by where the printer instantiated them (`main.c.r` inside an
+    exported block, `r` at top level)."""
     observed: dict[str, tuple[int, ...]] = {}
     for name, extern in externs.items():
         values: list[int] = []
         for raw in extern["values"]:
             if extern["kind"] == "register":
                 value = oracle_block.from_json(raw, index)
-                values.append(getattr(value, "value", int(bool(value))))
+                if not isinstance(value, Bits):
+                    raise oracle_block.BlockError(f"register {name} holds {value!r}")
+                values.append(value.value)
             else:
                 values.append(int(raw))
-        observed[name.rsplit(".", 1)[-1]] = tuple(values)
+        observed[name] = tuple(values)
     return observed
+
+
+def by_ir_name(observed: dict[str, tuple[int, ...]]) -> dict[str, tuple[int, ...]]:
+    """The simulator's instances by the IR name, their id's last part, which
+    is unique because the IR's instance names are; two ids that share it
+    would be a printer change this harness does not know about."""
+    named: dict[str, str] = {}
+    for qualified in observed:
+        simple = qualified.rsplit(".", 1)[-1]
+        if simple in named:
+            raise AssertionError(f"{named[simple]} and {qualified} are both {simple!r}")
+        named[simple] = qualified
+    return {simple: observed[qualified] for simple, qualified in named.items()}
 
 
 def observe_python(loaded: arch.Loaded) -> dict[str, tuple[int, ...]]:
@@ -455,6 +474,12 @@ class PaddedCRC32(CRC):
         assert isinstance(data, Bits)
         payload = data.value.to_bytes(self.data_width // 8, "big")
         if len(payload) % 2:
+            # The binding itself is still checked: only the padding is the
+            # simulator's, so a wrong binding cannot hide behind the model.
+            expected = Bits(32, crc32(payload))
+            assert result.returns == expected, (
+                f"the CRC32 binding gives {result.returns!r} on {payload.hex()}, not {expected!r}"
+            )
             return ExternResult(returns=Bits(32, crc32(b"\x00" + payload)))
         return result
 
@@ -469,17 +494,90 @@ def with_padded_crc32(loaded: arch.Loaded) -> int:
     return replaced
 
 
+@contextlib.contextmanager
+def spectec_stack_ops() -> Iterator[None]:
+    """`push_front` and `pop_front` as the pinned simulator runs them, the
+    ledger's *deviates* entry (docs/ir-semantics.md, `push_front(n)`): after
+    a push the first `n` elements keep their own old fields; a pop rotates
+    the first `n` elements to the back, where they keep their fields, and
+    sets `nextIndex` to `S - n`. Each wraps the reference interpreter's own
+    operation, checks that it did what P4 says, and then changes only those
+    things, so a wrong push or pop cannot hide behind the model."""
+    push, pop = stmt.push_front, stmt.pop_front
+
+    def vacated(stack: Stack, i: int, index: ir.Index) -> None:
+        element = stack.elements[i]
+        assert element == zero_header(stack.header_type, index), (
+            f"element {i} left by push or pop is {element!r}, not an invalid zero header"
+        )
+
+    def push_front(stack: Stack, n: int, index: ir.Index) -> None:
+        before = [[copy(f) for f in e.fields] for e in stack.elements]
+        push(stack, n, index)
+        for i in range(min(n, len(before))):
+            vacated(stack, i, index)
+            stack.elements[i].fields = before[i]
+
+    def pop_front(stack: Stack, n: int, index: ir.Index) -> None:
+        before = [[copy(f) for f in e.fields] for e in stack.elements]
+        next_index = stack.next_index
+        pop(stack, n, index)
+        size, n = len(before), min(n, len(before))
+        assert stack.next_index == max(next_index - n, 0), (
+            f"pop_front({n}) from {next_index} gives next_index {stack.next_index}"
+        )
+        for j in range(n):
+            vacated(stack, size - n + j, index)
+            stack.elements[size - n + j].fields = before[j]
+        stack.next_index = size - n
+
+    stmt.push_front, stmt.pop_front = push_front, pop_front
+    try:
+        yield
+    finally:
+        stmt.push_front, stmt.pop_front = push, pop
+
+
+def run_deparser(
+    index: ir.Index, block: str, headers: Struct, externs: Externs
+) -> tuple[bytes, int]:
+    """The reference deparser's bytes and the exact number of bits it
+    emitted, which `interp.run_deparser` pads away; read from its emitter."""
+    made: list[Emitter] = []
+
+    class Counted(Emitter):
+        __slots__ = ()
+
+        def __init__(self) -> None:
+            super().__init__()
+            made.append(self)
+
+    with mock.patch.object(interp_deparser, "Emitter", Counted):
+        emitted = interp.run_deparser(index, block, headers, externs)
+    (emitter,) = made
+    return emitted, emitter.width
+
+
 def compare_vector(
-    runner: oracle_block.BlockRunner, vector: Path, *, padded_crc32: bool = False
+    runner: oracle_block.BlockRunner, vector: Path, *, model: str | None = None
 ) -> Findings:
-    """Replay a vector block by block on both sides from fresh extern state."""
+    """Replay a vector block by block on both sides from fresh extern state,
+    with the reference interpreter changed by `model` (one of the
+    classifiers below) when one is given."""
     loaded = load(program_of(vector))
-    if padded_crc32:
-        assert with_padded_crc32(loaded), f"{vector} has no odd-byte CRC32"
+    with contextlib.ExitStack() as scope:
+        if model == PADDED_CRC32:
+            assert with_padded_crc32(loaded), f"{vector} has no odd-byte CRC32"
+        elif model == STACK_INVALIDATION:
+            scope.enter_context(spectec_stack_ops())
+        else:
+            assert model is None, model
+        return _compare(runner, vector, loaded)
+
+
+def _compare(runner: oracle_block.BlockRunner, vector: Path, loaded: arch.Loaded) -> Findings:
     index, meta, externs = loaded.index, loaded.metadata, loaded.externs
-    for decl in [*index.program.header_types, *index.program.struct_types]:
-        _NAMES[decl.name] = [f.name for f in decl.fields]
-    findings = Findings()
+    findings = Findings(field_names(index))
     installed: list[stf.Add | stf.SetDefault] = []
     state: Any = None
     blocks = 0
@@ -536,7 +634,7 @@ def compare_vector(
         )
 
         # The deparser, on the control's headers.
-        emitted = interp.run_deparser(index, loaded.block("deparser"), headers, externs)
+        emitted, bits = run_deparser(index, loaded.block("deparser"), headers, externs)
         spec = runner.run_block(
             index,
             "deparser",
@@ -544,6 +642,7 @@ def compare_vector(
         )
         state = spec.state
         findings.check(f"{where} deparser", "bytes", emitted.hex(), (spec.packet or b"").hex())
+        findings.check(f"{where} deparser", "bits", bits, spec.bits)
         findings.check_externs(
             f"{where} deparser", observe_python(loaded), observe_spectec(spec.externs, index)
         )
@@ -557,9 +656,11 @@ class KnownDifference(Exception):
 
 
 # Vectors whose blocks differ only in documented ways, each named by its
-# classifier. Strict: when the simulator stops differing, the XPASS fails
-# and the entry must go. Anything a classifier does not explain fails.
-PADDED_CRC32 = "padded-crc32"
+# classifier: a model of the simulator's behavior applied to the reference
+# interpreter, under which the vector is run again and every difference
+# must vanish. Strict: when the simulator stops differing, the XPASS fails
+# and the entry must go. Anything a model does not explain fails.
+PADDED_CRC32 = "padded-CRC32"
 STACK_INVALIDATION = "stack-invalidation"
 KNOWN = {
     # The firewall's second Bloom filter hashes the 13-byte 5-tuple with
@@ -572,6 +673,11 @@ KNOWN = {
     # emits and the pipeline oracle therefore never saw.
     "stacks/header-stack-ops-bmv2.stf": STACK_INVALIDATION,
 }
+
+
+def vector_named(name: str) -> Path:
+    (found,) = [v for v in VECTORS if vector_id(v) == name]
+    return found
 
 
 def vector_id(vector: Path) -> str:
@@ -593,23 +699,69 @@ def test_known_vectors_exist() -> None:
     assert set(KNOWN) <= {vector_id(v) for v in VECTORS}
 
 
-@pytest.mark.parametrize("vector", vector_params())
-def test_blocks_agree_on_spectec(runner: oracle_block.BlockRunner, vector: Path) -> None:
+def judge(runner: oracle_block.BlockRunner, vector: Path) -> None:
+    """Return on agreement, raise `KnownDifference` when the vector's
+    classifier explains every difference, and fail otherwise."""
     findings = compare_vector(runner, vector)
     if not findings.items:
         return
     known = KNOWN.get(vector_id(vector))
-    if known == STACK_INVALIDATION and not findings.untagged():
+    if known is None:
+        pytest.fail("DIVERGENCE: " + findings.report(vector))
+    modeled = compare_vector(runner, vector, model=known)
+    if not modeled.items:
         raise KnownDifference(findings.report(vector))
-    if known == PADDED_CRC32:
-        modeled = compare_vector(runner, vector, padded_crc32=True)
-        if not modeled.items:
-            raise KnownDifference(findings.report(vector))
-        pytest.fail(
-            "DIVERGENCE beyond the padded-CRC32 model: "
-            + modeled.report(vector)
-            + "\nwithout the model: "
-            + findings.report(vector)
-        )
-    unexplained = findings.untagged() if known == STACK_INVALIDATION else findings.items
-    pytest.fail("DIVERGENCE: " + findings.report(vector, unexplained))
+    pytest.fail(
+        f"DIVERGENCE beyond the {known} model: "
+        + modeled.report(vector)
+        + "\nwithout the model: "
+        + findings.report(vector)
+    )
+
+
+@pytest.mark.parametrize("vector", vector_params())
+def test_blocks_agree_on_spectec(runner: oracle_block.BlockRunner, vector: Path) -> None:
+    judge(runner, vector)
+
+
+# ---------------------------------------------------------------------------
+# The classifiers cannot hide a bug in what they model
+# ---------------------------------------------------------------------------
+
+
+def test_a_push_front_that_keeps_next_index_is_caught(
+    runner: oracle_block.BlockRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The review's mutant: nextIndex is P4's `min(nextIndex + n, S)` on
+    # both sides, so the stack model leaves it alone and the difference
+    # remains.
+    def push_front(stack: Stack, n: int, index: ir.Index) -> None:
+        size = len(stack.elements)
+        n = min(n, size)
+        fresh = [zero_header(stack.header_type, index) for _ in range(n)]
+        stack.elements = fresh + stack.elements[: size - n]
+
+    monkeypatch.setattr(stmt, "push_front", push_front)
+    with pytest.raises(pytest.fail.Exception, match="beyond the stack-invalidation model"):
+        judge(runner, vector_named("stacks/header-stack-ops-bmv2.stf"))
+
+
+def test_an_odd_byte_crc32_binding_on_the_wrong_bytes_is_caught(
+    runner: oracle_block.BlockRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The review's mutant: the binding hashes the reversed payload. The
+    # padding model replaces its result, so only the model's check of
+    # that result can see it.
+    call = CRC.call
+
+    def reversed_call(self: CRC, method: str, args: list[Value]) -> ExternResult:
+        result = call(self, method, args)
+        (data,) = args
+        width = self.data_width // 8
+        if self.output_width == 32 and width % 2 and isinstance(data, Bits):
+            return ExternResult(returns=Bits(32, crc32(data.value.to_bytes(width, "big")[::-1])))
+        return result
+
+    monkeypatch.setattr(CRC, "call", reversed_call)
+    with pytest.raises(AssertionError, match="the CRC32 binding gives"):
+        judge(runner, vector_named("tutorial_firewall/collisions.stf"))

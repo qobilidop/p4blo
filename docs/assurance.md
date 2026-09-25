@@ -344,15 +344,20 @@ extern state ([tests/oracle/README.md](../tests/oracle/README.md#the-block-runne
 `tests/test_oracle_block.py` repeats every block run of every vector on it
 and compares each block's outputs with the reference interpreter's: a
 parser's headers, metadata, bits consumed, acceptance and error; a
-control's headers and metadata; a deparser's bytes; and every register and
-counter cell after each block. Two documented differences are strict
-expected failures with narrow classifiers: odd-byte CRC32, below, which a
-model of the simulator's padding must explain entirely, on the tutorial
-firewall's Bloom filter cells that the pipeline comparison cannot see; and
-the stored fields and index a stack keeps after `push_front` and
-`pop_front`, the ledger's *deviates* entry, which no deparser emits. The
-blocks' inputs are chosen by chaining them as the switch does, so the
-comparison covers what the vectors reach, not every input a block accepts.
+control's headers and metadata; a deparser's bytes and bit count; and
+every register and counter cell after each block. A parser's `error` on
+accept is `NoError` by construction on both sides, so its comparison has
+content only for a rejecting parser. Two documented differences are strict expected
+failures, each explained entirely by a model of the simulator applied to
+the reference interpreter, which checks the interpreter's own answer
+before changing only what the deviation names: odd-byte CRC32, below, on
+the tutorial firewall's Bloom filter cells that the pipeline comparison
+cannot see; and the stored fields and index a stack keeps after
+`push_front` and `pop_front`, the ledger's *deviates* entry, which no
+deparser emits. The blocks' inputs are chosen by chaining them as the
+switch does, so the comparison covers what the vectors reach, not every
+input a block accepts; entries for a table name two blocks declare, or a
+`$valid$` key name, are refused rather than resolved differently.
 Table installation is still the STF runner's encoding on both runs, and
 the extern families run on the simulator's V1Model implementations; the
 block runner compares block semantics, not an architecture or the wire
