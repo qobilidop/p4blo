@@ -11,7 +11,8 @@ module's docstring states the static rules it provides:
 - `values`: `Bits`, `Var`, `Bool`, `Enum`, `Error`, the aliases, `concat`, `mux`.
 - `views`: `Header`, `Struct`, `Stack`.
 - `blocks`: `Parser`, `Control`, `Deparser`, `state`, `action`, `Table`.
-- `externs`: `Extern` and the families `Register`, `Counter`, `Checksum16`.
+- `externs`: generic `Extern`; supplied families are declared by
+  `p4blo.arch.externs.declarations`.
 - `program`: `Program`, whose `build()` returns the `pb.Program`.
 - `errors`: `EdslError`, with `(defined at file:line)`.
 
@@ -121,7 +122,7 @@ from p4blo.edsl.blocks import (
     ternary,
 )
 from p4blo.edsl.errors import EdslError
-from p4blo.edsl.externs import CRC16, CRC32, Extern
+from p4blo.edsl.externs import Extern
 from p4blo.edsl.program import Program
 from p4blo.edsl.values import (
     Bits,
@@ -209,8 +210,6 @@ from p4blo.edsl.values import (
 from p4blo.edsl.views import Header, Stack, Struct, View
 
 __all__ = [
-    "CRC16",
-    "CRC32",
     "Accept",
     "Action",
     "ActionCall",

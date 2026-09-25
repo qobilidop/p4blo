@@ -1,13 +1,17 @@
 # pyright: strict
-"""Externs: a family is a class whose methods are typed signatures.
+"""Generic typed extern declarations.
 
-    class Register[T: Bits[Any]](Extern, name="register"):
-        def __init__(self, name: str, size: Const[bit32]) -> None: ...
-        def read(self, result: Out[T], index: In[Val[bit32]]) -> None: ...
-        def write(self, index: In[Val[bit32]], value: In[Val[T]]) -> None: ...
+An extern family is a class whose methods are typed signatures. For example::
 
-    r = Register[bit8]("r", size=256)      # binds T
-    r.read(self.meta.x, self.meta.idx)     # in a block body: a call_extern
+    class Timer(Extern, name="timer"):
+        def now(self) -> Bits[L[32]]: ...
+
+    clock = Timer("clock")
+
+An architecture support module provides the Python implementation separately
+through a local ``Registry``. The eDSL records declarations and calls; it
+does not register or select implementations. The supplied families live in
+``p4blo.arch.externs.declarations``.
 
 The static rules:
 
@@ -50,16 +54,13 @@ from typing import (
     get_origin,
     get_type_hints,
 )
-from typing import (
-    Literal as L,
-)
 
 from p4blo.edsl.core.types import ExternInstance as CoreExternInstance
 from p4blo.edsl.core.types import ExternType as CoreExternType
 from p4blo.edsl.core.types import MethodSpec
 from p4blo.edsl.core.types import ParamSpec as CoreParam
 from p4blo.edsl.errors import EdslError, provenance
-from p4blo.edsl.values import Bits, Const, In, Out, Val, bit32
+from p4blo.edsl.values import Const, Val
 from p4blo.edsl.views import direction_of, pb_type_of
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -241,55 +242,4 @@ def _recorder(method: str, fn: Callable[..., object]) -> Callable[..., object]:
     return record
 
 
-# -- the families the corpus implements (impl/python/p4blo/arch/externs) ----------------
-
-
-class Register[T: Bits[Any]](Extern, name="register"):
-    """`register<T>`: `read(out T result, in bit<32> index)` and
-    `write(in bit<32> index, in T value)`, constructed with a size."""
-
-    def __init__(self, name: str, size: Const[bit32], *, type_name: str = "") -> None:
-        super().__init__(name, size, type_name=type_name)
-
-    def read(self, result: Out[T], index: In[Val[bit32]]) -> None: ...
-
-    def write(self, index: In[Val[bit32]], value: In[Val[T]]) -> None: ...
-
-
-class Counter(Extern, name="counter"):
-    """A packet counter array: `count(in bit<32> index)`, constructed with a size."""
-
-    def __init__(self, name: str, size: Const[bit32], *, type_name: str = "") -> None:
-        super().__init__(name, size, type_name=type_name)
-
-    def count(self, index: In[Val[bit32]]) -> None: ...
-
-
-class Checksum16[T: Bits[Any]](Extern, name="checksum16"):
-    """The Internet checksum: `bit<16> compute(in T data)`."""
-
-    def __init__(self, name: str, *, type_name: str = "") -> None:
-        super().__init__(name, type_name=type_name)
-
-    def compute(self, data: In[Val[T]]) -> Bits[L[16]]: ...
-
-
-class CRC16[T: Bits[Any]](Extern, name="crc16"):
-    """Full CRC-16/ARC: `bit<16> compute(in T data)`, byte-aligned T."""
-
-    def __init__(self, name: str, *, type_name: str = "") -> None:
-        super().__init__(name, type_name=type_name)
-
-    def compute(self, data: In[Val[T]]) -> Bits[L[16]]: ...
-
-
-class CRC32[T: Bits[Any]](Extern, name="crc32"):
-    """Full CRC-32/ISO-HDLC: `bit<32> compute(in T data)`, byte-aligned T."""
-
-    def __init__(self, name: str, *, type_name: str = "") -> None:
-        super().__init__(name, type_name=type_name)
-
-    def compute(self, data: In[Val[T]]) -> Bits[L[32]]: ...
-
-
-__all__ = ["CRC16", "CRC32", "Checksum16", "Counter", "Extern", "Register"]
+__all__ = ["Extern"]
