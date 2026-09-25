@@ -6,7 +6,9 @@ Current truth and resumable work. Earlier history is archived at
 
 Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
 Branch `work/edsl-ergonomics`, original base `80eba84`; [PR #2](https://github.com/qobilidop/p4blo/pull/2)
-is open at the earlier `97cc1d8` revision and must not merge until updated.
+is open; implementation head `33215d298615bcfa7f8cf8e4c236b3312aa8813e`
+was pushed and its remote CI is running. A final documentation correction
+updates stale proof names and schema paths before the final CI run.
 The user extended the separation through the protobuf and Lean types;
 [wire-boundary plan](notes/edsl-wire-boundary.md) records the accepted design.
 
@@ -47,12 +49,13 @@ defects and 43 final focused passes; see
 premises, scalar/six-block core acceptance, projection isolation and nine
 malformed bindings against Python and Lean. The earlier typed-compiler review
 found the local-only declaration-closure bug, fixed at `c150d31`; its report
-is [here](reviews/edsl-implementation.md). Final metadata review is pending.
+is [here](reviews/edsl-implementation.md). Independent review also approved
+metadata head `33215d2`; its full local gate exited 0 with the same counts.
 Library source settings remain reassignable; bypassing constructor checks by
 assignment is a nonblocking consistency observation, not a shown runtime bug.
 
-Next: review final evidence metadata, run the full local gate, update PR #2,
-pass CI on its exact head and merge. Then
+Next: review the documentation correction, run the full local gate, update
+PR #2, pass CI on its exact head and merge. Then
 close the scope, finalize the [reflection](notes/edsl-reflection.md), compact
 state and remove integrated worktrees/branches. Do not resume roadmap work.
 The prior successful assurance at `58275b8` covered the pre-extension API;
@@ -120,7 +123,7 @@ The four claims of [design.md](../docs/design.md):
 | 1. The core is small and post-elaboration | green: twelve corpus programs and three applications fit without a new core construct; P4 source now enters through P4-SpecTec's typing and instantiation (`p4blo.frontend`), six corpus goldens reproduce byte for byte from their P4 originals, and 98 of the 191 pinned v1model programs with vectors run from source (`tests/oracle/frontend-census.json`) |
 | 2. Supports the tested real programs | green with explicit exceptions: every corpus and example vector passes both P4 oracles at the pipeline level except the strict BMv2 register and priority divergences and SpecTec's strict mask failure on the printed tutorial firewall, and block by block on SpecTec except three strict expected failures behind checked models; the original-source probes expose the pinned SpecTec CRC and mask defects, all classified; generated programs on SpecTec pass with two classified simulator defects |
 | 3. A block is a function; an architecture is ordinary code | green, frozen: filter 45 lines, switch 50, no P4 in either; every program runs under both |
-| 4. Mechanized and agrees with the reference | green within the stated profile: whole-program validity decided by a checker proved sound, progress (no reachable interpreter error for a valid program) with the extern contract discharged for the reference families, 63 deviation and helper laws, every one of the 157 rule tags of the Lean machine hit by retained differential campaigns, a conformance corpus of 89 fixtures; no universal Python equivalence claim, no termination theorem |
+| 4. Mechanized and agrees with the reference | green within the stated profile: core library validity decided by a checker proved sound and architecture bindings checked separately with a sound checker; progress (no reachable interpreter error for a valid library under the stated execution premises) with the extern contract discharged for the reference families, 63 deviation and helper laws, every one of the 157 rule tags of the Lean machine hit by retained differential campaigns, a conformance corpus of 89 fixtures; no universal Python equivalence claim, no termination theorem |
 
 ## What the IR semantics scope established
 
@@ -220,7 +223,8 @@ These are parked or backlog, not tasks; resuming any needs a scope.
   differs from ours (`2730cfd9`), and its program export replaces patch
   `0002` when it exists.
 - **Termination (C2)** under the acyclic-calls and revisit discipline,
-  and **codec composition through Program and Export (C3)**, are the two
+  and **codec composition through BlockLibrary and architecture Export and
+  BlockAssembly (C3)**, are the two
   proof items the scope left as backlog (`roadmap.md`).
 - **Printer declaration order.** An action that calls one declared after
   it prints P4 that SpecTec's typing rejects; either the printer orders

@@ -116,8 +116,9 @@ so the required CI gate discovers them without a hand-maintained file list.
   P4-SpecTec algorithms into both p4blo interpreters weakens the oracle.
 - **Pure Python.** No dependency of the `p4blo` package may ship
   native code, and nothing newer than Python 3.13 is used.
-- **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` come
-  from `buf generate`. Never edit them; edit the schema and regenerate.
+- **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` and
+  `impl/python/p4blo/arch/v0/*_pb2.py*` come from `buf generate`. Never edit
+  them; edit the schemas and regenerate.
   CI checks a fresh generation's inventory and bytes against both the
   index and working tree. Stage new deliverables before the full gate;
   a clean diff of tracked files alone cannot detect omitted outputs.
@@ -138,11 +139,15 @@ so the required CI gate discovers them without a hand-maintained file list.
   package, what a client may import lives under `<Root>/`, what only the
   gate runs (tests, proof audits, fixtures) under `<Root>Test/` as one
   default-target library, and at the root only the root module, Lake's
-  files, `README.md` and at most one `Main.lean` (`docs/design.md`, "The
-  Lean packages"). Whole-program validity is decided by a checker proved
-  sound and progress is proved for valid programs; termination and the
-  codec proofs through Program and Export remain open, not guarantees
-  supplied by this organization. A closed behavior is
+  files, `README.md` and at most one `Main.lean`, with the core and
+  architecture protobuf schemas under `spec/ir/proto/` and
+  `spec/arch/proto/` and `impl/lean/ASSURANCE.md` as named exceptions
+  (`docs/design.md`, "The Lean packages"). Core library validity is
+  decided by a checker proved sound and progress is proved for valid
+  libraries; `P4bloArch.Bindings.check_sound` separately covers the
+  H/M and role choices. Termination and codec composition through
+  BlockLibrary, architecture Export and BlockAssembly remain open, not
+  guarantees supplied by this organization. A closed behavior is
   written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both
   interpreters second.

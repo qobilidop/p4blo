@@ -115,3 +115,15 @@ assurance, BMv2 and final remote CI. Approval is code review evidence, not
 an independent rerun of those gates; their completion and exact PR-head CI
 remain integration obligations. A later metadata-only checkpoint requires
 its delta to be reviewed before merge.
+
+## Final documentation correction
+
+The independent review agent approved metadata head `33215d2`, then reviewed
+documentation patch `dba58a2` against it and the integrator's status delta.
+The new names resolve to `P4bloArch.Entry` and `Bindings.check_sound`;
+schema paths and audit links match the implementation. Progress retains its
+extern, installation and entry premises. Termination and codec composition
+through BlockLibrary and architecture Export/BlockAssembly remain open.
+No confirmed findings or strengthened claims. This was read-only diff and
+declaration inspection, not a rerun of the implementation gates; final-head
+local and remote CI remain integration obligations.

@@ -56,11 +56,12 @@ A decision the design document already settles is not repeated here.
   gate runs it (tests, proof audits and probes), as one `lean_lib` named
   `<Root>Test`, singular, because Lake module names are global across a
   workspace and a bare `Tests` in two packages collides; at the root only
-  what Lake requires, with `spec/ir/proto/` and `impl/lean/ASSURANCE.md`
-  as the named exceptions. The user package's executables are subcommands
-  of one `p4blo` binary. Acronyms stay capitalized (`P4bloIR`, as Lean
-  core's `Lean.Compiler.IR`). `tests/structure/test_package_layout.py`
-  pins the roots. (2026-09-24)
+  what Lake requires, with `spec/ir/proto/`, `spec/arch/proto/` and
+  `impl/lean/ASSURANCE.md` as the named exceptions. The user package's
+  executables are subcommands of one `p4blo` binary. Acronyms stay
+  capitalized (`P4bloIR`, as Lean core's `Lean.Compiler.IR`).
+  `tests/structure/test_package_layout.py` pins the roots. (2026-09-24;
+  architecture schema exception added 2026-09-25)
 - **The IR carries extern state as data and takes the model as a
   function.** `ExternState` is a kind name with optional width, cells and
   private configuration; the architecture supplies the `ExternModel` at
@@ -68,8 +69,9 @@ A decision the design document already settles is not repeated here.
   in the instance and a type parameter through every theorem were both
   rejected. Confidence medium in the representation; revisit if a family
   needs structured state that cells cannot carry. (2026-09-24)
-- **Generated protobuf code is committed** at `impl/python/p4blo/v0/`;
-  CI regenerates and fails on drift. (2026-09-22)
+- **Generated protobuf code is committed** at `impl/python/p4blo/v0/` and
+  `impl/python/p4blo/arch/v0/`; CI regenerates and fails on drift.
+  (2026-09-22; architecture path added 2026-09-25)
 - **The Python package is organized by concern**: `p4blo.validator` is a
   package by rule category with one public `validate`; expression types
   come from `p4blo.validator.typer` alone, which the interpreter, the
@@ -145,8 +147,8 @@ A decision the design document already settles is not repeated here.
 - **Blocks are the public authoring unit; an optional `BlockLibrary` is
   not a complete program.** It bundles block definitions and shared type,
   error and extern declarations, with no global H/M roots, export roles,
-  ports or packet-fate policy. Independent compilation produces a fragment,
-  not a whole-program validity certificate.
+  ports or packet-fate policy. Independent compilation produces a core
+  library that can be validated without a complete architecture program.
   The protobuf and Lean core use BlockLibrary too. Architecture BlockBindings
   selects H/M roots and exports; core validity and progress concern libraries,
   while architecture binding checks and entry theorems retain their guarantees.
@@ -396,10 +398,12 @@ audit files; these entries record the shape.
   shape, nominal coherence and write permission are separate obligations;
   initialization is discharged in bounded layers; call laws are proved
   operationally against the actual machine. (2026-09-23)
-- **Whole-program validity is defined over the index and decided by a
+- **Core library validity is defined over the index and decided by a
   checker proved sound; completeness is not claimed.** `Valid p idx`
-  states the contract, `Validity.check` decides it in the Python
-  validator's order with its codes, `check_sound` is proved. Progress
+  states the library contract, `Validity.check` decides it in the Python
+  validator's order with its codes, `Validity.check_sound` is proved.
+  Architecture H/M roots and exports are checked separately by
+  `P4bloArch.Bindings.check`, with `P4bloArch.Bindings.check_sound`. Progress
   takes two premises: `ExternContract`, proved for the five reference
   families (`P4bloArch.Contract.bind_contract`), and that the run fits
   the block kind; `InstalledOk` is discharged from the real

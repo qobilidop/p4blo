@@ -116,10 +116,10 @@ establish the next:
 Serialized data
     | parse: supported, well-formed encoding?
 Wire representation
-    | decode: which abstract program?
-Abstract program
-    | validate: is that program legal?
-Valid program
+    | decode: which abstract library?
+Abstract library
+    | validate: is that library legal?
+Valid library
     | execute: what does it do?
 Observable behavior
 ```
@@ -128,10 +128,12 @@ Parsing a protobuf message does not establish validity: variants may be
 unset, widths illegal, references unresolved. Raw abstract syntax stays
 ordinary, with validity a separate predicate and an executable validator,
 so that raw syntax remains useful for diagnostics, malformed-input
-testing and cross-language correspondence. Whole-program validity is
-defined in Lean over the index, decided by an executable checker proved
-sound, and a valid program's machine never reaches an interpreter
-error: every finite run ends in success or a declared parser error.
+testing and cross-language correspondence. Core library validity is
+defined in Lean over the index and decided by an executable checker proved
+sound; architecture H/M roots and exports have a separate sound binding
+checker. A valid library's well-formed machine never reaches an interpreter
+error: every finite run ends in success or a declared parser error under
+the documented extern, installation and entry premises.
 Checker completeness, termination and the complete codec proofs are the
 obligations that remain, as assurance.md records.
 
@@ -152,11 +154,12 @@ known type, every operator's result is determined by its operands, and
 run-time values carry their width, so no interpreter infers anything and
 the goldens stay half the size.
 
-The schema is package `p4blo.v0`; `v1` is reserved for the RFC-shaped
-form. `buf` lints it and generates the Python bindings, which are
-committed under `impl/python/p4blo/v0/` so that the proto package path and the
-Python import path coincide and contributors without `buf` have a working
-package; CI regenerates them and fails on any diff.
+The core schema is package `p4blo.v0`; architecture assembly uses
+`p4blo.arch.v0`. `v1` is reserved for the RFC-shaped form. `buf` lints
+both schemas and generates the Python bindings, committed under
+`impl/python/p4blo/v0/` and `impl/python/p4blo/arch/v0/` so the proto
+package paths and Python import paths coincide. Contributors without
+`buf` have a working package; CI regenerates them and fails on any diff.
 
 ### Blocks and the P4NAH rule
 
@@ -339,9 +342,10 @@ files of one library per package, `P4bloIRTest`, `P4bloArchTest` and
 `P4bloTest`, named in the singular because Lake module names are global
 across a workspace, so two bare `Tests` would collide. Each test library
 is a default target, so a plain `lake build` checks every audit's
-`#guard_msgs` pins, and `lake test` runs its driver. The IR package also
-keeps its wire schema under `proto/`, and the user package its assurance
-log, `ASSURANCE.md`. `spec/arch/Main.lean` is the `p4blo-lean` endpoint;
+`#guard_msgs` pins, and `lake test` runs its driver. The IR and architecture
+packages also keep their wire schemas under `proto/`, and the user package
+its assurance log, `ASSURANCE.md`. `spec/arch/Main.lean` is the
+`p4blo-lean` endpoint;
 `impl/lean/Main.lean` is the `p4blo` executable, whose subcommands are the
 forwarder and firewall servers and the fixture exporters the
 cross-language tests call. `tests/structure/test_package_layout.py` pins the layout.
@@ -503,6 +507,7 @@ p4blo/
     P4bloArch/                      reference architecture: switch, extern
                                     families, certificate example
     P4bloArchTest/                  tests, proof audit, fixtures
+    proto/p4blo/arch/v0/assembly.proto  architecture binding wire encoding
     Main.lean                       the p4blo-lean conformance endpoint
   impl/lean/                        Lake package p4blo (P4blo): the user library
     P4blo/                          typed source language, authored programs,
@@ -510,17 +515,16 @@ p4blo/
     P4bloTest/                      test driver, proof audit
     Main.lean                       the p4blo executable: servers, exporters
   impl/python/p4blo/                     the Python package
-    v0/                             generated protobuf code, committed
+    v0/                             generated core protobuf code, committed
     ir.py                           load, save, text form
     validator/                      validation, one module per rule group, and
                                     the one expression typer (validator/typer.py)
     interp/                         the reference interpreter
     printer/                        IR to P4-16 text, with no architecture
     edsl/                           the typed eDSL; core/ is the builder beneath it
-    arch/                           contract, filter, switch, the extern
-                                    families, and the printer's two
-                                    bindings: the v1model shim and the
-                                    P4-SpecTec block architecture
+    arch/                           architecture bindings, contract, filter,
+                                    switch, extern families and printer shims
+      v0/                           generated architecture protobuf code
     drt/                            the differential loop and certificates
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs
