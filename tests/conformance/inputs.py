@@ -11,6 +11,10 @@ fixture's `source` header:
   entries and packets, `p4blo.drt.generate.generate` at fixed seeds.
 - `family`: the generated program families of `tests/oracle/generated.py`
   at fixed seeds, through its `materialize`, with the switch it uses there.
+- `contract`: hand-written requests for the parts of the reply contract
+  the other kinds never reach: installs the host rejects, an ingress port
+  the switch does not have (both error replies), and a flood (a reply
+  with several outputs), with drop and the egress-port rules beside it.
 
 The fixtures hold the concrete programs and requests, so a later change to
 a generator changes no check; it changes what the next export writes.
@@ -20,10 +24,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from google.protobuf import json_format
+
 from p4blo import ir, stf
 from p4blo.conformance import Input
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
+from p4blo.edsl.core import Program, bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,7 +39,9 @@ PORTS = 4
 # tables and parser with generated entries, small enough to read.
 DRT_SEEDS = (1, 2)
 DRT_COUNT = 8
-# Six seeds per family.
+# `materialize` picks the family by the seed modulo the number of
+# families, so consecutive seeds spread over all of them; how many each
+# family gets follows from `generated.FAMILIES`, not from this range.
 FAMILY_SEEDS = range(36)
 
 
@@ -109,5 +118,115 @@ def family_inputs() -> list[Input]:
     return found
 
 
+def _forwarder_entries(
+    prefix_len: int = 24, keys: int = 1, table: str = "ipv4_lpm", port_width: int = 9
+) -> pb.Entries:
+    """One route of the forwarder's `ipv4_lpm`, 10.0.2.0/24 to port 2,
+    with one part optionally made wrong."""
+    key = {"lpm": {"prefix_len": prefix_len, "value": str(0x0A000200)}}
+    action = {
+        "action": "ipv4_forward",
+        "args": [
+            {"bits": {"value": "514", "width": 48}},
+            {"bits": {"value": "2", "width": port_width}},
+        ],
+    }
+    entry = {"keys": [key] * keys, "action": action}
+    tables = {"tables": [{"block": "MyIngress", "table": table, "entries": [entry]}]}
+    return json_format.ParseDict(tables, pb.Entries())
+
+
+# An IPv4 packet to 10.0.2.2, which the route above matches.
+_TO_10_0_2_2 = bytes.fromhex(
+    "00000000010100000000000108004500001a00010000401100000a0001010a000202deadbeefcafe"
+)
+
+
+def fate_program() -> pb.Program:
+    """The packet names its own fate: flood, drop and the egress port are
+    read from its first four bytes, and the ingress port is written back
+    in place of the egress port, so every fate rule of the switch can be
+    asked for directly."""
+    p = Program("fate")
+    h = p.header("h_t", flood=bit(8), drop=bit(8), port=bit(16))
+    p.headers = p.struct("headers", h=h)
+    p.metadata = p.struct(
+        "metadata", ingress_port=bit(9), egress_port=bit(9), drop=boolean, flood=boolean
+    )
+    with p.parser("P") as ps:
+        with ps.state("start") as s:
+            s.extract(ps.hdr.h)
+            s.accept()
+    with p.control("C") as c:
+        with c.body() as b:
+            b.assign(c.meta.flood, c.hdr.h.flood != 0)
+            b.assign(c.meta.drop, c.hdr.h.drop != 0)
+            b.assign(c.meta.egress_port, c.hdr.h.port.cast(bit(9)))
+            b.assign(c.hdr.h.port, c.meta.ingress_port.cast(bit(16)))
+    with p.deparser("D") as d:
+        with d.body() as b:
+            b.emit(d.hdr.h)
+    p.export("parser", "P")
+    p.export("control", "C")
+    p.export("deparser", "D")
+    return p.build()
+
+
+def contract_inputs() -> list[Input]:
+    golden = ROOT / "tests/corpus/forwarder/forwarder.txtpb"
+    rejected = [
+        _forwarder_entries(prefix_len=8),  # value bits outside the prefix
+        _forwarder_entries(keys=2),  # a key too many
+        _forwarder_entries(table="no_such_table"),
+        _forwarder_entries(port_width=16),  # an argument of the wrong width
+    ]
+    install = (
+        Case(_forwarder_entries(), 0, _TO_10_0_2_2),
+        *(Case(entries, 0, _TO_10_0_2_2) for entries in rejected),
+        Case(_forwarder_entries(), 3, _TO_10_0_2_2),  # accepted again
+        Case(_forwarder_entries(), 4, _TO_10_0_2_2),  # an ingress port beyond the four
+    )
+    fate_ports = 8
+    fate = tuple(
+        Case(pb.Entries(), ingress, bytes([flood, drop, port >> 8, port & 0xFF]) + b"payload")
+        for ingress, flood, drop, port in [
+            (6, 1, 0, 0),  # flood from a middle port: seven outputs
+            (0, 1, 0, 5),  # flood from port 0 ignores the egress port
+            (7, 1, 1, 3),  # drop wins over flood
+            (2, 0, 0, 4),  # unicast
+            (0, 0, 0, 7),  # the last port
+            (0, 0, 0, 511),  # BMv2's drop port is out of range here: a diagnostic
+            (0, 0, 0, 8),  # one beyond the count: a diagnostic
+            (300, 0, 0, 1),  # an ingress port beyond the count: an error
+            (512, 0, 0, 1),  # an ingress port beyond bit<9>: an error
+        ]
+    )
+    return [
+        Input(
+            "contract-forwarder-install",
+            {
+                "kind": "contract",
+                "program": _relative(golden),
+                "description": "installs the host rejects between accepted ones, and an "
+                "ingress port beyond the switch",
+            },
+            ir.load_text(golden),
+            install,
+            PORTS,
+        ),
+        Input(
+            "contract-fate",
+            {
+                "kind": "contract",
+                "program": "tests/conformance/inputs.py fate_program",
+                "description": "flood, drop, unicast and the egress and ingress port rules",
+            },
+            fate_program(),
+            fate,
+            fate_ports,
+        ),
+    ]
+
+
 def inputs() -> list[Input]:
-    return [*stf_inputs(), *drt_inputs(), *family_inputs()]
+    return [*stf_inputs(), *drt_inputs(), *family_inputs(), *contract_inputs()]
