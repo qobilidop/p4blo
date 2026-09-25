@@ -328,8 +328,10 @@ account says which of P4-SpecTec's rules p4blo's inputs make the pinned
 simulator fire. [`spectec-coverage.json`](../tests/oracle/spectec-coverage.json)
 records, for every rule, rule group, relation and function of the
 [rule inventory](../tests/oracle/spectec-rules.json), whether it fired and
-in how many of the vectors, over every corpus program and example printed
-through the v1model shim. The simulator runs the spec in a structured form in
+in how many of the vectors, over every corpus program and example and a
+fixed set of 18 generated programs
+([`generated.py`](../tests/oracle/generated.py)), printed through the
+v1model shim. The simulator runs the spec in a structured form in
 which each relation's rules are merged into one instruction tree; a rule
 counts as fired when the instruction that concludes it ran, found through
 the source region the instruction keeps.
@@ -350,26 +352,26 @@ exercised; each entry names the generated input that would reach it).
 `tests/test_spectec_coverage.py` fails when an in-scope item is neither hit
 nor excluded, when an exclusion is stale, and when the counts below drift.
 
-At the pinned commit, over 15 programs and 21 vectors:
+At the pinned commit, over 33 programs and 93 vectors:
 
 | Status | 8-dynamic rules | 3-operations functions |
 |---|---|---|
-| hit | 134 | 26 |
+| hit | 183 | 39 |
 | architecture | 0 | 0 |
-| excluded-construct | 149 | 22 |
+| excluded-construct | 149 | 20 |
 | not-representable | 27 | 8 |
-| unhit | 51 | 12 |
+| unhit | 2 | 1 |
 
 A hit rule is exercised, not verified equivalent: the simulator applied it
 while running a printed program, which says nothing about whether p4blo's
 own semantics agrees with it beyond what the oracle tests compare. A
 function counts as hit wherever it was entered, including constant folding
-during typing. Most unhit rules propagate a parser rejection raised inside
-an expression, such as a `lookahead` on a short packet; the rest are
-operators and parser shapes no corpus program uses.
+during typing. The two unhit rules propagate a packet read past the end
+through an extern call's data and through a sub-parser's `inout`
+argument, shapes no generated family produces yet.
 
 The measurement needs the oracle and a small probe built against its
-library; regenerating it takes about fifteen seconds:
+library; regenerating it takes about forty seconds:
 
 ```sh
 python3 tests/oracle/coverage.py build   # once per pin, where tests/oracle/build.sh runs

@@ -105,15 +105,23 @@ Inputs
 
 By default the inputs are every corpus program (`tests/corpus/*/*.txtpb`)
 and every example (`tests/examples/*/*.txtpb`), printed through the v1model
-shim and with their vectors translated exactly as tests/oracle/run.py does.
+shim and with their vectors translated exactly as tests/oracle/run.py does,
+and a fixed set of generated programs, `GENERATED_SEEDS` of
+tests/oracle/generated.py, materialized as its oracle test materializes
+them. The seeds were chosen greedily from a pool of 750 (seeds 0 to 399,
+and the parser and parser-condition seeds up to 2399 and 1199, the two
+families whose programs vary most): each adds the most in-scope items the
+corpus and the seeds before it had not hit, and together the 18 hit every
+item the pool hits. A change to
+the generators changes what the seeds name, so it regenerates this report.
 `--inputs DIR` (repeatable) adds directories of `.p4`/`.stf` pairs in
 P4-SpecTec's own convention above, already in the simulator's STF dialect;
 the report records them, and `--check` reuses the recorded ones.
 
 Run time on an M-series Mac: the probe build takes about ten seconds of
-wall time once per pin. A regeneration over the 21 corpus and example
-vectors runs the probe and the stock cross-check side by side, about
-fifteen seconds each, spec elaboration included.
+wall time once per pin. A regeneration over the corpus, example and
+generated vectors, 93 in all, runs the probe and the stock cross-check side
+by side, about forty seconds, spec elaboration included.
 """
 
 from __future__ import annotations
@@ -253,6 +261,29 @@ def build_probe(root: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+# Seeds of tests/oracle/generated.py measured beside the corpus; see "Inputs".
+GENERATED_SEEDS = (
+    6,
+    21,
+    22,
+    47,
+    103,
+    151,
+    176,
+    192,
+    263,
+    457,
+    495,
+    751,
+    855,
+    1017,
+    1471,
+    1647,
+    1687,
+    2111,
+)
+
+
 @dataclass
 class Program:
     """One program and its vectors, as the simulator reads them."""
@@ -298,6 +329,33 @@ def materialize_corpus(stage: Path) -> list[Program]:
                 program.vectors.append(out)
             if program.vectors:
                 programs.append(program)
+    return programs
+
+
+def materialize_generated(stage: Path, seeds: Iterable[int]) -> list[Program]:
+    """Materialize seeds of tests/oracle/generated.py beside the corpus: the
+    program printed as its oracle test prints it, and each vector, whose
+    `expect` lines are what Python did, translated as the corpus's are."""
+    sys.path.insert(0, str(ROOT))
+    from tests.oracle import generated
+    from tests.oracle import run as oracle_run
+
+    programs: list[Program] = []
+    for seed in seeds:
+        drawn = generated.materialize(seed)
+        ident = f"generated-{seed:05d}-{drawn.family}"
+        prepared = generated.prepare(drawn, stage / "prepared" / ident)
+        p4 = stage / "p4" / f"{ident}.p4"
+        p4.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(prepared.p4, p4)
+        program = Program(ident, f"tests/oracle/generated.py seed {seed}", p4)
+        for vector in prepared.vectors:
+            translated, _notes = oracle_run.translate(vector.read_text(), prepared.index)
+            out = stage / "stf" / ident / vector.name
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(translated, encoding="utf-8")
+            program.vectors.append(out)
+        programs.append(program)
     return programs
 
 
@@ -735,9 +793,11 @@ def build_report(
         "in_scope": list(IN_SCOPE),
         "input_description": (
             "every corpus program and example, printed through the v1model shim, "
-            "with its STF vectors translated as tests/oracle/run.py does"
+            "with its STF vectors translated as tests/oracle/run.py does, and the "
+            "generated programs of tests/oracle/generated.py at the listed seeds"
             + (", plus the pairs under the extra input directories" if extra else "")
         ),
+        "generated_seeds": list(GENERATED_SEEDS),
         "extra_input_dirs": extra,
         "totals": {
             "programs": len(programs),
@@ -775,7 +835,7 @@ def regenerate(root: Path, extra_dirs: Iterable[str]) -> str:
     extra = sorted(set(extra_dirs))
     with tempfile.TemporaryDirectory(prefix="p4blo-coverage-stage-") as tmp:
         stage = Path(tmp)
-        programs = materialize_corpus(stage)
+        programs = materialize_corpus(stage) + materialize_generated(stage, GENERATED_SEEDS)
         p4_dirs, stf_dirs = [stage / "p4"], [stage / "stf"]
         for directory in extra:
             path = (ROOT / directory) if not Path(directory).is_absolute() else Path(directory)
