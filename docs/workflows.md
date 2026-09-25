@@ -176,6 +176,11 @@ implement it in `impl/python/p4blo/interp/` and `spec/ir/P4bloIR/` together, wit
 test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
+A change that alters one of Lean's recorded answers fails
+`tests/test_conformance.py`; once the doc states the new behavior,
+re-export the fixtures with `uv run python -m p4blo.conformance export`
+from committed Lean sources and review their diff, in which every changed
+line is a changed answer (`tests/conformance/README.md`).
 
 **The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
