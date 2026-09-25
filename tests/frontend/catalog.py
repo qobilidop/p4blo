@@ -85,7 +85,7 @@ CORPUS: tuple[CorpusSource, ...] = (
     CorpusSource("csum16", HERE / "p4c/issue655-bmv2.p4", "identical"),
     CorpusSource("forwarder", HERE / "tutorials/basic.p4", "documented"),
     CorpusSource("parser_error", HERE / "p4c/parser_error-bmv2.p4", "identical"),
-    CorpusSource("priority", HERE / "p4c/table-entries-priority-bmv2.p4", "documented"),
+    CorpusSource("priority", HERE / "p4c/table-entries-priority-bmv2.p4", "identical"),
     CorpusSource("stacks", HERE / "p4c/header-stack-ops-bmv2.p4", "identical"),
     CorpusSource("stateful", HERE / "p4c/issue1097-2-bmv2.p4", "documented"),
     CorpusSource("subparser_stack", HERE / "p4c/subparser-with-header-stack-bmv2.p4", "identical"),

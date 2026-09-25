@@ -201,7 +201,7 @@ blocks {
           }
         }
       }
-      priority: 1
+      priority: 3
     }
     const_entries {
       keys {
@@ -237,7 +237,7 @@ blocks {
           }
         }
       }
-      priority: 3
+      priority: 1
     }
   }
   body {

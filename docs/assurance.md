@@ -267,7 +267,7 @@ replayed on the Python interpreter, on Lean and on both oracles.
 | csum16 | p4c `issue655-bmv2` | p4c STF, 6 packets | both |
 | parser_error | p4c `parser_error-bmv2` | p4c STF, 2 packets | both |
 | verify_error | p4c `issue1824-bmv2` | p4c STF, 1 packet | both |
-| priority | p4c `table-entries-priority-bmv2` | p4c STF, 3 packets | both |
+| priority | p4c `table-entries-priority-bmv2`, priorities by the specification's numbering | p4c STF, 3 packets, two expectations re-derived from P4-SpecTec | both for the golden; BMv2 on p4c's own source routes two packets the other way by p4c's numbering [below](#known-disagreements-with-the-oracles) |
 | register_bounds | own program | 9 hand-derived packets | SpecTec; two packets diverge on BMv2 by the register rule [below](#known-disagreements-with-the-oracles) |
 | tutorial_firewall | pinned p4lang tutorial solution; Python and Lean sources equal the golden | connection and Bloom-collision vectors, byte cuts, generated host-policy sequences | original BMv2 packets and all 8192 register cells at 30 prefix boundaries; SpecTec controls pass, its CRC and mask defects are classified below |
 | vlan_gateway (added after the milestone, at `38d740e`; no Lean-authored counterpart) | original homepage example | one STF file with 11 packets; a 53-request packet, diagnostic and counter sequence in Python and Lean | both for packets; counters checked by independent expectations |
@@ -410,21 +410,21 @@ translates the IL P4-SpecTec's own typing and instantiation produce from a
 P4 program ([tests/oracle/README.md](../tests/oracle/README.md#the-il-export)),
 and each row of [p4-spec-coverage.md](p4-spec-coverage.md) says what it
 does with the construct. `tests/test_frontend_spectec.py` establishes, at
-the pin, that five corpus goldens (csum16, parser_error, stacks,
+the pin, that six corpus goldens (csum16, parser_error, priority, stacks,
 subparser_stack, verify_error) are reproduced byte for byte from their P4
 originals and tutorial_firewall up to declaration order and local names;
-that the other four differ only as the test spells out, with their vectors
+that the other three differ only as the test spells out, with their vectors
 agreeing packet by packet except where the difference shows; that every
 corpus and example golden the v1model printer prints translates back to
 itself up to declaration order and the names of block locals and stateless
 extern instances, priority excepted since the printer writes mutable
 entries; that excluded constructs are refused by their row; and
 that five p4c programs outside the corpus pass their own STF vectors on
-the Python interpreter. One difference is P4-SpecTec's and is kept: it
-reads `@priority(n)` as a priority where the larger wins, and p4c and
-BMv2 let the smaller win, so priority's translation routes two of its
-three packets as SpecTec's own simulator does, not as its p4c vector
-expects. This is evidence on these programs, not a verified frontend: the
+the Python interpreter. The priority program is reproduced because its
+golden numbers const entries as the specification does, which is how
+P4-SpecTec's typed IL numbers them; p4c's own vector for it expects
+BMv2's inverted order, and the corpus copy carries the specification's
+answer instead. This is evidence on these programs, not a verified frontend: the
 bridge's elaborations are not proved to preserve meaning, P4-SpecTec's
 typing is trusted as the reference for what the source means, and the
 metadata contract inherits the printer's imprecision about v1model's drop
@@ -446,6 +446,23 @@ implementation-defined; the difference is documented, not resolved, and
 shows on exactly the two `register_bounds` packets whose out-of-range read
 destination is non-zero. The [BMv2 adapter README](../tests/oracle/bmv2/README.md)
 has the diagnosis.
+
+**BMv2: p4c's numbering of const-entry priorities.** p4c's BMv2 backend
+numbers const entries with a running counter that BMv2 reads
+smaller-wins, inverting section 14.2.1.4 of the specification, under which
+an entry without a priority takes the previous entry's minus one and the
+larger wins (P4-SpecTec's `$set_priorities_of_tableEntryListIR`); the
+backend also reads p4c's `@priority` annotation, which the specification
+does not. p4blo follows the specification. Compiled from p4c's own
+`table-entries-priority-bmv2.p4`, BMv2 sends the `priority` vector's
+second and third packets to port 3, where p4blo, the vector and
+P4-SpecTec send them to port 1; P4-SpecTec on p4c's unedited program and
+file fails the same two packets the same way. The printed golden passes
+on both oracles, since the printer states each priority and
+`largest_priority_wins` explicitly. The
+[priority README](../tests/corpus/priority/README.md) has the derivation
+entry by entry and the [BMv2 adapter README](../tests/oracle/bmv2/README.md)
+the exact mismatch.
 
 **Pinned P4-SpecTec: odd-byte CRC32.** SpecTec's simulator pads every hash
 input to an even byte count by prepending a zero byte, which changes CRC32

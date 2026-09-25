@@ -9,11 +9,16 @@ are both failures, labeled apart as in tests/test_oracle.py: the second is not
 a disagreement, but it leaves the claim unchecked.
 
 One vector is a known, analysed divergence and is marked `xfail`: see
-`KNOWN_DIVERGENCES` below and tests/oracle/bmv2/README.md.
+`KNOWN_DIVERGENCES` below and tests/oracle/bmv2/README.md. A second
+disagreement is not the printer's but p4c's: compiled from p4c's own
+source, `table-entries-priority-bmv2` numbers its const entries the other
+way round from the language specification, and replaying the priority
+vector on it is a strict `xfail` of its own (`test_original_priority_*`).
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shlex
@@ -26,6 +31,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from p4blo import ir, stf  # noqa: E402
+from tests.frontend import catalog  # noqa: E402
 from tests.oracle import firewall  # noqa: E402
 from tests.oracle.bmv2 import run as bmv2_run  # noqa: E402
 
@@ -59,6 +66,36 @@ def known_register_bounds_disagreement(verdict: bmv2_run.Verdict) -> bool:
         verdict.vector == CORPUS / "register_bounds/bounds.stf"
         and verdict.status == "fail"
         and verdict.detail == REGISTER_BOUNDS_DETAIL
+    )
+
+
+# p4c's original of the priority corpus program, pinned by
+# tests/frontend/catalog.py, and what BMv2 does with the corpus vector
+# when p4c compiles that source instead of the printed golden: the second
+# and third packets leave on port 3 where the specification's numbering,
+# P4-SpecTec and the vector send them to port 1.
+PRIORITY_SOURCE = ROOT / "tests" / "frontend" / "p4c" / "table-entries-priority-bmv2.p4"
+PRIORITY_VECTOR = CORPUS / "priority" / "table_entries_priority.stf"
+# The ports the replay captures: the vector's, plus the one p4c's entries
+# send the two disagreeing packets to, so that the mismatch names them.
+PRIORITY_PORTS = [0, 1, 2, 3]
+PRIORITY_DETAIL = (
+    "line 30: no output packet on port 1\n"
+    "line 34: unexpected output on port 3: 0210010000b0\n"
+    "line 34: unexpected output on port 3: 0311810000b0\n"
+    "line 35: no output packet on port 1"
+)
+
+
+class KnownBMv2PriorityDisagreement(Exception):
+    """Only p4c's inverted const-entry order on the two documented packets."""
+
+
+def known_priority_disagreement(verdict: bmv2_run.Verdict) -> bool:
+    return (
+        verdict.vector == PRIORITY_VECTOR
+        and verdict.status == "fail"
+        and verdict.detail == PRIORITY_DETAIL
     )
 
 
@@ -157,6 +194,58 @@ def test_original_firewall_observer_rejects_premature_ack() -> None:
     expected["1"] = [premature.hex()]
     verdict, _ = bmv2_run.judge(plan, {"phases": [{"outputs": expected}]})
     assert verdict == "fail"
+
+
+def replay_original_priority(image: str) -> bmv2_run.Verdict:
+    """The priority vector on BMv2, compiled from p4c's source, unedited."""
+    data = PRIORITY_SOURCE.read_bytes()
+    assert (
+        hashlib.sha256(data).hexdigest() == catalog.SHA256["p4c/table-entries-priority-bmv2.p4"]
+    ), "p4c's priority source differs from its pin"
+    compiled = bmv2_run.compile_program(image, data.decode())
+    index = ir.Index.build(ir.load_text(program_of(PRIORITY_VECTOR)))
+    plan = bmv2_run.translate(index, stf.parse(PRIORITY_VECTOR.read_text()), compiled)
+    plan.ports = sorted({*plan.ports, *PRIORITY_PORTS})
+    reply = bmv2_run._driver(image, "replay", json.dumps(plan.request(compiled)))
+    status, detail = bmv2_run.judge(plan, reply)
+    return bmv2_run.Verdict(
+        PRIORITY_VECTOR, status, detail, bmv2_run._docker_command(image, "replay")
+    )
+
+
+@pytest.mark.xfail(
+    reason=(
+        "p4c's BMv2 backend numbers const entries with a running counter that BMv2 "
+        "reads smaller-wins, inverting P4 1.2.5 section 14.2.1.4 "
+        "(P4-SpecTec's `$set_priorities_of_tableEntryListIR`); see "
+        "tests/oracle/bmv2/README.md"
+    ),
+    strict=True,
+    raises=KnownBMv2PriorityDisagreement,
+)
+def test_original_priority_program_on_bmv2(image: str) -> None:
+    verdict = replay_original_priority(image)
+    if known_priority_disagreement(verdict):
+        raise KnownBMv2PriorityDisagreement(verdict.detail)
+    if verdict.status == "error":
+        pytest.fail(f"ORACLE ERROR (not a divergence): {verdict.detail}")
+    pytest.fail(f"p4c's priority program changed its answer on BMv2:\n{verdict}")
+
+
+@pytest.mark.parametrize(
+    ("status", "detail", "known"),
+    [
+        ("fail", PRIORITY_DETAIL, True),
+        ("pass", "", False),
+        ("error", PRIORITY_DETAIL, False),
+        ("fail", PRIORITY_DETAIL.replace("0311810000b0", "0311810000b1"), False),
+    ],
+)
+def test_known_priority_marker_matches_only_the_documented_mismatch(
+    status: str, detail: str, known: bool
+) -> None:
+    verdict = bmv2_run.Verdict(PRIORITY_VECTOR, status, detail, ())
+    assert known_priority_disagreement(verdict) is known
 
 
 # ---------------------------------------------------------------------------

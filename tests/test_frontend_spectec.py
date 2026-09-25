@@ -164,17 +164,6 @@ def _documented_forwarder(g: pb.Program) -> None:
     drop.body.append(pb.Stmt(assign=pb.Assign(target=port, value=value)))
 
 
-def _documented_priority(g: pb.Program) -> None:
-    """P4-SpecTec reads `@priority(n)` as the entry's priority with the
-    larger winning (its typed IL carries 3, 2, 1); the golden follows p4c
-    and BMv2, where the smaller wins, as `IR = 4 - p4c`. The bridge takes
-    the IL's reading, which is also the language's list order here."""
-    ingress = next(b for b in g.blocks if b.name == "ingress")
-    for table in ingress.tables:
-        for entry in table.const_entries:
-            entry.priority = 4 - entry.priority
-
-
 def _documented_stateful(g: pb.Program) -> None:
     """The stateful README's "Added" section: a counter and a seed guard
     the donor does not have, and the merged control named `pipeline`."""
@@ -205,14 +194,12 @@ def _documented_stateful(g: pb.Program) -> None:
 DOCUMENTED: dict[str, Callable[[pb.Program], None]] = {
     "acl": _documented_acl,
     "forwarder": _documented_forwarder,
-    "priority": _documented_priority,
     "stateful": _documented_stateful,
 }
 
 # Vectors on which the translation and the golden are expected to differ,
 # with why. Everything else must agree packet for packet.
 DISAGREEING_VECTORS: dict[str, str] = {
-    "priority/table_entries_priority": "P4-SpecTec's reading of @priority (see above)",
     "stateful/persist": "exercises the golden's added seed guard",
 }
 
@@ -286,16 +273,20 @@ def test_corpus_vectors_agree_with_the_golden(
         assert differ == [], f"packets at lines {differ} differ from the golden"
 
 
-def test_priority_disagreement_is_the_order_of_two_overlapping_entries(
+def test_priority_translation_numbers_entries_as_the_specification(
     exporter: Exporter,
 ) -> None:
-    """The one packet both readings route alike passes; the two the source's
-    comments describe as won by the third entry go to port 1 instead."""
+    """The typed IL numbers the const entries by P4-SpecTec's
+    `$set_priorities_of_tableEntryListIR`, which reads `priority = n` and
+    not p4c's `@priority(n)` annotation: none of the three has a priority,
+    so they take 3, 2, 1 by position and the larger wins. The golden
+    follows the same rule (.agents/decisions.md, "Entry priority"), so the
+    source's comment, which expects the third entry to win, does not hold."""
     entry = next(e for e in catalog.CORPUS if e.program == "priority")
     got = _translated(exporter, entry.source, entry.program).program
-    vector = CORPUS / "priority" / "table_entries_priority.stf"
-    ours = _outputs(got, vector, ir.Index.build(golden("priority")))
-    assert [[port for port, _ in out] for _, out in ours] == [[1], [1], [1]]
+    ingress = next(b for b in got.blocks if b.name == "ingress")
+    (table,) = ingress.tables
+    assert [e.priority for e in table.const_entries] == [3, 2, 1]
 
 
 # ---------------------------------------------------------------------------
@@ -310,8 +301,11 @@ ROUND_TRIP = [
     *((f"examples/{name}", examples.DATA / name / "program.txtpb") for name in examples.NAMES),
 ]
 # The printer writes a ternary table's entries as P4 1.2.5's mutable
-# `entries` with priorities, since p4c refuses priorities on const entries;
-# the IR has const entries only, a row the coverage page excludes by scope.
+# `entries` with explicit priorities and `largest_priority_wins`, since p4c
+# refuses priorities on const entries and a `@priority` annotation is
+# p4c's, not the language's; the IR has const entries only, and mutable
+# entries are a row the coverage page excludes by scope. The priority
+# program's own source is translated byte for byte instead (question 1).
 ROUND_TRIP_EXCLUDED = {"priority": "tableEntriesPropertyIR without const, and a per-entry constIR"}
 
 

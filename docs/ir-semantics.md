@@ -553,17 +553,27 @@ A table match is evaluated over the installed entries; the program's
   the one with the largest priority wins. Two matching entries with equal priority are
   rejected at installation when their key sets overlap, which is
   decidable for ternary and exact keys, so there is no tie. Larger
-  wins because that is what the P4Runtime specification says (§9.1);
-  the STF runner converts if the oracle's convention differs. Host and
-  STF ternary entries reach SpecTec through its table interface, whose
-  mask construction has the known defect recorded in
+  wins because that is the language's default (§14.2.1.4,
+  `largest_priority_wins`) and what the P4Runtime specification says
+  (§9.1); the STF runner converts if the oracle's convention differs.
+  A program's const entries carry the priorities the language's
+  numbering gives them, with its defaults `largest_priority_wins = true`
+  and `priority_delta = 1`: an entry written with `priority = n` keeps
+  `n`, and when no entry has one the first of `k` entries takes `k` and
+  each later one the previous minus one, so the first listed wins.
+  p4c's `@priority(n)` annotation is not the language's and is not
+  read. p4c's BMv2 backend numbers const entries the other way round,
+  smaller winning, a disagreement recorded in
   [assurance.md](assurance.md#known-disagreements-with-the-oracles).
-  - P4: none; P4Runtime §9.1
-  - SpecTec: `$select_action`, `$largest_priority_wins`
+  Host and STF ternary entries reach SpecTec through its table
+  interface, whose mask construction has the known defect recorded
+  there too.
+  - P4: §14.2.1.4 (entry priorities); P4Runtime §9.1
+  - SpecTec: `$select_action`, `$largest_priority_wins`, `$set_priorities_of_tableEntryListIR`, `$set_priorities_of_tableEntryListIR'`, `TableProperty_ok/largest-priority-wins`, `TableProperty_ok/priority-delta`
   - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`, `DeviationLaws.keyValueMatches_ternary`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.overlaps`, `p4blo.interp.tables.InstalledEntries.install`
-  - Test: `tests/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/test_validator.py::test_entry_priority_overlap`, `tests/corpus/priority`
-  - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.
+  - Test: `tests/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/test_validator.py::test_entry_priority_overlap`, `tests/test_frontend_spectec.py::test_priority_translation_numbers_entries_as_the_specification`, `tests/corpus/priority`
+  - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; a program's const-entry priorities are the ones `$set_priorities_of_tableEntryListIR` computes with the default properties, which the IR stores rather than recomputes and which the IL bridge reproduces from P4-SpecTec's typed IL; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.
 - **Priority outside ternary tables.** An entry of a table without a
   `ternary` key has priority `0`; the installer and the validator
   reject any other. A table with an `lpm` key has no `ternary` key, so
@@ -573,9 +583,13 @@ A table match is evaluated over the installed entries; the program's
   input: SpecTec accepts a priority on any entry, and p4blo accepts
   only the entries where that priority cannot matter. On what p4blo
   accepts, an exact table has at most one matching entry, and several
-  matching LPM entries are the LPM entry's business.
-  - P4: none
-  - SpecTec: `$get_tableEntryPriority`, `$select_action`
+  matching LPM entries are the LPM entry's business. A program's const
+  entries on such a table get no priority from the language's numbering
+  on an exact table and their prefix length on an LPM one, and a
+  written priority is refused on either; p4blo stores `0` and lets the
+  prefix decide, which selects the same entry.
+  - P4: §14.2.1.4 (entry priorities)
+  - SpecTec: `$get_tableEntryPriority`, `$select_action`, `$set_priorities_of_tableEntryListIR`
   - Lean: `Installed.install`, `Installed.sameKeys`
   - Python: `p4blo.interp.tables.InstalledEntries.install`, `p4blo.validator._Validator.check_keys`
   - Test: `tests/test_validator.py::test_entry_priority_on_non_ternary_table`, `tests/test_validator.py::test_table_key_mix`, `tests/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`
