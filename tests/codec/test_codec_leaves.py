@@ -183,8 +183,8 @@ def assert_leaf(
 ) -> dict[str, object]:
     """Retain raw leaf JSON before an independent known answer can fail."""
     # A sibling of the given endpoint when there is one (the observer tests
-    # hand in a fake); otherwise the IR specification package's endpoint,
-    # since the conformance endpoint belongs to the architecture package.
+    # hand in a fake); otherwise the architecture package's endpoint,
+    # which delegates core kinds and also handles assembly/export leaves.
     binary = lean_binary.with_name("codec-leaves")
     if not binary.exists():
         binary = ROOT / "spec/arch/.lake/build/bin/codec-leaves"

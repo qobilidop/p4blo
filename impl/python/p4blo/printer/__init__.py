@@ -10,15 +10,15 @@ package by subclassing `ProgramPrinter`: `p4blo.arch.v1model` for v1model,
 
   terms       types, literals, expressions, lvalues, pieces of declarations
   statements  statements, and `StmtPrinter`
-  program     whole programs, and `ProgramPrinter` with its hooks
+  program     block libraries, and `ProgramPrinter` with its hooks
 
-Entry points: `print_program` for a whole program without an architecture,
+Entry points: `print_program` for a block library without an architecture,
 and `print_type`, `print_expr`, `print_lvalue` and `print_stmt` for pieces.
-A program is assumed valid; what the printer cannot express raises
+A library is assumed valid; what the printer cannot express raises
 `PrintError`.
 """
 
-from p4blo.printer.program import MISSING_ROLE_NAMES, ProgramPrinter, print_program
+from p4blo.printer.program import ProgramPrinter, print_program
 from p4blo.printer.statements import (
     INDENT,
     StmtPrinter,
@@ -47,7 +47,6 @@ from p4blo.printer.terms import (
 
 __all__ = [
     "INDENT",
-    "MISSING_ROLE_NAMES",
     "PACKET",
     "PrintError",
     "ProgramPrinter",
