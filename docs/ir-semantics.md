@@ -109,7 +109,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   oracle, so no vector shifts by more than 2048.
   - P4: §8.6
   - SpecTec: `$bin_shl`, `$bin_shr`
-  - Lean: `bitsBinary`
+  - Lean: `bitsBinary`, `ScalarLaws.shl_large`, `ScalarLaws.shr_large`, `DeviationLaws.evaluate_shl_large`, `DeviationLaws.evaluate_shr_large`
   - Python: `p4blo.interp.expr.bits_binary`
   - Test: `tests/test_interp_expr.py::test_shift_amount_width_does_not_matter`, `tests/test_interp_expr.py::test_shifts_by_the_width_or_more_give_zero`
   - Class: same. `$bin_shl` and `$bin_shr` shift the unbounded integer and reduce it to the left operand's width, which gives `0` for an amount of `N` or more whatever the amount; the simulator's builtins `$shl` and `$shr`, in `numerics.ml`, stop with "shift amount too large" above 2048, which is an oracle limitation of the simulator, not a rule disagreement.
@@ -129,7 +129,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   headers it compares the fields. This is P4's rule.
   - P4: §8.17
   - SpecTec: `$bin_eq`
-  - Lean: `Value.equal`
+  - Lean: `Value.equal`, `DeviationLaws.header_equal_invalid`, `DeviationLaws.header_equal_valid_invalid`, `DeviationLaws.header_equal_valid`, `DeviationLaws.evaluate_eq_invalid_headers`
   - Python: `p4blo.interp.values.equal`
   - Test: `tests/test_values.py::test_header_equality_by_validity_then_fields`, `tests/test_interp_expr.py::test_equality_on_every_type`
   - Class: deviates. `$bin_eq` on two headers compares their type and stored fields and ignores the validity bit, so two invalid headers with different stored fields are unequal and a valid and an invalid header with equal fields are equal, which contradicts P4's rule.
@@ -171,7 +171,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   and it gives initialization a deterministic value.
   - P4: §6.8
   - SpecTec: `$default`, `VarDecl_eval/non-initializer`, `Copy_in_arg/out`
-  - Lean: `Value.zero`, `Frame.forBlock`, `argumentValue`
+  - Lean: `Value.zero`, `Frame.forBlock`, `argumentValue`, `Frame.forBlock_initialized`, `DeviationLaws.zero_bits`, `DeviationLaws.zero_boolean`, `DeviationLaws.zero_error`, `DeviationLaws.zeroHeader_eq`
   - Python: `p4blo.interp.values.zero`, `p4blo.interp.env.Env.for_block`, `p4blo.interp.stmt.argument_value`
   - Test: `tests/test_interp_expr.py::test_variables_start_at_zero`, `tests/test_values.py::test_zero_is_recursive_with_invalid_headers_and_first_members`, `tests/test_interp_control.py::test_an_out_parameter_starts_at_zero`
   - Class: same. SpecTec initializes a declared variable and an `out` parameter with `$default`, which gives zero bits, `false`, the first enum member, `NoError`, invalid headers with default fields and stacks with next index `0`; its source marks the choice as a placeholder for a target-specific one.
@@ -221,7 +221,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   controls; a program that wants a check writes one.
   - P4: §8.18
   - SpecTec: `Expr_eval/headerStack`, `Lvalue_read/stack-out-of-bounds`, `Lvalue_write/stack-out-of-bounds`
-  - Lean: `elementOf`, `writeLValue`
+  - Lean: `elementOf`, `writeLValue`, `DeviationLaws.evaluate_index_out_of_range`, `DeviationLaws.readLValue_index_out_of_range`, `DeviationLaws.writeLValue_index_out_of_range`, `DeviationLaws.writeLValue_member_out_of_range`
   - Python: `p4blo.interp.expr.element_of`, `p4blo.interp.expr.write_lvalue`
   - Test: `tests/test_interp_control.py::test_out_of_range_stack_read_is_a_zero_invalid_header_and_write_does_nothing`
   - Class: deviates. An out-of-range write does nothing in SpecTec too, but `Expr_eval/headerStack` reads `hs[i]` with `i >= S` as the last element, valid or not, and `Lvalue_read/stack-out-of-bounds` reads it as element `0` made invalid with its stored fields; p4blo gives one answer, an invalid zero header, in both places.
@@ -232,7 +232,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   rejects it in a control, an action or a deparser with `PARSER_ONLY`.
   - P4: §8.18
   - SpecTec: `Expr_eval/stack-lastIndex`, `Expr_ok/headerStack-lastIndex`
-  - Lean: `evaluate`
+  - Lean: `evaluate`, `DeviationLaws.evaluate_lastIndex`, `DeviationLaws.lastIndex_empty`, `DeviationLaws.lastIndex_nonempty`
   - Python: `p4blo.interp.expr.last_index`, `p4blo.validator._Validator.type_of`
   - Test: `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`, `tests/test_validator.py::test_parser_only`, `tests/test_validator.py::test_last_index_in_a_parser_is_fine`
   - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, and p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only in a parser, as the validator does.
@@ -245,7 +245,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   coverage table says so on its `hs.last` row.
   - P4: §8.18
   - SpecTec: `Expr_eval/stack-last-out-of-bounds`, `Lvalue_eval/stack-last-out-of-bounds`, `Expr_eval/stack-last-in-bounds`
-  - Lean: `evaluate`, `elementOf`
+  - Lean: `evaluate`, `elementOf`, `DeviationLaws.evaluate_last_empty`, `DeviationLaws.evaluate_last_nonempty`
   - Python: `p4blo.edsl.views.Stack.last`, `p4blo.interp.expr.last_index`, `p4blo.interp.expr.element_of`
   - Test: `tests/test_edsl.py::test_stack_last_is_the_element_at_last_index`, `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/corpus/stacks`
   - Class: deviates. `Expr_eval/stack-last-out-of-bounds` and `Lvalue_eval/stack-last-out-of-bounds` reject with `StackOutOfBounds` when `nextIndex` is `0` or above the size, and `Expr_eval/stack-last-in-bounds` reads element `nextIndex - 1` otherwise, which the elaboration matches only for `nextIndex >= 1`.
@@ -305,7 +305,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   zero fields make a later read of an invalid element deterministic.
   - P4: §8.18
   - SpecTec: `Call_eval/builtinPushFrontMethodCallee`, `Call_eval/builtinPopFrontMethodCallee`, `$invalidate_value`
-  - Lean: `pushFront`, `popFront`
+  - Lean: `pushFront`, `popFront`, `DeviationLaws.pushFront_spec`, `DeviationLaws.pushFront_clamp`, `DeviationLaws.popFront_spec`, `DeviationLaws.popFront_clamp`
   - Python: `p4blo.interp.stmt.push_front`, `p4blo.interp.stmt.pop_front`
   - Test: `tests/test_interp_control.py::test_push_front_shifts_up_and_pops_the_last`, `tests/test_interp_control.py::test_pop_front_shifts_down_and_clears_the_last`, `tests/test_interp_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
   - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps stored fields: after `push_front(n)` the first `n` elements keep their own old fields, `pop_front(n)` rotates the first `n` elements to the back and invalidates them there, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
@@ -487,7 +487,7 @@ decision, not the parser's.
   oracle.
   - P4: §12.11
   - SpecTec: `ParserState_trans/state`
-  - Lean: `enterState`
+  - Lean: `enterState`, `DeviationLaws.enterState_revisit`, `DeviationLaws.enterState_again`, `DeviationLaws.step_state_revisit`
   - Python: `p4blo.interp.stmt.enter_state`
   - Test: `tests/test_interp_parser.py::test_revisiting_a_state_without_consuming_is_parser_timeout`, `tests/test_interp_parser.py::test_the_revisit_rule_sees_a_cycle_through_another_state`, `tests/test_interp_parser.py::test_revisiting_after_consuming_is_allowed`, `tests/test_interp_parser.py::test_sub_parser_states_count_for_the_revisit_rule`
   - Class: refines undefined. `ParserState_trans/state` recurses into the next state with no bound, so a loop that consumes nothing has no finite derivation and SpecTec gives no outcome.
@@ -543,7 +543,7 @@ A table match is evaluated over the installed entries; the program's
   [assurance.md](assurance.md#known-disagreements-with-the-oracles).
   - P4: none
   - SpecTec: `TableMatches_eval`, `$select_action`
-  - Lean: `Installed.beats`, `Installed.prefixLength`, `Installed.sameKeys`
+  - Lean: `Installed.beats`, `Installed.prefixLength`, `Installed.sameKeys`, `DeviationLaws.lookup_longest_prefix`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.prefix_length`, `p4blo.interp.tables.same_keys`
   - Test: `tests/test_interp_tables.py::test_lpm_longest_prefix_wins_and_the_default_runs_on_a_miss`, `tests/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`, `tests/test_validator.py::test_table_lpm_count`, `tests/corpus/forwarder`
   - Class: refines undefined. SpecTec's table interface turns an LPM entry into a masked value with no priority, and `$select_action` chooses among several matches only by priority, so two matching LPM entries without priorities have no rule; the oracle adapter supplies the prefix length as the priority, and the interface's mask construction has the known defect recorded in assurance.md.
@@ -696,7 +696,7 @@ consume is the caller's decision.
   is not verified, since p4c rejects such headers for it.
   - P4: none
   - SpecTec: `$write_bits_from_value`
-  - Lean: `Emitter.toBytes`, `Emitter.write`
+  - Lean: `Emitter.toBytes`, `Emitter.write`, `DeviationLaws.toBytes_padded`, `DeviationLaws.write_fits`
   - Python: `p4blo.interp.packet.Emitter.to_bytes`
   - Test: `tests/test_interp_deparser.py::test_bits_are_concatenated_and_padded_to_a_byte_at_the_end`
   - Class: refines undefined. SpecTec's emit appends bits with no padding, and what becomes of a partial byte is decided by its simulator's architecture code and packet printer, outside the rules: the payload is appended at the bit level and the printer pads the last group of bits to a nibble rather than a byte. The generated-program oracle test pins the exact mismatch as a strict expected failure.
