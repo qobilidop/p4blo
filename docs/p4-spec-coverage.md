@@ -53,7 +53,8 @@ IR (see [design.md](design.md#printer-and-oracles)): *translated* for an
 in-row; *performed* when it carries out the row's elaboration, *partial*
 when it does so for the cases named; *refused by name* when it raises an
 error naming the row; *not attempted* when the IR could hold the construct
-and the bridge does not yet translate it. Where the bridge performs the
+and the bridge does not yet translate it; *unreachable* when the bridge has
+code for it that nothing it translates can reach. Where the bridge performs the
 rewrite of a row that was *excluded, by elaboration*, the row is now
 *elaborated*, since the rewrite has been performed; fourteen rows moved on
 2026-09-24 for that reason alone, and their notes are unchanged. The
@@ -134,7 +135,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `indexAccessExpressionIR` (`hs[e]`) | in | `Index` | Run-time index; out of range closed in ir-semantics.md. | translated |
 | `sliceAccessExpressionIR` with `sliceop` `:` | in | `Slice{hi, lo}` | Bounds are constants; the validator checks `lo <= hi < N`. | translated |
 | `sliceAccessExpressionIR` with `sliceop` `+:` | elaborated | `[lo + w - 1 : lo]` | P4 1.2.5's `e[lo +: w]`; both operands are compile-time known. | performed |
-| `callExpressionIR`: extern method in expression position | elaborated | `CallExtern.result` into a fresh local | Schema: "The IR has no discarded results; the frontend introduces a local." | performed; under `&&`, `\|\|` or `?:` the call is guarded by an `If` |
+| `callExpressionIR`: extern method in expression position | elaborated | `CallExtern.result` into a fresh local | Schema: "The IR has no discarded results; the frontend introduces a local." | unreachable: neither object the bridge binds, v1model's `register` and `counter`, has a method that returns a value; the code would guard the call by an `If` under `&&`, `\|\|` or `?:` |
 | `callExpressionIR`: `h.isValid()` | in | `IsValid` | Decision: dedicated packet and header nodes. | translated |
 | `callExpressionIR`: `packet.lookahead<T>()` | in | `Lookahead{type}` | Parser only. | translated; in statement position its value goes to a fresh local, since it can still reject |
 | `callExpressionIR`: `packet.length()` | excluded, by scope | none | Declared in core.p4's `packet_in`; no design list names it and no corpus program uses it. | refused by name |
@@ -223,7 +224,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `tableKeyIR`: match kinds `range`, `optional` | excluded, by thesis | none | Declared by v1model and PSA, not core.p4. Nothing rules. | refused by name |
 | `tableActionsPropertyIR`, `tableActionIR`: the action reference | in | `Table.actions` | Names of actions of the block. | translated |
 | `tableActionIR`: bound arguments in `tableActionReferenceIR` | elaborated | one action copy per table, the bound lvalue substituted | Decision: per-table action copies (`setbyte`, `setbyte_1`, ...). | performed; a bound expression the action body also reaches is not attempted |
-| `controlPlaneNameIR` (`@name` on an action reference) | elaborated | the copy's name | Same decision: the corpus STF names the elaborated actions directly. | partial: copies are named as p4c names them; an explicit `@name` is not read |
+| `controlPlaneNameIR` (`@name` on an action reference) | elaborated | the copy's name | Same decision: the corpus STF names the elaborated actions directly. | partial: copies are named as p4c's frontend names them (`setbyte_1`), not by the control-plane name (`setbyte`) p4c's STF and P4Runtime use; an explicit `@name` is not read |
 | `tableActionIR` note `# ( parameterListIR , parameterListIR )` | elaborated | none | A typing note splitting bound from control-plane parameters. | performed: the note is dropped |
 | `tableDefaultActionPropertyIR` | in | `Table.default_action`, `Table.const_default_action` | Absent means `NoAction` (ir-semantics.md, Table miss). `NoAction` is declared with an empty body (forwarder README). | translated |
 | `tableEntriesPropertyIR` with `const` | in | `Table.const_entries` | Installed before any host entry. | translated |

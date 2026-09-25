@@ -402,7 +402,7 @@ itself up to declaration order and the names of block locals and stateless
 extern instances, priority excepted since the printer writes mutable
 entries; that excluded constructs are refused by their row;
 that five p4c programs outside the corpus pass their own STF vectors on
-the Python interpreter; and that thirteen probe programs written for what
+the Python interpreter; and that fourteen probe programs written for what
 the corpus misses pass vectors of P4-SpecTec's exact output, on its
 simulator and translated. One difference is P4-SpecTec's and is kept: it
 reads `@priority(n)` as a priority where the larger wins, and p4c and
