@@ -417,7 +417,7 @@ class Translator:
 
         values = [ctor_value(caller, a) for a in args]
         key: tuple[str, tuple[Val, ...]] = (decl.text(1), tuple(values))
-        if owns_state(decl):
+        if owns_state(self, decl):
             # Each instantiation of a block with extern state is its own block.
             key = (decl.text(1), (*values, Int(len(self.instantiations))))
         if key in self.instantiations:

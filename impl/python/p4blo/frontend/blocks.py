@@ -2364,11 +2364,27 @@ def block_kind(decl: Node) -> str:
     return "deparser" if any(is_packet_type(p.type) == "packet_out" for p in params) else "control"
 
 
-def owns_state(decl: Node) -> bool:
-    return any(
-        d.t == "instantiationIR" and strip_alias(d.node(1)).c == "EXTERN % <%> %"
-        for d in decl.nodes(6)
-    )
+def owns_state(tr: Translator, decl: Node) -> bool:
+    """Whether an instance of `decl` has extern state of its own: an extern
+    it instantiates, or one owned by a parser or control it instantiates or
+    applies directly, however deep. Each instantiation of such a block is
+    its own block, so that its instances keep separate state."""
+    for d in decl.nodes(6):
+        if d.t != "instantiationIR":
+            continue
+        t = strip_alias(d.node(1))
+        if t.c == "EXTERN % <%> %":
+            return True
+        if t.c in ("PARSER % <%> (%)", "CONTROL % <%> (%)"):
+            sub = tr.block_decls.get(prefixed_name(d.node(2).node(0))[0])
+            if sub is not None and owns_state(tr, sub):
+                return True
+    for n in il.walk(decl):
+        if n.c == "% . APPLY (%) ;":
+            sub = tr.block_decls.get(prefixed_name(n.node(0).node(0))[0])
+            if sub is not None and owns_state(tr, sub):
+                return True
+    return False
 
 
 def ctor_value(cx: BlockCx, a: Node) -> Val:
