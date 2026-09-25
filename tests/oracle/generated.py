@@ -349,7 +349,9 @@ SHIFT_LIMIT_RELATIONS = (
 
 
 def known_defect(verdict: oracle_run.Verdict) -> str | None:
-    """The name of a diagnosed simulator defect that explains a verdict.
+    """The name of a diagnosed simulator defect that explains a verdict by
+    its text alone. The other classified defect, `table-mask`, needs a rerun
+    under a model and is decided by `explained_by_table_mask`.
 
     `shift-limit`: the simulator's `$shl` and `$shr` builtins
     (p4spec/lib/interface/builtin/numerics.ml at the pin) refuse any shift
@@ -373,12 +375,22 @@ def known_defect(verdict: oracle_run.Verdict) -> str | None:
     return None
 
 
+@dataclass(frozen=True)
+class Prepared:
+    """What the oracle is given: an index, the printed program and the
+    vector files, all written under one directory."""
+
+    index: ir.Index
+    p4: Path
+    vectors: tuple[Path, ...]
+
+
 # Room between two written priorities for the model's tie-breaking ranks.
 RANKS = 1024
 
 
 def table_mask_model(
-    program: pb.Program, entries: pb.Entries, *, reverse: bool = False
+    program: pb.Program, entries: pb.Entries, *, reverse: bool = False, real_masks: bool = False
 ) -> tuple[pb.Program, pb.Entries]:
     """The program and host entries under which p4blo computes what the
     pinned simulator computes for the `add` lines `run.py` writes.
@@ -399,6 +411,11 @@ def table_mask_model(
     a distinct priority, its written one times `RANKS` plus its position,
     const entries first, in `reverse` order when asked; a result that does
     not depend on the tie-break is the same both ways.
+
+    `real_masks` keeps each key's own mask while doing everything else the
+    same: the control model, which must reproduce p4blo's real result, so
+    that the rewrite and the ranking are known to change nothing but the
+    masks (`explained_by_table_mask`).
     """
     index = ir.Index.build(program)
     installed = InstalledEntries(index)
@@ -433,11 +450,13 @@ def table_mask_model(
                         base = int(kv.lpm.value) & mask
                         prefix = length if prefix is None else prefix
                     case "ternary":
-                        base = int(kv.ternary.value) & int(kv.ternary.mask)
+                        mask = int(kv.ternary.mask)
+                        base = int(kv.ternary.value) & mask
                     case _:
                         continue
+                written = mask if real_masks else base
                 entry.keys[i].CopyFrom(
-                    pb.KeyValue(ternary=pb.TernaryValue(value=str(base), mask=str(base)))
+                    pb.KeyValue(ternary=pb.TernaryValue(value=str(base), mask=str(written)))
                 )
             if (te.block, te.table) in lpm_only and prefix is not None:
                 entry.priority = prefix
@@ -453,6 +472,24 @@ def table_mask_model(
     return model, host
 
 
+def table_mask_control_agrees(program: pb.Program, case: Case) -> bool:
+    """Whether the table-mask rewrite with the real masks gives Python's real
+    outputs under both tie orders."""
+    original = python_outcome(arch.load(program), case, SWITCH_PORTS)
+    try:
+        for reverse in (False, True):
+            model, entries = table_mask_model(
+                program, case.entries, reverse=reverse, real_masks=True
+            )
+            control = Case(entries, case.ingress_port, case.packet)
+            outcome = python_outcome(arch.load(model), control, SWITCH_PORTS)
+            if outcome.error is not None or outcome.outputs != original.outputs:
+                return False
+    except ValueError:
+        return False
+    return True
+
+
 def explained_by_table_mask(
     oracle: oracle_run.Oracle,
     program: pb.Program,
@@ -466,7 +503,17 @@ def explained_by_table_mask(
     failed vector, and the unchanged program and `add` lines run again. Only
     a pass explains the failure. A model whose outputs depend on how ties
     are broken, or equal the real ones, explains nothing.
+
+    The model does more than swap each mask for its base: it turns lpm keys
+    into ternary ones and ranks the entries, so Python's longest-prefix code
+    never runs on it, and a wrong longest-prefix rule in Python would look
+    like the simulator's defect. So the control model, the same rewrite and
+    ranking with the real masks, must first reproduce Python's real outputs
+    under both tie orders; if it does not, Python's own table code is in
+    question and the failure stays a failure.
     """
+    if not table_mask_control_agrees(program, case):
+        return False
     outcomes: list[Outcome] = []
     try:
         for reverse in (False, True):
@@ -553,16 +600,6 @@ def run_seed(oracle: oracle_run.Oracle, seed: int, out: Path) -> Result:
     """Materialize one seed under `out`, run it on the oracle, and write
     `verdict.txt` beside its inputs."""
     return run_generated(oracle, materialize(seed), out)
-
-
-@dataclass(frozen=True)
-class Prepared:
-    """What the oracle is given: an index, the printed program and the
-    vector files, all written under one directory."""
-
-    index: ir.Index
-    p4: Path
-    vectors: tuple[Path, ...]
 
 
 def prepare(generated: Generated, directory: Path) -> Prepared:
