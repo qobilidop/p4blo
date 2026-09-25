@@ -1,4 +1,5 @@
 import P4bloIR.Validity.StepLaws
+import P4bloIR.Validity.InstallLaws
 import P4bloIR.ScalarStatements
 
 /-!
@@ -22,10 +23,11 @@ error. `initial_ok` gives the well-formed machines the entry points start.
 What is assumed, by premise: the program is `Valid` (for instance,
 `Validity.check` accepted it, `check_sound`); the architecture's extern
 binding obeys `ExternContract`; the installed table entries obey
-`InstalledOk`; the initial run fits the block kind and its frame holds a
-value of every declared type. Binding and installation errors happen at
-load and installation, before any packet runs, and are outside this
-theorem.
+`InstalledOk`, which every successful `Installed.build` does
+(`build_installedOk`); the initial run fits the block kind and its frame
+holds a value of every declared type. Binding and installation errors
+happen at load and installation, before any packet runs, and are outside
+this theorem.
 
 What is not established: termination. A finite trace is required for a
 result; that every run of a valid program is finite (the acyclic call

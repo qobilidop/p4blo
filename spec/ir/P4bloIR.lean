@@ -41,4 +41,5 @@ import P4bloIR.Validity.Machine
 import P4bloIR.Validity.CallLaws
 import P4bloIR.Validity.StmtLaws
 import P4bloIR.Validity.StepLaws
+import P4bloIR.Validity.InstallLaws
 import P4bloIR.Progress

@@ -609,3 +609,19 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.Validity.entryFrame_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.Validity.entryFrame_ok
+
+/-- info: 'P4bloIR.Validity.build_instOk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.build_instOk
+
+/-- info: 'P4bloIR.Validity.lookup_succeeds' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.lookup_succeeds
+
+/-- info: 'P4bloIR.Validity.lookup_action' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.lookup_action
+
+/-- info: 'P4bloIR.Validity.build_installedOk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.build_installedOk
