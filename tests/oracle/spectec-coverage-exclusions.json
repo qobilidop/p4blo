@@ -1,0 +1,2397 @@
+{
+ "commit": "2730cfd9e74048bb5439da0f8afcef124079a064",
+ "categories": {
+  "architecture": "fires only through 9-arch, packages, or the instantiation of externs and blocks",
+  "excluded-construct": "the construct is excluded or elaborated away in docs/p4-spec-coverage.md; `row` names the row",
+  "not-representable": "the construct is in, but no input the printer can produce reaches this rule; the reason says why",
+  "unhit": "in scope and reachable from printable input, but not exercised yet; `reach` names the input that would. A to-do list for generated testing"
+ },
+ "exclusions": [
+  {
+   "kind": "dec",
+   "name": "$shr",
+   "file": "3-operations/3-operations.watsup",
+   "line": 10,
+   "category": "unhit",
+   "reason": "The runtime's logical right shift, called by `$bin_shr`; no corpus program shifts right at run time.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$shr_arith",
+   "file": "3-operations/3-operations.watsup",
+   "line": 12,
+   "category": "not-representable",
+   "reason": "Arithmetic right shift applies to signed `int<N>` operands, which are out of scope for v0 (coverage row for `int<N>`)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bxor",
+   "file": "3-operations/3-operations.watsup",
+   "line": 19,
+   "category": "unhit",
+   "reason": "The runtime's bitwise xor, called by `$bin_bxor`; no corpus program uses `^` at run time.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bitacc_replace",
+   "file": "3-operations/3-operations.watsup",
+   "line": 26,
+   "category": "unhit",
+   "reason": "The runtime's slice write, called when a slice is the target of an assignment; the IR elaborates a slice lvalue into a read-modify-write of the whole field, so the printer never emits one, but a generated slice read reaches `$bitacc` only.",
+   "reach": "Not reachable through the printer while slice lvalues are elaborated away (coverage row `sliceLvalueIR`); reclassify as excluded-construct if that elaboration is kept."
+  },
+  {
+   "kind": "dec",
+   "name": "$un_lnot",
+   "file": "3-operations/3-operations.watsup",
+   "line": 55,
+   "category": "unhit",
+   "reason": "Logical not `!` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$un_plus",
+   "file": "3-operations/3-operations.watsup",
+   "line": 65,
+   "category": "excluded-construct",
+   "row": "unaryExpressionIR with +",
+   "reason": "Unary plus is the identity, excluded by elaboration."
+  },
+  {
+   "kind": "dec",
+   "name": "$un_minus",
+   "file": "3-operations/3-operations.watsup",
+   "line": 77,
+   "category": "unhit",
+   "reason": "Negation `-` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_satplus",
+   "file": "3-operations/3-operations.watsup",
+   "line": 117,
+   "category": "unhit",
+   "reason": "`|+|` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_satminus",
+   "file": "3-operations/3-operations.watsup",
+   "line": 166,
+   "category": "unhit",
+   "reason": "`|-|` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_mul",
+   "file": "3-operations/3-operations.watsup",
+   "line": 196,
+   "category": "unhit",
+   "reason": "`*` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_div",
+   "file": "3-operations/3-operations.watsup",
+   "line": 214,
+   "category": "excluded-construct",
+   "row": "binaryExpressionIR with /, %",
+   "reason": "Division is defined only on compile-time constants, which the frontend folds."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_mod",
+   "file": "3-operations/3-operations.watsup",
+   "line": 228,
+   "category": "excluded-construct",
+   "row": "binaryExpressionIR with /, %",
+   "reason": "Modulo is defined only on compile-time constants, which the frontend folds."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_shr",
+   "file": "3-operations/3-operations.watsup",
+   "line": 273,
+   "category": "unhit",
+   "reason": "`>>` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_le",
+   "file": "3-operations/3-operations.watsup",
+   "line": 330,
+   "category": "unhit",
+   "reason": "`<=` is in the IR; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$bin_bxor",
+   "file": "3-operations/3-operations.watsup",
+   "line": 491,
+   "category": "unhit",
+   "reason": "Bitwise xor `^` is in the IR; no corpus program uses it at run time.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_to_enum",
+   "file": "3-operations/3-operations.watsup",
+   "line": 564,
+   "category": "excluded-construct",
+   "row": "serializableEnumTypeIR (with valueFieldIR)",
+   "reason": "Casting to a serializable enum; they are elaborated to bits."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_to_enum'",
+   "file": "3-operations/3-operations.watsup",
+   "line": 566,
+   "category": "excluded-construct",
+   "row": "serializableEnumTypeIR (with valueFieldIR)",
+   "reason": "Casting to a serializable enum; they are elaborated to bits."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_bool",
+   "file": "3-operations/3-operations.watsup",
+   "line": 588,
+   "category": "unhit",
+   "reason": "Casting a boolean, `(bit<1>) b`, is one of the IR's three casts; no corpus program uses it.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_error",
+   "file": "3-operations/3-operations.watsup",
+   "line": 649,
+   "category": "excluded-construct",
+   "row": "castExpressionIR",
+   "reason": "p4blo's Cast has three pairs, bits to bits, bool to bit<1> and bit<1> to bool; every other P4 cast is elaborated away, and the printer emits none."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_string",
+   "file": "3-operations/3-operations.watsup",
+   "line": 666,
+   "category": "excluded-construct",
+   "row": "stringTypeIR (STRING)",
+   "reason": "Strings are excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_list",
+   "file": "3-operations/3-operations.watsup",
+   "line": 677,
+   "category": "excluded-construct",
+   "row": "listTypeIR, tupleTypeIR",
+   "reason": "Lists are excluded by elaboration."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_tuple",
+   "file": "3-operations/3-operations.watsup",
+   "line": 689,
+   "category": "excluded-construct",
+   "row": "listTypeIR, tupleTypeIR",
+   "reason": "Tuples are excluded by elaboration."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_array",
+   "file": "3-operations/3-operations.watsup",
+   "line": 703,
+   "category": "excluded-construct",
+   "row": "arrayTypeIR (ARRAY t[n])",
+   "reason": "Fixed-size arrays over non-header elements are excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_header_stack",
+   "file": "3-operations/3-operations.watsup",
+   "line": 716,
+   "category": "excluded-construct",
+   "row": "castExpressionIR",
+   "reason": "p4blo's Cast has three pairs, bits to bits, bool to bit<1> and bit<1> to bool; every other P4 cast is elaborated away, and the printer emits none."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_struct",
+   "file": "3-operations/3-operations.watsup",
+   "line": 731,
+   "category": "excluded-construct",
+   "row": "castExpressionIR",
+   "reason": "p4blo's Cast has three pairs, bits to bits, bool to bit<1> and bit<1> to bool; every other P4 cast is elaborated away, and the printer emits none."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_header",
+   "file": "3-operations/3-operations.watsup",
+   "line": 745,
+   "category": "excluded-construct",
+   "row": "castExpressionIR",
+   "reason": "p4blo's Cast has three pairs, bits to bits, bool to bit<1> and bit<1> to bool; every other P4 cast is elaborated away, and the printer emits none."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_header_union",
+   "file": "3-operations/3-operations.watsup",
+   "line": 759,
+   "category": "excluded-construct",
+   "row": "headerUnionTypeIR",
+   "reason": "Header unions are excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_enum",
+   "file": "3-operations/3-operations.watsup",
+   "line": 774,
+   "category": "excluded-construct",
+   "row": "serializableEnumTypeIR (with valueFieldIR)",
+   "reason": "Only serializable enums cast, and they are elaborated to bits; plain enums admit no cast."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_record",
+   "file": "3-operations/3-operations.watsup",
+   "line": 867,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_record_field",
+   "file": "3-operations/3-operations.watsup",
+   "line": 905,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_default",
+   "file": "3-operations/3-operations.watsup",
+   "line": 936,
+   "category": "excluded-construct",
+   "row": "defaultExpressionIR (...)",
+   "reason": "Only `...` has a default value to cast."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_invalid_header",
+   "file": "3-operations/3-operations.watsup",
+   "line": 947,
+   "category": "excluded-construct",
+   "row": "invalidHeaderExpressionIR ({#})",
+   "reason": "Only `{#}` has an invalid-header value to cast."
+  },
+  {
+   "kind": "dec",
+   "name": "$cast_set",
+   "file": "3-operations/3-operations.watsup",
+   "line": 959,
+   "category": "not-representable",
+   "reason": "A set value is cast only when its type differs from the key's; the printer writes every keyset at the key's width, so the typing inserts no such cast."
+  },
+  {
+   "kind": "dec",
+   "name": "$bitacc_offset_op",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1047,
+   "category": "excluded-construct",
+   "row": "sliceAccessExpressionIR with sliceop +:",
+   "reason": "`e[lo +: w]` is excluded by elaboration."
+  },
+  {
+   "kind": "dec",
+   "name": "$bitacc_range_replace_op",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1062,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A slice lvalue is elaborated into a read-modify-write of the whole field; the printer never writes through a slice."
+  },
+  {
+   "kind": "dec",
+   "name": "$bitacc_offset_replace_op",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1084,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "Writing through a `+:` slice; slice lvalues are elaborated."
+  },
+  {
+   "kind": "dec",
+   "name": "$sizeof",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1108,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$sizeof_minSizeInBits",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1111,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$sizeof_minSizeInBits'",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1113,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$sizeof_minSizeInBytes",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1116,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$sizeof_maxSizeInBits",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1119,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "dec",
+   "name": "$sizeof_maxSizeInBytes",
+   "file": "3-operations/3-operations.watsup",
+   "line": 1124,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/stringLiteral",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 30,
+   "category": "excluded-construct",
+   "row": "literalExpressionIR: stringLiteral",
+   "reason": "Strings are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/defaultExpressionIR",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 48,
+   "category": "excluded-construct",
+   "row": "defaultExpressionIR (...)",
+   "reason": "`...` is excluded by elaboration."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 58,
+   "category": "unhit",
+   "reason": "A unary operator whose operand aborts, which a lookahead in a parser can do.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/non-short-circuit-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 79,
+   "category": "unhit",
+   "reason": "A binary operator whose operand aborts.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/land-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 96,
+   "category": "unhit",
+   "reason": "`&&` whose left operand aborts; `lookahead<bool>` makes a boolean operand that can.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/lor-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 117,
+   "category": "unhit",
+   "reason": "`||` whose left operand aborts.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/cond-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 146,
+   "category": "unhit",
+   "reason": "A Mux whose condition aborts.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/cond-true",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 153,
+   "category": "unhit",
+   "reason": "Mux (`c ? a : b`) with a true condition; no corpus program uses Mux.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/cond-false",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 162,
+   "category": "unhit",
+   "reason": "Mux with a false condition.",
+   "reach": "Scalar-expression generator (tests/test_drt_programs.py), once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 178,
+   "category": "unhit",
+   "reason": "A cast whose operand aborts.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/invalidHeaderExpressionIR",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 199,
+   "category": "excluded-construct",
+   "row": "invalidHeaderExpressionIR ({#})",
+   "reason": "`{#}` is excluded by elaboration into SetInvalid."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/non-default-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 210,
+   "category": "unhit",
+   "reason": "A sequence whose element aborts: a checksum or CRC call in a parser, printed as `hash(..., { data }, ...)`, with a lookahead in its data.",
+   "reach": "No generator yet: a parser-side checksum16 or CRC call whose data holds a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/default-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 225,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/default-cont",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 232,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/non-default-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 249,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/non-default-cont",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 256,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/default-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 264,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/default-cont",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 271,
+   "category": "excluded-construct",
+   "row": "sequenceExpressionIR, recordExpressionIR elsewhere (with namedExpressionIR, ...)",
+   "reason": "Record expressions, and sequences with `...`, are excluded by elaboration; the printer's only sequence is a hash's field list."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/serenum",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 309,
+   "category": "excluded-construct",
+   "row": "serializableEnumTypeIR (with valueFieldIR)",
+   "reason": "Serializable enums are elaborated to bits and literals."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 325,
+   "category": "unhit",
+   "reason": "A member access whose base aborts: a field of `packet.lookahead<H>()` for a header type H.",
+   "reach": "No generator yet: a parser that reads a field of `packet.lookahead<H>()`, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/stack-size",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 332,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.size",
+   "reason": "`hs.size` is a compile-time constant, excluded by elaboration."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/stack-last-out-of-bounds",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 343,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.last",
+   "reason": "`hs.last` is elaborated to `hs[hs.lastIndex]`; the printer never emits `.last`, as an expression or an lvalue."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/stack-last-in-bounds",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 357,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.last",
+   "reason": "`hs.last` is elaborated to `hs[hs.lastIndex]`; the printer never emits `.last`, as an expression or an lvalue."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/headerunion",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 409,
+   "category": "excluded-construct",
+   "row": "headerUnionTypeIR",
+   "reason": "Header unions are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/tableMetadataStructValue-miss",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 432,
+   "category": "excluded-construct",
+   "row": "tableMetadataStructTypeIR.MISS",
+   "reason": "`.miss` is elaborated to `not hit`."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/tableMetadataStructValue-action_run",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 443,
+   "category": "excluded-construct",
+   "row": "tableMetadataStructTypeIR.ACTION_RUN (tableMetadataEnumTypeIR)",
+   "reason": "`action_run` is elaborated with the switch on it."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 462,
+   "category": "unhit",
+   "reason": "An index read whose index aborts: `hs[packet.lookahead<bit<32>>()]`.",
+   "reach": "No generator yet: a parser that indexes a stack by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/tuple",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 469,
+   "category": "excluded-construct",
+   "row": "listTypeIR, tupleTypeIR",
+   "reason": "Tuples are excluded by elaboration."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/array",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 479,
+   "category": "excluded-construct",
+   "row": "arrayTypeIR (ARRAY t[n])",
+   "reason": "Fixed-size arrays over non-header elements are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 513,
+   "category": "unhit",
+   "reason": "A slice whose base aborts: `packet.lookahead<bit<16>>()[7:0]`.",
+   "reach": "No generator yet: a parser that slices a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/cont-offset",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 534,
+   "category": "excluded-construct",
+   "row": "sliceAccessExpressionIR with sliceop +:",
+   "reason": "`e[lo +: w]` is excluded by elaboration into `[hi:lo]`."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/callee-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 557,
+   "category": "unhit",
+   "reason": "A method call in expression position whose receiver aborts: `hs[packet.lookahead<bit<32>>()].isValid()` in a parser.",
+   "reach": "No generator yet: a parser that calls isValid on a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Expr_eval/callee-cont-call-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 564,
+   "category": "unhit",
+   "reason": "A call in expression position that aborts; `packet.lookahead<T>()` on a short packet is the base case of every lookahead abort above.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Exprs_eval/cons-head-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 607,
+   "category": "unhit",
+   "reason": "An expression list whose first element aborts (binary operands, select keys).",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Exprs_eval/cons-head-cont-tail-abort",
+   "file": "8-dynamic/8.03.1-eval-expression.watsup",
+   "line": 614,
+   "category": "unhit",
+   "reason": "An expression list whose later element aborts: `x + packet.lookahead<bit<8>>()`.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 58,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/cont-objectReferenceValue",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 70,
+   "category": "excluded-construct",
+   "row": "valueSetDeclarationIR",
+   "reason": "Value sets are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/left-abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 85,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/left-cont-right-abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 92,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/left-abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 119,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/left-cont-right-abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 126,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keyset_simple/left-cont-right-cont",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 136,
+   "category": "unhit",
+   "reason": "A range keyset `lo..hi` in a select (RangeValue); no corpus select uses one.",
+   "reach": "No generator yet: a parser whose select has RangeValue cases."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keysets_simple/cons-head-abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 173,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Eval_keysets_simple/cons-head-cont-tail-abort",
+   "file": "8-dynamic/8.03.2-eval-keyset-expression.watsup",
+   "line": 180,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Argument_eval/nameIR-typedExpressionIR",
+   "file": "8-dynamic/8.04-eval-argument.watsup",
+   "line": 15,
+   "category": "excluded-construct",
+   "row": "argumentIR: name = e, name = _, _",
+   "reason": "Named and don't-care arguments are elaborated into positional ones; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "Argument_eval_lvalue/nameIR-typedExpressionIR",
+   "file": "8-dynamic/8.04-eval-argument.watsup",
+   "line": 43,
+   "category": "excluded-construct",
+   "row": "argumentIR: name = e, name = _, _",
+   "reason": "Named and don't-care arguments are elaborated into positional ones; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "Argument_eval_lvalue/nameIR-dontcare",
+   "file": "8-dynamic/8.04-eval-argument.watsup",
+   "line": 52,
+   "category": "excluded-construct",
+   "row": "argumentIR: name = e, name = _, _",
+   "reason": "Named and don't-care arguments are elaborated into positional ones; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "Argument_eval_lvalue/dontcare",
+   "file": "8-dynamic/8.04-eval-argument.watsup",
+   "line": 55,
+   "category": "excluded-construct",
+   "row": "argumentIR: name = e, name = _, _",
+   "reason": "Named and don't-care arguments are elaborated into positional ones; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/abort",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 19,
+   "category": "unhit",
+   "reason": "A member lvalue whose base aborts: `hs[packet.lookahead<bit<32>>()].f = e` in a parser.",
+   "reach": "No generator yet: a parser that assigns a field of a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/stack-next-out-of-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 26,
+   "category": "unhit",
+   "reason": "`hs.next` on a full stack rejects with StackOutOfBounds: an extract into `hs.next` after the stack is full.",
+   "reach": "No generator yet: a parser that extracts into `hs.next` more times than the stack holds; a stacks-corpus vector would also do."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/stack-last-out-of-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 57,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.last",
+   "reason": "`hs.last` is elaborated to `hs[hs.lastIndex]`; the printer never emits `.last`, as an expression or an lvalue."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/stack-last-in-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 72,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.last",
+   "reason": "`hs.last` is elaborated to `hs[hs.lastIndex]`; the printer never emits `.last`, as an expression or an lvalue."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/base-abort",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 106,
+   "category": "not-representable",
+   "reason": "The base of an indexed lvalue is a header stack, which p4blo reaches only through variables and struct members (stacks hold headers, headers hold bits and booleans); neither can abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/base-cont-index-abort",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 113,
+   "category": "unhit",
+   "reason": "An indexed lvalue whose index aborts: `hs[packet.lookahead<bit<32>>()] = h` in a parser.",
+   "reach": "No generator yet: a parser that assigns a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/abort",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 141,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A slice lvalue is elaborated into a read-modify-write of the whole field; the printer never writes through a slice."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/cont-abort",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 149,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A slice lvalue is elaborated into a read-modify-write of the whole field; the printer never writes through a slice."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/cont-index",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 160,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A slice lvalue is elaborated into a read-modify-write of the whole field; the printer never writes through a slice."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_eval/parenthesized",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 177,
+   "category": "excluded-construct",
+   "row": "lvalueIR: ( typedLvalueIR ); lvalueNoteIR",
+   "reason": "Parenthesized lvalues are excluded by elaboration; the printer never parenthesizes one."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/stack-next",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 214,
+   "category": "not-representable",
+   "reason": "Reading `hs.next` as a value. The validator allows `.next` only as the target of an extract, an out argument, which is written and never read."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/stack-last",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 226,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.last",
+   "reason": "`hs.last` is elaborated to `hs[hs.lastIndex]`; the printer never emits `.last`, as an expression or an lvalue."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/header",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 251,
+   "category": "unhit",
+   "reason": "Reading a header field through a reference: an inout argument bound to a header field, `a(hdr.h.f)` for an action or block with an inout parameter.",
+   "reach": "Call-copy generator extended to bind inout parameters to header fields."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/header-union",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 263,
+   "category": "excluded-construct",
+   "row": "headerUnionTypeIR",
+   "reason": "Header unions are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/array-in-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 281,
+   "category": "excluded-construct",
+   "row": "arrayTypeIR (ARRAY t[n])",
+   "reason": "Fixed-size arrays over non-header elements are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/array-out-of-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 294,
+   "category": "excluded-construct",
+   "row": "arrayTypeIR (ARRAY t[n])",
+   "reason": "Fixed-size arrays over non-header elements are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/stack-out-of-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 321,
+   "category": "unhit",
+   "reason": "Reading `hs[i]` through a reference with i out of range: writing `hs[i].f` or passing `hs[i]` inout with an out-of-range index.",
+   "reach": "No generator yet: a control that writes `hs[i]` or `hs[i].f` with a run-time index out of range; a stacks-corpus vector would also do."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/range",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 341,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A slice lvalue is elaborated into a read-modify-write of the whole field; the printer never writes through a slice."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_read/offset",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 347,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A `+:` slice lvalue: slice lvalues are elaborated, and `+:` is excluded by elaboration too."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/stack-last",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 387,
+   "category": "excluded-construct",
+   "row": "memberAccessExpressionIR: hs.last",
+   "reason": "`hs.last` is elaborated to `hs[hs.lastIndex]`; the printer never emits `.last`, as an expression or an lvalue."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/header-union-keep-valid-header",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 434,
+   "category": "excluded-construct",
+   "row": "headerUnionTypeIR",
+   "reason": "Header unions are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/header-union-replace-valid-header",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 460,
+   "category": "excluded-construct",
+   "row": "headerUnionTypeIR",
+   "reason": "Header unions are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/array-in-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 492,
+   "category": "excluded-construct",
+   "row": "arrayTypeIR (ARRAY t[n])",
+   "reason": "Fixed-size arrays over non-header elements are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/array-out-of-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 510,
+   "category": "excluded-construct",
+   "row": "arrayTypeIR (ARRAY t[n])",
+   "reason": "Fixed-size arrays over non-header elements are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/stack-out-of-bounds",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 539,
+   "category": "unhit",
+   "reason": "Writing `hs[i]` with i out of range, which leaves the stack unchanged.",
+   "reach": "No generator yet: a control that writes `hs[i]` or `hs[i].f` with a run-time index out of range; a stacks-corpus vector would also do."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/range",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 554,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A slice lvalue is elaborated into a read-modify-write of the whole field; the printer never writes through a slice."
+  },
+  {
+   "kind": "rule",
+   "name": "Lvalue_write/offset",
+   "file": "8-dynamic/8.05-eval-lvalue.watsup",
+   "line": 563,
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "A `+:` slice lvalue: slice lvalues are elaborated, and `+:` is excluded by elaboration too."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/emptyStatementIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 9,
+   "category": "excluded-construct",
+   "row": "emptyStatementIR",
+   "reason": "Excluded by elaboration; the printer emits no empty statement."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/typedLvalueIR-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 17,
+   "category": "unhit",
+   "reason": "A parser assignment whose lvalue aborts: `hs[packet.lookahead<bit<32>>()].f = e`.",
+   "reach": "No generator yet: a parser that assigns through a stack index taken from a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 25,
+   "category": "unhit",
+   "reason": "A parser assignment whose right-hand side aborts: `x = packet.lookahead<T>()` on a short packet.",
+   "reach": "No generator yet: a parser that assigns `x = packet.lookahead<T>()`, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/typedLvalueIR-cont-compound-typedExpressionIR-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 39,
+   "category": "excluded-construct",
+   "row": "assignmentStatementIR with a compound assignop (+= and the rest)",
+   "reason": "Compound assignment is excluded by elaboration."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/typedLvalueIR-cont-compound-typedExpressionIR-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 70,
+   "category": "excluded-construct",
+   "row": "assignmentStatementIR with a compound assignop (+= and the rest)",
+   "reason": "Compound assignment is excluded by elaboration."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/callee-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 100,
+   "category": "unhit",
+   "reason": "A call statement whose receiver aborts: `hs[packet.lookahead<bit<32>>()].setValid()` in a parser.",
+   "reach": "No generator yet: a parser that calls setValid on a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/non-expression",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 140,
+   "category": "excluded-construct",
+   "row": "returnStatementIR",
+   "reason": "Only a `return` statement produces RETURN, and p4blo has none."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/expression-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 143,
+   "category": "excluded-construct",
+   "row": "returnStatementIR",
+   "reason": "Only a `return` statement produces RETURN, and p4blo has none."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/expression-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 150,
+   "category": "excluded-construct",
+   "row": "returnStatementIR",
+   "reason": "Only a `return` statement produces RETURN, and p4blo has none."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/exitStatementIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 162,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "`exit` is excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/non-else-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 185,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Outside a parser the only abort is EXIT, which only an `exit` statement produces; rejects arise in parsers, whose statements have their own rules (ParserStmt_eval)."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/else-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 209,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Outside a parser the only abort is EXIT, which only an `exit` statement produces; rejects arise in parsers, whose statements have their own rules (ParserStmt_eval)."
+  },
+  {
+   "kind": "rule",
+   "name": "ForUpdateStmt_eval/call",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 264,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForUpdateStmt_eval/assign",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 271,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForUpdateStmts_eval/nil",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 292,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForUpdateStmts_eval/cons-head-exit",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 295,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForUpdateStmts_eval/cons-head-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 301,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmt_eval/variableDeclarationIR-non-initializer",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 326,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmt_eval/variableDeclarationIR-initializer-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 335,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmt_eval/variableDeclarationIR-initializer-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 343,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmt_eval/forUpdateStatementIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 353,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmts_eval/nil",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 377,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmts_eval/cons-head-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 380,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInitStmts_eval/cons-head-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 386,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 411,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-false",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 418,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-true-loop-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 425,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-true-loop-return",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 435,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-true-loop-break",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 445,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-true-loop-cont-update-exit",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 455,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForThreeClauseStmt_eval/cond-true-loop-cont-update-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 470,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/init-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 492,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/init-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 504,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 543,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/list",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 550,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/array",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 558,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/header-stack",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 566,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/left-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 594,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/left-cont-right-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 601,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForCollectionExpr_eval/left-cont-right-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 611,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInStmt_eval/nil",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 637,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInStmt_eval/cons-loop-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 640,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInStmt_eval/cons-loop-return",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 648,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInStmt_eval/cons-loop-break",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 656,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "ForInStmt_eval/cons-loop-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 664,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/no-annotations-collection-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 681,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/no-annotations-collection-loop",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 692,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/annotations",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 712,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Loops are excluded by scope; the printer emits no `for`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/breakStatementIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 728,
+   "category": "excluded-construct",
+   "row": "breakStatementIR, continueStatementIR",
+   "reason": "Excluded with `for`; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/continueStatementIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 733,
+   "category": "excluded-construct",
+   "row": "breakStatementIR, continueStatementIR",
+   "reason": "Excluded with `for`; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_table_eval/nil",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 777,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_table_eval/cons-non-fallthrough-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 780,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_table_eval/cons-non-fallthrough-no-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 787,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_table_eval/cons-fallthrough-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 796,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_table_eval/cons-fallthrough-match-no-block",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 808,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_table_eval/cons-fallthrough-no-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 820,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Switch_table_eval/no-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 833,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Switch_table_eval/match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 840,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchLabel_general_eval/default",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 875,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchLabel_general_eval/typedExpressionIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 879,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_general_eval/nil",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 907,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_general_eval/cons-non-fallthrough-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 910,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_general_eval/cons-non-fallthrough-no-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 921,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_general_eval/cons-fallthrough-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 935,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_general_eval/cons-fallthrough-match-no-block",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 951,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "SwitchCases_general_eval/cons-fallthrough-no-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 967,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Switch_general_eval/no-match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 985,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Switch_general_eval/match",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 993,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/target-abort",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 1009,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/target-cont-table",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 1017,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "The frontend elaborates a switch on action_run into an action marker and an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "Stmt_eval/target-cont-general",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 1031,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "rule",
+   "name": "BlockElementStmt_eval/constantDeclarationIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 1061,
+   "category": "excluded-construct",
+   "row": "constantDeclarationIR inside a block",
+   "reason": "Constants are folded into literals; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "BlockElementStmt_eval/variableDeclarationIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 1067,
+   "category": "excluded-construct",
+   "row": "blockStatementIR",
+   "reason": "Declarations inside a block are hoisted to Block.locals; the printer declares locals only at block level."
+  },
+  {
+   "kind": "rule",
+   "name": "BlockElementStmtList_eval/cons-head-non-cont",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 1092,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "In a control a statement ends its block early only with EXIT or RETURN, which only `exit` and `return` produce; p4blo has neither."
+  },
+  {
+   "kind": "rule",
+   "name": "VarDecl_eval/non-initializer",
+   "file": "8-dynamic/8.07-eval-declaration.watsup",
+   "line": 10,
+   "category": "unhit",
+   "reason": "A local declared without an initializer: the printer writes a header, struct or stack local that way.",
+   "reach": "Aggregate-copy and call-copy generators, whose header and struct locals print without an initializer, once on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "VarDecl_eval/initializer-abort",
+   "file": "8-dynamic/8.07-eval-declaration.watsup",
+   "line": 19,
+   "category": "not-representable",
+   "reason": "The printer declares locals only at block level, each scalar with a literal zero initializer and each compound without one, so no initializer can abort."
+  },
+  {
+   "kind": "rule",
+   "name": "SelectCase_match/reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 20,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "SelectCases_match/nil",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 59,
+   "category": "unhit",
+   "reason": "A select in which no case matches, which rejects with NoMatch.",
+   "reach": "No generator yet: a parser whose select has no default case, on a packet that matches no case."
+  },
+  {
+   "kind": "rule",
+   "name": "SelectCases_match/cons-head-match",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 62,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserSelect_eval/reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 92,
+   "category": "unhit",
+   "reason": "A select whose key aborts: `select(packet.lookahead<bit<8>>())`.",
+   "reach": "No generator yet: a parser whose select key is a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserSelect_eval/cont-selectCaseListIR-reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 103,
+   "category": "not-representable",
+   "reason": "The printer writes every select keyset and table entry as literals of the key's width, and evaluating a literal cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserSelect_eval/no-match",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 118,
+   "category": "unhit",
+   "reason": "A select in which no case matches, which rejects with NoMatch.",
+   "reach": "No generator yet: a parser whose select has no default case, on a packet that matches no case."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserTransition_eval/nameIR-reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 168,
+   "category": "unhit",
+   "reason": "An explicit `transition reject`, which rejects with NoError.",
+   "reach": "No generator yet: a parser with an explicit `transition reject`."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/emptyStatementIR",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 195,
+   "category": "excluded-construct",
+   "row": "emptyStatementIR",
+   "reason": "Excluded by elaboration; the printer emits no empty statement."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 206,
+   "category": "unhit",
+   "reason": "A parser assignment that rejects, through a lookahead on either side.",
+   "reach": "No generator yet: a parser that assigns from or through a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/parserBlockStatementIR",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 248,
+   "category": "unhit",
+   "reason": "A block statement in a parser: the printer braces both branches of a parser `if`.",
+   "reach": "No generator yet: a parser with If in its state bodies."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/non-else-reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 265,
+   "category": "unhit",
+   "reason": "A parser `if` whose condition aborts.",
+   "reach": "No generator yet: a parser `if` whose condition holds a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/non-else-cont-true",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 272,
+   "category": "unhit",
+   "reason": "A parser `if` without else, condition true; no corpus parser has an If.",
+   "reach": "No generator yet: a parser with If in its state bodies."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/non-else-cont-false",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 282,
+   "category": "unhit",
+   "reason": "A parser `if` without else, condition false.",
+   "reach": "No generator yet: a parser with If in its state bodies."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/else-reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 289,
+   "category": "unhit",
+   "reason": "A parser `if` with else whose condition aborts.",
+   "reach": "No generator yet: a parser `if` with else whose condition holds a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/else-cont-true",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 297,
+   "category": "unhit",
+   "reason": "A parser `if` with else, condition true.",
+   "reach": "No generator yet: a parser with If in its state bodies."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserStmt_eval/else-cont-false",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 308,
+   "category": "unhit",
+   "reason": "A parser `if` with else, condition false.",
+   "reach": "No generator yet: a parser with If in its state bodies."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserBlockElementStmt_eval/constantDeclarationIR",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 336,
+   "category": "excluded-construct",
+   "row": "constantDeclarationIR inside a block",
+   "reason": "Constants are folded into literals; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserBlockElementStmt_eval/variableDeclarationIR-reject",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 342,
+   "category": "excluded-construct",
+   "row": "parserBlockStatementIR",
+   "reason": "Parser blocks are flattened and their declarations hoisted to Block.locals; the printer declares locals only at block level."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserBlockElementStmt_eval/variableDeclarationIR-empty",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 349,
+   "category": "excluded-construct",
+   "row": "parserBlockStatementIR",
+   "reason": "Parser blocks are flattened and their declarations hoisted to Block.locals; the printer declares locals only at block level."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserBlock_eval",
+   "file": "8-dynamic/8.08.1-eval-parser-statement.watsup",
+   "line": 399,
+   "category": "unhit",
+   "reason": "The body of a parser block statement, reached through a parser `if`.",
+   "reach": "No generator yet: a parser with If in its state bodies."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserLocalDecl_eval/reject",
+   "file": "8-dynamic/8.08.2-eval-parser-declaration.watsup",
+   "line": 22,
+   "category": "not-representable",
+   "reason": "The printer declares locals only at block level, each scalar with a literal zero initializer and each compound without one, so no initializer can abort."
+  },
+  {
+   "kind": "rule",
+   "name": "ParserLocalDecls_eval/cons-reject",
+   "file": "8-dynamic/8.08.2-eval-parser-declaration.watsup",
+   "line": 49,
+   "category": "not-representable",
+   "reason": "The printer declares locals only at block level, each scalar with a literal zero initializer and each compound without one, so no initializer can abort."
+  },
+  {
+   "kind": "rule",
+   "name": "TableKey_eval/exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 20,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "TableKeys_eval/cons-head-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 53,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "TableKeys_eval/cons-head-cont-tail-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 59,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "TableMatch_eval/exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 107,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "TableMatches_eval/cons-head-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 175,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "TableMatches_eval/cons-head-cont-tail-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 182,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Table_eval/keys-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 267,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Table_eval/keys-cont-matches-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 275,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Table_eval/keys-cont-matches-cont-action-exit",
+   "file": "8-dynamic/8.09.1-eval-control-table.watsup",
+   "line": 288,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "ControlBody_eval/exit",
+   "file": "8-dynamic/8.09.2-eval-control-statement.watsup",
+   "line": 16,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "ControlBody_eval/return",
+   "file": "8-dynamic/8.09.2-eval-control-statement.watsup",
+   "line": 23,
+   "category": "excluded-construct",
+   "row": "returnStatementIR",
+   "reason": "Only a `return` statement produces RETURN, and p4blo has none."
+  },
+  {
+   "kind": "rule",
+   "name": "ControlLocalDecl_eval/exit",
+   "file": "8-dynamic/8.09.3-eval-control-declaration.watsup",
+   "line": 22,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "ControlLocalDecls_eval/cons-head-exit",
+   "file": "8-dynamic/8.09.3-eval-control-declaration.watsup",
+   "line": 55,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/definedFunctionCallee",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 42,
+   "category": "excluded-construct",
+   "row": "functionDeclarationIR, functionPrototypeIR",
+   "reason": "Functions are inlined at every call site; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 60,
+   "category": "not-representable",
+   "reason": "The receiver of push_front is a header stack, reached only through variables and struct members, which cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 86,
+   "category": "not-representable",
+   "reason": "The receiver of pop_front is a header stack, reached only through variables and struct members, which cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 112,
+   "category": "unhit",
+   "reason": "isValid on a receiver that aborts: `hs[packet.lookahead<bit<32>>()].isValid()` in a parser.",
+   "reach": "No generator yet: a parser that calls isValid on a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 138,
+   "category": "unhit",
+   "reason": "setValid on a receiver that aborts: `hs[packet.lookahead<bit<32>>()].setValid()` in a parser.",
+   "reach": "No generator yet: a parser that calls setValid on a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 164,
+   "category": "unhit",
+   "reason": "setInvalid on a receiver that aborts, as for setValid.",
+   "reach": "No generator yet: a parser that calls setInvalid on a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/cont",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 192,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 209,
+   "category": "not-representable",
+   "reason": "The receiver is an instance, table, `packet` or extern name, which the printer writes as a bare reference; evaluating it cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 255,
+   "category": "not-representable",
+   "reason": "The receiver is a sub-parser instance name, which cannot abort. SpecTec's structuring merges the three identical `.apply` abort rules (parser, control, table) into one instruction, attributed to the table rule at line 352, so this one has none of its own."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 303,
+   "category": "not-representable",
+   "reason": "The receiver is a sub-control instance name, which cannot abort. SpecTec's structuring merges the three identical `.apply` abort rules (parser, control, table) into one instruction, attributed to the table rule at line 352, so this one has none of its own."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/abort",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 352,
+   "category": "not-representable",
+   "reason": "The receiver is an instance, table, `packet` or extern name, which the printer writes as a bare reference; evaluating it cannot abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Callee_eval/parenthesized",
+   "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
+   "line": 386,
+   "category": "not-representable",
+   "reason": "The printer parenthesizes only non-atomic operands, and every callee target it writes (a header, stack, instance or table reference, or `packet`) is atomic."
+  },
+  {
+   "kind": "rule",
+   "name": "Copy_in_arg/abort",
+   "file": "8-dynamic/8.10.2-eval-call-copyin.watsup",
+   "line": 9,
+   "category": "unhit",
+   "reason": "An in argument that aborts: `verify(packet.lookahead<bool>(), error.E)`, or a lookahead passed to a sub-parser's in parameter.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Copy_in_arg/abort",
+   "file": "8-dynamic/8.10.2-eval-call-copyin.watsup",
+   "line": 42,
+   "category": "unhit",
+   "reason": "An inout argument whose lvalue aborts: a sub-parser call with `hs[packet.lookahead<bit<32>>()]`.",
+   "reach": "No generator yet: a sub-parser call whose inout argument is a stack element indexed by a lookahead, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Copy_in_arg/abort",
+   "file": "8-dynamic/8.10.2-eval-call-copyin.watsup",
+   "line": 74,
+   "category": "unhit",
+   "reason": "An out argument whose lvalue rejects: `packet.extract(hs.next)` on a full stack.",
+   "reach": "No generator yet: a parser that extracts into `hs.next` more times than the stack holds; a stacks-corpus vector would also do."
+  },
+  {
+   "kind": "rule",
+   "name": "Copy_in/cons-head-abort",
+   "file": "8-dynamic/8.10.2-eval-call-copyin.watsup",
+   "line": 116,
+   "category": "unhit",
+   "reason": "A call whose first argument aborts, as for the three rules above.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Copy_in/cons-head-cont-tail-abort",
+   "file": "8-dynamic/8.10.2-eval-call-copyin.watsup",
+   "line": 128,
+   "category": "unhit",
+   "reason": "A call whose later argument aborts: a sub-parser call with `packet` first and an aborting argument after it.",
+   "reach": "No generator yet: a sub-parser call whose second argument aborts, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Copy_out_argument/dontcare",
+   "file": "8-dynamic/8.10.3-eval-call-copyout.watsup",
+   "line": 19,
+   "category": "excluded-construct",
+   "row": "argumentIR: name = e, name = _, _",
+   "reason": "Named and don't-care arguments are elaborated into positional ones; the printer emits neither."
+  },
+  {
+   "kind": "rule",
+   "name": "ActionBody_eval/exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 31,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "ActionBody_eval/return-void",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 38,
+   "category": "excluded-construct",
+   "row": "returnStatementIR",
+   "reason": "Only a `return` statement produces RETURN, and p4blo has none."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 49,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-cont-ActionBody-exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 73,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "DefinedFunctionBody_eval/cont",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 159,
+   "category": "excluded-construct",
+   "row": "functionDeclarationIR, functionPrototypeIR",
+   "reason": "Functions are inlined at every call site; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "DefinedFunctionBody_eval/exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 166,
+   "category": "excluded-construct",
+   "row": "functionDeclarationIR, functionPrototypeIR",
+   "reason": "Functions are inlined at every call site; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "DefinedFunctionBody_eval/return-void",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 173,
+   "category": "excluded-construct",
+   "row": "functionDeclarationIR, functionPrototypeIR",
+   "reason": "Functions are inlined at every call site; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/definedFunctionCallee-copyin-abort",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 188,
+   "category": "excluded-construct",
+   "row": "functionDeclarationIR, functionPrototypeIR",
+   "reason": "Functions are inlined at every call site; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/definedFunctionCallee-cont",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 214,
+   "category": "excluded-construct",
+   "row": "functionDeclarationIR, functionPrototypeIR",
+   "reason": "Functions are inlined at every call site; the printer declares none."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/externFunctionCallee-copyin-abort",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 261,
+   "category": "unhit",
+   "reason": "An extern function whose argument aborts: `verify(packet.lookahead<bool>(), ...)`, or `hash` with lookahead data, in a parser.",
+   "reach": "Parser-condition generator (tests/test_drt_programs.py: `verify` over an expression holding a lookahead, on an empty packet) with the lookahead in this position, once its programs run on SpecTec (item A1)."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/abort",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 370,
+   "category": "not-representable",
+   "reason": "push_front's argument is the count, which the printer writes as a literal."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/abort",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 452,
+   "category": "not-representable",
+   "reason": "pop_front's argument is the count, which the printer writes as a literal."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/builtinIsValidMethodCallee-header-union",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 580,
+   "category": "excluded-construct",
+   "row": "headerUnionTypeIR",
+   "reason": "Header unions are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/builtinSizeMethodCallee",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 600,
+   "category": "not-representable",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-abort-initializer",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 616,
+   "category": "excluded-construct",
+   "row": "objectInitializerIR, ABSTRACT in externMethodPrototypeIR",
+   "reason": "Extern object initializers are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-cont-initializer",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 647,
+   "category": "excluded-construct",
+   "row": "objectInitializerIR, ABSTRACT in externMethodPrototypeIR",
+   "reason": "Extern object initializers are excluded by scope."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-abort",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 690,
+   "category": "unhit",
+   "reason": "An extern method whose argument aborts: `packet.extract(hs.next)` on a full stack, or `packet.advance(packet.lookahead<bit<32>>())` on a short packet.",
+   "reach": "No generator yet: a parser that overfills a stack through `hs.next`, or passes a lookahead to advance, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-reject",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 810,
+   "category": "unhit",
+   "reason": "A sub-parser call whose copy-in rejects: an aborting in or inout argument.",
+   "reach": "No generator yet: a sub-parser call whose in or inout argument aborts, on a short packet."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/copyin-cont-parserLocalDeclarationListIR-reject",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 839,
+   "category": "not-representable",
+   "reason": "The printer declares locals only at block level, each scalar with a literal zero initializer and each compound without one, so no initializer can abort."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/controlApplyMethodCallee-copyin-exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 973,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/controlApplyMethodCallee-localDecl-exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 1003,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/controlApplyMethodCallee-controlBodyIR-exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 1045,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  },
+  {
+   "kind": "rule",
+   "name": "Call_eval/tableApplyMethodCallee-exit",
+   "file": "8-dynamic/8.10.4-eval-call.watsup",
+   "line": 1143,
+   "category": "excluded-construct",
+   "row": "exitStatementIR",
+   "reason": "Only an `exit` statement produces EXIT, and p4blo has none; this rule propagates it."
+  }
+ ]
+}

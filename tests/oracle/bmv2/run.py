@@ -335,7 +335,7 @@ def use_last(p4: str) -> tuple[str, list[str]]:
     dynamic index expression (`last_stack_index` under
     `dereference_header_stack`), which simple_switch refuses to load at all
     ("Invalid entry in parse state key ... bad json"). The IR has no `.last`
-    node -- `docs/coverage.md` elaborates it into an index by `lastIndex` --
+    node -- `docs/p4-spec-coverage.md` elaborates it into an index by `lastIndex` --
     so the printed text is where the two forms can still be told apart, and
     the rewrite happens here rather than in the printer, whose output is a
     golden shared with the other oracle.

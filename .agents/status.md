@@ -6,9 +6,9 @@ to the last compaction is in git at tag `agents-archive/2026-09-24`.
 
 Last updated: 2026-09-24. **Active: the architecture-free IR semantics
 plan**, [ir-semantics-plan.md](notes/ir-semantics-plan.md), adopted by the
-user on 2026-09-24. Phase 0 (decisions, the SpecTec rule inventory
-fixture, the ledger citation test) is done; Phase 1 is next. The two
-finite scopes below stay complete and frozen.
+user on 2026-09-24. Phase 0 is done and Phase 1 is in progress; the table
+below says which item stands where. The two finite scopes below stay
+complete and frozen.
 
 ## Current state
 
@@ -71,11 +71,39 @@ under `reviews/`; every finding is fixed.
 
 | Item | State |
 |---|---|
-| Phase 0: decisions recorded, `tests/oracle/spectec-rules.json` and `scripts/spectec-rules.py`, `tests/test_spectec_rules.py` | done |
-| Phase 1: A1 generated programs on SpecTec, A2 SpecTec rule coverage, A3 the ledger, B1 Lean rule tags, C4 deviation theorems | next |
+| Phase 0: decisions recorded, `tests/oracle/spectec-rules.json` and `scripts/spectec-rules.py`, `tests/test_spectec_rules.py` | done, `eb0a440` |
+| A3 the ledger: 56 entries, each citing P4, SpecTec, Lean, Python and tests, classes pinned in `tests/ledger-classes.json`; reviewed (`reviews/2026-09-24-ledger.md`), corrections merged | done, `6ac46b2` |
+| B1 Lean rule tags: 157 tags, observer over the step machine, `coverage` in every reply, `tests/drt-unhit-tags.json` (34 unhit); reviewed (`reviews/2026-09-24-lean-coverage.md`) | merged, `0db270b`; the review's six defects are being fixed on `work/coverage-fixes` with witness pairs |
+| A2 SpecTec rule coverage: OCaml probe, `tests/oracle/spectec-coverage.json`, hand-written exclusions, counts on the coverage page, oracle CI step | done, `94cd629` |
+| A1 generated programs on SpecTec | building on `work/spectec-generated` |
+| Copy-back resolution at copy-in and parser-only `lastIndex` (defects from the ledger review) | building on `work/copyback` |
+| C4 deviation theorems | after the copy-back fix |
 | Phases 2 to 4 | see the plan |
 
+The coverage page was renamed `docs/p4-spec-coverage.md` at `bc014a2`.
+
+Semantic findings of this phase, all from reading SpecTec's rules and
+running its simulator: both interpreters resolved `out`/`inout` targets
+at copy-back rather than copy-in (fix in progress); the validator
+accepted `hs.lastIndex` in controls (fix in progress); the `hs.last`
+elaboration deviates on an empty stack (recorded); SpecTec's header
+equality and `pop_front` contradict the P4 specification (recorded,
+upstream-report candidates); the simulator refuses shift amounts above
+2048 (recorded as an oracle limit).
+
 ## Open threads
+
+- **State-local variables.** SpecTec re-defaults a state-local declared
+  without an initializer on every entry of the state; the eDSL hoists it
+  to a block local and inserts no zeroing. Undecided; recorded on the
+  coverage page and in the ledger. Decide whether the elaboration inserts
+  a zeroing assignment at state entry.
+- **Unhit rule tags** (`tests/drt-unhit-tags.json`) and unhit SpecTec
+  rules (`tests/oracle/spectec-coverage-exclusions.json`, category
+  `unhit`) are the work lists for coverage-guided generation, plan item B2.
+- **Ledger citations in code.** Tag docstrings and some module headers
+  cite the semantics page by its old section names; the coverage-fix
+  branch updates the tags, and workstream D does the rest.
 
 These are parked or backlog, not tasks. Resuming any of them needs a new
 scope from the user.

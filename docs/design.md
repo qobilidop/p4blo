@@ -11,7 +11,7 @@ it claims, how it is built and what is out of scope. The closed behaviors
 are in [ir-semantics.md](ir-semantics.md), what the supplied architectures
 and extern families decide in [arch-supports.md](arch-supports.md), the
 construct table in
-[coverage.md](coverage.md), and what is proved, tested and checked
+[p4-spec-coverage.md](p4-spec-coverage.md), and what is proved, tested and checked
 against which oracle in [assurance.md](assurance.md).
 
 ## Context and motivation
@@ -357,7 +357,7 @@ each does not establish, is the subject of assurance.md.
 
 ### Coverage table
 
-Every construct of P4's core appears in [coverage.md](coverage.md) with
+Every construct of P4's core appears in [p4-spec-coverage.md](p4-spec-coverage.md) with
 one of three statuses: in; elaborated away, with the elaboration named;
 or excluded, with a reason. The checklist is P4-SpecTec's elaborated IL,
 walked construct by construct, because it is exactly P4 core after sugar.

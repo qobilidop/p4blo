@@ -38,7 +38,8 @@ its reason in prose, then six lines in this order:
   used: a rule is `Relation/rule`, a function starts with `$`. Behavior
   that SpecTec implements in its simulator's OCaml code rather than in
   its rules, such as `packet_in.extract`, is named in the class line.
-- `Lean:` the definitions under `spec/ir/P4bloIR/` that implement it.
+- `Lean:` the definitions under `spec/ir/P4bloIR/` that implement it,
+  or `none` and the reason when only the validator does.
 - `Python:` the dotted names in the `p4blo` package that implement it.
 - `Test:` the tests or corpus programs that exercise it.
 - `Class:` one of four classes, then one sentence saying what SpecTec
@@ -52,17 +53,18 @@ its reason in prose, then six lines in this order:
   - *not representable*: the situation cannot arise in SpecTec's IL.
 
 `tests/test_ledger.py` checks the shape of every entry, that every Lean
-and Python name exists, that every test reference exists, and the counts
-below; `tests/test_spectec_rules.py` checks that every SpecTec name exists
-at the pinned commit.
+and Python name exists where it is cited, that every test reference names
+a test, the counts below, and each entry's class against
+`tests/ledger-classes.json`; `tests/test_spectec_rules.py` checks that
+every SpecTec name exists at the pinned commit.
 
 | Class | Entries |
 |---|---|
-| same | 37 |
-| refines undefined | 8 |
-| deviates | 4 |
+| same | 42 |
+| refines undefined | 7 |
+| deviates | 5 |
 | not representable | 2 |
-| total | 51 |
+| total | 56 |
 
 The sections follow the order of SpecTec's operations and dynamic rules:
 values and operations (`3-operations`), expressions, lvalues, statements
@@ -101,13 +103,16 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
 - **Shifts.** `<<` and `>>` on `bit<N>` by an amount `k`: if `k >= N`
   the result is `0`; otherwise the usual logical shift, with the left
   shift truncated to `N` bits (§8.6). The shift amount is any `bit<M>`
-  value; its width does not affect the result.
+  value; its width does not affect the result. An amount above 2048
+  also gives `0`. SpecTec's simulator has no outcome there: its builtin
+  shift stops with "shift amount too large". That is a limit of the
+  oracle, so no vector shifts by more than 2048.
   - P4: §8.6
   - SpecTec: `$bin_shl`, `$bin_shr`
   - Lean: `bitsBinary`
   - Python: `p4blo.interp.expr.bits_binary`
   - Test: `tests/test_interp_expr.py::test_shift_amount_width_does_not_matter`, `tests/test_interp_expr.py::test_shifts_by_the_width_or_more_give_zero`
-  - Class: same. `$bin_shl` and `$bin_shr` shift the unbounded integer and reduce it to the left operand's width, which gives `0` for an amount of `N` or more whatever the amount's width.
+  - Class: same. `$bin_shl` and `$bin_shr` shift the unbounded integer and reduce it to the left operand's width, which gives `0` for an amount of `N` or more whatever the amount; the simulator's builtins `$shl` and `$shr`, in `numerics.ml`, stop with "shift amount too large" above 2048, which is an oracle limitation of the simulator, not a rule disagreement.
 - **Comparison.** `<`, `<=`, `>`, `>=` compare as unsigned integers.
   `==` and `!=` are defined on every type: on `bit<N>` and `bool` by
   value, on enums and errors by member, on headers by validity and
@@ -188,7 +193,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Lean: `evaluate`, `Execution.dispatch`
   - Python: `p4blo.interp.expr.binary`, `p4blo.interp.expr.mux`, `p4blo.interp.stmt.assign`
   - Test: `tests/test_interp_expr.py::test_logical_operators_short_circuit`, `tests/test_interp_expr.py::test_mux_evaluates_only_the_chosen_branch`
-  - Class: same. SpecTec short-circuits the same operators and resolves an assignment's target before its right-hand side, which gives the same result because no IR expression has an effect.
+  - Class: same. SpecTec short-circuits the same operators and resolves an assignment's target before its right-hand side, which gives the same result for an assignment of an expression because no IR expression has an effect; the timing of target resolution is observable through calls, and the copy-back entry records where p4blo differs.
 - **Reading a field of an invalid header.** Returns the field's
   current stored value. A header's fields are initialized to zero and
   keep whatever was last written to them, including across
@@ -231,6 +236,19 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Python: `p4blo.interp.expr.last_index`, `p4blo.validator._Validator.type_of`
   - Test: `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`, `tests/test_validator.py::test_parser_only`, `tests/test_validator.py::test_last_index_in_a_parser_is_fine`
   - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, and p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only in a parser, as the validator does.
+- **`hs.last` on an empty stack.** The IR has no `last`; `hs.last` is
+  elaborated to `hs[hs.lastIndex]`. With `nextIndex == 0` that indexes
+  element `2^32 - 1`, which reads as a zero invalid header by the
+  out-of-range rule and raises no error. P4 and SpecTec reject there
+  with `StackOutOfBounds`. The elaboration is the deviation: it is not
+  how the language defines `hs.last` at `nextIndex == 0`, and the
+  coverage table says so on its `hs.last` row.
+  - P4: §8.18
+  - SpecTec: `Expr_eval/stack-last-out-of-bounds`, `Lvalue_eval/stack-last-out-of-bounds`, `Expr_eval/stack-last-in-bounds`
+  - Lean: `evaluate`, `elementOf`
+  - Python: `p4blo.edsl.views.Stack.last`, `p4blo.interp.expr.last_index`, `p4blo.interp.expr.element_of`
+  - Test: `tests/test_edsl.py::test_stack_last_is_the_element_at_last_index`, `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/corpus/stacks`
+  - Class: deviates. `Expr_eval/stack-last-out-of-bounds` and `Lvalue_eval/stack-last-out-of-bounds` reject with `StackOutOfBounds` when `nextIndex` is `0` or above the size, and `Expr_eval/stack-last-in-bounds` reads element `nextIndex - 1` otherwise, which the elaboration matches only for `nextIndex >= 1`.
 
 ## Lvalues and assignment
 
@@ -290,7 +308,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Lean: `pushFront`, `popFront`
   - Python: `p4blo.interp.stmt.push_front`, `p4blo.interp.stmt.pop_front`
   - Test: `tests/test_interp_control.py::test_push_front_shifts_up_and_pops_the_last`, `tests/test_interp_control.py::test_pop_front_shifts_down_and_clears_the_last`, `tests/test_interp_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
-  - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps the stored fields of the elements moved into those places, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
+  - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps stored fields: after `push_front(n)` the first `n` elements keep their own old fields, `pop_front(n)` rotates the first `n` elements to the back and invalidates them there, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
 - **Block calls.** A sub-block call copies `in` arguments in, resolves
   `out` and `inout` ones, runs the block, and copies `out` and `inout`
   arguments back in parameter order. Two `out` or `inout` arguments that alias the same storage
@@ -318,6 +336,18 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Python: `p4blo.interp.expr.resolve_lvalue`, `p4blo.interp.stmt.resolve_arg`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
   - Test: `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
   - Class: same. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, `Copy_out_argument/non-dontcare` writes through that reference, and an assignment of an extern call's result resolves its target before the call.
+- **Actions read and write their block's variables.** An action runs in
+  its block's activation with its parameters layered on top, so it
+  reads the block's current variables and its writes to them persist.
+  When it returns, the block's variables as the action left them are
+  kept first, and then its `out` and `inout` parameters are copied back
+  to the arguments.
+  - P4: §6.8
+  - SpecTec: `Call_eval/actionCallee`, `$inherit_e`, `Copy_out`, `$copy_e`
+  - Lean: `Execution.dispatch`, `Execution.Work`, `copyBack`
+  - Python: `p4blo.interp.stmt.call_action`, `p4blo.interp.env.Env.enter_action`, `p4blo.interp.stmt.copy_back`
+  - Test: `tests/test_interp_control.py::test_an_action_sees_the_blocks_variables`, `tests/test_interp_control.py::test_direct_action_call_passes_directional_arguments`
+  - Class: same. `Call_eval/actionCallee` builds the callee's context with `$inherit_e`, which keeps the block layer and adds a fresh local one, and `Copy_out` first takes the block layer back with `$copy_e` and then writes each argument, the same order as p4blo's.
 - **Action calls** from a control body pass arguments in the same
   way. Actions invoked by a table receive their action data as
   directionless parameters, which are read-only like `in` parameters.
@@ -329,15 +359,17 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Class: same. `Call_eval/actionCallee` copies arguments in and out as a block call does and binds directionless parameters like `in` ones.
 - **Recursion** between blocks is a validator error. Actions may call
   actions; the call graph of actions and blocks together is acyclic,
-  as the intended termination discipline. A joint theorem connecting whole-
-  program validation, this graph and the parser revisit rule to termination
-  of the actual runner has not been proved.
+  as the intended termination discipline. The check is the validator's
+  alone: the interpreters assume an acyclic graph and do not check it.
+  A joint theorem connecting whole-program validation, this graph and
+  the parser revisit rule to termination of the actual runner has not
+  been proved.
   - P4: none
   - SpecTec: none
-  - Lean: `Execution.drive`
+  - Lean: none; the Lean definitions assume the validator's check and do not repeat it.
   - Python: `p4blo.validator._Validator.check_call_graph`
   - Test: `tests/test_validator.py::test_call_cycle`, `tests/test_validator.py::test_action_call_cycle`, `tests/test_validator.py::test_actions_may_call_actions_without_a_cycle`
-  - Class: not representable. P4 has no recursive calls, so no IL program SpecTec evaluates contains one; whether SpecTec's typing rejects every such cycle was not checked for this entry.
+  - Class: not representable. P4 has no recursive calls, so no IL program SpecTec evaluates contains one: its typing rejects an action that calls itself, declaration before use rules out mutual recursion between actions, and instantiation rules it out between blocks.
 
 ## Parsers
 
@@ -382,6 +414,15 @@ decision, not the parser's.
   - Python: `p4blo.interp.expr.header_from_bits`
   - Test: `tests/test_interp_parser.py::test_extract_fills_the_fields_and_sets_valid`, `tests/test_interp_parser.py::test_extract_takes_fields_most_significant_first`, `tests/test_interp_parser.py::test_extract_of_a_zero_width_header_sets_valid_and_consumes_nothing`
   - Class: same. `$write_value_from_bits` fills the fields from the leading bits in order and sets the validity bit, and the simulator's length check passes for a zero-width header at the end of the packet.
+- **Boolean header fields take one bit.** A `bool` field of a header
+  is one bit on the wire: extract reads `1` as `true` and `0` as
+  `false`, and emit writes `true` as `1`.
+  - P4: §12.8.2, §15.1
+  - SpecTec: `$write_value_from_bits'`, `$write_bits_from_value`
+  - Lean: `fieldFromBits`, `fieldBits`
+  - Python: `p4blo.interp.expr.header_from_bits`, `p4blo.interp.expr.header_to_bits`
+  - Test: `tests/test_interp_parser.py::test_emit_then_extract_roundtrips_a_header`
+  - Class: same. `$write_value_from_bits'` takes one bit for a boolean field, and `$write_bits_from_value` writes a boolean as that one bit.
 - **`lookahead<T>`** reads `width(T)` bits without moving the cursor;
   past the end it raises `PacketTooShort`. `T` is `bit<N>`, `bool`
   (one bit, `1` is `true`) or a header; when `T` is a header the
@@ -450,6 +491,21 @@ decision, not the parser's.
   - Python: `p4blo.interp.stmt.enter_state`
   - Test: `tests/test_interp_parser.py::test_revisiting_a_state_without_consuming_is_parser_timeout`, `tests/test_interp_parser.py::test_the_revisit_rule_sees_a_cycle_through_another_state`, `tests/test_interp_parser.py::test_revisiting_after_consuming_is_allowed`, `tests/test_interp_parser.py::test_sub_parser_states_count_for_the_revisit_rule`
   - Class: refines undefined. `ParserState_trans/state` recurses into the next state with no bound, so a loop that consumes nothing has no finite derivation and SpecTec gives no outcome.
+- **State-local variables.** The IR has no state-local variables: a
+  variable a parser declares is a local of the block, zero when the
+  block starts and kept across states. SpecTec gives each state a fresh
+  local frame on every entry, so a variable declared inside a state
+  without an initializer takes its default again each time the state
+  is entered. A hoisted state-local keeps its value across a revisit
+  unless the elaboration writes the zero value where the declaration
+  stood. The eDSL hoists a local without such a write, and no P4
+  frontend exists yet to settle it.
+  - P4: §12.4
+  - SpecTec: `ParserState_eval/cont`, `$enter_e`, `$exit_e`, `VarDecl_eval/non-initializer`
+  - Lean: `Frame.forBlock`
+  - Python: `p4blo.interp.env.Env.for_block`
+  - Test: `tests/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`
+  - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and whether p4blo's elaboration matches that by writing the zero value at the declaration is undecided.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
   `HeaderTooShort`, `ParserTimeout`, `ParserInvalidArgument`. A program
@@ -463,7 +519,7 @@ decision, not the parser's.
   - Lean: `Program`
   - Python: `p4blo.ir.CORE_ERRORS`
   - Test: `tests/test_validator.py::test_error_list`
-  - Class: not representable. A SpecTec `errorValue` is a name with no position, so the order of the error set has nothing to correspond to.
+  - Class: not representable. In the architecture-free rules a SpecTec `errorValue` is a name with no position, so the order has nothing to correspond to there; SpecTec's control-plane interface in `9-arch` does index errors by position, casting an integer `n` to the `n`th error of the global frame.
 
 ## Tables
 
@@ -481,38 +537,48 @@ A table match is evaluated over the installed entries; the program's
   other keys match exactly and whose prefix covers the key value, the
   longest prefix wins. Two entries with the same prefix length, equal
   under that prefix, and the same other keys are rejected at
-  installation, so there is no tie.
+  installation, so there is no tie. SpecTec's table interface also
+  builds an entry's mask from the key's base instead of the computed
+  mask, a known defect of the pinned oracle recorded in
+  [assurance.md](assurance.md#known-disagreements-with-the-oracles).
   - P4: none
   - SpecTec: `TableMatches_eval`, `$select_action`
   - Lean: `Installed.beats`, `Installed.prefixLength`, `Installed.sameKeys`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.prefix_length`, `p4blo.interp.tables.same_keys`
   - Test: `tests/test_interp_tables.py::test_lpm_longest_prefix_wins_and_the_default_runs_on_a_miss`, `tests/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`, `tests/test_validator.py::test_table_lpm_count`, `tests/corpus/forwarder`
-  - Class: refines undefined. SpecTec's table interface turns an LPM entry into a masked value with no priority, and `$select_action` chooses among several matches only by priority, so two matching LPM entries without priorities have no rule; the oracle adapter supplies the prefix length as the priority.
+  - Class: refines undefined. SpecTec's table interface turns an LPM entry into a masked value with no priority, and `$select_action` chooses among several matches only by priority, so two matching LPM entries without priorities have no rule; the oracle adapter supplies the prefix length as the priority, and the interface's mask construction has the known defect recorded in assurance.md.
 - **Ternary.** Every entry of a table with a `ternary` key has a
   priority, and `0` is an ordinary one. Among the entries that match,
   the one with the largest priority wins. Two matching entries with equal priority are
   rejected at installation when their key sets overlap, which is
   decidable for ternary and exact keys, so there is no tie. Larger
   wins because that is what the P4Runtime specification says (§9.1);
-  the STF runner converts if the oracle's convention differs.
+  the STF runner converts if the oracle's convention differs. Host and
+  STF ternary entries reach SpecTec through its table interface, whose
+  mask construction has the known defect recorded in
+  [assurance.md](assurance.md#known-disagreements-with-the-oracles).
   - P4: none; P4Runtime §9.1
   - SpecTec: `$select_action`, `$largest_priority_wins`
   - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.overlaps`, `p4blo.interp.tables.InstalledEntries.install`
   - Test: `tests/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/test_validator.py::test_entry_priority_overlap`, `tests/corpus/priority`
-  - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break.
+  - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.
 - **Priority outside ternary tables.** An entry of a table without a
   `ternary` key has priority `0`; the installer and the validator
   reject any other. A table with an `lpm` key has no `ternary` key, so
   among matching entries the winner is decided by prefix or by
   priority, never both. Two entries of an exact or LPM table with the
-  same keys are rejected at installation.
+  same keys are rejected at installation. These are restrictions on the
+  input: SpecTec accepts a priority on any entry, and p4blo accepts
+  only the entries where that priority cannot matter. On what p4blo
+  accepts, an exact table has at most one matching entry, and several
+  matching LPM entries are the LPM entry's business.
   - P4: none
   - SpecTec: `$get_tableEntryPriority`, `$select_action`
   - Lean: `Installed.install`, `Installed.sameKeys`
   - Python: `p4blo.interp.tables.InstalledEntries.install`, `p4blo.validator._Validator.check_keys`
   - Test: `tests/test_validator.py::test_entry_priority_on_non_ternary_table`, `tests/test_validator.py::test_table_key_mix`, `tests/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`
-  - Class: refines undefined. SpecTec accepts a priority on any entry and uses it in `$select_action` whenever several entries match, and two identical entries without priorities match together with no rule to choose; p4blo accepts only tables where neither question arises.
+  - Class: same. On the entries p4blo accepts, an exact table matches at most one entry, and `$select_action` with a single match returns that entry's action whatever its priority; SpecTec also accepts a priority on these tables, and p4blo's refusal of one is a restriction of its input, not a disagreement.
 - **Table miss.** The default action runs. A table always has a
   default action; when the program declares none, it is `NoAction`,
   which does nothing (§14.2.1.4). A program that declares an action
@@ -536,18 +602,31 @@ A table match is evaluated over the installed entries; the program's
   - Python: `p4blo.interp.stmt.apply`
   - Test: `tests/test_interp_control.py::test_hit_is_written_after_the_action_runs`, `tests/test_interp_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`
   - Class: same. `Table_eval` runs the selected action and then returns an apply result whose `hit` is whether any entry matched.
-- **Key expressions** are evaluated once, before matching. An entry
-  value wider than the key is rejected at installation, as is an LPM
-  value with a set bit outside its prefix and a ternary value with a
-  set bit outside its mask: entries are canonical, as P4Runtime
-  requires (§8.1). A key value's kind must be the key's match kind;
-  an exact value on a ternary key is written as a full mask.
+- **Key expressions** are evaluated once, before matching. The
+  program's `const entries` must be canonical: an LPM value with a set
+  bit outside its prefix, or a ternary value with a set bit outside its
+  mask, is a validator error. That restricts behavior SpecTec defines,
+  since its match masks both sides and gives a non-canonical entry the
+  meaning of its canonical form; the frontend can always write that
+  form, `(v & m) &&& m`, instead.
+  - P4: none
+  - SpecTec: `TableKeys_eval`, `TableMatches_eval`, `$match_keyset`
+  - Lean: `Execution.dispatch`, `Installed.build`, `Installed.checkKeyValue`
+  - Python: `p4blo.interp.stmt.apply`, `p4blo.validator._Validator.check_entry`
+  - Test: `tests/test_interp_tables.py::test_exact_hit_and_miss_without_a_default`, `tests/test_validator.py::test_lpm_entry_must_be_canonical`, `tests/test_validator.py::test_ternary_entry_must_be_canonical`
+  - Class: same. `TableKeys_eval` evaluates each key once before `TableMatches_eval`, as p4blo does, and on the canonical `const entries` p4blo accepts, `$match_keyset` masking both sides gives the same matches; rejecting a non-canonical one is a restriction of p4blo's input, not a disagreement.
+- **Host entries are canonical.** An entry value wider than the key is
+  rejected at installation, as is an LPM value with a set bit outside
+  its prefix and a ternary value with a set bit outside its mask:
+  entries are canonical, as P4Runtime requires (§8.1). A key value's
+  kind must be the key's match kind; an exact value on a ternary key is
+  written as a full mask.
   - P4: none; P4Runtime §8.1
-  - SpecTec: `TableKeys_eval`, `TableMatches_eval`
-  - Lean: `Installed.checkKeyValue`, `Execution.dispatch`
-  - Python: `p4blo.interp.tables.check_key_value`, `p4blo.interp.stmt.apply`
-  - Test: `tests/test_interp_tables.py::test_install_rejects_an_entry_that_does_not_fit`, `tests/test_validator.py::test_lpm_entry_must_be_canonical`
-  - Class: refines undefined. `TableKeys_eval` evaluates each key once before `TableMatches_eval`, as p4blo does, but the architecture-free rules take the installed entries as given, and what may be installed is decided by SpecTec's table interface in `9-arch`.
+  - SpecTec: none
+  - Lean: `Installed.checkKeyValue`, `Installed.install`
+  - Python: `p4blo.interp.tables.check_key_value`, `p4blo.interp.tables.InstalledEntries.install`
+  - Test: `tests/test_interp_tables.py::test_install_rejects_an_entry_that_does_not_fit`, `tests/test_stf.py::test_a_non_canonical_lpm_value_is_reported_with_its_line`
+  - Class: refines undefined. The architecture-free rules take the installed entries as given, and what a host may install is decided by SpecTec's table interface in `9-arch`, which belongs to the architecture.
 - **Host default action.** A host may replace a non-const default
   action; it cannot remove one. Absent means the program's own.
   - P4: none
@@ -564,7 +643,7 @@ A table match is evaluated over the installed entries; the program's
   - Lean: `Installed.checkAction`
   - Python: `p4blo.interp.tables.InstalledEntries.check_action`
   - Test: `tests/test_interp_tables.py::test_install_rejects_action_data_that_is_not_a_constant_of_the_param`, `tests/test_interp_tables.py::test_install_rejects_an_entry_that_does_not_fit`
-  - Class: refines undefined. `Table_eval` calls whatever action the chosen entry names with its arguments; checking action data is left to SpecTec's table interface in `9-arch`, outside the architecture-free rules.
+  - Class: refines undefined. `Table_eval` calls whatever action the chosen entry names with its arguments; action data is decided by SpecTec's table interface in `9-arch`, outside the architecture-free rules, which fills a missing argument with zero and truncates a too-wide one by a cast where p4blo rejects both.
 - **Keys are bits.** A table key expression has type `bit<N>`. The
   frontend casts a boolean key to `bit<1>` and represents a plain enum
   key by its member index in `bit<32>`, as p4c's `ConvertEnums` does;
@@ -610,14 +689,17 @@ consume is the caller's decision.
   - Class: same. `$write_bits_from_value` concatenates a struct's fields in order and a stack's elements from index `0`, each invalid header contributing nothing.
 - **Bit alignment.** Emitted headers are concatenated at the bit
   level; a total that is not a multiple of eight is padded with zero
-  bits at the end. P4 leaves this to the target; BMv2 pads the same
-  way.
+  bits at the end, before the architecture appends any payload. P4
+  leaves this to the target. SpecTec's simulator joins the payload at
+  the bit level instead, so every emission that is not a whole number
+  of bytes differs from it once a payload follows; whether BMv2 pads
+  is not verified, since p4c rejects such headers for it.
   - P4: none
   - SpecTec: `$write_bits_from_value`
   - Lean: `Emitter.toBytes`, `Emitter.write`
   - Python: `p4blo.interp.packet.Emitter.to_bytes`
   - Test: `tests/test_interp_deparser.py::test_bits_are_concatenated_and_padded_to_a_byte_at_the_end`
-  - Class: refines undefined. SpecTec's emit appends bits with no padding, and what becomes of a partial byte is decided by its simulator's architecture code, outside the rules.
+  - Class: refines undefined. SpecTec's emit appends bits with no padding, and what becomes of a partial byte is decided by its simulator's architecture code and packet printer, outside the rules: the payload is appended at the bit level and the printer pads the last group of bits to a nibble rather than a byte. The generated-program oracle test pins the exact mismatch as a strict expected failure.
 
 ## Externs
 

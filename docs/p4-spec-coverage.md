@@ -111,8 +111,8 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `errorAccessExpressionIR` (`error.X`) | in | `Literal.error` | |
 | `memberAccessExpressionIR`: field of a header or struct | in | `Member` | Reading a field of an invalid header is closed in ir-semantics.md. |
 | `memberAccessExpressionIR`: `TYPE name . member` (enum member) | in | `Literal.enum_member` | |
-| `memberAccessExpressionIR`: `hs.lastIndex` | in | `LastIndex` | `bit<32>`; `nextIndex == 0` closed in ir-semantics.md. |
-| `memberAccessExpressionIR`: `hs.last` | elaborated | `Index(hs, LastIndex(hs))` | Stacks and subparser_stack READMEs: how the language defines it. |
+| `memberAccessExpressionIR`: `hs.lastIndex` | in | `LastIndex` | `bit<32>`; parser-only in P4, and `nextIndex == 0` closed in ir-semantics.md (`hs.lastIndex`). |
+| `memberAccessExpressionIR`: `hs.last` | elaborated | `Index(hs, LastIndex(hs))` | Parser-only in P4. Faithful when the stack is non-empty; on `nextIndex == 0` P4-SpecTec raises `StackOutOfBounds` where the elaborated form reads a zero invalid header, a listed deviation (ir-semantics.md, `hs.last` on an empty stack). Stacks and subparser_stack READMEs use it. |
 | `memberAccessExpressionIR`: `hs.next` | in | `LValue.next` | Parser only, as the target of an extract. |
 | `memberAccessExpressionIR`: `hs.size` | excluded, by elaboration | the constant `StackType.size` | Compile-time known. |
 | `memberAccessExpressionIR`: `t.apply().hit`, `.miss`, `.action_run` | see the table section | | |
@@ -148,7 +148,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | IL construct (production) | Status | p4blo form or elaboration | Note |
 |---|---|---|---|
 | `emptyStatementIR` | excluded, by elaboration | none | |
-| `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Headers). |
+| `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Assigning a header). |
 | `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | excluded, by elaboration | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. |
 | `callStatementIR`: action call from a control body | in | `CallAction` | |
 | `callStatementIR`: extern method on an instance | in | `CallExtern` | `result` present exactly when the method returns. |
@@ -183,7 +183,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. |
 | its `constructorParameterListIR` | elaborated | one block per instantiation, arguments substituted | The block-instances decision covers extern state but does not say what a constructor argument becomes. No corpus program has one. |
 | `parserLocalDeclarationIR`: `constantDeclarationIR` | elaborated | folded | As in blocks. |
-| `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. |
+| `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. A local declared inside a state without an initializer is hoisted the same way, but P4-SpecTec re-defaults it on every entry of the state; whether the elaboration must insert a zeroing assignment at the state's entry is undecided (ir-semantics.md, State-local variables). |
 | `parserLocalDeclarationIR`: `instantiationIR` | see the declarations section | | |
 | `valueSetDeclarationIR` | excluded, by scope | none | Design. |
 | `parserStateIR` | in | `State` | `accept` and `reject` are `Target`s, not states. |
@@ -203,7 +203,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `tableDeclarationIR` | in | `Table` | Its `typeIR` is the `TABLE` object type, a typing note with no residue. |
 | `tableKeysPropertyIR`, `tableKeyIR`: the expression | in | `Key.expr` | Keys are bits. A bool key is cast to `bit<1>`; a plain enum key is its member index in `bit<32>` (ir-semantics.md, Keys are bits; schema `Key`). |
 | `tableKeyIR`: the key name (`# nameIR`) | in | `Key.name` | Decision: per-table action copies set `Key.name` to p4c's key names. |
-| `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in ir-semantics.md, Tables. |
+| `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in ir-semantics.md (LPM, Ternary). |
 | `tableKeyIR`: match kind `selector` | excluded, by thesis | none | Action selectors and profiles. |
 | `tableKeyIR`: match kinds `range`, `optional` | excluded, by thesis | none | Declared by v1model and PSA, not core.p4. Nothing rules. |
 | `tableActionsPropertyIR`, `tableActionIR`: the action reference | in | `Table.actions` | Names of actions of the block. |
@@ -320,3 +320,58 @@ listed in [assurance.md](assurance.md#evidence-by-semantic-family). In particula
 aggregate/call-copy and stateful program generators complement the corpus.
 Do not infer that every IR constructor has every kind of evidence, or that
 every P4 feature is implemented, from the aggregate test or row counts.
+
+## Rule coverage on P4-SpecTec
+
+The table above says which IL constructs p4blo has. A second, measured
+account says which of P4-SpecTec's rules p4blo's inputs make the pinned
+simulator fire. [`spectec-coverage.json`](../tests/oracle/spectec-coverage.json)
+records, for every rule, rule group, relation and function of the
+[rule inventory](../tests/oracle/spectec-rules.json), whether it fired and
+in how many of the vectors, over every corpus program and example printed
+through the v1model shim. The simulator runs the spec in a structured form in
+which each relation's rules are merged into one instruction tree; a rule
+counts as fired when the instruction that concludes it ran, found through
+the source region the instruction keeps.
+[`coverage.py`](../tests/oracle/coverage.py) explains the method and its two
+approximations, and cross-checks its instruction totals against the
+simulator's own `cover-sim` command.
+
+In scope are the rules of `8-dynamic` and the functions of `3-operations`,
+including the `builtin` functions the OCaml runtime supplies for them.
+Every one of them that does not fire is listed in
+[`spectec-coverage-exclusions.json`](../tests/oracle/spectec-coverage-exclusions.json)
+with a reason written by hand, in one of four categories: `architecture`
+(fires only through the architecture layer), `excluded-construct` (the
+construct is excluded or elaborated away by a row above, which the entry
+names), `not-representable` (the construct is in, but the printer cannot
+produce input that reaches the rule), and `unhit` (reachable, not yet
+exercised; each entry names the generated input that would reach it).
+`tests/test_spectec_coverage.py` fails when an in-scope item is neither hit
+nor excluded, when an exclusion is stale, and when the counts below drift.
+
+At the pinned commit, over 15 programs and 21 vectors:
+
+| Status | 8-dynamic rules | 3-operations functions |
+|---|---|---|
+| hit | 134 | 26 |
+| architecture | 0 | 0 |
+| excluded-construct | 149 | 22 |
+| not-representable | 27 | 8 |
+| unhit | 51 | 12 |
+
+A hit rule is exercised, not verified equivalent: the simulator applied it
+while running a printed program, which says nothing about whether p4blo's
+own semantics agrees with it beyond what the oracle tests compare. A
+function counts as hit wherever it was entered, including constant folding
+during typing. Most unhit rules propagate a parser rejection raised inside
+an expression, such as a `lookahead` on a short packet; the rest are
+operators and parser shapes no corpus program uses.
+
+The measurement needs the oracle and a small probe built against its
+library; regenerating it takes about fifteen seconds:
+
+```sh
+python3 tests/oracle/coverage.py build   # once per pin, where tests/oracle/build.sh runs
+uv run python tests/oracle/coverage.py   # rewrite the report; --check compares instead
+```

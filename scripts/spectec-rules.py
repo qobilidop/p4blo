@@ -20,6 +20,10 @@ spec/ except 9-arch. The kinds and their spellings in the watsup sources:
     rulegroup REL/NAME     a named group of rules for one construct
     dec $NAME              a function declaration (definitions follow as `def`)
 
+A `builtin` or `extern` prefix (a function the OCaml runtime supplies, or a
+relation or type the architecture supplies) is stripped; the item is still
+part of the architecture-free semantics as far as its callers go.
+
 Each item records its section (the directory), file and line. Names are
 the identifiers only; a rule's name includes its relation.
 """
@@ -41,7 +45,7 @@ DEFAULT_ORACLE_DIR = Path.home() / ".cache" / "p4blo" / "p4-spectec"
 EXCLUDED_SECTIONS = {"9-arch"}
 
 ITEM = re.compile(
-    r"^\s*(?P<kind>syntax|relation|rule|rulegroup|dec)\s+"
+    r"^\s*(?:(?:builtin|extern)\s+)?(?P<kind>syntax|relation|rule|rulegroup|dec)\s+"
     r"(?P<name>\$?[A-Za-z_][A-Za-z0-9_'-]*(?:/[A-Za-z0-9_'-]+)?)"
 )
 

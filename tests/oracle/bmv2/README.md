@@ -122,7 +122,7 @@ has to change on the way:
   translation at all: `value/len` goes to the switch as written.
 - **`stack[stack.lastIndex]` is printed back as `stack.last`.** The IR
   has no `.last` node -- it is elaborated into an index by `lastIndex`
-  (`docs/coverage.md`) -- and p4c compiles the two spellings
+  (`docs/p4-spec-coverage.md`) -- and p4c compiles the two spellings
   differently for BMv2: `select(stack.last.f)` becomes the `stack_field`
   key, which `simple_switch` understands, while the index form becomes a
   dynamic `last_stack_index` expression it refuses to load ("Invalid
