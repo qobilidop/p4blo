@@ -53,7 +53,9 @@ The static rules:
   enum type, so a `Shape` into a `Color` is a static error too.
   `self.call(Sub, args...)` calls a
   sub-block, whose arguments are checked at run time against its
-  parameters. `self.local(name, bit8)` declares a block local, a `Var`.
+  parameters. `self.local(name, bit8)` declares a block local, a `Var`;
+  declared in a `@state` or an `@action`, it is re-zeroed at every entry
+  of the state or call, as a P4 local declared there would be.
 - Control flow is explicit: `with self.if_(c):`, `elif_`, `else_`.
 
 The two clocks are documented in `p4blo.edsl.__init__`: a block class is
@@ -785,11 +787,20 @@ class Block:
     def local[V: View](self, name: str, type: type[V]) -> V: ...
     def local(self, name: str, type: object) -> Value:
         """Declare a block local of `type` (`bit8`, `bit(n)`, `Bool`, an
-        `Enum`, `Error`, a header or struct) and return it, a place."""
+        `Enum`, `Error`, a header or struct) and return it, a place.
+
+        The local is hoisted to the block, where it starts at zero once per
+        block entry. Declared in a `@state` or an `@action`, it is also
+        re-zeroed where the declaration stands, so that every entry of the
+        state and every call of the action sees the zero value, as P4's
+        fresh scope per state and per call gives (see the core's
+        `Stmts.local`); declared in `apply()` it is not, since that body
+        runs once per block entry."""
         kind = kind_of(type)
         self._build.pb_type(type)
         with provenance():
-            return kind.at(self._core.local(name, kind.pb_type), None)
+            where = self._core if self._stmts is None else self._stmts
+            return kind.at(where.local(name, kind.pb_type), None)
 
     # -- externs -----------------------------------------------------------
 
