@@ -6,11 +6,10 @@ to this compaction is in git at the archive commit
 `26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and up to the
 previous one at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 
-Last updated: 2026-09-25. **Engineering-practice implementation complete**
-on `engineering-practices`, from `045f3de`; integration and final-revision
-CI are tracked by [PR #1](https://github.com/qobilidop/p4blo/pull/1).
-Until that PR merges, finish its review and CI before merging; after merge,
-no work is active. Three semantic scopes remain complete and frozen.
+Last updated: 2026-09-25. **Nothing active.** Engineering-practice
+maintenance is merged on `main` at `264fd63` through
+[PR #1](https://github.com/qobilidop/p4blo/pull/1), from base `045f3de`.
+Three semantic scopes remain complete and frozen.
 The user authorized learning from local `p4-spectec-lean` and external
 engineering guidance, then improving this repository; P4-SpecTec
 integration and coverage changes are not part of it.
@@ -34,13 +33,24 @@ integration and coverage changes are not part of it.
   real pinned Buf generation and workflow lint passed. The 18 guard tests
   pass, including deliberately invalid candidates; targeted Pyright on
   both scripts and their tests reports no errors or warnings.
-- Lean, assurance and external oracle specialist gates were not rerun
-  locally: their implementations and inputs are unchanged. PR CI runs
-  the dedicated Lean, P4-SpecTec, BMv2 and required XDP workflows before
-  merge. Prior semantic evidence below is retained unchanged.
-- Temporary implementation/review worktrees can be removed after the PR
-  merges and their content is confirmed integrated. No neighboring
-  repository was modified.
+- Independent review cleared final PR revision `77f7a24`; all seven remote
+  jobs passed before merge: [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36186415433),
+  [Lean and assurance](https://github.com/qobilidop/p4blo/actions/runs/36186415310),
+  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36186415484),
+  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36186415285) and
+  [required XDP](https://github.com/qobilidop/p4blo/actions/runs/36186415307).
+  Merge `264fd63` has the same tree. Lean, assurance and external oracle
+  specialist gates were not rerun locally; prior semantic evidence below
+  is retained unchanged. Post-merge main CI is a separate run, not the
+  evidence cited here.
+- Rewrote the PR after comparing the user's preferred p4-spectec-lean
+  examples: a specific title, problem/approach/validation/review focus,
+  explicit tradeoffs and one attribution sentence, without appended
+  progress updates.
+- Temporary implementation/review worktrees and completed branches were
+  removed after verifying their content was integrated. No neighboring
+  repository was modified. Next: wait for a new user scope; the roadmap
+  remains backlog.
 
 ## Current state
 
