@@ -129,6 +129,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
     "parser.stmt=advance": ("stmt.advance", "parser.advance.tooShort"),
     "parser.stmt=lookahead_bool": ("expr.lookahead.bool",),
     "parser.stmt=lookahead_header": ("expr.lookahead.header",),
+    "parser.stmt=lookahead_logic": ("expr.lookahead.tooShort",),
     "parser.stmt=last_index": ("stack.lastIndex.empty",),
     "parser.stmt=verify": ("parser.verify.fail", "parser.verify.failNoError"),
     "subparser.stmt=verify": ("parser.verify.failNoError",),
@@ -814,13 +815,21 @@ class _Parser:
                 return lit(8, self.ch.integer("byte", 0, 4))
 
     def condition(self) -> pb.Expr:
-        match self.ch.choice(self.point("condition"), ("below", "flag", "equal")):
+        """A condition on a packet byte. Packet bytes are mostly large, so
+        half the comparisons are mostly true and half mostly false."""
+        options = ("below", "at_least", "flag", "equal", "differs")
+        k = lit(8, self.ch.integer("condition", 1, 4))
+        match self.ch.choice(self.point("condition"), options):
             case "below":
-                return binary(LT, self.byte(), lit(8, self.ch.integer("condition", 1, 4)))
+                return binary(LT, self.byte(), k)
+            case "at_least":
+                return binary(pb.BINARY_OP_GE, self.byte(), k)
             case "flag":
                 return E("flag")
+            case "equal":
+                return binary(EQ, self.byte(), k)
             case _:
-                return binary(EQ, self.byte(), lit(8, self.ch.integer("condition", 0, 4)))
+                return binary(NE, self.byte(), k)
 
     def in_range(self, byte: pb.Expr) -> pb.Expr:
         """A byte mapped into the stack's index range."""
@@ -842,6 +851,7 @@ class _Parser:
             "lookahead_header",
             "lookahead_field",
             "lookahead_index",
+            "lookahead_logic",
             "last_index",
             "verify",
             "set_enum",
@@ -894,6 +904,8 @@ class _Parser:
                 return [assign(r, value)]
             case "lookahead_index":
                 return self.lookahead_index(r)
+            case "lookahead_logic":
+                return self.lookahead_logic(r)
             case "last_index":
                 last = cast(BIT8, pb.Expr(last_index=pb.LastIndex(stack=E("hdr.s"))))
                 if self.profile == "spectec":
@@ -934,6 +946,21 @@ class _Parser:
         self.called = True
         call = pb.CallBlock(block="SP", args=[pb.Arg(lvalue=L("hdr")), pb.Arg(expr=self.byte())])
         return [pb.Stmt(call_block=call)]
+
+    def lookahead_logic(self, r: str) -> list[pb.Stmt]:
+        """A packet read as the operand of `!`, `~`, `&&` or `||`, so that on a
+        short packet the operator itself propagates the fault."""
+        read = lookahead(BOOL)
+        match self.ch.choice(self.point("lookahead_logic"), ("not", "and", "or", "complement")):
+            case "not":
+                return [assign("flag", pb.Expr(unary=pb.Unary(op=pb.UNARY_OP_NOT, operand=read)))]
+            case "and":
+                return [assign("flag", binary(pb.BINARY_OP_AND, read, E("flag")))]
+            case "or":
+                return [assign("flag", binary(pb.BINARY_OP_OR, read, E("flag")))]
+            case _:
+                complement = pb.Unary(op=pb.UNARY_OP_COMPLEMENT, operand=lookahead(BIT8))
+                return [assign(r, pb.Expr(unary=complement))]
 
     def lookahead_index(self, r: str) -> list[pb.Stmt]:
         """A stack element at an index read ahead from the packet; on a
@@ -1063,6 +1090,10 @@ def parser_family(ch: Chooser, profile: Profile = "lean", cases: int = 4) -> Sam
     control.body.extend([set_valid("hdr.o"), assign("hdr.o.r0", _local_error())])
     seed = ch.integer("packets", 0, 2**32 - 1)
     requests = generate(ir.Index.build(program), seed, cases)
+    # The last packet is cut to its first byte, so that every program meets
+    # a packet read past the end somewhere.
+    last = requests[-1]
+    requests[-1] = Case(last.entries, last.ingress_port, last.packet[:1])
     if profile == "spectec":
         requests = [c if c.packet else Case(c.entries, c.ingress_port, b"\x00") for c in requests]
     return Sample("parser", program, tuple(requests), frozenset(ch.features))
