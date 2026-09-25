@@ -125,7 +125,7 @@ process and transcript failures are tested separately.
 typed source library and shared Ethernet, IPv4 and metadata layouts; its
 complete protobuf export equals the Python corpus program and the text
 golden byte for byte. Ordinary parser, action, table, extern and operator
-assembly remains an explicitly unverified seam. `leanTutorialFirewall run`
+assembly remains an explicitly unverified seam. `p4blo leanTutorialFirewall run`
 prepares the same in-memory program through the public API and keeps
 extern state across requests; `tests/test_lean_firewall.py` runs both
 vectors, the collision profiles, all byte cuts, the persistence sequences
@@ -140,4 +140,4 @@ readback, the drop decision, hash bounds, control composition or any
 whole-firewall correctness property. The theorems are stated in
 [`TutorialFirewallProof.lean`](../../../impl/lean/P4blo/TutorialFirewallProof.lean)
 and [`TutorialFirewallBloom.lean`](../../../impl/lean/P4blo/TutorialFirewallBloom.lean)
-and audited in [`impl/lean/UserProofAudit.lean`](../../../impl/lean/UserProofAudit.lean).
+and audited in [`impl/lean/P4bloTest/UserProofAudit.lean`](../../../impl/lean/P4bloTest/UserProofAudit.lean).

@@ -226,7 +226,7 @@ interchangeable confidence score.
 
 The checked theorem inventories are [`spec/ir/P4bloIRTest/ProofAudit.lean`](../spec/ir/P4bloIRTest/ProofAudit.lean),
 [`spec/ir/P4bloIRTest/CodecProofAudit.lean`](../spec/ir/P4bloIRTest/CodecProofAudit.lean) and
-[`impl/lean/UserProofAudit.lean`](../impl/lean/UserProofAudit.lean); their exact
+[`impl/lean/P4bloTest/UserProofAudit.lean`](../impl/lean/P4bloTest/UserProofAudit.lean); their exact
 statements and premises, not the labels above, define what is proved.
 Warnings are errors in all three Lean packages, and the audits check the
 transitive axiom sets of advertised theorems, so `sorry`, custom axioms
@@ -234,7 +234,7 @@ and native-evaluation escapes cannot silently replace a proof. The exact
 obligations, exclusions and mutation experiments of the scalar and field
 authoring work are in [`impl/lean/ASSURANCE.md`](../impl/lean/ASSURANCE.md); the
 forwarder, firewall and call theorems are stated in their modules under
-`impl/lean/P4blo/` and audited in `impl/lean/UserProofAudit.lean`.
+`impl/lean/P4blo/` and audited in `impl/lean/P4bloTest/UserProofAudit.lean`.
 
 ## What is tested
 

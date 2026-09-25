@@ -41,7 +41,7 @@ EXPECTED: dict[str, tuple[tuple[int, int, bool], bytes]] = {
 def test_statement_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "scalarCommands"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 def statement_program(name: str, body: list[pb.Stmt], inputs: tuple[int, int, bool]) -> pb.Program:
@@ -87,10 +87,10 @@ def statement_program(name: str, body: list[pb.Stmt], inputs: tuple[int, int, bo
 def authored_programs(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
-    exporter = root / "impl/lean/.lake/build/bin/scalarCommands"
+    exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"missing statement exporter: run {root}/scripts/check-lean.sh"
     completed = subprocess.run(
-        [str(exporter)], capture_output=True, text=True, check=True, timeout=30
+        [str(exporter), "scalarCommands"], capture_output=True, text=True, check=True, timeout=30
     )
     programs: dict[str, pb.Program] = {}
     for line in completed.stdout.splitlines():

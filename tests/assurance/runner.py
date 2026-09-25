@@ -363,10 +363,7 @@ def execute(run: Run) -> None:
     binary = ROOT / "spec/arch/.lake/build/bin/p4blo-lean"
     for path in (
         binary,
-        *(
-            ROOT / "impl/lean/.lake/build/bin" / name
-            for name in ("forwarderApply", "forwarderTables", "leanTutorialFirewall")
-        ),
+        ROOT / "impl/lean/.lake/build/bin/p4blo",
     ):
         require(path.is_file(), f"missing {path}; run scripts/check-lean.sh first")
     tracked = subprocess.check_output(

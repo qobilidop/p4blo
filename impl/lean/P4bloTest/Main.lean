@@ -27,6 +27,16 @@ import P4blo.CallReturnTests
 import P4blo.GuardedCallPrefixTests
 import P4blo.GuardedControlCallTests
 
+/-!
+The `P4bloTest` library holds everything in this package that only the gate
+runs: this driver, which `lake test` runs from `impl/lean/`, and the proof
+audit `P4bloTest.UserProofAudit`. The library is a default target, so
+`lake build` elaborates both and checks the audit's `#guard_msgs` pins.
+`scripts/check-lean.sh` does both. The test modules this driver runs live
+under `P4blo/` because the `p4blo` executable's fixture exporters import
+them too.
+-/
+
 def main : IO Unit := do
   P4blo.ScalarTests.run
   P4blo.ScalarCommandTests.run

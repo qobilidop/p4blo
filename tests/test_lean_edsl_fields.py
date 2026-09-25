@@ -140,18 +140,18 @@ def field_program(name: str, expression: pb.Expr, width: int | None, valid: bool
 def test_field_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "fieldExpressions"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 @pytest.fixture(scope="module")
 def authored_field_programs(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
-    exporter = root / "impl/lean/.lake/build/bin/fieldExpressions"
+    exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
     result: dict[str, pb.Program] = {}
     completed = subprocess.run(
-        [str(exporter)], capture_output=True, text=True, check=True, timeout=30
+        [str(exporter), "fieldExpressions"], capture_output=True, text=True, check=True, timeout=30
     )
     for line in completed.stdout.splitlines():
         record = json.loads(line)
