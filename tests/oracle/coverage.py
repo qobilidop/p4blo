@@ -151,7 +151,7 @@ from pathlib import Path
 from typing import Any
 
 from p4blo.arch import wire as arch_wire
-from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.bindings import BoundIndex, assembly_of
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORT = ROOT / "tests" / "oracle" / "spectec-coverage.json"
@@ -329,7 +329,10 @@ def materialize_corpus(stage: Path) -> list[Program]:
             index = BoundIndex.build(arch_wire.load_text(txtpb))
             p4 = stage / "p4" / f"{ident}.p4"
             p4.parent.mkdir(parents=True, exist_ok=True)
-            p4.write_text(v1model.print_program(index.program, index=index), encoding="utf-8")
+            p4.write_text(
+                v1model.print_program(assembly_of(index.program, index.bindings), index=index),
+                encoding="utf-8",
+            )
             program = Program(ident, txtpb.relative_to(ROOT).as_posix(), p4)
             for vector in sorted(txtpb.parent.glob("*.stf")):
                 try:

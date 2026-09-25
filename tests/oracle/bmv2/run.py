@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from p4blo.arch import wire as arch_wire
-from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.bindings import BoundIndex, assembly_of
 
 # Runnable as a script from the repository root without installing anything:
 # the package lives under impl/python/.
@@ -355,11 +355,11 @@ def use_last(p4: str) -> tuple[str, list[str]]:
     return "".join(lines), notes
 
 
-def uses_flood(index: ir.Index) -> bool:
+def uses_flood(index: BoundIndex) -> bool:
     """Whether the program's metadata contract has `flood`, which the v1model
     shim leaves unmapped (v1model.standard_metadata_binding), so BMv2 would
     not see the decision."""
-    return any(f.name == "flood" for f in index.fields(index.program.metadata))
+    return any(f.name == "flood" for f in index.fields(index.bindings.metadata))
 
 
 def translate(index: ir.Index, statements: Sequence[stf.Statement], compiled: Compiled) -> Plan:
@@ -526,7 +526,9 @@ def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
     if uses_flood(index):
         detail = "the program uses flood, which the v1model shim cannot express for BMv2"
         return [Verdict(vector, "skip", detail, ()) for vector in vectors]
-    p4, notes = use_last(v1model.print_program(index.program, index=index))
+    p4, notes = use_last(
+        v1model.print_program(assembly_of(index.program, index.bindings), index=index)
+    )
     command = _docker_command(image, "compile")
     try:
         compiled = compile_program(image, p4)

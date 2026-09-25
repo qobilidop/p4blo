@@ -55,7 +55,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import IO, Any, Self
 
-from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.bindings import BoundIndex, assembly_of
 from p4blo.arch.v0 import assembly_pb2 as apb
 
 # Importable from the repository root without installing anything, as run.py;
@@ -383,9 +383,9 @@ class BlockRunner:
         if self._tmp is not None:
             self._tmp.cleanup()
 
-    def program_path(self, index: ir.Index) -> Path:
+    def program_path(self, index: BoundIndex) -> Path:
         """The program printed for the block architecture, once per content."""
-        text = spectec_block.print_program(index.program, index=index)
+        text = spectec_block.print_program(assembly_of(index.program, index.bindings), index=index)
         digest = hashlib.sha256(text.encode()).hexdigest()[:16]
         path = self._printed.get(digest)
         if path is None:
@@ -419,7 +419,7 @@ class BlockRunner:
         err = (self.workdir / "p4spectec-block.stderr").read_text()
         return f"p4spectec block exited with {self._process.poll()}:\n{err}"
 
-    def run_block(self, index: ir.Index, role: str, inputs: BlockInputs) -> BlockOutputs:
+    def run_block(self, index: BoundIndex, role: str, inputs: BlockInputs) -> BlockOutputs:
         """Run the block `index`'s program exports as `role` on `inputs`."""
         request: dict[str, Any] = {
             "program": str(self.program_path(index)),

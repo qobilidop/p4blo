@@ -48,7 +48,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from p4blo.arch import wire as arch_wire
-from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.bindings import BoundIndex, assembly_of
 from p4blo.arch.v0 import assembly_pb2 as apb
 
 # Runnable as a script from the repository root without installing anything.
@@ -794,7 +794,7 @@ def prepare(generated: Generated, directory: Path) -> Prepared:
     index = BoundIndex.build(generated.program)
     arch.reference.load(generated.program)  # validates; a generator mistake is an error
     p4 = directory / "program.p4"
-    p4.write_text(v1model.print_program(index.program, index=index))
+    p4.write_text(v1model.print_program(assembly_of(index.program, index.bindings), index=index))
     paths: list[Path] = []
     for name, text in vectors(generated, index):
         path = directory / name

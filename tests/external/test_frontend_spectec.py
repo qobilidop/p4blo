@@ -39,7 +39,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, stf
+from p4blo import arch, stf
 from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
@@ -269,14 +269,14 @@ def test_corpus_program_from_its_original_source(
 
 
 def _outputs(
-    program: apb.BlockAssembly, vector: Path, entries_of: ir.Index
+    program: apb.BlockAssembly, vector: Path, entries_of: BoundIndex
 ) -> list[tuple[int, list[tuple[int, bytes]]]]:
     """Every packet's outputs, entries resolved against `entries_of` (the
     golden's names, which vectors use) and installed by position."""
     loaded = arch.reference.load(program)
     run = arch.stf_driver(arch.Switch(ports=4), loaded)
     roles = {e.role: e.block for e in program.exports}
-    golden_roles = {e.block: e.role for e in entries_of.program.exports}
+    golden_roles = {e.block: e.role for e in entries_of.bindings.exports}
     installed: list[stf.Add | stf.SetDefault] = []
     out: list[tuple[int, list[tuple[int, bytes]]]] = []
     for s in stf.parse(vector.read_text()):
