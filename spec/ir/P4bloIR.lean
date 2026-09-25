@@ -28,3 +28,6 @@ import P4bloIR.DeclarationCodecLaws
 import P4bloIR.TableCodecLaws
 import P4bloIR.ParserCodecLaws
 import P4bloIR.BlockCodecLaws
+import P4bloIR.Validity.IndexLaws
+import P4bloIR.Validity.Rules
+import P4bloIR.Validity.Check
