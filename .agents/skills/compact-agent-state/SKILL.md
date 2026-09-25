@@ -1,6 +1,6 @@
 ---
 name: compact-agent-state
-description: Compact the .agents/ working set at a milestone boundary. Tags the archive point, rewrites status and the decisions register to current truth, promotes artifact-describing notes into docs/, archives finished notes and reviews, and checks the invariants that make compaction safe. Use when a milestone closes or the resume read exceeds its budget.
+description: Compact the .agents/ working set at a milestone boundary. Records the archive commit, rewrites status and the decisions register to current truth, promotes artifact-describing notes into docs/, archives finished notes and reviews, and checks the invariants that make compaction safe. Use when a milestone closes or the resume read exceeds its budget.
 ---
 
 # Compact agent state
@@ -21,9 +21,12 @@ room for a new scope before the old one is recorded as closed.
 
 ## Procedure
 
-1. **Tag the archive point.** `git tag agents-archive/<YYYY-MM-DD> HEAD`
-   on a clean `main`. If the tag exists, the day's compaction is already
-   in progress; continue it rather than retagging.
+1. **Record the archive point.** Note the full hash of `HEAD` on a clean
+   `main`; it goes into `status.md` as the archive commit and into the
+   compaction commit's body. No tag is created: the repository does not
+   tag commits (user's instruction, 2026-09-24). If `status.md` already
+   names an archive commit for the day, the compaction is in progress;
+   continue it.
 2. **Triage every file under `.agents/notes/` and `.agents/reviews/`**
    with one question: does it describe the artifact or the work?
    - A contract, design, survey or release-evidence document that tests,
@@ -53,14 +56,14 @@ room for a new scope before the old one is recorded as closed.
    were written with. `docs/` must not link into `.agents/`;
    `tests/test_docs_links.py` checks both rules.
 7. **Commit** the compaction separately from the promotion and cite the
-   tag in the body. Then run `scripts/check.sh`; Lean and oracle gates are
+   archive commit's hash in the body. Then run `scripts/check.sh`; Lean and oracle gates are
    unaffected by documentation moves unless a path string in them changed.
 8. **Review.** An independent read-only agent compares the new `status.md`
-   and `decisions.md` against `git show agents-archive/<date>:...`, claim
+   and `decisions.md` against `git show <archive commit>:...`, claim
    by claim, and reports anything dropped that is still in force or
    reworded into something stronger. Fix findings before pushing. Keep the
    review under `.agents/reviews/` until the next compaction.
-9. **Push** the commits and the tag together.
+9. **Push** the commits.
 
 ## Invariants
 

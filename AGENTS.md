@@ -37,10 +37,12 @@ Documentation is split by what it describes, not by who reads it:
 `.agents/` is a hidden directory. Searches with `rg`, `fd` and similar
 tools skip it unless told to include hidden files; `git grep` does not.
 
-Everything that was ever written is in git. The tag
-`agents-archive/<date>` marks the tree just before each compaction, so
-an archived note is one command away:
-`git show agents-archive/2026-09-24:docs/notes/<name>.md`.
+Everything that was ever written is in git. `.agents/status.md` names
+the archive commit, the tree just before each compaction, so an archived
+note is one command away: `git show <archive commit>:docs/notes/<name>.md`.
+The first compaction, on 2026-09-24, predates this rule and is also
+reachable as the tag `agents-archive/2026-09-24`; no further tags are
+created.
 
 ## Read first, in this order
 
@@ -231,8 +233,8 @@ Compaction removes history and keeps truth: every decision still in
 force with its reason and date, the current evidence with commit hashes
 that still resolve, open threads and known discrepancies, and anything a
 test or a `docs/` file references. It changes no claim. The previous
-tree is tagged `agents-archive/<date>` first, the compaction is reviewed
-independently against that tag, and notes that turn out to describe the
+tree's commit is recorded first, the compaction is reviewed
+independently against that commit, and notes that turn out to describe the
 artifact rather than the work are promoted into `docs/` instead of
 being archived.
 

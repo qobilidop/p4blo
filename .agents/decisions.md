@@ -625,9 +625,11 @@ The exact theorem statements, premises and exclusions are in
 - **`.agents/` is compacted at milestone boundaries; git is the archive.**
   Status holds current state only, decisions are a topical register of
   what is in force, and finished notes and reviews are deleted after the
-  tree is tagged `agents-archive/<date>`. Compaction changes no claim and
-  is reviewed against the tag; the procedure is the `compact-agent-state`
-  skill. Notes that turn out to describe the artifact are promoted into
+  tree's commit is recorded as the archive commit in `status.md`.
+  Compaction changes no claim and is reviewed against that commit; the
+  procedure is the `compact-agent-state` skill. No git tags are created
+  (user's instruction, 2026-09-24); the first compaction's tag
+  `agents-archive/2026-09-24` predates the rule and stays. Notes that turn out to describe the artifact are promoted into
   `docs/` instead. Reason: the resume read had grown to a diary, stale
   plans sat beside live ones, and git already kept every byte.
   (2026-09-24)

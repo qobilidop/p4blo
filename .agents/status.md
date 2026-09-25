@@ -2,7 +2,9 @@
 
 Where the work stands now. Updated at every checkpoint and compacted at
 milestone boundaries, so this file holds current state only; history up
-to the last compaction is in git at tag `agents-archive/2026-09-24`.
+to the last compaction is in git at the archive commit `9e8f7d4`, also
+reachable as the tag `agents-archive/2026-09-24` from before the no-tag
+rule.
 
 Last updated: 2026-09-24. **Active: the architecture-free IR semantics
 plan**, [ir-semantics-plan.md](notes/ir-semantics-plan.md), adopted by the
