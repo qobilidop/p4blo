@@ -4,6 +4,13 @@
 # result first, so rerunning after a cache hit or a partial failure only does
 # what is missing. See tests/oracle/README.md.
 #
+# The patches under tests/oracle/patches/ are applied to the checkout before
+# the build, in name order; they add p4blo's block architecture and the
+# `block` command (tests/oracle/block.py) and change nothing the `sim`
+# command runs. The stamp records the commit and a digest of the patches,
+# so a changed patch rebuilds, and a checkout whose stamp differs is reset
+# to the pinned commit before they are applied again.
+#
 # Needs: git, make, a C compiler, opam (2.1 or newer), and libgmp with its
 # headers plus pkgconf, which zarith's opam packages probe for. See
 # README.md#development for external-tool setup options.
@@ -47,12 +54,20 @@ PACKAGES=(
 DIR="${P4BLO_ORACLE_DIR:-$HOME/.cache/p4blo/p4-spectec}"
 STAMP="$DIR/.p4blo-built"
 BINARY="$DIR/p4spectec"
+PATCHES_DIR="$(cd "$(dirname "$0")" && pwd)/patches"
+PATCHES=("$PATCHES_DIR"/*.patch)
+[ -e "${PATCHES[0]}" ] || { echo "[tests/oracle/build] no patches in $PATCHES_DIR" >&2; exit 1; }
+# One digest of every patch's name and content, independent of sha tools.
+PATCHES_DIGEST=$(for patch in "${PATCHES[@]}"; do basename "$patch"; cat "$patch"; done \
+    | git hash-object --stdin)
+BUILT="$P4_SPECTEC_COMMIT $PATCHES_DIGEST"
 
 log() { printf '[tests/oracle/build] %s\n' "$*" >&2; }
 
-# A finished build is stamped with its commit; a matching stamp means there
-# is nothing to do, and opam need not even be installed (the CI cache hit).
-if [ -x "$BINARY" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$P4_SPECTEC_COMMIT" ]; then
+# A finished build is stamped with its commit and patches; a matching stamp
+# means there is nothing to do, and opam need not even be installed (the CI
+# cache hit).
+if [ -x "$BINARY" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$BUILT" ]; then
     echo "$BINARY"
     exit 0
 fi
@@ -73,6 +88,18 @@ if [ "$(git -C "$DIR" rev-parse HEAD 2>/dev/null || true)" != "$P4_SPECTEC_COMMI
     git -C "$DIR" fetch -q --depth 1 origin "$P4_SPECTEC_COMMIT"
     git -C "$DIR" checkout -q --detach "$P4_SPECTEC_COMMIT"
 fi
+
+# 1b. The patches, onto a clean tree: tracked files back to the commit and
+#     untracked sources under p4spec/ removed (the build tree, _build/, is
+#     ignored and kept), then every patch in order. Only the unstamped path
+#     gets here, so a finished build is never touched.
+log "applying ${#PATCHES[@]} patch(es) from $PATCHES_DIR"
+rm -f "$STAMP"
+git -C "$DIR" reset -q --hard "$P4_SPECTEC_COMMIT"
+git -C "$DIR" clean -q -fd -- p4spec
+for patch in "${PATCHES[@]}"; do
+    git -C "$DIR" apply --whitespace=nowarn "$patch"
+done
 
 # 2. The p4c submodule, which the simulator needs only for p4c/p4include
 #    (core.p4, v1model.p4). A sparse, blobless, shallow checkout of that
@@ -115,5 +142,5 @@ log "building p4spectec"
 rm -f "$STAMP"
 make -C "$DIR" build >&2
 [ -x "$BINARY" ] || { log "make build did not produce $BINARY"; exit 1; }
-echo "$P4_SPECTEC_COMMIT" > "$STAMP"
+echo "$BUILT" > "$STAMP"
 echo "$BINARY"
