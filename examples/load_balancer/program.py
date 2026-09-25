@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
+from p4blo.arch import reference
 from p4blo.arch.externs.declarations import CRC16, Checksum16
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -165,17 +166,20 @@ class Emit(p4.Deparser[Headers]):
         self.emit(self.hdr.udp)
 
 
-program = p4.Program(
-    "example_load_balancer",
-    headers=Headers,
-    metadata=Metadata,
-    exports={"parser": Parse, "control": Balance, "deparser": Emit},
-    externs=[checksum, flow_hash],
-)
+blocks = p4.BlockLibrary(Parse, Balance, Emit, externs=[checksum, flow_hash])
 
 
 def build() -> pb.Program:
-    return program.build()
+    """Assemble the blocks for the supplied switch and its metadata contract."""
+    return reference.assemble(
+        blocks,
+        name="example_load_balancer",
+        headers=Headers,
+        metadata=Metadata,
+        parser=Parse,
+        control=Balance,
+        deparser=Emit,
+    )
 
 
 if __name__ == "__main__":

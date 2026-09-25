@@ -64,10 +64,28 @@ fourth remain unchanged. This illustrates why affinity is conditional on
 configuration: remapping a bucket moves its existing flows. There is no flow
 cache or automatic migration policy.
 
-The program's `exports` explicitly maps roles to blocks. The host selects
-`reference.load` and passes `supplied_registry()` to bind the declared externs
-to the supplied implementations, then chooses `Switch(ports=4)`. Extern
-declarations describe typed calls; the registry supplies their execution.
+The block classes are reusable independently. For example, compile the
+control and its declared extern dependencies without selecting a pipeline:
+
+```python
+from examples.load_balancer.program import Balance, checksum, flow_hash
+from p4blo import edsl as p4
+
+compiled = p4.BlockLibrary(Balance, externs=[checksum, flow_hash]).compile()
+```
+
+The `blocks` library collects the three block definitions and their shared
+extern declarations. It does not select an architecture or a complete program;
+`blocks.compile()` produces declarations without global header/metadata roots
+or exported roles. Types follow the blocks' parameter and local declarations.
+
+`build()` separately calls `reference.assemble` with that library to select the
+parser, control and deparser of the supplied architecture. Its metadata
+contract gives fields such as `drop` and `egress_port` their host meaning;
+the core sees ordinary block parameters and typed fields. The demo selects
+`reference.load`, passes `supplied_registry()` to bind declared externs to
+their implementations, and chooses `Switch(ports=4)`. Extern declarations
+describe typed calls; the registry supplies their execution.
 
 `ChecksumWords` and `FlowTuple` name the expression widths. The ordinary
 Python helpers `checksum_data` and `flow_key` compose symbolic expressions;
