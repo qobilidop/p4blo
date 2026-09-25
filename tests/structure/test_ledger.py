@@ -41,7 +41,7 @@ from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 LEDGER = ROOT / "docs" / "ir-semantics.md"
 CLASS_PIN = ROOT / "tests" / "ledger-classes.json"
 LEAN_DIR = ROOT / "spec" / "ir" / "P4bloIR"
@@ -467,10 +467,10 @@ def test_every_test_reference_exists() -> None:
 
 
 def test_the_test_resolver_is_strict() -> None:
-    assert reference_problem("tests/test_ledger.py::test_the_test_resolver_is_strict") is None
+    assert reference_problem("tests/structure/test_ledger.py::test_the_test_resolver_is_strict") is None
     assert reference_problem("tests/corpus/stacks") is None
-    assert reference_problem("tests/test_ledger.py::test_no_such_test") is not None
+    assert reference_problem("tests/structure/test_ledger.py::test_no_such_test") is not None
     assert reference_problem("tests/corpus/no_such_program") is not None
     # A helper is defined but is not a test.
-    assert reference_problem("tests/test_ledger.py::reference_problem") is not None
-    assert reference_problem("tests/test_ledger.py::Entry") is not None
+    assert reference_problem("tests/structure/test_ledger.py::reference_problem") is not None
+    assert reference_problem("tests/structure/test_ledger.py::Entry") is not None

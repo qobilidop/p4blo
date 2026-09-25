@@ -15,7 +15,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "impl/python/p4blo"
 IR_SIDE = ("ir.py", "validator", "printer", "stf.py", "interp", "edsl")
 

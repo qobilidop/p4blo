@@ -380,7 +380,7 @@ architecture's own rules are outside this inventory.
 
 Every closed behavior of the semantics page cites the SpecTec rule that
 decides it at the pinned commit and is classed *same*, *refines
-undefined*, *deviates* or *not representable*; `tests/test_ledger.py`
+undefined*, *deviates* or *not representable*; `tests/structure/test_ledger.py`
 and `tests/external/test_spectec_rules.py` check the shape, the names and the
 classes. Separately, [p4-spec-coverage.md](p4-spec-coverage.md#rule-coverage-on-p4-spectec)
 records which of SpecTec's architecture-free rules the corpus and

@@ -53,7 +53,7 @@ its reason in prose, then six lines in this order:
     for the reason the prose gives.
   - *not representable*: the situation cannot arise in SpecTec's IL.
 
-`tests/test_ledger.py` checks the shape of every entry, that every Lean
+`tests/structure/test_ledger.py` checks the shape of every entry, that every Lean
 and Python name exists where it is cited, that every test reference names
 a test, the counts below, and each entry's class against
 `tests/ledger-classes.json`; `tests/external/test_spectec_rules.py` checks that

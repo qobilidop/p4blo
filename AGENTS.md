@@ -81,7 +81,7 @@ uv run pytest tests/external/test_oracle.py                 # corpus vectors on 
 docker build -t p4blo-bmv2 tests/oracle/bmv2             # the BMv2 oracle image, once
 uv run pytest tests/external/test_oracle_bmv2.py            # corpus vectors on BMv2
 docker build -t p4blo-xdp-build tests/oracle/xdp    # compile-only XDP profile
-P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/test_xdp_build.py # offline XDP gate
+P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py # offline XDP gate
 ```
 
 Keep `main` green on all of them; check exit codes, not output. Five
@@ -230,8 +230,8 @@ the codec tests looked for their endpoint in the wrong package, and only
 `scripts/check.sh` found it. Second, when directories move, search for
 the path in every spelling, not only with a slash: `"ir"` in a
 `git ls-files` call, `-d lean` in a command, and `parents[N]` in a path
-computation all broke silently after a move, and `tests/test_package_layout.py`
-and `tests/test_boundaries.py` exist to pin the paths and the import
+computation all broke silently after a move, and `tests/structure/test_package_layout.py`
+and `tests/structure/test_boundaries.py` exist to pin the paths and the import
 graph a gate depends on. Historical records under `.agents/reviews/`
 keep the paths they were written with; exclude them from rewrites.
 

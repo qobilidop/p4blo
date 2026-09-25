@@ -25,7 +25,7 @@ locally before pushing, and check exit codes, not output.
 | Forwarding application BMv2 profile | `uv run pytest tests/lean/test_lean_forwarder_apply.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
-| Original XDP compile profile | `P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/test_xdp_build.py` | pinned original compiles; offline ELF/BTF positive/negative checks pass without BPF syscalls; separate CI requires image, local missing image skips without required flag |
+| Original XDP compile profile | `P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py` | pinned original compiles; offline ELF/BTF positive/negative checks pass without BPF syscalls; separate CI requires image, local missing image skips without required flag |
 
 A larger differential sweep, for a change to either interpreter:
 

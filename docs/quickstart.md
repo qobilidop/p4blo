@@ -223,7 +223,7 @@ execution error; the state/error boundary is documented separately.
 To check these exact documented snippets after building Lean:
 
 ```sh
-P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_quickstart.py -q
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests/structure/test_quickstart.py -q
 ```
 
 For broader application coverage, run `tests/lean/test_lean_forwarder.py` and

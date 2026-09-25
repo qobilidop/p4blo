@@ -43,7 +43,7 @@ syntax check also needs Node.js, as listed in the development setup:
 
 ```sh
 uv run python scripts/render-website-example.py
-uv run pytest tests/test_website.py tests/programs/test_vlan_gateway.py
+uv run pytest tests/structure/test_website.py tests/programs/test_vlan_gateway.py
 node --check website/main.js
 ```
 

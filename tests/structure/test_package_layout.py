@@ -9,7 +9,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 from tests.external import test_oracle, test_oracle_bmv2
 from tests.programs import test_corpus
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_specification_executable_location() -> None:

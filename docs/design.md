@@ -334,7 +334,7 @@ keeps its wire schema under `proto/`, and the user package its assurance
 log, `ASSURANCE.md`. `spec/arch/Main.lean` is the `p4blo-lean` endpoint;
 `impl/lean/Main.lean` is the `p4blo` executable, whose subcommands are the
 forwarder and firewall servers and the fixture exporters the
-cross-language tests call. `tests/test_package_layout.py` pins the layout.
+cross-language tests call. `tests/structure/test_package_layout.py` pins the layout.
 | Python execution to IR semantics | differential and property tests, adversarial mutations, scoped certificates |
 | authored program to intended behavior | independent expected answers, and application proofs where they exist |
 

@@ -16,7 +16,7 @@ from p4blo.interp.tables import InstallError
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.corpus.forwarder.forwarder import build
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DOCUMENT = ROOT / "docs/quickstart.md"
 OUTPUT = "forwarder: output ports [[2]]\ntutorial_firewall: output ports [[], [2], [1], []]\n"
 

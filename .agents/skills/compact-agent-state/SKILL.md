@@ -54,7 +54,7 @@ room for a new scope before the old one is recorded as closed.
    without a slash, so grep for those and fix labels by hand, and restore
    `.agents/reviews/` afterwards so review records keep the paths they
    were written with. `docs/` must not link into `.agents/`;
-   `tests/test_docs_links.py` checks both rules.
+   `tests/structure/test_docs_links.py` checks both rules.
 7. **Commit** the compaction separately from the promotion and cite the
    archive commit's hash in the body. Then run `scripts/check.sh`; Lean and oracle gates are
    unaffected by documentation moves unless a path string in them changed.

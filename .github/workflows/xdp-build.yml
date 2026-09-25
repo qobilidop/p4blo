@@ -20,7 +20,7 @@ jobs:
         run: docker build --progress=plain -t p4blo-xdp-build tests/oracle/xdp
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
       - name: Require offline positive and negative checks
-        run: nix develop -c uv run pytest tests/test_xdp_build.py -v
+        run: nix develop -c uv run pytest tests/structure/test_xdp_build.py -v
         env:
           P4BLO_REQUIRE_XDP_BUILD: "1"
       - name: Retain object provenance and corresponding sources
