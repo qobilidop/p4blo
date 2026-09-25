@@ -324,11 +324,17 @@ these entries record why.
   translation makes, each recorded on the coverage page: v1model's
   verify, ingress, egress and compute controls merge into one control
   whose egress part runs only when the packet is not dropped;
-  `standard_metadata` fields become the contract fields and a user field
-  that collides with a contract name is renamed; `mark_to_drop` becomes
-  `drop = true` and `egress_port = 511`, so a program that reads the
-  drop port afterwards keeps its meaning; the metadata parameter is
-  named `meta`; constant folding is kept to what the IR cannot hold
+  `standard_metadata` fields become the contract fields, every user
+  field named like a contract field is renamed, and the contract name is
+  given back only where the whole program synchronizes the field with
+  `standard_metadata` exactly as the printer's shim does, so printed
+  goldens round-trip; v1model's drop is translated as v1model decides
+  it: in ingress `mark_to_drop` writes only `egress_port = 511`, and
+  `drop = (egress_port == 511)` is appended after the ingress part only
+  where an egress part needs the decision written out, since 511 is no
+  port of p4blo's switch and the packet is dropped anyway; in egress
+  `mark_to_drop` sets `drop` and a read of `egress_spec` is
+  `drop ? 511 : egress_port`; the metadata parameter is named `meta`; constant folding is kept to what the IR cannot hold
   (named constants, `int` arithmetic, division, enum members, stack
   sizes) so a printed program reads back as printed; per-table action
   copies are named as p4c names them. Corpus goldens are compared with
