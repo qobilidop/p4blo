@@ -13,6 +13,7 @@ describe the same boundary in prose.
 from __future__ import annotations
 
 import ast
+import sys
 from pathlib import Path
 
 import pytest
@@ -50,6 +51,47 @@ def crossings(files: list[Path], forbidden: tuple[str, ...]) -> list[str]:
         for name in sorted(imported_modules(path))
         if any(name == f or name.startswith(f + ".") for f in forbidden)
     ]
+
+
+# Scripts CI or a container runs with a bare interpreter, before or without
+# the p4blo package: the coverage probe's `build`, the BMv2 container's
+# driver and the website renderer. Their module-level imports must come from
+# the standard library; p4blo imports stay inside the functions that need it.
+BARE_INTERPRETER_SCRIPTS = (
+    "tests/oracle/coverage.py",
+    "tests/oracle/bmv2/driver.py",
+    "scripts/render-website-example.py",
+)
+
+
+def top_level_non_stdlib(path: Path) -> list[str]:
+    """Modules imported at module level that are not in the standard library."""
+    names: list[str] = []
+    for node in ast.parse(path.read_text(encoding="utf-8"), str(path)).body:
+        if isinstance(node, ast.Import):
+            names.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            names.append(node.module)
+    return [
+        name
+        for name in names
+        if name != "__future__" and name.split(".")[0] not in sys.stdlib_module_names
+    ]
+
+
+@pytest.mark.parametrize("script", BARE_INTERPRETER_SCRIPTS)
+def test_bare_interpreter_scripts_import_only_stdlib_at_module_level(script: str) -> None:
+    assert top_level_non_stdlib(ROOT / script) == []
+
+
+def test_bare_interpreter_check_detects_a_module_level_package_import(tmp_path: Path) -> None:
+    script = tmp_path / "script.py"
+    script.write_text(
+        "import json\n\nfrom p4blo.arch import wire\n\n\ndef f() -> None:\n"
+        "    from p4blo import stf\n",
+        encoding="utf-8",
+    )
+    assert top_level_non_stdlib(script) == ["p4blo.arch"]
 
 
 def test_ir_side_never_imports_architecture_or_harness() -> None:

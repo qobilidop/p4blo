@@ -150,9 +150,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from p4blo.arch import wire as arch_wire
-from p4blo.arch.bindings import BoundIndex, assembly_of
-
 ROOT = Path(__file__).resolve().parents[2]
 REPORT = ROOT / "tests" / "oracle" / "spectec-coverage.json"
 INVENTORY = ROOT / "tests" / "oracle" / "spectec-rules.json"
@@ -316,6 +313,8 @@ def materialize_corpus(stage: Path) -> list[Program]:
     sys.path.insert(0, str(ROOT))
     from p4blo import stf
     from p4blo.arch import v1model
+    from p4blo.arch import wire as arch_wire
+    from p4blo.arch.bindings import BoundIndex, assembly_of
     from tests.oracle import run as oracle_run
 
     programs: list[Program] = []
