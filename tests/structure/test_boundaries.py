@@ -68,7 +68,7 @@ BARE_INTERPRETER_SCRIPTS = (
 def top_level_non_stdlib(path: Path) -> list[str]:
     """Modules imported at module level that are not in the standard library."""
     names: list[str] = []
-    pending = list(ast.parse(path.read_text(encoding="utf-8"), str(path)).body)
+    pending: list[ast.AST] = list(ast.parse(path.read_text(encoding="utf-8"), str(path)).body)
     while pending:
         node = pending.pop()
         # Module-level `if`, `try` and `with` bodies run at import too.
