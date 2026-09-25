@@ -1,9 +1,11 @@
-"""A control-only program with a locally registered extern.
+"""An independent control with a locally registered extern.
 
 Run ``python examples/custom_extern.py`` after installing the project. The
-eDSL declares the ``sequence`` service and uses it in one control. A Python
-factory supplies the service to this loader; the IR and eDSL have no special
-case for it. A Lean model or P4 printer mapping would be separate work.
+eDSL declares the ``sequence`` service in a block library that compiles
+without architecture or program roles. A host assembles it under its own
+``transform`` role, then supplies a Python factory at load. The IR and eDSL
+have no special case for this service. A Lean model or P4 printer mapping
+would be separate work.
 """
 
 from __future__ import annotations
@@ -43,15 +45,20 @@ class Transform(p4.Control[Headers, Metadata]):
         self.assign(self.meta.value, sequence.advance())
 
 
+def library() -> p4.BlockLibrary:
+    """Declare this control and its extern dependency without an architecture."""
+    return p4.BlockLibrary(Transform, externs=[sequence])
+
+
 def build() -> pb.Program:
-    """Declare only the block role this small application uses."""
-    return p4.Program(
-        "custom_extern",
+    """Assemble a host program with just the block role it runs."""
+    return arch.assemble(
+        library(),
+        name="custom_extern",
         headers=Headers,
         metadata=Metadata,
         exports={"transform": Transform},
-        externs=[sequence],
-    ).build()
+    )
 
 
 class SequenceBinding:

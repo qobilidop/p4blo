@@ -21,6 +21,11 @@ def load(registry: Registry, program: pb.Program | None = None) -> arch.Loaded:
 
 
 def test_custom_family_runs_without_a_supplied_architecture() -> None:
+    compiled = custom_extern.library().compile()
+    assert [block.name for block in compiled.blocks] == ["Transform"]
+    assert [decl.name for decl in compiled.extern_types] == ["sequence"]
+    assert [instance.name for instance in compiled.extern_instances] == ["numbers"]
+    assert not hasattr(compiled, "exports")
     assert custom_extern.demo() == (1, 2)
 
 
