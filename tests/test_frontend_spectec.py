@@ -1,7 +1,7 @@
 """The IL bridge on real P4: P4 source through P4-SpecTec into p4blo IR.
 
 `p4blo.frontend` translates what P4-SpecTec's typing and instantiation make
-of a P4 program (the `il-export` command of tests/oracle/patches/). Three
+of a P4 program (the `il-export` command of tests/oracle/patches/). Four
 questions, each against P4 nobody wrote for p4blo:
 
 1. **The corpus from its original sources.** Each corpus program with a
@@ -15,6 +15,8 @@ questions, each against P4 nobody wrote for p4blo:
 3. **Excluded rows.** A program using a construct docs/p4-spec-coverage.md
    excludes is refused with an error naming the row; every row the bridge
    can name is a row of the page.
+4. **New programs.** Five p4c programs the corpus does not include run from
+   source on the Python interpreter against p4c's own STF vectors.
 
 Without a P4-SpecTec checkout that has `il-export` every test that needs
 it skips, as tests/test_oracle.py does, unless `P4BLO_REQUIRE_IL_EXPORT=1`
@@ -44,7 +46,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tests.examples import catalog as examples  # noqa: E402
-from tests.frontend import catalog  # noqa: E402
+from tests.frontend import catalog, p4c_stf  # noqa: E402
 
 CORPUS = ROOT / "tests" / "corpus"
 FRONTEND = ROOT / "impl" / "python" / "p4blo" / "frontend"
@@ -464,3 +466,15 @@ def test_what_the_bridge_does_not_attempt_is_named_by_production(
     with pytest.raises(NotTranslated) as e:
         translate(exporter.export(source), "early_return")
     assert e.value.production == "functionDeclarationIR"
+
+
+# ---------------------------------------------------------------------------
+# 4. New programs, from source, against p4c's vectors
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", sorted(catalog.NEW_PROGRAMS))
+def test_new_p4c_program_passes_its_own_vectors(exporter: Exporter, name: str) -> None:
+    source = catalog.HERE / "p4c" / f"{name}.p4"
+    program = _translated(exporter, source, name).program
+    assert p4c_stf.replay(program, source.with_suffix(".stf").read_text()) == []
