@@ -32,7 +32,9 @@ PORTS = 4
 # tables and parser with generated entries, small enough to read.
 DRT_SEEDS = (1, 2)
 DRT_COUNT = 8
-# Six seeds per family.
+# `materialize` picks the family by the seed modulo the number of
+# families, so consecutive seeds spread over all of them; how many each
+# family gets follows from `generated.FAMILIES`, not from this range.
 FAMILY_SEEDS = range(36)
 
 

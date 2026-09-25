@@ -317,7 +317,8 @@ implementation can consume it the way Python does. It is not a proof and
 says nothing beyond its inputs: it records what Lean answered, not that
 the answers are P4's, which the oracles and the rule ledger address. When
 the semantics changes an answer, the behavior is written in the semantics
-documents first, and the fixtures are then re-exported deliberately and
+documents first, and the fixtures are then refreshed deliberately, which
+re-answers the recorded requests without regenerating any input, and
 their diff reviewed; see `tests/conformance/README.md`.
 Validator-only rules, installation checks, extern families and the
 architecture's own rules are outside this inventory. An independent
