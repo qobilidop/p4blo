@@ -163,8 +163,10 @@ package paths and Python import paths coincide. Contributors without
 
 ### Blocks and the P4NAH rule
 
-The one hardcoded thing is a block calling convention and the rule that
-a block performs no effects. That rule is called P4NAH.
+Core blocks declare their own typed parameters. The P4NAH rule separates
+block computation from architecture actions: packet fate is returned as
+data for the caller to interpret. The supplied H/M entry helpers use this
+calling convention:
 
 ```
 parse   : Packet × M → H × M × bits consumed × accepted × error
@@ -172,17 +174,17 @@ control : H × M × TableEntries → H × M
 deparse : H → Packet
 ```
 
-A rejection is an outcome, not an exception: the caller gets the partial
-headers, whether the parser accepted, and the error, and decides what to
-do. A control writes fields of `M`; whoever called it acts on them
-afterwards. Drop, forward, flood, clone and recirculate are decisions
-written as data, executed by the architecture. Tables are inputs
-installed by the host. A block may call another block; that is P4's own
-composition and it is in.
+In this convention, rejection is an outcome, not an exception: the
+caller gets the partial headers, whether the parser accepted, and the
+error, and decides what to do. A control writes fields of `M`; whoever
+called it acts on them afterwards. Drop, forward, flood, clone and
+recirculate are decisions written as data, executed by the
+architecture. Tables are inputs installed by the host. A block may call
+another block; that is P4's own composition and it is in.
 
 There is one `Block` message with a kind tag, parse, control or deparse,
-and one signature. The three kinds differ in which statements they may
-contain, and the validator enforces those rules per kind.
+and an explicit parameter list. The three kinds differ in which statements
+they may contain, and the validator enforces those rules per kind.
 
 A parser may loop, since a state may be revisited while extracting into
 a header stack. The bound is the no-consumption revisit rule: a state
@@ -192,13 +194,14 @@ the meaning of a program depend on a number nobody specifies.
 
 ### Metadata contract
 
-An architecture declares the `M` fields it needs, each with a width and
-whether the architecture provides it before the block runs or consumes it
-after. At load the program's `M` is checked structurally against the
-declaration, by field name and width, and nothing else about `M`
-concerns anyone. A program declares exactly one `H` type and one `M`
-type. The contract vocabulary used by the architectures in this
-repository, each field optional and only checked when present:
+The supplied H/M adapter declares the `M` fields its architecture needs,
+each with a width and whether the architecture provides it before the block
+runs or consumes it after. At load the selected `M` is checked structurally
+against the declaration, by field name and width. Each `BlockBindings`
+selects one `H` type and one `M` type; the core library makes no such choice.
+Other architectures may invoke blocks with their own calling conventions.
+The vocabulary shared by the supplied filter and switch has the following
+fields, each optional and checked only when present:
 
 | Field | Type | Direction | Meaning |
 |---|---|---|---|
@@ -224,14 +227,15 @@ Python callable at load, checks arity, directions and widths, and refuses
 to load on any mismatch. Every extern a corpus program uses ships twice,
 a Python implementation and a Lean model, pinned to each other by
 vectors and by independent known answers; that pair is corpus material,
-not spec material. The builtin families are register, counter,
+not spec material. The supplied families are register, counter,
 checksum16 and the byte-aligned CRC16 and CRC32 services, specified in
 [arch-supports.md](arch-supports.md#extern-families).
 
 ### Architectures
 
-Python functions of one shape: given an ingress port and a packet,
-return egress ports and packets. The filter runs parser then control.
+The supplied packet adapters expose one shape to the STF driver: given an
+ingress port and a packet, return egress ports and packets. The filter runs
+parser then control.
 The switch runs all three blocks over a few ports and implements drop,
 unicast and flood. Neither contains P4; their size is the experiment for
 claim 3. Three things every architecture here does the same way,

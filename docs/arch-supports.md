@@ -36,8 +36,8 @@ definitions without the supplied pipeline defaults. See
 
 ## The metadata contract
 
-An architecture communicates with a program only through the program's
-metadata struct `M`. It names the fields it needs, each with a type and a
+The supplied filter and switch communicate their host policy through the
+selected metadata struct `M`. Each names the fields it needs, with a type and a
 direction: provided fields are written before the blocks run, consumed
 fields are read afterwards. At load the program's `M` is checked
 structurally against the contract, by field name and type, and nothing
@@ -180,17 +180,22 @@ recirculate and multicast groups have no counterpart.
 
 ## Not supported
 
+The supplied architecture and printing adapters have these limits; they
+do not restrict how a custom caller composes core blocks.
+
 - **PSA, PNA, TNA and any other named P4 architecture.** No program
   written against them can be loaded, and no `psa.p4` or similar shim
   exists. Supporting one would be a new architecture module on each side
   plus a printing shim, not a change to the IR.
 - **An egress pipeline, recirculation, cloning, multicast groups,
-  meters, digests and timestamps.** The contract has one control and no
-  notion of a second pass; packet fate is exactly drop, unicast or flood.
+  meters, digests and timestamps.** The supplied pipelines run one control
+  without a second pass; their packet fate is drop, unicast or flood.
 - **Ports outside `bit<9>`**, and any port numbering other than
   `0 .. ports - 1` for the switch.
-- **Architecture-specific match kinds and services.** Only exact, LPM
-  and ternary keys and the five extern families above exist.
+- **Additional match kinds and supplied services.** The core supports exact,
+  LPM and ternary keys. The five extern families above are the supplied
+  implementations; custom families can be registered explicitly, without
+  automatically gaining Lean semantics or P4 printer support.
 
 The block-oracle package named `P4blo` is an isolated P4-SpecTec testing
 adapter. It does not define a required architecture for p4blo programs.
@@ -209,6 +214,6 @@ packets. Use `load` for the once-per-program work and the `Metadata` view
 for contract fields; a contract may declare its own fields. Supplied
 adapters live under `impl/python/p4blo/arch/`. If programs must run under
 it in the differential tests, a Lean twin follows the same rules and the
-`p4blo-lean` endpoint learns to select it. The rules above are the ones a
-new architecture is expected to share unless it has a reason not to,
-recorded in its module and in the decisions register.
+`p4blo-lean` endpoint learns to select it. The shared rules above describe
+the supplied filter and switch. A custom architecture defines its own
+contract and execution policy; document those choices with its adapter.

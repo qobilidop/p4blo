@@ -237,7 +237,7 @@ After editing a ledger entry, regenerate its cross-reference table with
 `uv run python scripts/ledger-xref.py`;
 `tests/structure/test_ledger_xref.py` fails until it is current.
 
-**The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
+**The core schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
 `spec/ir/P4bloIR/IR.lean` and `Json.lean`, update the validator's rules
 (`impl/python/p4blo/validator/`, the module of the rule's group; a new
@@ -248,6 +248,12 @@ the printer and the STF reader also use), the printer
 source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/unit/test_printer.py`).
 Record the decision in `.agents/decisions.md`.
+
+Architecture binding syntax lives separately in
+`spec/arch/proto/p4blo/arch/v0/assembly.proto`. Mirror changes there in
+`spec/arch/P4bloArch/Assembly.lean` and the architecture codecs, validators
+and adapters, then run the same schema and affected compatibility gates.
+Keep architecture choices outside the core schema and validity rules.
 
 **A corpus program.** Create `tests/corpus/<name>/` with `<name>.py` (the
 source, in the typed eDSL `p4blo.edsl`; `tests/corpus/forwarder/forwarder.py`
@@ -299,12 +305,15 @@ file stem in `tests/conftest.py`'s `ORACLE_MODULES`, which marks it
 `oracle`; since the marker is keyed by stem, a new module must not reuse
 the stem of an oracle module in another directory.
 
-**An architecture.** A Python module under `impl/python/p4blo/arch/` with a
-`run(loaded, entries, ingress_port, packet)` method, no P4 in it; the
-contract vocabulary is the table in `docs/design.md`, and the rules
-every architecture follows are in the same section and in
-`.agents/decisions.md` ("Architecture rules", "Port rules"). If the Lean
-switch must follow, change `spec/arch/P4bloArch/Switch.lean` in the same commit.
+**An architecture.** Ordinary code selects and invokes blocks, supplies
+extern implementations, and defines its own contract and execution policy.
+It may live outside p4blo. The optional supplied H/M adapter uses explicit
+bindings, a registry, a metadata contract and role kinds; its usage is in
+[the authoring guide](python-edsl.md). To use the supplied STF driver,
+provide `run(loaded, entries, ingress_port, packet)`. The filter/switch
+vocabulary and policy in `docs/design.md` apply to those supplied adapters.
+If a change affects the cross-checked Lean switch, update
+`spec/arch/P4bloArch/Switch.lean` in the same commit.
 
 ## Application development
 
