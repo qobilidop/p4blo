@@ -1235,8 +1235,78 @@ succeeds and returns typed values; binding errors happen at load) and
 `build_installedOk` discharges for every successful `Installed.build`.
 `initial_ok` and `entryFrame_ok` give the well-formed start of each entry
 point. Not established: termination (the acyclic call graph with the
-revisit rule), that `P4bloArch`'s extern families obey the contract, and
-the entry points' own checks outside the machine.
+revisit rule), and the entry points' own checks outside the machine.
+
+### Discharged premises and non-vacuity
+
+`spec/arch/P4bloArch/ContractLaws.lean` proves the extern premise for the
+reference architecture. `P4bloArch.Contract.bind_contract`: whenever
+`P4bloArch.bind` succeeds on a `Valid` program, the bound state satisfies
+the invariant of `contract idx`, an `ExternContract` whose call obligation
+(`call_ok`) holds for `register`, `counter`, `checksum16`, `crc16` and
+`crc32`. The invariant ties each program instance to a state its
+declaration fits: `matchShape`'s loops are read back into per-method
+signatures (`matchShape_ok`), `make` fixes a register's cell width to the
+declared `T` and a CRC's data width to `D` (`stateFits_of`), and the
+extern-type rule makes method names distinct. Binding can still fail for a
+valid program whose extern types no family implements; that is the load
+boundary. `spec/arch/ArchProofAudit.lean`, a default target, pins the
+axioms as `spec/ir/ProofAudit.lean` does.
+
+`spec/arch/ArchTests/NonVacuity.lean` shows every premise of `progress`
+satisfiable together on a real program without `native_decide`.
+`ArchTests.Csum16.control_start_ok` builds a `Global` for the corpus
+program `csum16` (the smallest with an extern) with the reference
+contract, and `MachineOk` for the machine `runControl` starts, through
+`check_sound`, `bind_contract`, `build_installedOk`, `entryFrame_ok` and
+`initial_ok`. `decide` and `rfl` cannot evaluate the checker, because
+`String.hash` is opaque to the kernel and every index is a `HashMap`;
+`simp` over the literal program can, deciding each lookup by the insert
+lemmas and string literal equality (`check_ok`), and the extern family
+name needs `String.splitOnAux` unfolded step by step. The module builds
+in about three seconds. Its literal is checked against a JSON fixture of
+the golden by `lake test`, and a pytest keeps the fixture equal to the
+golden.
+
+### Kinds and entry points
+
+`spec/ir/P4bloIR/Validity/KindLaws.lean` refines `ResultOk` by block kind.
+`finishes_kind`: a finite run from a well-formed machine with no pending
+fault and no parser state or transition on its stack ends in success or
+in a declared parser error, and in the error only when the run is a
+parser's (`parse_error_is_parser`). The invariant `MachineOkNP` adds those
+two conditions to `MachineOk`; `progress_outside_parser` keeps it. The
+proof is a second triple per step, `NP` (no parser error from any run):
+parser errors come only from `throwParse`, which outside a parser the
+typing rules and the stack rule out, and `dispatch_np` combined with
+`dispatch_ok`, whose faults are all parser errors, leaves no fault at all.
+
+`spec/ir/P4bloIR/Validity/EntryLaws.lean` states the consequence on the
+actual entry functions, restated publicly and equal by `rfl` because their
+helpers are private. Given a `Valid` program's block of the entry's kind
+and arity, parameter values of their types, externs satisfying the
+contract, entries from `Installed.build` for a control, and every run of
+the block finishing: `runParser_documented` returns an outcome accepting
+with `NoError` or rejecting with a declared error; `runControl_documented`
+returns the final run's headers, metadata and externs, failing only if
+`structVar` finds no struct there; `runDeparser_ok` returns the emitted
+bytes. That `structVar` succeeds is not proved: it needs the final frame
+to be the entry block's, which `MachineOk` does not track.
+
+### Which rules progress needs
+
+Two rule mutants survive every proof and are caught only by the
+conformance test, recorded here as facts about the proofs rather than
+gaps: `noAlias` returning `true` (mutant 2 below) and `writable`
+returning `true` (the review's mutant, letting assignments write `in` and
+directionless parameters), each giving four disagreements with Python.
+Progress needs the typing, placement, scope, kind and core-error rules; it
+does not need the aliasing or writability rules, the acyclicity rules,
+which belong to termination, or the name, tie and export rules. Only the
+two named are confirmed by mutation; the rest is by reading the proofs.
+Placement is needed only in part: `verify` outside a parser raises a
+declared error, which progress allows, so its placement is pinned by the
+kind refinement instead (mutant 6 below).
 
 ### Conformance
 
@@ -1250,6 +1320,15 @@ first by the test's code table, the identity except that 34 programs
 with wire problems (no kind set, an unspecified enum, a non-decimal
 literal) are rejected by Lean's decoder as `DECODE`. No disagreement was
 found on either side.
+
+On 2026-09-24 at `work/validity-followups`, three validator breaks that
+added a parameter without a direction (`test_name_duplicate[2]` and
+`[7]`, `test_noaction_reserved[1]`) were given the direction their place
+allows, so Lean reaches the rule each targets and answers
+`NAME_DUPLICATE`, `NAME_DUPLICATE` and `NOACTION_RESERVED` as Python
+does. `DECODE` falls to 31 programs, each with a wire problem Python also
+names; `test_lean_agrees_validity_on_the_rule_each_validator_test_targets`
+requires that of every validator break. The other counts are unchanged.
 
 ### Adversarial experiments
 
@@ -1280,3 +1359,25 @@ Mutant 1 is caught by the soundness proof before the executable can be
 built, so the conformance test never sees it; mutant 2 shows the
 conformance test pinning a rule the proofs do not need. After the
 campaign `scripts/check-lean.sh` exits 0 and the conformance test passes.
+
+The follow-up campaign, at `work/validity-followups` on 2026-09-24, by the
+same method:
+
+5. **An extern family returning the wrong width** (`P4bloArch.call`, a
+   register read wraps to `width + 1`). `lake build
+   P4bloArch.ContractLaws` exits 1 in `call_ok`, the register read case:
+   the out value no longer has the declared type.
+6. **`verify` allowed outside parsers by the rules** (the kind premise
+   removed from `StmtTyped.verify`, with the matching edits in
+   `Sound.lean` and `StepLaws.lean`; the checker still rejects it).
+   `P4bloIR.Progress` builds with exit 0, since a declared parser error is
+   a documented outcome; `P4bloIR.Validity.KindLaws` exits 1 in
+   `dispatch_np`, the verify case: a control could now end in a parser
+   error. The kind refinement pins the placement rule that progress
+   alone does not.
+
+Two further attempts did not isolate a new proof and are recorded as
+such: making `setInvalid` of an invalid header raise `NoError`, and making
+saturating subtraction raise `PacketTooShort`, both broke existing proofs
+(`setValidity_ok`; the scalar typing theorems) before the new ones were
+reached, which is a build failure, not a test of the kind refinement.
