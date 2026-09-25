@@ -18,6 +18,14 @@ import P4bloArch.Coverage
         Print every rule tag of `P4bloIR.Coverage`, one per line, as the
         tag, a tab, and its docstring on one line.
 
+    p4blo-lean check <program.json | -> ...
+        Decode each program and check its validity with
+        `P4bloIR.Validity.check`. Prints one line per program, in order:
+        `accept`, or `reject CODE PATH: MESSAGE` with the first problem,
+        where `CODE` is the Python validator's code, or `DECODE` when the
+        program does not decode. Exit code 0 means every program was
+        accepted, 1 that one was rejected, 2 that an input was unreadable.
+
     p4blo-lean <program.json | ->
         Decode the program, build the name index and print a one-line
         summary. A decoding or indexing error goes to stderr with exit
@@ -60,6 +68,30 @@ def summary (p : Program) (index : Index) : String :=
 def loadProgram (path : String) : IO (Except String (Program × Index)) := do
   let text ← if path == "-" then (← IO.getStdin).readToEnd else IO.FS.readFile path
   pure (Program.fromJsonString text >>= fun p => (p, ·) <$> Index.build p)
+
+/-- The verdict line for one program text, and whether it was accepted. -/
+def verdict (text : String) : String × Bool :=
+  match Program.fromJsonString text with
+  | .error e => (s!"reject DECODE {e}", false)
+  | .ok p =>
+    match Validity.check p with
+    | .ok _ => ("accept", true)
+    | .error d => (s!"reject {d.code.name} {d.path}: {d.message}", false)
+
+/-- The `check` mode: decode, then check validity; one verdict line per
+program. -/
+def checkMode (paths : List String) : IO UInt32 := do
+  let mut code : UInt32 := 0
+  for path in paths do
+    let text ← try
+        if path == "-" then (← IO.getStdin).readToEnd else IO.FS.readFile path
+      catch e =>
+        IO.eprintln s!"error: {e}"
+        return 2
+    let (line, ok) := verdict text
+    IO.println line
+    if !ok then code := 1
+  return code
 
 /-- One request of the `run` mode. -/
 structure Request where
@@ -160,6 +192,7 @@ def main (args : List String) : IO UInt32 := do
       IO.println s!"{info.name}\t{info.doc}"
     return 0
   | "run" :: rest => runMode rest
+  | "check" :: paths@(_ :: _) => checkMode paths
   | [path] =>
     match ← loadProgram path with
     | .ok (p, index) =>
@@ -169,5 +202,5 @@ def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"error: {e}"
       return 1
   | _ =>
-    IO.eprintln "usage: p4blo-lean <program.json | -> | run [--ports N] <program.json> | coverage-inventory | certificate-example-program | check-example-certificate <artifact.json | ->"
+    IO.eprintln "usage: p4blo-lean <program.json | -> | check <program.json | -> ... | run [--ports N] <program.json> | coverage-inventory | certificate-example-program | check-example-certificate <artifact.json | ->"
     return 2
