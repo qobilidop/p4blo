@@ -1,4 +1,4 @@
 {
- "_": "Rule tags of P4bloIR.Coverage that no retained differential case hits yet, each with the generator gap that keeps it unhit. tests/drt/test_drt_coverage.py requires the unhit set to equal this list: a tag that stops being hit is a regression, a listed tag that becomes hit is stale and must be removed. Coverage-guided generation (plan item B2) emptied it; a new tag no campaign reaches is listed here with the gap until a family reaches it.",
+ "_": "Rule tags of P4bloIR.Coverage that no retained differential case hits yet, each with the generator gap that keeps it unhit. tests/drt/test_drt_coverage.py requires the unhit set to equal this list: a tag that stops being hit is a regression, a listed tag that becomes hit is stale and must be removed. Coverage-guided generation emptied it; a new tag no campaign reaches is listed here with the gap until a family reaches it.",
  "unhit": {}
 }

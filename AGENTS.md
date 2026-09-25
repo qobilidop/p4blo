@@ -39,7 +39,8 @@ tools skip it unless told to include hidden files; `git grep` does not.
 
 Everything that was ever written is in git. `.agents/status.md` names
 the archive commit, the tree just before each compaction, so an archived
-note is one command away: `git show <archive commit>:docs/notes/<name>.md`.
+note is one command away: `git show <archive commit>:.agents/notes/<name>.md`
+(`docs/notes/` at the first archive commit).
 The first compaction's archive commit is `9e8f7d47`. The repository
 creates no git tags.
 

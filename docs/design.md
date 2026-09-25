@@ -567,8 +567,8 @@ relation between the two semantics is a joint milestone whose first
 acceptance is that the executable rendering answers every conformance
 fixture and block-level request below exactly as SpecTec's own
 simulator does, and whose theorem relates the rendered block contract
-to `P4bloIR.Exec` under the bridge's elaboration. p4blo owns four things
-that project consumes, each with a stable, documented format:
+to `P4bloIR.Exec` under the bridge's elaboration. p4blo owns what that
+project consumes, each with a stable, documented format:
 
 | Interface | Where | Format |
 |---|---|---|
@@ -578,8 +578,9 @@ that project consumes, each with a stable, documented format:
 | block-level requests and replies | `tests/oracle/block.py`, documented in the oracle README | JSON lines per block, value shapes as the README defines them |
 | the rule inventory at the pin | `tests/oracle/spectec-rules.json` | one item per declaration: kind and name |
 
-A change to any of these formats bumps its version. Two alignments are
-pending on that project's side: the two repositories pin different
+A change to any of these formats bumps its version. The two simulator
+patches are candidates to move to that project, which forks SpecTec
+anyway. Two alignments are pending on that project's side: the two repositories pin different
 P4-SpecTec commits, and p4blo bumps to the other's pin once it is fixed;
 and that project's program export, upstream's own JSON of the booted
 program, replaces patch `0002` when it exists, after which the bridge

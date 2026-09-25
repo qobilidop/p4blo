@@ -3,10 +3,11 @@
 The decisions in force, grouped by topic, each with its reason and the
 date it was made. This is a register, not a diary: an entry that is
 superseded is rewritten in place with the new date and reason, and an
-entry whose subject no longer exists is removed. The chronological log up
-to the last compaction is in git at the archive commit
-`26c93485861bc5442076a1060fcc8d1743952702`. A decision the design
-document already settles is not repeated here.
+entry whose subject no longer exists is removed. The chronological log
+is in git: `docs/decisions.md` at the first archive commit
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24), and this file
+at the second, `26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25).
+A decision the design document already settles is not repeated here.
 
 ## Environment and tooling
 
@@ -23,9 +24,11 @@ document already settles is not repeated here.
 - **Python 3.13, pure Python.** No native code in the `p4blo` package.
   (2026-09-22)
 - **p4c and BMv2 come from `github.com/qobilidop/p4lang-builds`**, native
-  amd64/arm64 images with immutable tags; p4c is pinned by index digest,
-  and p4c through Docker is an optional local check of the printer's
-  goldens, skipped without Docker. (2026-09-22)
+  amd64/arm64 images of p4c 1.2.5.15 and BMv2 1.15.4 with immutable tags,
+  because the official p4c image is amd64 only and crashed under
+  emulation on ARM; p4c is pinned by index digest, and p4c through Docker
+  is an optional local check of the printer's goldens, skipped without
+  Docker, since building p4c is out of proportion. (2026-09-22)
 - **Every external input is pinned, and the pins are listed** in
   `docs/workflows.md`: images by digest, GitHub Actions by commit, the
   oracle's opam repository by commit, sources by SHA-256. (2026-09-22)
@@ -83,10 +86,16 @@ document already settles is not repeated here.
 - **Shared verification assets live under `tests/`**; public applications
   under `examples/` with their verification under `tests/examples/`.
   (2026-09-23, 2026-09-24)
+- **Existing public APIs may change for demonstrated usability gains.**
+  Preserve the semantic contract and readable examples; keep authoring
+  changes separate from semantics changes; migrate callers with
+  diagnostic and golden tests. (2026-09-23)
 
 ## IR and wire syntax
 
-- **Proto package `p4blo.v0`**, pre-1.0 by design. (2026-09-22)
+- **Proto package `p4blo.v0`**, pre-1.0 by design; buf's version-suffix
+  lint rule is excepted in `buf.yaml` rather than renaming to `v1alpha1`.
+  (2026-09-22)
 - **One `Block` message with a kind tag**; **references by scoped name,
   not integer id**; **typed oneofs, not a generic node**; **no type
   annotations on expressions** (leaves are typed, values carry widths,
@@ -96,11 +105,18 @@ document already settles is not repeated here.
   and above are reserved for annotations**; **fields named after Python
   keywords are renamed**; **table `size` is informative**. (2026-09-22)
 - **`int<N>` is out of scope for v0**; additive when wanted. (2026-09-22)
-- **Elaborations, named in the coverage table**, are performed by the
-  bridge where the coverage page's Bridge column says so; excluded rows
-  are refused by name. Out by thesis: `range`, `optional` and `..` in
-  entries, since core.p4 declares only exact, ternary and lpm.
-  (2026-09-22, performed 2026-09-24)
+- **Elaborations, named in the coverage table.** A slice as an lvalue is
+  a read-modify-write of the whole field; `switch` on `action_run` is a
+  block local each action assigns plus an if-chain; P4 `type` is
+  elaborated like `typedef`; functions are inlined; constructor
+  parameters give one block per instantiation. Out by scope, each
+  additive if wanted: `string`, non-header arrays, `packet_in.length()`,
+  static extern methods, mutable initial entries and per-entry `const`,
+  object initializers, abstract methods. Out by thesis: `range`,
+  `optional` and `..` in entries, since core.p4 declares only exact,
+  ternary and lpm. The bridge performs the rewrites the page's Bridge
+  column marks and refuses excluded rows by name. (2026-09-22, performed
+  2026-09-24)
 - **Entry priority: larger wins, everywhere in the IR, and const entries
   take the language specification's numbering.** With the default
   `largest_priority_wins`, an entry written with `priority = n` keeps `n`
@@ -129,13 +145,17 @@ document already settles is not repeated here.
 - **The typed eDSL is type-safe by construction where pyright allows and
   run-time checked where it does not**, deviating from its design note in
   four places the type checker forced: width aliases and typed literals
-  type as places; `Bool`, `Enum` and `Error` targets have no static place
-  split; extern `in` parameters accept any value with the width checked at
-  run time; a failed `assign` is `reportCallIssue`.
+  type as places, so a literal used as a target is caught at run time
+  only; `Bool`, `Enum` and `Error` targets have no static place split;
+  extern `in` parameters accept any value with the width checked at run
+  time; sub-block call arguments are run-time checked. `assign` is
+  overloaded over target kinds, so pyright reports a failed assignment as
+  `reportCallIssue`, and the must-fail fixtures say so.
   `tests/unit/test_pyright.py` guards the static rules. (2026-09-22)
 - **A local declared without an initializer inside a parser state or an
   action is re-zeroed at every entry** by the eDSL, as the bridge does
-  (see Semantics rulings). (2026-09-25)
+  (see Semantics rulings; the ruling is of 2026-09-24, the eDSL followed
+  on 2026-09-25).
 
 ## Semantics rulings
 
@@ -169,13 +189,18 @@ decides them; these entries record why.
   booleans so the forwarder runs unchanged under the switch; byte-aligned
   parsing required; the control runs after a parser rejection. **Port
   rules**: ports are `0` to `ports - 1`; an out-of-range `egress_port`
-  drops with a diagnostic; BMv2's drop port 511 is an out-of-range port
-  here. **Architecture rules the design left open**: a parse ending off
-  a byte boundary drops the packet; an undeclared contract field reads as
-  zero and swallows writes; `parser_error` is written after the parser's
-  own `inout` writes. (2026-09-22)
+  drops with a diagnostic; an out-of-range `ingress_port` is the caller's
+  error before anything runs; the filter has no port count; BMv2's drop
+  port 511 is an out-of-range port here. **Architecture rules the design
+  left open**: a parse ending off a byte boundary drops the packet; an
+  undeclared contract field reads as zero and swallows writes;
+  `parser_error` is written after the parser's own `inout` writes and
+  before the control; the filter forwards the original bytes, so its
+  tests rewrite expectations to the input bytes. (2026-09-22)
 - **An out-of-range register read yields zero, diverging from BMv2
-  knowingly**; a strict xfail on the one vector. (2026-09-22)
+  knowingly.** BMv2 leaves the destination untouched; P4 leaves this
+  implementation-defined; a strict xfail on the one vector, not resolved.
+  Revisit only if a corpus program depends on it. (2026-09-22)
 - **CRC16/CRC32 are stateless extern families with exact byte-aligned
   widths**, full results and no padding; the contract is in
   `docs/assurance.md`. (2026-09-23)
@@ -188,8 +213,9 @@ decides them; these entries record why.
 
 - **P4-SpecTec is the primary oracle for the IR's meaning; BMv2 is the
   tie-breaker where SpecTec is known wrong** (odd-byte CRC32 padding, mask
-  construction, the shift limit) and for what the simulator cannot judge
-  (real longest prefix, const-entry and runtime ternary priorities).
+  construction) and for what the simulator cannot judge (real longest
+  prefix, const-entry and runtime ternary priorities; shift amounts above
+  2048, which its builtins refuse).
   Reason: SpecTec is the mechanization of P4 itself. Comparison happens
   at three levels: printed P4 through the v1model shim, block by block on
   the patched simulator, and at the IL level through the bridge.
@@ -203,7 +229,9 @@ decides them; these entries record why.
   v1model's STF name rewrites are refused rather than rewritten. Known
   differences are accepted only through checked models of the exact
   defect, never by tag. Reason: through the pipeline the simulator could
-  never show its register cells. (2026-09-24)
+  never show its register cells. Offer the patch upstream when it
+  stabilizes; both patches are candidates to move to `p4-spectec-lean`,
+  which forks SpecTec anyway. (2026-09-24)
 - **The IL bridge is the frontend from P4 source.** Patch `0002` exports
   the instantiated IL structurally as JSON and `p4blo.frontend`
   translates it as the coverage page prescribes. v1model in reverse:
@@ -252,11 +280,15 @@ decides them; these entries record why.
   `tests/oracle/run.py` supplies prefix lengths as priorities; BMv2
   decides real lpm, const-entry and runtime ternary priorities; printed
   ternary entries are not const, since p4c 1.2.5 refuses priorities on
-  them. (2026-09-22)
+  them. Known gap: printed const lpm entries carry no priorities, so a
+  program whose const lpm entries overlap fails on SpecTec until the
+  printer adds them. (2026-09-22)
 - **Corpus programs come from p4c's test suite** where STF vectors exist,
   plus programs of our own. **The original tutorial firewall is an
   independent oracle input**, its state observed through a scoped BMv2
-  barrier reading all 8192 cells. (2026-09-22, 2026-09-23)
+  barrier reading all 8192 cells; valid for the pinned single-ingress
+  FIFO implementation, revisit before recirculation or asynchronous
+  externs. (2026-09-22, 2026-09-23)
 - **An original-program oracle is evidence to challenge, not a definition
   to copy**: strict discrepancy tests with passing controls record pinned
   SpecTec's defects; inputs are never adapted to manufacture agreement;
@@ -293,6 +325,15 @@ decides them; these entries record why.
   in isolated worktrees, survivors become tests; a build failure is not a
   semantic kill. `scripts/check-assurance.py` replays a finite, reviewed
   catalogue from tracked fixtures. (2026-09-23)
+- **Mutation survivors drive generated-program coverage**: systematic
+  scalar boundaries, recursively typed generated expressions, generated
+  stateful programs with independent register and counter bounds, and
+  generated host policy changes; shrinking preserves types; invalid
+  generated programs fail rather than being filtered; failed programs
+  are retained under `.artifacts/drt/`. Host changes within one sequence
+  are Python/Lean-only evidence: the original BMv2 protocol cannot
+  replace rules mid-sequence, so revisit that limitation before claiming
+  original-oracle coverage of host changes. (2026-09-23)
 - **Proof trust is a build gate.** The gate builds with
   `lake build --wfail`, so a warning fails the build without rewriting
   the severities `#guard_msgs` tests observe (adopted from
@@ -335,10 +376,15 @@ audit files; these entries record the shape.
   no theorem, because their meaning lives outside the IR's evaluator.
   (2026-09-24)
 - **Applications are separately named policies with independent
-  anchors**; further readback and ingress proofs are parked, and no new
-  application or typed-source-language theorem is started unless a scope
-  asks for it. Proof effort goes to termination and codec composition.
-  (2026-09-23, 2026-09-24)
+  anchors.** A proved state mapping is still anchored by a hand-built
+  asymmetric known answer, because a paired relabeling preserves the
+  proofs. Further readback and ingress proofs are parked. (2026-09-23)
+- **No new application or typed-source-language theorems until the
+  simulation theorem with the SpecTec rendering exists.** The theorems so
+  far establish p4blo's internal consistency; the IL bridge landed on
+  2026-09-24, and the claim about P4 now waits on `p4-spectec-lean`.
+  Proof effort goes to termination and codec composition. (2026-09-24,
+  reason updated 2026-09-25)
 - **One shared operator AST and one command AST**; custom notation waits
   for a real application. **Codec laws are composed in baseline-first
   slices.** (2026-09-23)

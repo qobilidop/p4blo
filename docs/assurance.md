@@ -353,7 +353,7 @@ was removed. Witness pairs in
 `spec/arch/P4bloArchTest/fixtures/` pin each rule's condition from both
 sides, one program that must report it and one that must not, with the
 recorded reply anchoring what actually ran. An independent review of the
-observer and its fixes are filed under the agent reviews.
+observer and its fixes are archived in git with the agent reviews.
 
 The conformance corpus under `tests/conformance/` is the Lean semantics'
 answers kept as data: one fixture per input, each a program, an ordered request

@@ -24,15 +24,18 @@ The four claims of [design.md](../docs/design.md):
 | Claim | Status |
 |---|---|
 | 1. The core is small and post-elaboration | green: twelve corpus programs and three applications fit without a new core construct; P4 source now enters through P4-SpecTec's typing and instantiation (`p4blo.frontend`), six corpus goldens reproduce byte for byte from their P4 originals, and 98 of the 191 pinned v1model programs with vectors run from source (`tests/oracle/frontend-census.json`) |
-| 2. Supports the tested real programs | green with explicit exceptions: every corpus and example vector passes both P4 oracles at the pipeline level except the strict BMv2 register and priority divergences, and block by block on SpecTec except three strict expected failures behind checked models; generated programs on SpecTec pass with two classified simulator defects |
+| 2. Supports the tested real programs | green with explicit exceptions: every corpus and example vector passes both P4 oracles at the pipeline level except the strict BMv2 register and priority divergences and SpecTec's strict mask failure on the printed tutorial firewall, and block by block on SpecTec except three strict expected failures behind checked models; the original-source probes expose the pinned SpecTec CRC and mask defects, all classified; generated programs on SpecTec pass with two classified simulator defects |
 | 3. A block is a function; an architecture is ordinary code | green, frozen: filter 45 lines, switch 50, no P4 in either; every program runs under both |
 | 4. Mechanized and agrees with the reference | green within the stated profile: whole-program validity decided by a checker proved sound, progress (no reachable interpreter error for a valid program) with the extern contract discharged for the reference families, 63 deviation and helper laws, every one of the 157 rule tags of the Lean machine hit by retained differential campaigns, a conformance corpus of 89 fixtures; no universal Python equivalence claim, no termination theorem |
 
 ## What the IR semantics scope established
 
-Each item was built by a sub-agent in its own worktree, reviewed
-independently, and its review's defects fixed on `main`; the reviews
-are archived at the archive commit under `.agents/reviews/`.
+Each of the ten semantic items was built by a sub-agent in its own
+worktree, reviewed independently, and its review's defects fixed on
+`main`; the reviews are archived at the archive commit under
+`.agents/reviews/`. The reorganization, the priority ruling, the eDSL
+re-zeroing and the gate speed-ups were integrated without a separate
+review.
 
 - **The deviation ledger** (`docs/ir-semantics.md`): 56 closed behaviors,
   each citing the P4 section, the SpecTec rule at the pin, the Lean
@@ -66,7 +69,7 @@ are archived at the archive commit under `.agents/reviews/`.
   `Progress.lean` with `ExternContract` proved for the reference
   families and a kernel-checked non-vacuity instance on csum16,
   `KindLaws` and `EntryLaws`, `DeviationLaws` (63 theorems); every
-  theorem audited on the three standard axioms.
+  advertised theorem audited on the three standard axioms.
 - **Organization**: Lean roots follow the `<Root>Test` convention with
   one `p4blo` executable; `p4blo.validator` is a package, one expression
   typer, the printer apart from the v1model shim; tests grouped by the
@@ -95,20 +98,20 @@ At `26c9348`, in the pinned environment, each exiting 0:
 - `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: 5139 passed, one skipped
   (the optional local XDP image), four xfailed, in 43 s of tests and 50 s
   in all; the oracle suites are deselected locally.
-- `scripts/check-assurance.py` at `b126923`, the `--wfail` change being
+- `scripts/check-assurance.py` at `dd491cf`, the `--wfail` change being
   the last to touch its inputs.
-- The oracle suites on the shared simulator with both patches:
-  360 passed and 6 xfailed (`-m oracle -k "not bmv2"`) on the regrouped
-  tree at `8f4458d`, whose content `3a654b5` merged; BMv2 161 passed and
-  2 xfailed at `35f16b6`.
+- The oracle suites on the shared simulator with both patches, on the
+  compaction tree (the tests of `26c9348` unchanged): 360 passed and
+  6 xfailed (`-m oracle -k "not bmv2"`); BMv2 161 passed and 2 xfailed
+  at `35f16b6`.
 
-CI at `dd491cf` (the last complete set before this compaction):
-[CI](https://github.com/qobilidop/p4blo/actions/runs/36109471115),
-[Oracle](https://github.com/qobilidop/p4blo/actions/runs/36109471272),
-[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36109471100),
-[XDP](https://github.com/qobilidop/p4blo/actions/runs/36109471084) all
-green; the runs at `26c9348` are linked from the commit and were still
-running at compaction time. Local logs and artifacts under `.artifacts/`
+All six workflows passed at `26c9348`:
+[CI](https://github.com/qobilidop/p4blo/actions/runs/36110812077),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36110812032),
+[Oracle](https://github.com/qobilidop/p4blo/actions/runs/36110811991),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36110812029),
+[XDP](https://github.com/qobilidop/p4blo/actions/runs/36110812036),
+[website](https://github.com/qobilidop/p4blo/actions/runs/36110812061). Local logs and artifacts under `.artifacts/`
 are untracked and not evidence anyone else can check.
 
 ## Open threads
@@ -142,11 +145,20 @@ These are parked or backlog, not tasks; resuming any needs a scope.
   `<block>_inst` are not checked against the caller's scope; a case with
   both a bad entry and a bad port reports different first errors on Python
   and Lean.
+- **Verification open items** beyond the roadmap's proof entries:
+  general assignment preservation; further extern contracts; application
+  properties beyond the proved initialization, Bloom insertion and
+  forwarding laws; generated table-invoked actions and parser-error
+  copyback across sequences.
 - **Interchange open items:** text parsing, semantic-version policy,
-  resource limits, unknown-field policy.
-- **XDP** stays a compile-only profile; nothing about the kernel is
-  established. **BMv2 cannot see `flood`** until a corpus program
-  declares it. **The p4c backend** is deferred behind verification.
+  whole-program codec proofs, resource limits, unknown-field policy.
+- **XDP** stays a compile-only profile: an FD-only strict adapter and a
+  capability-scoped execution preflight; the flowlet time/randomness
+  and the Katran profile still need an audit; nothing about the kernel
+  is established. **BMv2 cannot see `flood`** until a corpus program
+  declares it. **The p4c backend** is deferred behind verification; it
+  is the experiment that would test claim 1 and the elaborated rows the
+  bridge does not yet perform.
 
 ## Blocked
 
