@@ -79,7 +79,7 @@ under `reviews/`; every finding is fixed.
 | Copy-back resolution at copy-in (both interpreters, proofs unchanged, 17 cases confirmed on SpecTec) and parser-only `lastIndex` in the validator | done, `2192fac` |
 | Lean coverage review fixes: the six defects and the doubtful conditions, copy-back classified through the resolved lvalues, witness pairs for all 157 tags (135 requests, replies anchored to the reference interpreter), nine mutants caught, 33 tags still unhit | done, `495268d` |
 | C4 deviation theorems: `P4bloIR.DeviationLaws`, 39 audited theorems over the production definitions for the ten run-time closed behaviors, a general longest-prefix and priority law over `Installed.lookup`, the revisit check of the parser loop bound; nine evaluator mutants each rejected at a named theorem; not proved: that a non-consuming loop always reaches the revisit check | merged, `bc4b8bc`; review pending |
-| B2 coverage-guided generation, with the two Phase 1 review fix lists (the table-mask classifier control model, the sampler gaps, the exclusion corrections, the probe cleanups) | building on `work/guided-generation` |
+| B2 coverage-guided generation: two menu-driven families aimed at the rule tags, a guided driver with JESTfs's one-feature-sensitive criterion, every one of the 157 Lean rule tags hit (the unhit list is empty), SpecTec in-scope rules unhit down to 2 with 18 generated seeds measured; the table-mask classifier gained a control model; the exclusion and probe corrections from both Phase 1 reviews; about 26,000 Lean requests and 3,000 SpecTec vectors with no disagreement | merged, `6a9e83d` |
 | Theorem review follow-up (merged, `8c674fc`..): 63 audited theorems now; laws pin `prefixLength`, `keyValueMatches` and `Value.equalList` (the review's three surviving mutants now fail), `!=` negates `==`, the cursor never moves back and a revisit without consumption times out across a sub-parser boundary; every theorem instantiated in the test module | merged, gate pending |
 | B3 exported conformance corpus: 87 fixtures, 507 recorded Lean answers under `tests/conformance/`, Python checked in under a second, Lean by regeneration, corruption and drift tests | merged, `e304c61`; review pending |
 | A4 single-block SpecTec runner: a `p4blo` architecture patch (1,184 added lines) for the simulator, `tests/oracle/block.py`, block-by-block comparison of every corpus and example vector with extern state carried across; three strict expected failures (CRC padding on the firewall's register cells, which the pipeline oracle could not see; the push/pop deviation on the stacks vector) | merged, `b5c40ff`; review pending; the shared local oracle still needs rebuilding with the patch once no builder uses it |
@@ -108,6 +108,16 @@ upstream-report candidates); the simulator refuses shift amounts above
 - **Unhit rule tags** (`tests/drt-unhit-tags.json`) and unhit SpecTec
   rules (`tests/oracle/spectec-coverage-exclusions.json`, category
   `unhit`) are the work lists for coverage-guided generation, plan item B2.
+- **Printer declaration order.** The printer emits actions in IR order,
+  and an action that calls one declared after it prints P4 that
+  SpecTec's typing rejects (`CallableType_ok`). Either the printer
+  orders actions by call dependency or the validator requires that
+  order; the generated control family declares callees first meanwhile.
+- **Two SpecTec rules in scope stay unhit** and are reachable:
+  `Expr_eval/non-default-abort` needs a checksum or CRC call in a parser
+  whose data holds a lookahead, and `Copy_in_arg/abort` needs a
+  sub-parser with an `inout` header parameter called with a stack element
+  indexed by a lookahead.
 - **Ledger citations in code.** Tag docstrings and some module headers
   cite the semantics page by its old section names; the coverage-fix
   branch updates the tags, and workstream D does the rest.

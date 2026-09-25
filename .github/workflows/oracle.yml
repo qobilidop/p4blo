@@ -61,3 +61,5 @@ jobs:
         run: nix develop .#oracle -c python3 tests/oracle/coverage.py build
       - name: Check SpecTec rule coverage against the pinned simulator
         run: nix develop -c uv run pytest tests/test_spectec_coverage.py -v
+        env:
+          P4BLO_REQUIRE_SPECTEC_COVERAGE: "1"

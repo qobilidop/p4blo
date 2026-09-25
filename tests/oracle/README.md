@@ -27,11 +27,12 @@ SpecTec by name and `tests/test_spectec_rules.py` can check the citations
 without an OCaml toolchain. Regenerate it whenever the pin moves.
 
 `spectec-coverage.json` beside it records which of those items fire when
-the corpus and examples run on the simulator, measured by `coverage.py`.
-The simulator's own `cover-sim` counts instructions of a merged decision
-tree and cannot name rules, so `coverage.py` builds a small probe against
-the checkout's library, in `~/.cache/p4blo/spectec-coverage-probe` and
-never inside the checkout. The probe records each instruction's source
+the corpus, the examples and a fixed set of generated programs run on the
+simulator, measured by `coverage.py`. The simulator's own `cover-sim`
+counts instructions of a merged decision tree and cannot name rules, so
+`coverage.py` builds the small probe in `coverage_probe.ml` against the
+checkout's library, in `~/.cache/p4blo/spectec-coverage-probe` and never
+inside the checkout. The probe records each instruction's source
 region, and every run checks its totals against `cover-sim -instr`. Build
 it once per pin with `python3 tests/oracle/coverage.py build` where
 `build.sh` runs, then regenerate with `uv run python tests/oracle/coverage.py`
@@ -233,6 +234,8 @@ constructors the DRT tests use.
 | `aggregate_copy` | header and struct copies, mutated on both sides afterwards, every stored field and validity emitted |
 | `call_copy` | `in`, `inout` and `out` header arguments of an action or a sub-control call |
 | `corpus` | a corpus or example program with random entries and packets, as `python -m p4blo.drt` makes them |
+| `control` | a control built from a menu of choices aimed at the semantics' rule tags: direct and nested action calls, overlapping arguments, equality on headers, structs, stacks and enums, whole-header assignment, stack access at packet-derived indices, tables with and without a declared default |
+| `parser` | a parser from the same kind of menu: `advance`, bool and header lookahead, zero-width and out-of-range extracts, `lastIndex` before any extract, `verify` with `NoError`, parser `if`, explicit reject in a sub-parser, loops that consume nothing, and selects with ranges, masks, several keys, non-bits keys or no default |
 
 Each seed's program is validated and loaded, the Python interpreter runs
 its cases, and its outputs become the `expect` lines (or `no_packet`) of an
