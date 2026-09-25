@@ -54,12 +54,13 @@ def crossings(files: list[Path], forbidden: tuple[str, ...]) -> list[str]:
 
 
 # Scripts CI or a container runs with a bare interpreter, before or without
-# the p4blo package: the coverage probe's `build`, the BMv2 container's
-# driver and the website renderer. Their module-level imports must come from
+# the p4blo package: the coverage probe's `build`, the BMv2 and XDP
+# containers' drivers and the website renderer. Their module-level imports must come from
 # the standard library; p4blo imports stay inside the functions that need it.
 BARE_INTERPRETER_SCRIPTS = (
     "tests/oracle/coverage.py",
     "tests/oracle/bmv2/driver.py",
+    "tests/oracle/xdp/check.py",
     "scripts/render-website-example.py",
 )
 
@@ -67,8 +68,15 @@ BARE_INTERPRETER_SCRIPTS = (
 def top_level_non_stdlib(path: Path) -> list[str]:
     """Modules imported at module level that are not in the standard library."""
     names: list[str] = []
-    for node in ast.parse(path.read_text(encoding="utf-8"), str(path)).body:
-        if isinstance(node, ast.Import):
+    pending = list(ast.parse(path.read_text(encoding="utf-8"), str(path)).body)
+    while pending:
+        node = pending.pop()
+        # Module-level `if`, `try` and `with` bodies run at import too.
+        if isinstance(node, (ast.If, ast.Try, ast.With)):
+            pending.extend(ast.iter_child_nodes(node))
+        elif isinstance(node, ast.ExceptHandler):
+            pending.extend(node.body)
+        elif isinstance(node, ast.Import):
             names.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             names.append(node.module)
@@ -87,11 +95,12 @@ def test_bare_interpreter_scripts_import_only_stdlib_at_module_level(script: str
 def test_bare_interpreter_check_detects_a_module_level_package_import(tmp_path: Path) -> None:
     script = tmp_path / "script.py"
     script.write_text(
-        "import json\n\nfrom p4blo.arch import wire\n\n\ndef f() -> None:\n"
+        "import json\n\nfrom p4blo.arch import wire\n\ntry:\n    import p4blo.ir\n"
+        "except ImportError:\n    pass\n\n\ndef f() -> None:\n"
         "    from p4blo import stf\n",
         encoding="utf-8",
     )
-    assert top_level_non_stdlib(script) == ["p4blo.arch"]
+    assert sorted(top_level_non_stdlib(script)) == ["p4blo.arch", "p4blo.ir"]
 
 
 def test_ir_side_never_imports_architecture_or_harness() -> None:
