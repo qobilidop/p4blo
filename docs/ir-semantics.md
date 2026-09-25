@@ -488,7 +488,7 @@ decision, not the parser's.
   oracle.
   - P4: §12.11
   - SpecTec: `ParserState_trans/state`
-  - Lean: `enterState`, `DeviationLaws.enterState_revisit`, `DeviationLaws.enterState_again`, `DeviationLaws.step_state_revisit`
+  - Lean: `enterState`, `DeviationLaws.enterState_revisit`, `DeviationLaws.enterState_first`, `DeviationLaws.enterState_again`, `DeviationLaws.step_state_revisit`, `DeviationLaws.reaches_cursor_le`, `DeviationLaws.reaches_recorded`, `DeviationLaws.enterState_advanced`, `DeviationLaws.enterState_no_consumption`, `DeviationLaws.reaches_state_revisit`
   - Python: `p4blo.interp.stmt.enter_state`
   - Test: `tests/test_interp_parser.py::test_revisiting_a_state_without_consuming_is_parser_timeout`, `tests/test_interp_parser.py::test_the_revisit_rule_sees_a_cycle_through_another_state`, `tests/test_interp_parser.py::test_revisiting_after_consuming_is_allowed`, `tests/test_interp_parser.py::test_sub_parser_states_count_for_the_revisit_rule`
   - Class: refines undefined. `ParserState_trans/state` recurses into the next state with no bound, so a loop that consumes nothing has no finite derivation and SpecTec gives no outcome.

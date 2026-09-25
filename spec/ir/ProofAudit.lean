@@ -414,6 +414,42 @@ This does not prove that the statements express the intended P4 semantics.
 #guard_msgs in
 #print axioms P4bloIR.DeviationLaws.step_state_revisit
 
+/-- info: 'P4bloIR.DeviationLaws.step_advances' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.step_advances
+
+/-- info: 'P4bloIR.DeviationLaws.reaches_advances' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.reaches_advances
+
+/-- info: 'P4bloIR.DeviationLaws.reaches_cursor_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.reaches_cursor_le
+
+/-- info: 'P4bloIR.DeviationLaws.recorded_empty' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.recorded_empty
+
+/-- info: 'P4bloIR.DeviationLaws.recorded_of_advances' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.recorded_of_advances
+
+/-- info: 'P4bloIR.DeviationLaws.reaches_recorded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.reaches_recorded
+
+/-- info: 'P4bloIR.DeviationLaws.enterState_advanced' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.enterState_advanced
+
+/-- info: 'P4bloIR.DeviationLaws.enterState_no_consumption' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.enterState_no_consumption
+
+/-- info: 'P4bloIR.DeviationLaws.reaches_state_revisit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.reaches_state_revisit
+
 /-- info: 'P4bloIR.DeviationLaws.prefixLength_eq' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.DeviationLaws.prefixLength_eq
