@@ -273,7 +273,8 @@ def test_known_bmv2_marker_does_not_hide_errors_or_corrections(tmp_path: Path, s
     """Exercise pytest's actual marker, not just metadata or the predicate."""
     source = tmp_path / "test_marker.py"
     source.write_text(
-        "from tests.external.test_oracle_bmv2 import CORPUS, marks, bmv2_run, REGISTER_BOUNDS_DETAIL\n"
+        "from tests.external.test_oracle_bmv2 import "
+        "CORPUS, marks, bmv2_run, REGISTER_BOUNDS_DETAIL\n"
         "from tests.external.test_oracle_bmv2 import test_vector_passes_on_bmv2 as check_vector\n"
         "vector = CORPUS / 'register_bounds/bounds.stf'\n"
         "def test_probe(monkeypatch):\n"

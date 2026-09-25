@@ -33,8 +33,8 @@ from p4blo import ir
 from p4blo import validator as v
 from p4blo.drt.families import FAMILIES, sample
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.unit import test_validator
 from tests.examples import catalog
+from tests.unit import test_validator
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "tests" / "corpus"

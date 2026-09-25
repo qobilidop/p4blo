@@ -51,8 +51,8 @@ from p4blo.v0 import p4blo_pb2 as pb
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from tests.oracle import block as oracle_block  # noqa: E402
 from tests.external.test_oracle import VECTORS, program_of  # noqa: E402
+from tests.oracle import block as oracle_block  # noqa: E402
 
 PROGRAMS = sorted({program_of(v) for v in VECTORS})
 

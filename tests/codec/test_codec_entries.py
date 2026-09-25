@@ -26,7 +26,13 @@ from p4blo.interp.tables import InstallError
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec import test_codec_tables as table
 from tests.codec.test_codec_expr import Expression
-from tests.codec.test_codec_leaves import EntriesCodecKind, assert_leaf, key_leaves, leaves, same_json
+from tests.codec.test_codec_leaves import (
+    EntriesCodecKind,
+    assert_leaf,
+    key_leaves,
+    leaves,
+    same_json,
+)
 from tests.lean.test_lean_forwarder import freeze
 
 

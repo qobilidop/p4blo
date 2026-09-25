@@ -137,9 +137,9 @@ class Input:
 
 def inputs() -> tuple[Input, ...]:
     from tests.corpus.tutorial_firewall.tutorial_firewall import build
-    from tests.programs.test_firewall import connection
     from tests.lean.test_lean_forwarder_apply import application_packet
     from tests.lean.test_lean_forwarder_tables import packet_case
+    from tests.programs.test_firewall import connection
 
     forwarder = ir.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
     firewall = build()
@@ -323,9 +323,9 @@ class Run:
 
 
 def baseline_known_answers(selected: tuple[Input, ...]) -> None:
-    from tests.programs.test_firewall import connection
     from tests.lean.test_lean_forwarder_apply import application_output
     from tests.lean.test_lean_forwarder_tables import packet_expected
+    from tests.programs.test_firewall import connection
 
     for item in selected:
         loaded = arch.load(item.program)

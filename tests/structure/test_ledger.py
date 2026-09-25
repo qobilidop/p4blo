@@ -467,7 +467,10 @@ def test_every_test_reference_exists() -> None:
 
 
 def test_the_test_resolver_is_strict() -> None:
-    assert reference_problem("tests/structure/test_ledger.py::test_the_test_resolver_is_strict") is None
+    assert (
+        reference_problem("tests/structure/test_ledger.py::test_the_test_resolver_is_strict")
+        is None
+    )
     assert reference_problem("tests/corpus/stacks") is None
     assert reference_problem("tests/structure/test_ledger.py::test_no_such_test") is not None
     assert reference_problem("tests/corpus/no_such_program") is not None

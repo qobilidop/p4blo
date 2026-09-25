@@ -31,7 +31,6 @@ from p4blo.interp.env import Env
 from p4blo.interp.tables import InstalledEntries, Match, TableRef
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.oracle.bmv2 import run as bmv2_run
 from tests.codec.test_codec_leaves import same_json
 from tests.lean.test_lean_edsl_fields import target
 from tests.lean.test_lean_forwarder import assert_program_identity, freeze
@@ -49,6 +48,7 @@ from tests.lean.test_lean_forwarder_tables import (
     packet_case,
 )
 from tests.lean.test_lean_forwarder_tables import PROFILES as ROUTES
+from tests.oracle.bmv2 import run as bmv2_run
 
 ROOT = Path(__file__).resolve().parents[2]
 STATES = list(itertools.product([False, True], [False, True], [False, True], [0, 1, 255]))
