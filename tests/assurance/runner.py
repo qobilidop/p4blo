@@ -137,7 +137,7 @@ class Input:
 
 def inputs() -> tuple[Input, ...]:
     from tests.corpus.tutorial_firewall.tutorial_firewall import build
-    from tests.test_firewall import connection
+    from tests.programs.test_firewall import connection
     from tests.lean.test_lean_forwarder_apply import application_packet
     from tests.lean.test_lean_forwarder_tables import packet_case
 
@@ -323,7 +323,7 @@ class Run:
 
 
 def baseline_known_answers(selected: tuple[Input, ...]) -> None:
-    from tests.test_firewall import connection
+    from tests.programs.test_firewall import connection
     from tests.lean.test_lean_forwarder_apply import application_output
     from tests.lean.test_lean_forwarder_tables import packet_expected
 

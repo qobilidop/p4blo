@@ -31,9 +31,9 @@ from p4blo.drt.run import (
 )
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.corpus.tutorial_firewall.tutorial_firewall import build
-from tests.test_firewall import Step, bypass, collision, connection, edges, shapes
-from tests.test_firewall_boundaries import persistence, truncated
-from tests.test_firewall_generated import Event, campaigns, model, targeted
+from tests.programs.test_firewall import Step, bypass, collision, connection, edges, shapes
+from tests.programs.test_firewall_boundaries import persistence, truncated
+from tests.programs.test_firewall_generated import Event, campaigns, model, targeted
 from tests.lean.test_lean_forwarder import freeze
 
 ROOT = Path(__file__).resolve().parents[2]

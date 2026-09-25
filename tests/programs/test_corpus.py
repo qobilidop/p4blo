@@ -17,7 +17,7 @@ import pytest
 from p4blo import arch, ir, stf, validator
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
+CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 VECTORS = sorted(v for p in PROGRAMS for v in p.glob("*.stf"))
 

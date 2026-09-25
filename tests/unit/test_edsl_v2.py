@@ -1,7 +1,7 @@
 """The typed eDSL builds the IR it says it does, one focused test per construct.
 
 Every test compares what a v2 program builds with hand-written text-format
-IR. The forwarder rebuilding its golden (tests/test_corpus.py) is the
+IR. The forwarder rebuilding its golden (tests/programs/test_corpus.py) is the
 acceptance test; tests/unit/test_pyright.py covers what pyright rejects.
 """
 

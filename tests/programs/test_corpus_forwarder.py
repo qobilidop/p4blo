@@ -1,6 +1,6 @@
 """The forwarder corpus program has the shape the tutorial gives it.
 
-Its vectors replay in tests/test_corpus.py with every other program."""
+Its vectors replay in tests/programs/test_corpus.py with every other program."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus" / "forwarder"
+CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus" / "forwarder"
 PROGRAM = CORPUS / "forwarder.txtpb"
 
 

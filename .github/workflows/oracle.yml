@@ -54,7 +54,7 @@ jobs:
       - name: Check CRC known answers and precise discrepancies
         run: nix develop -c uv run pytest tests/unit/test_crc.py -k spectec -v
       - name: Check original firewall sequences and mask discrepancy
-        run: nix develop -c uv run pytest tests/test_firewall.py -k spectec -v
+        run: nix develop -c uv run pytest tests/programs/test_firewall.py -k spectec -v
       - name: Run generated programs and cases on the oracle
         run: nix develop -c uv run pytest tests/test_oracle_generated.py -v
       - name: Translate P4 source into IR through the IL bridge

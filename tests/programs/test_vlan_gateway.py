@@ -14,7 +14,7 @@ from p4blo.drt.state import Observation
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.corpus.vlan_gateway.vlan_gateway import build
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MACS = bytes.fromhex("000000000002000000000001")
 PAYLOAD = bytes.fromhex("4500001400010000401166d60a0000010a000002")
 UNTAGGED = MACS + bytes.fromhex("0800") + PAYLOAD

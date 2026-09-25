@@ -29,7 +29,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 from tests.corpus.tutorial_firewall.tutorial_firewall import build
 from tests.oracle import firewall as original
 from tests.oracle.bmv2 import run as bmv2
-from tests.test_firewall import (
+from tests.programs.test_firewall import (
     CONFIGURATION,
     INDICES,
     SENTINEL_OUTPUT,

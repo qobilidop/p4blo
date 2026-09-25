@@ -20,8 +20,8 @@ locally before pushing, and check exit codes, not output.
 | Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs the rest with `-n auto`; the oracle suites share one simulator and are run in series) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
-| Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
-| Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/test_firewall.py tests/test_firewall_boundaries.py tests/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
+| Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
+| Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py tests/programs/test_firewall_boundaries.py tests/programs/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
 | Forwarding application BMv2 profile | `uv run pytest tests/lean/test_lean_forwarder_apply.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
@@ -209,7 +209,7 @@ misspelled field, state, action or table, an unequal width, or a
 `concat` used without `as_` is an error there before the build runs.
 `tests/unit/test_pyright.py` guards those static rules, with a file under
 `tests/pyright/must_fail/` per mistake and its expected diagnostic.
-`tests/test_corpus.py` picks the directory up by itself: it validates,
+`tests/programs/test_corpus.py` picks the directory up by itself: it validates,
 rebuilds the golden from the source, replays every vector under the
 switch, and checks the filter's fate decisions. Then run the oracle and
 the Lean-versus-Python gates, and add a row to the corpus table in

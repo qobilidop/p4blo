@@ -48,7 +48,7 @@ programmers actually run, and the two disagree in useful ways.
   correlate with; the judge compares each port's outputs, in order,
   against that run's `expect` lines (see "Judging" in `run.py`). A
   wrong output that happens to equal a later expectation on the same
-  port is therefore not caught here. `tests/test_corpus.py` and the
+  port is therefore not caught here. `tests/programs/test_corpus.py` and the
   differential sweep against Lean check whole outputs per packet.
 - **State across a vector that adds entries after a packet.** Entries
   can only be installed before a run's packets, so such a vector takes

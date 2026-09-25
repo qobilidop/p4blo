@@ -123,7 +123,7 @@ so the required CI gate discovers them without a hand-maintained file list.
   architecture or extern family owns it) and implemented in both
   interpreters second.
 - **Corpus programs** live under `tests/corpus/<name>/` with their eDSL
-  source, golden, README and STF vectors; `tests/test_corpus.py` picks
+  source, golden, README and STF vectors; `tests/programs/test_corpus.py` picks
   new ones up by itself. Sources are written in the typed eDSL
   (`p4blo.edsl`), are type-checked by pyright in CI, and must rebuild
   their golden byte for byte.

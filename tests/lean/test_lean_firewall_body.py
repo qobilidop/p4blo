@@ -17,7 +17,7 @@ from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_firewall import connection
+from tests.programs.test_firewall import connection
 from tests.lean.test_lean_firewall import firewall as firewall
 from tests.lean.test_lean_forwarder import freeze
 

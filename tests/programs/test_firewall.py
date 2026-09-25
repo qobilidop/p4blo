@@ -24,7 +24,7 @@ from tests.oracle import run as spectec
 from tests.oracle.bmv2 import run as bmv2
 from tests.unit.test_crc import known_spectec_mismatch
 
-CORPUS = Path(__file__).parent / "corpus/tutorial_firewall"
+CORPUS = Path(__file__).parents[1] / "corpus/tutorial_firewall"
 CONFIGURATION = (
     "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000001/32 ipv4_forward(dstAddr:17, port:1)",
     "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000002/32 ipv4_forward(dstAddr:34, port:2)",

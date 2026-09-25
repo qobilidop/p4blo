@@ -46,7 +46,7 @@ def main() -> None:
     target = worktree / RELATIVE
     original = target.read_text()
     assert original == (ROOT / RELATIVE).read_text()
-    command = [sys.executable, "-m", "pytest", str(worktree / "tests/test_vlan_gateway.py"), "-q"]
+    command = [sys.executable, "-m", "pytest", str(worktree / "tests/programs/test_vlan_gateway.py"), "-q"]
     rows = []
 
     def run(name: str, fault: bool = False) -> subprocess.CompletedProcess[str]:

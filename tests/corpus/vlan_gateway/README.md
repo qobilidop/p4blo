@@ -15,7 +15,7 @@ contracts; no eDSL or interpreter extension is needed.
 | [vlan_gateway.txtpb](vlan_gateway.txtpb) | Generated IR golden, checked against the source |
 | [gateway.stf](gateway.stf) | Host policy and independent packet expectations, used by both P4 oracles |
 | [demo.py](demo.py) | Three packets on one persistent four-port switch |
-| [test_vlan_gateway.py](../../test_vlan_gateway.py) | Independent packet, diagnostic and full-counter-state answers in Python and Lean |
+| [test_vlan_gateway.py](../../programs/test_vlan_gateway.py) | Independent packet, diagnostic and full-counter-state answers in Python and Lean |
 
 ## Try it
 
