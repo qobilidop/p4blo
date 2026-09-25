@@ -725,9 +725,7 @@ class BlockCx:
             v = self.fold(right_te)
             if isinstance(v, Int):
                 _, lt, _ = typed_parts(e.node(0))
-                w = self.width_of(lt)
-                width = w if v.value < (1 << w) else max(1, v.value.bit_length())
-                right = lit_bits(width, v.value)
+                right = self._shift_amount(v, lt)
             else:
                 right, right_pre = self.captured(right_te)
                 left = self.snapshot(left, right_pre, e.node(0))
@@ -737,6 +735,14 @@ class BlockCx:
         left = self.snapshot(left, right_pre, e.node(0))
         self.pre.extend(right_pre)
         return binary(BINOPS[op], left, right)
+
+    def _shift_amount(self, v: Int, lt: Node) -> pb.Expr:
+        """An unsized shift amount as a literal: at the shifted operand's
+        width `lt` when it fits, else just wide enough, since an amount of
+        the width or more still means a result of zero."""
+        w = self.width_of(lt)
+        width = w if v.value < (1 << w) else max(1, v.value.bit_length())
+        return lit_bits(width, v.value)
 
     def captured(self, te: Node) -> tuple[pb.Expr, list[pb.Stmt]]:
         """An expression and the statements its calls were hoisted into,
@@ -1209,10 +1215,8 @@ class BlockCx:
             direct = self._hit_into(value, lv)
             if direct is not None:
                 return direct
-        rhs = self.expr(value)
-        if op != "=":
-            rhs = self._compound(op, lvalue_to_expr(lv), rhs, value, lt)
-        return [assign(lv, rhs)]
+            return [assign(lv, self.expr(value))]
+        return [assign(lv, self._compound(op, lvalue_to_expr(lv), value, lt))]
 
     def _hit_into(self, value: Node, lv: pb.LValue) -> list[pb.Stmt] | None:
         """`x = t.apply().hit` is `Apply.hit` into `x`, with no temporary."""
@@ -1228,15 +1232,18 @@ class BlockCx:
             out.append(assign(lv, unary(pb.UNARY_OP_NOT, lvalue_to_expr(lv))))
         return out
 
-    def _compound(self, op: str, current: pb.Expr, rhs: pb.Expr, value: Node, lt: Node) -> pb.Expr:
+    def _compound(self, op: str, current: pb.Expr, value: Node, lt: Node) -> pb.Expr:
+        """`x op= e` as `x = x op e`. A shift's amount may be an unsized
+        constant, which has no IR type of its own; it is sized before it is
+        translated, as in a plain shift."""
         base = COMPOUND.get(op)
         if base is None or base in ("/", "%"):
             raise NotTranslated("assignmentStatementIR", f"compound {op}")
         if base in ("<<", ">>"):
             v = self.fold(value)
             if isinstance(v, Int):
-                rhs = lit_bits(self.width_of(lt), v.value)
-        return binary(BINOPS[base], current, rhs)
+                return binary(BINOPS[base], current, self._shift_amount(v, lt))
+        return binary(BINOPS[base], current, self.expr(value))
 
     def _slice_target(
         self, base: Node, hi_te: Node, sliceop: str, lo_te: Node
@@ -1282,10 +1289,11 @@ class BlockCx:
         target, hi, lo, n = self._slice_target(
             lv_node.node(0), lv_node.node(1), lv_node.node(2).c, lv_node.node(3)
         )
-        rhs = self.expr(value)
-        if op != "=":
+        if op == "=":
+            rhs = self.expr(value)
+        else:
             current = pb.Expr(slice=pb.Slice(operand=lvalue_to_expr(target), hi=hi, lo=lo))
-            rhs = self._compound(op, current, rhs, value, lt)
+            rhs = self._compound(op, current, value, lt)
         return [self._rmw(target, n, hi, lo, rhs)]
 
     def _direct_apply(self, s: Node) -> list[pb.Stmt]:

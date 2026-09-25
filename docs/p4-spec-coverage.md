@@ -164,7 +164,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 |---|---|---|---|---|
 | `emptyStatementIR` | elaborated | none | | performed |
 | `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Assigning a header). | translated |
-| `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | elaborated | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. | performed; `/=` and `%=` on values not known at compile time are not attempted |
+| `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | elaborated | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. | performed, a shift's unsized amount sized as in a plain shift; `/=` and `%=` on values not known at compile time are not attempted |
 | `callStatementIR`: action call from a control body | in | `CallAction` | | translated |
 | `callStatementIR`: extern method on an instance | in | `CallExtern` | `result` present exactly when the method returns. | translated |
 | `callStatementIR`: `t.apply()` | in | `Apply` | Forwarder README. Not inside an action. | translated |
