@@ -35,8 +35,8 @@ A decision the design document already settles is not repeated here.
 - **Fresh Lean caches across package moves; build before testing.** A
   copied build cache once shadowed renamed modules. Rebuild from empty
   build directories after a move, and never rebuild Lean while a test in
-  the same worktree runs the executable. (2026-09-23) CI's Lean job is the
-  one exception: it restores main's latest compiled modules (`lib`, `ir`,
+  the same worktree runs the executable. (2026-09-23)
+- **CI's Lean job restores main's compiled Lean modules** (`lib`, `ir`,
   never `bin`) and saves only from main, because the from-scratch build
   was 346 s of a 21-minute job. The shadowing risk is standalone queries,
   which no gate runs; `lake build` rejects an import of a deleted source
