@@ -216,12 +216,117 @@ p4blo produced, would make the oracle judge p4blo's outputs rather
 than the vector's; the differential sweep against Lean checks whole
 outputs per packet and has no such gap.
 
+## Generated programs
+
+The corpus is a dozen programs written by hand. `generated.py` takes the
+programs the differential tests against Lean generate to the oracle too,
+through the same printer, translation and `sim` command. A seed names one
+program and its cases exactly: the family is the seed modulo the number of
+families, and everything else is drawn from `random.Random(seed)` with the
+constructors the DRT tests use.
+
+| Family | What varies |
+|---|---|
+| `scalar` | one typed expression over every binary and unary operator, casts, slices, concatenation, shifts and mux, at widths 1 to 127 and bool, emitted by the control |
+| `parser_condition` | a `verify` condition with `lookahead` leaves, whose error outcome is emitted as one bit |
+| `stateful` | a register read, an update by one of five operators, conditional writes in three orders and counter calls, over a sequence of 2 to 16 requests |
+| `aggregate_copy` | header and struct copies, mutated on both sides afterwards, every stored field and validity emitted |
+| `call_copy` | `in`, `inout` and `out` header arguments of an action or a sub-control call |
+| `corpus` | a corpus or example program with random entries and packets, as `python -m p4blo.drt` makes them |
+
+Each seed's program is validated and loaded, the Python interpreter runs
+its cases, and its outputs become the `expect` lines (or `no_packet`) of an
+STF vector. The vector is replayed on Python first, so it says what Python
+did and nothing else, then translated and run on the simulator. A stateful
+sequence is one vector file, with each request's expectation right after
+its packet, because its extern state must persist from one request to the
+next; every other case gets a file of its own, because an `add` persists to
+the end of the file on the simulator. The interpreter's switch has ports 0
+to 510: v1model's ports are `bit<9>` and 511 is its drop port, so any
+egress port a program computes is the same port, or the same drop, on both
+sides.
+
+The families observe their results through headers of whole bytes. p4blo
+pads a deparser's bits to a byte boundary before the payload and the
+simulator does not ([ir-semantics.md](../../docs/ir-semantics.md#deparsers)),
+and the simulator cannot take an empty packet, so an unaligned result
+would test that choice on every case instead of the expression. The `scalar`
+and `parser_condition` results get an explicit zero pad field;
+`test_unaligned_emission_before_a_payload` pins the difference itself.
+
+```sh
+uv run pytest tests/test_oracle_generated.py -v                   # seeds 0 to 59, as CI runs them
+uv run python tests/oracle/generated.py --seeds 0:500 --out .artifacts/oracle/campaign
+```
+
+The command prints every seed that did not pass, then a table of
+programs, vectors and verdicts per family, and exits non-zero on any `fail`
+or `error`. `--seeds` takes `N`, a half-open `A:B` or a comma-separated list
+of either. Each seed's inputs are saved under `--out` (default
+`.artifacts/oracle/generated/`, ignored by git) in
+`seed-<NNNNN>-<family>/`: `program.txtpb`, the printed `program.p4`, the
+vectors in p4blo's dialect with Python's expectations (`case-<N>.stf` or
+`sequence.stf`), their translations under `spectec/`, and `verdict.txt`
+with the exact `p4spectec` command for every vector, so one seed can be
+replayed by hand or with `--seeds <N>`.
+
+A seed's verdict is the worst of its vectors':
+
+- **pass**: the simulator matched Python on every case.
+- **known**: every vector that did not pass is explained by a diagnosed
+  simulator defect, `shift-limit` or `table-mask` below. Such a vector is
+  not judged, which is not the same as agreeing.
+- **fail**: a disagreement. Either side may be wrong; attribute it
+  before changing anything, and never change the inputs to make it go
+  away.
+- **error**: the simulator could not judge, or the seed never reached it
+  (a program p4blo rejects, a printer failure, a vector Python does not
+  replay). Both are failures.
+
+**`shift-limit`.** The pinned simulator's `$shl` and `$shr` builtins
+(`p4spec/lib/interface/builtin/numerics.ml`) refuse any shift amount above
+2048 with "shift amount too large", although P4 defines a shift by any
+amount and the spec's own `$bin_shl` rules put no bound on it. The DRT's
+shift amounts are expressions of up to 127 bits, so a generated shift
+exceeds the bound often. The classifier accepts only an `error` whose one
+failure is `V1Model_ingress` or `V1Model_parser`, reached through
+`bin_shl` or `bin_shr`, ending in that message; the test file pins both
+sides of the boundary (`2048` passes, `2049` is a strict expected failure).
+
+**`table-mask`.** The defect of [Stronger probes](#stronger-probes-and-known-limitations):
+the simulator builds every control-plane ternary and lpm key set as
+`base &&& base` instead of `base &&& mask`, so an entry matches any key
+with at least the base's bits set. `table_mask_model` states that as p4blo
+entries (value and mask both the base, lpm keys as ternary ones with the
+prefix length as priority, const entries unchanged) and Python computes
+what the simulator should then output. A failed vector is classified only
+when that model predicts different outputs from the real ones, predicts
+the same outputs under both orders of breaking priority ties, and the
+simulator then passes the vector rewritten with the model's expectations.
+Random entries rarely trigger it, since a key must carry every bit of
+another entry's base.
+
+In `tests/test_oracle_generated.py`, seeds a defect explains are listed in
+`KNOWN` as strict expected failures, so a corrected simulator shows up as
+an XPASS.
+
+The oracle checks packets, not extern state: a stateful sequence's
+register and counter cells are compared only as far as later packets read
+them. The differential tests against Lean compare the whole state.
+
 ## Results
 
 2026-09-22, at the pinned commit, on the five forwarder vectors: all
 pass. Each `sim` run takes well under a second on an M-series Mac,
 spec elaboration included; the whole `tests/test_oracle.py` runs in
 about four seconds.
+
+2026-09-24, at the same pin, generated seeds 0 to 1099: 1,100 programs and
+3,851 vectors, about 50 minutes on an M-series Mac. 1,051 programs pass;
+49 are `known`, 47 of them `shift-limit` (scalar and parser-condition
+programs) and 2 `table-mask` (random entries on `priority` and `acl`); no
+unexplained `fail` or `error`. `tests/test_oracle_generated.py` takes
+about three minutes.
 
 ## Known gaps of the shim and the simulator
 
