@@ -249,8 +249,15 @@ these entries record why.
   decides stays uncompared. Reason: through the printed pipeline the
   simulator could never show its register cells, so the CRC padding
   defect was invisible on the firewall's stateful vectors; block by
-  block it is a strict expected failure like the others. Offer the
-  patch upstream when it stabilizes. (2026-09-24)
+  block it is a strict expected failure like the others. Entries that
+  would need v1model's STF name rewrites (a table name declared by two
+  blocks, a `$valid$` key) are refused by the block driver rather than
+  rewritten, because rewriting needs a map from block names to instance
+  paths that no corpus program yet needs. Known differences are accepted
+  only through checked models of the exact defect, never by tag: the
+  CRC model asserts the binding's own result first, and the stack model
+  checks P4's answer before applying the deviation. Offer the patch
+  upstream when it stabilizes. (2026-09-24)
 - **The conformance corpus is Lean's answers on fixed inputs, tracked
   as data.** `tests/conformance/` holds one fixture per input (program,
   request sequence from fresh state, and each reply with state and
