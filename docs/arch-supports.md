@@ -39,7 +39,7 @@ definitions without the supplied pipeline defaults. See
 The supplied filter and switch communicate their host policy through the
 selected metadata struct `M`. Each names the fields it needs, with a type and a
 direction: provided fields are written before the blocks run, consumed
-fields are read afterwards. At load the program's `M` is checked
+fields are read afterwards. At load the selected `M` is checked
 structurally against the contract, by field name and type, and nothing
 else about `M` concerns anyone. Every field is optional. A field the
 program does not declare reads as its zero value and ignores writes, so a
