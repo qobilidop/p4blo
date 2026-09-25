@@ -1,4 +1,12 @@
-"""Shared executable gate for all Lean conformance suites."""
+"""Shared executable gate for all Lean conformance suites, and the oracle marker.
+
+Modules that drive an external oracle (the P4-SpecTec simulator, its
+coverage probe, the IL export, or BMv2) are marked `oracle` here by name,
+so that `scripts/check.sh` can deselect them with `-m "not oracle"`. They
+take a quarter of an hour once the oracle is built locally, and CI runs
+them in their own workflows. `P4BLO_ALL_TESTS=1 scripts/check.sh` runs
+everything.
+"""
 
 from __future__ import annotations
 
@@ -26,3 +34,20 @@ def lean_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
     if reason is not None:
         pytest.fail(f"p4blo-lean has no working `run` mode: {reason}")
     return binary
+
+
+ORACLE_MODULES = {
+    "test_oracle",
+    "test_oracle_generated",
+    "test_oracle_block",
+    "test_oracle_bmv2",
+    "test_bmv2_readback",
+    "test_frontend_spectec",
+    "test_spectec_coverage",
+}
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        if item.path.stem in ORACLE_MODULES:
+            item.add_marker(pytest.mark.oracle)

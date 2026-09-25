@@ -7,7 +7,9 @@ uv sync --locked --quiet
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright
-uv run pytest -q
+# The oracle-driven suites (marker `oracle`, see tests/conftest.py) take a
+# quarter of an hour on a built local oracle and have their own workflows.
+if [ "${P4BLO_ALL_TESTS:-}" = "1" ]; then uv run pytest -q; else uv run pytest -q -m "not oracle"; fi
 buf lint
 buf generate
 git diff --exit-code -- impl/python/p4blo/v0

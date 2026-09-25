@@ -27,6 +27,9 @@ module-root = "impl/python"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "oracle: drives the P4-SpecTec simulator or BMv2; the oracle workflows run these, the local gate deselects them",
+]
 
 [tool.ruff]
 line-length = 100
