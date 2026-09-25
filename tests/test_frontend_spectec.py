@@ -130,6 +130,22 @@ def test_every_excluded_row_the_bridge_names_is_on_the_coverage_page() -> None:
     assert missing == []
 
 
+def test_normalize_does_not_rename_a_local_into_an_action_parameter() -> None:
+    """A block local renamed `v0` inside an action whose parameter is
+    `v0` would be read as the parameter there."""
+    bits8 = pb.Type(bits=8)
+    action = pb.Action(
+        name="a",
+        params=[pb.Param(name="v0", type=bits8, direction=pb.DIRECTION_NONE)],
+        body=[pb.Stmt(assign=pb.Assign(target=pb.LValue(var="x"), value=pb.Expr(var="v0")))],
+    )
+    block = pb.Block(name="c", locals=[pb.Var(name="x", type=bits8)], actions=[action])
+    got = normalize(pb.Program(blocks=[block])).blocks[0]
+    (stmt,) = got.actions[0].body
+    assert stmt.assign.target.var == got.locals[0].name != "v0"
+    assert stmt.assign.value.var == "v0"
+
+
 # ---------------------------------------------------------------------------
 # 1. The corpus from its original sources
 # ---------------------------------------------------------------------------
