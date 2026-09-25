@@ -104,11 +104,11 @@ upstream-report candidates); the simulator refuses shift amounts above
 
 ## Open threads
 
-- **State-local variables.** SpecTec re-defaults a state-local declared
-  without an initializer on every entry of the state; the eDSL hoists it
-  to a block local and inserts no zeroing. Undecided; recorded on the
-  coverage page and in the ledger. Decide whether the elaboration inserts
-  a zeroing assignment at state entry.
+- **State-local variables: decided.** The elaboration re-zeroes a local
+  declared without an initializer at every entry of its state, action or
+  inlined function (`decisions.md`, 2026-09-24). The bridge is being
+  fixed on `work/bridge-fixes`; the eDSL's hoisting still needs the same
+  zeroing and the ledger and coverage page entries need the ruling.
 - **Unhit rule tags** (`tests/drt-unhit-tags.json`) and unhit SpecTec
   rules (`tests/oracle/spectec-coverage-exclusions.json`, category
   `unhit`) are the work lists for coverage-guided generation, plan item B2.

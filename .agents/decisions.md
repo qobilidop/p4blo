@@ -207,6 +207,18 @@ these entries record why.
   p4blo's IR is a serialized, architecture-free, closed refinement of it.
   Reason: the earlier wording claimed an authority the evidence does not
   give and that the project does not seek. (2026-09-24)
+- **A local declared without an initializer inside a parser state, an
+  action or an inlined function is re-zeroed at every entry by the
+  elaboration.** The IR has only block locals, and a hoisted local keeps
+  its value between entries; P4-SpecTec's `ParserState_eval` enters a
+  fresh scope per state (`$enter_e`) so such a declaration re-defaults
+  on every entry, and an action or function call does the same. The
+  bridge therefore emits a zeroing assignment where the declaration
+  stood, and the eDSL must do the same for a state-local it hoists.
+  Reason: the IL bridge review showed both interpreters and SpecTec
+  disagreeing on programs the validator accepts (`statelocal.p4`,
+  `actlocal.p4`). This closes the "State-local variables" question on
+  the semantics page and the coverage page. (2026-09-24)
 - **The parser loop bound is the no-consumption revisit rule**, not fuel,
   because fuel makes meaning depend on an unspecified number and the rule
   matches BMv2. (2026-09-22)
