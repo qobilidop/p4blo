@@ -21,7 +21,7 @@ from p4blo.interp.env import Env
 from p4blo.interp.values import Header, Value
 from p4blo.interp.values import copy as copy_value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_drt_aggregate_copy import place, read
+from tests.drt.test_drt_aggregate_copy import place, read
 from tests.lean.test_lean_call_copyback import copyback_program, expected_copyback
 
 CallKind = Literal["action", "block"]

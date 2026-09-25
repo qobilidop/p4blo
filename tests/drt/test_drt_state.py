@@ -26,7 +26,7 @@ from p4blo.drt.state import Observation, decode, encode, snapshot
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_state_roundtrip_is_lossless_and_independent_of_object_order() -> None:

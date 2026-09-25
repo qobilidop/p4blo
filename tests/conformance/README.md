@@ -113,7 +113,7 @@ uv run python -m p4blo.conformance refresh        # Lean answers the tracked req
 uv run python -m p4blo.conformance export         # answer inputs.py on Lean, rewrite fixtures/
 ```
 
-`tests/test_conformance.py` runs the first per fixture in `scripts/check.sh`
+`tests/drt/test_conformance.py` runs the first per fixture in `scripts/check.sh`
 and the second in the `lean_agrees` gate, and fails when a fixture is
 missing, has no input, or has another number of steps than its input has
 requests. `check-lean`, `refresh` and `export` need the Lean executable
@@ -170,7 +170,7 @@ the per-fixture pytest checks do not repeat it.
 Deliberate faults the corpus catches. The Python ones are in `mutants.py`
 (`uv run python -m tests.conformance.mutants`), each applied in-process
 to one function of the reference interpreter, and
-`tests/test_conformance.py` requires each to be caught. Recorded at the
+`tests/drt/test_conformance.py` requires each to be caught. Recorded at the
 export that added the contract fixtures:
 
 | Mutant | Fault | Caught by |

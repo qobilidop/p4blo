@@ -26,7 +26,7 @@ from p4blo.drt.run import (
 from p4blo.drt.state import Observation, encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 FAKE = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 
 

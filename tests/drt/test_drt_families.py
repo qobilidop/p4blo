@@ -1,7 +1,7 @@
 """The shape families and the coverage-guided driver.
 
 `p4blo.drt.families` builds programs from named decisions. Here the same
-families run three ways: from fixed seeds, as tests/test_drt_coverage.py
+families run three ways: from fixed seeds, as tests/drt/test_drt_coverage.py
 retains them; from Hypothesis, whose shrinking keeps every decision inside
 its typed menu, so a failure shrinks to a smaller well-typed program; and
 under `p4blo.drt.guided`, whose determinism and weighting are checked
@@ -33,9 +33,9 @@ from p4blo.interp import stmt
 from p4blo.v0 import p4blo_pb2 as pb
 
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
-MEASUREMENT = Path(__file__).resolve().parent / "drt-guided-measurement.json"
+MEASUREMENT = Path(__file__).resolve().parents[1] / "drt-guided-measurement.json"
 PROFILES: tuple[Profile, ...] = ("lean", "spectec")
-# The seeds the Lean campaigns retain, per family; tests/test_drt_coverage.py
+# The seeds the Lean campaigns retain, per family; tests/drt/test_drt_coverage.py
 # reruns the same ones for the unhit list.
 SEEDS = range(200)
 

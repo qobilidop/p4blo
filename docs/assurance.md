@@ -251,13 +251,13 @@ Python unit suites are not automatically differential tests.
 
 | Family | Independent tests and generated comparisons | Scoped proof, external evidence and limits |
 |---|---|---|
-| Scalars, operators, lazy branches | `tests/unit/test_interp_expr.py`; `tests/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Scalar typing and lowering theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
-| Aggregates, fields, validity, stacks | `tests/test_drt_aggregate_copy.py`, `test_lean_edsl_field_commands.py`, `test_lean_edsl_header_reads.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
-| Calls, initialization, normal return | `tests/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; scoped entry and return suites compare full state and pending continuations | Bounded named transitions, not all calls or parser-fault unwinding. |
+| Scalars, operators, lazy branches | `tests/unit/test_interp_expr.py`; `tests/drt/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Scalar typing and lowering theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
+| Aggregates, fields, validity, stacks | `tests/drt/test_drt_aggregate_copy.py`, `test_lean_edsl_field_commands.py`, `test_lean_edsl_header_reads.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
+| Calls, initialization, normal return | `tests/drt/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; scoped entry and return suites compare full state and pending continuations | Bounded named transitions, not all calls or parser-fault unwinding. |
 | Packet, parser, deparser | `tests/unit/test_interp_parser.py`, `test_interp_deparser.py`, `spec/ir/P4bloIRTest/Interp.lean`; corpus DRT, masked and range select in `test_drt.py`, byte cuts and persistent sequences in `test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
 | Tables, actions, host installation | `tests/unit/test_interp_tables.py`, generated configurations in `test_drt.py`, `test_lean_forwarder_tables.py`, `test_lean_forwarder_action.py`, `test_lean_forwarder_apply.py`; strict configuration, full-state and default-hit observations | Forwarder lookup and application laws for five shapes; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family. |
-| Persistent extern state | `tests/test_drt_stateful_programs.py` shrinking sequences, `test_drt_state.py`, `test_externs.py`, `test_extern_families.py`, `test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
-| Architecture outcomes and errors | `tests/test_drt.py` drop, flood, ports and error reasons; `test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
+| Persistent extern state | `tests/drt/test_drt_stateful_programs.py` shrinking sequences, `test_drt_state.py`, `test_externs.py`, `test_extern_families.py`, `test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
+| Architecture outcomes and errors | `tests/drt/test_drt.py` drop, flood, ports and error reasons; `test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
 | Serialization and observation | `tests/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `test_wire_decimal.py`; `test_drt_protocol.py`, `test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete Program, Export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
 | Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `test_lean_forwarder*.py`, `test_lean_firewall*.py`, `test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Complete examples execute in both languages; selected proofs do not verify raw construction or the whole pipeline. |
 
@@ -325,7 +325,7 @@ proof-visible machine and classifies each configuration before its step,
 reusing the real evaluator for operand values and never an outcome;
 `Execution.Finishes.sound` guarantees that such a trace determines the
 runner's result, and the reply itself still comes from the runner.
-`tests/test_drt_coverage.py` reruns the retained campaigns at fixed seeds
+`tests/drt/test_drt_coverage.py` reruns the retained campaigns at fixed seeds
 and compares the unhit rules with `tests/drt-unhit-tags.json`, which
 lists every rule the generators cannot reach yet with the gap behind it;
 a rule that stops being hit fails the test, and the list may only shrink.
@@ -362,7 +362,7 @@ The inputs are every corpus program and example with its STF vectors, two
 contract fixtures that record rejected installs, floods, drops and
 out-of-range ports, the
 DRT's generated entries and packets at two seeds per program, and 36
-seeds of the generated program families. `tests/test_conformance.py`
+seeds of the generated program families. `tests/drt/test_conformance.py`
 checks the Python interpreter against every fixture with no Lean process,
 comparing as the DRT compares, and in the `lean_agrees` gate answers every
 fixture again on Lean and requires identical bytes. The corpus is a test
@@ -593,7 +593,7 @@ and canonical hexadecimal state; the decoded AST must equal the fixed
 example. Running the checker trusts the compiler, runtime, codecs and
 observation adapter, and a JSON artifact is not a kernel proof. Tampered
 programs, initial values, results and budgets are rejected in
-`tests/test_drt_certificate.py`. Generalizing beyond the fixed fragment
+`tests/drt/test_drt_certificate.py`. Generalizing beyond the fixed fragment
 needs explicit validity and observation contracts first.
 
 ## Release evidence

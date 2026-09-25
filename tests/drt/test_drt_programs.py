@@ -36,7 +36,7 @@ from p4blo.drt.programs import WIDTHS as PROGRAM_WIDTHS
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_drt_families import HypothesisChooser
+from tests.drt.test_drt_families import HypothesisChooser
 
 WIDTHS = st.sampled_from(PROGRAM_WIDTHS)
 

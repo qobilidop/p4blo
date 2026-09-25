@@ -35,7 +35,7 @@ from p4blo.drt.state import snapshot
 from p4blo.edsl.core import Program, bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
-CORPUS = Path(__file__).resolve().parent.parent / "tests" / "corpus"
+CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PORTS = 4

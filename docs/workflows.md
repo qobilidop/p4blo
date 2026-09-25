@@ -109,7 +109,7 @@ writes a claim; `verify` asks the compiled Lean checker to accept or reject
 it. This is distinct from ordinary differential fuzzing and is not a
 standalone proof term or universal equivalence claim.
 
-`tests/test_drt_programs.py` changes expressions inside validated programs,
+`tests/drt/test_drt_programs.py` changes expressions inside validated programs,
 not just packets for a fixed corpus. It includes systematic operator/width
 boundaries and 200 deterministic, shrinking Hypothesis examples. Failures
 write concrete program/input bundles under `.artifacts/drt/` (override with
@@ -117,7 +117,7 @@ write concrete program/input bundles under `.artifacts/drt/` (override with
 source-fault campaign recipes for the applications are kept in
 `.agents/notes/mutations/`; campaign reports are archived in git after
 each compaction.
-`tests/test_drt_stateful_programs.py` varies widths, independent register and
+`tests/drt/test_drt_stateful_programs.py` varies widths, independent register and
 counter capacities, arithmetic, conditional effects and write ordering. It
 compares complete packet sequences, including every extern cell after each
 request, with 100 shrinking campaigns and deterministic boundary cases.
@@ -182,7 +182,7 @@ test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
 A change that alters one of Lean's recorded answers fails
-`tests/test_conformance.py`; once the doc states the new behavior,
+`tests/drt/test_conformance.py`; once the doc states the new behavior,
 refresh the fixtures with `uv run python -m p4blo.conformance refresh`
 from committed Lean sources and review their diff, in which every changed
 step line is a changed answer (`tests/conformance/README.md`).

@@ -14,13 +14,13 @@ stops being hit is a regression, and a listed tag that becomes hit is a
 stale entry to remove. An empty file is the goal.
 
 The campaigns are those the other differential tests retain: the corpus
-sample of `tests/test_drt.py` (seed 42, 200 cases per program) and its
+sample of `tests/drt/test_drt.py` (seed 42, 200 cases per program) and its
 `MIXED` program (the same sample), the typed scalar programs of
-`tests/test_drt_programs.py` (its fixed boundary families and its
+`tests/drt/test_drt_programs.py` (its fixed boundary families and its
 derandomized Hypothesis examples), the stateful sequences of
-`tests/test_drt_stateful_programs.py` (its fixed families and its
+`tests/drt/test_drt_stateful_programs.py` (its fixed families and its
 derandomized campaigns), and the shape families of
-`tests/test_drt_families.py` at their fixed seeds. Every case must also agree; a divergence is
+`tests/drt/test_drt_families.py` at their fixed seeds. Every case must also agree; a divergence is
 reported by those modules and fails here too, since coverage of a run that
 disagrees measures nothing.
 """
@@ -47,11 +47,11 @@ from p4blo.drt.programs import binary, bits, boolean, parser_condition_program, 
 from p4blo.drt.run import compare, compare_program, parse_reply
 from p4blo.drt.stateful_programs import UPDATE_OPS, WIDTHS, StatefulSpec, stateful_program
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_drt import mixed
-from tests.test_drt_families import SEEDS as FAMILY_SEEDS
-from tests.test_drt_programs import ARITHMETIC, COMPARISONS, scalar
-from tests.test_drt_programs import WIDTHS as SCALAR_WIDTHS
-from tests.test_drt_stateful_programs import (
+from tests.drt.test_drt import mixed
+from tests.drt.test_drt_families import SEEDS as FAMILY_SEEDS
+from tests.drt.test_drt_programs import ARITHMETIC, COMPARISONS, scalar
+from tests.drt.test_drt_programs import WIDTHS as SCALAR_WIDTHS
+from tests.drt.test_drt_stateful_programs import (
     CONDITIONS,
     WRITE_ORDERS,
     boundary_fields,
@@ -59,10 +59,10 @@ from tests.test_drt_stateful_programs import (
     cases_for,
 )
 
-CORPUS = Path(__file__).resolve().parent / "corpus"
-UNHIT = Path(__file__).resolve().parent / "drt-unhit-tags.json"
-LEDGER = Path(__file__).resolve().parents[1] / "docs" / "ir-semantics.md"
-WITNESSES = Path(__file__).resolve().parents[1] / "spec/arch/P4bloArchTest/fixtures/witnesses.py"
+CORPUS = Path(__file__).resolve().parents[1] / "corpus"
+UNHIT = Path(__file__).resolve().parents[1] / "drt-unhit-tags.json"
+LEDGER = Path(__file__).resolve().parents[2] / "docs" / "ir-semantics.md"
+WITNESSES = Path(__file__).resolve().parents[2] / "spec/arch/P4bloArchTest/fixtures/witnesses.py"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PORTS = 4
@@ -86,7 +86,7 @@ class Campaign:
         self.program(scalar_program(expression, width), [Case(pb.Entries(), 0, b"")])
 
     def corpus(self) -> None:
-        """The corpus sample of `tests/test_drt.py`."""
+        """The corpus sample of `tests/drt/test_drt.py`."""
         for program_dir in PROGRAMS:
             report = compare(program_dir, 42, 200, PORTS, self.lean)
             self.coverage.update(report.rule_coverage)
@@ -94,19 +94,19 @@ class Campaign:
                 self.failures.append(report.summary())
 
     def mixed(self) -> None:
-        """The `MIXED` program of `tests/test_drt.py`, sampled as the corpus is."""
+        """The `MIXED` program of `tests/drt/test_drt.py`, sampled as the corpus is."""
         program = mixed()
         self.program(program, generate(ir.Index.build(program), 42, 200, PORTS))
 
     def shape_families(self) -> None:
-        """The fixed seeds of `tests/test_drt_families.py`."""
+        """The fixed seeds of `tests/drt/test_drt_families.py`."""
         for family in sorted(FAMILIES):
             for seed in FAMILY_SEEDS:
                 generated = sample(family, seed)
                 self.program(generated.program, generated.cases)
 
     def scalar_families(self) -> None:
-        """The fixed families of `tests/test_drt_programs.py`."""
+        """The fixed families of `tests/drt/test_drt_programs.py`."""
         for value in (False, True):
             self.scalar(pb.Expr(unary=pb.Unary(op=pb.UNARY_OP_NOT, operand=boolean(value))), None)
             self.scalar(pb.Expr(cast=pb.Cast(to=pb.Type(bits=1), operand=boolean(value))), 1)
@@ -175,7 +175,7 @@ class Campaign:
                     self.scalar(binary(op, boolean(left), boolean(right)), None)
 
     def scalar_examples(self) -> None:
-        """The derandomized Hypothesis examples of `tests/test_drt_programs.py`."""
+        """The derandomized Hypothesis examples of `tests/drt/test_drt_programs.py`."""
 
         @settings(max_examples=200, deadline=None, derandomize=True, database=None)
         @given(data=st.data(), width=st.one_of(st.none(), SCALAR_WIDTHS))
@@ -185,7 +185,7 @@ class Campaign:
         run()
 
     def stateful_families(self) -> None:
-        """The fixed families of `tests/test_drt_stateful_programs.py`."""
+        """The fixed families of `tests/drt/test_drt_stateful_programs.py`."""
         for width in WIDTHS:
             for op in UPDATE_OPS:
                 for write_order in WRITE_ORDERS:
@@ -214,7 +214,7 @@ class Campaign:
         self.program(stateful_program(spec), cases_for(spec, [(0, 255), (0, 1), (1, 7), (0, 2)]))
 
     def stateful_examples(self) -> None:
-        """The derandomized campaigns of `tests/test_drt_stateful_programs.py`."""
+        """The derandomized campaigns of `tests/drt/test_drt_stateful_programs.py`."""
 
         @settings(max_examples=100, deadline=None, derandomize=True, database=None)
         @given(campaign=campaigns())
