@@ -72,7 +72,8 @@ What is claimed, for which programs, and what backs it is
 [assurance.md](assurance.md). Keep proved properties, tested agreement and
 open obligations separate in every checkpoint; passing differential tests
 is not a proof of equivalence.
-Lean treats warnings as errors. The proof audits,
+The Lean gate builds with `lake build --wfail`, so any warning fails
+the build, a `sorry` included. The proof audits,
 `spec/ir/P4bloIRTest/ProofAudit.lean` and `CodecProofAudit.lean`,
 `spec/arch/P4bloArchTest/ArchProofAudit.lean` and
 `impl/lean/P4bloTest/UserProofAudit.lean`, pin the transitive axiom sets

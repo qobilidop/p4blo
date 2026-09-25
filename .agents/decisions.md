@@ -452,7 +452,11 @@ these entries record why.
   Python/Lean-only evidence: the original BMv2 protocol cannot replace
   rules mid-sequence, so revisit that limitation before claiming
   original-oracle coverage of host changes. (2026-09-23)
-- **Proof trust is a build gate.** Warnings are errors; default
+- **Proof trust is a build gate.** The gate builds with
+  `lake build --wfail` rather than the `warningAsError` option, so a
+  warning fails the build without rewriting the severities that
+  `#guard_msgs` tests observe (adopted from `p4-spectec-lean`,
+  2026-09-25); default
   audit modules of the default `<Root>Test` libraries check advertised
   theorems' transitive axioms, which
   catches imported axioms and native shortcuts that grepping for `sorry`

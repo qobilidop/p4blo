@@ -228,7 +228,8 @@ The checked theorem inventories are [`spec/ir/P4bloIRTest/ProofAudit.lean`](../s
 [`spec/ir/P4bloIRTest/CodecProofAudit.lean`](../spec/ir/P4bloIRTest/CodecProofAudit.lean) and
 [`impl/lean/P4bloTest/UserProofAudit.lean`](../impl/lean/P4bloTest/UserProofAudit.lean); their exact
 statements and premises, not the labels above, define what is proved.
-Warnings are errors in all three Lean packages, and the audits check the
+The gate builds all three Lean packages with `lake build --wfail`, so a
+warning fails the build, and the audits check the
 transitive axiom sets of advertised theorems, so `sorry`, custom axioms
 and native-evaluation escapes cannot silently replace a proof. The exact
 obligations, exclusions and mutation experiments of the scalar and field

@@ -6,7 +6,6 @@
 name = "p4blo"
 version = "0.1.0"
 defaultTargets = ["P4blo", "P4bloTest", "p4blo"]
-moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "userTests"
 
 [[require]]

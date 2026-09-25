@@ -403,7 +403,7 @@ def execute(run: Run) -> None:
     spec = scratch / "spec/ir"
     arch = scratch / "spec/arch"
     toolchain = (spec / "lean-toolchain").read_text().strip()
-    lake = ["lake", "+" + toolchain, "build"]
+    lake = ["lake", "+" + toolchain, "build", "--wfail"]
     run.command(
         "scratch-baseline-build",
         [*lake, "+P4bloIRTest.ProofAudit", "+P4bloIRTest.CodecProofAudit", "codec-leaves"],

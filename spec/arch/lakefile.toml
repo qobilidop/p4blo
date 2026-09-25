@@ -8,7 +8,6 @@
 name = "p4blo-arch"
 version = "0.1.0"
 defaultTargets = ["P4bloArch", "p4blo-lean", "P4bloArchTest"]
-moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "archTests"
 
 [[require]]
