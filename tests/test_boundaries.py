@@ -94,3 +94,23 @@ def test_ir_specification_holds_nothing_architectural() -> None:
     for old in ("Switch.lean", "CertificateWire.lean"):
         assert not (LEAN_IR_SPEC / old).exists()
     assert not (ROOT / "spec/ir/Main.lean").exists()
+
+
+# The gate-only libraries of the three Lean packages.
+LEAN_TEST_LIBRARIES = ("P4bloIRTest", "P4bloArchTest", "P4bloTest")
+
+
+def test_importable_lean_modules_never_import_gate_only_ones() -> None:
+    """What a client may import, and each package's executable, stands
+    without the tests and audits under `<Root>Test/`."""
+    offenders = []
+    for package in ("spec/ir", "spec/arch", "impl/lean"):
+        for path in sorted((ROOT / package).rglob("*.lean")):
+            relative = path.relative_to(ROOT / package)
+            if relative.parts[0] in LEAN_TEST_LIBRARIES or ".lake" in relative.parts:
+                continue
+            for line in path.read_text(encoding="utf-8").splitlines():
+                words = line.split()
+                if words[:1] == ["import"] and words[1].split(".")[0] in LEAN_TEST_LIBRARIES:
+                    offenders.append(f"{package}/{relative}: {line}")
+    assert offenders == []

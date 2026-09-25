@@ -2,14 +2,15 @@
 
 The independent `p4blo` Lake package imports `p4blo-ir` from `../../spec/ir`
 and `p4blo-arch` from `../../spec/arch`.
-Import `P4blo` for the user API.
+Import `P4blo` for the user API. Reference definitions remain under
+`P4bloIR`; frontend/library definitions use `P4blo` to avoid collisions.
+
 Everything a client may import lives under `P4blo/`. `Main.lean` is the one
 executable, `p4blo`, whose subcommands are the application servers
 `leanForwarder` and `leanTutorialFirewall` and the test fixture exporters the
 cross-language tests call; run it without arguments for the list.
 `P4bloTest/` holds what only the gate runs, as the `P4bloTest` library: the
-test driver `lake test` runs and the proof audit `UserProofAudit.lean`. Reference definitions remain under
-`P4bloIR`; frontend/library definitions use `P4blo` to avoid collisions.
+test driver `lake test` runs and the proof audit `UserProofAudit.lean`.
 
 `prepareSwitch` performs indexing, extern binding and architecture contract
 checks, not complete validation. `runSwitch` and the block entry points reuse

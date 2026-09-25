@@ -1,5 +1,6 @@
 """Guard the ownership split without depending on cached build outputs."""
 
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -63,6 +64,72 @@ def test_lean_package_dependency_is_one_way() -> None:
     toolchain = (ROOT / "spec/ir/lean-toolchain").read_bytes()
     assert (ROOT / "spec/arch/lean-toolchain").read_bytes() == toolchain
     assert (ROOT / "impl/lean/lean-toolchain").read_bytes() == toolchain
+
+
+# Each Lean package's root module, and the tracked entries its root may hold
+# beyond the layout's own: the IR's wire schema and the user package's
+# assurance log.
+LEAN_PACKAGES = {
+    "spec/ir": ("P4bloIR", {"proto"}),
+    "spec/arch": ("P4bloArch", set()),
+    "impl/lean": ("P4blo", {"ASSURANCE.md"}),
+}
+
+
+def test_lean_package_roots_follow_the_layout() -> None:
+    """Importable modules under `<Root>/`, gate-only ones under `<Root>Test/`
+    as one default-target library, and at the root only what Lake needs."""
+    for package, (root, extra) in LEAN_PACKAGES.items():
+        tracked = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files", "-z", package],
+            check=True,
+            capture_output=True,
+        ).stdout.split(b"\0")
+        top = {Path(p.decode()).relative_to(package).parts[0] for p in tracked if p}
+        required = {
+            f"{root}.lean",
+            root,
+            f"{root}Test",
+            "lakefile.toml",
+            "lean-toolchain",
+            "lake-manifest.json",
+            "README.md",
+        }
+        assert required <= top, package
+        assert top - required <= {"Main.lean"} | extra, package
+        config = tomllib.loads((ROOT / package / "lakefile.toml").read_text())
+        libraries = {lib["name"]: lib for lib in config["lean_lib"]}
+        assert set(libraries) == {root, f"{root}Test"}, package
+        assert libraries[f"{root}Test"]["globs"] == [f"{root}Test.+"], package
+        assert {root, f"{root}Test"} <= set(config["defaultTargets"]), package
+        executables = {exe["name"]: exe["root"] for exe in config["lean_exe"]}
+        assert executables[config["testDriver"]] == f"{root}Test.Main", package
+        outside = [r for r in executables.values() if not r.startswith(f"{root}Test.")]
+        assert outside == (["Main"] if "Main.lean" in top else []), package
+    for audit in (
+        "spec/ir/P4bloIRTest/ProofAudit.lean",
+        "spec/ir/P4bloIRTest/CodecProofAudit.lean",
+        "spec/arch/P4bloArchTest/ArchProofAudit.lean",
+        "impl/lean/P4bloTest/UserProofAudit.lean",
+    ):
+        assert (ROOT / audit).is_file(), audit
+    for old in (
+        "spec/ir/Tests",
+        "spec/ir/ProofAudit.lean",
+        "spec/ir/CodecProofAudit.lean",
+        "spec/arch/ArchTests",
+        "spec/arch/ArchProofAudit.lean",
+        "impl/lean/P4bloTests.lean",
+        "impl/lean/UserProofAudit.lean",
+        "impl/lean/ForwarderMain.lean",
+    ):
+        assert not (ROOT / old).exists(), old
+
+
+def test_user_executable_is_one_main_with_subcommands() -> None:
+    library = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
+    assert {exe["name"]: exe["root"] for exe in library["lean_exe"]}["p4blo"] == "Main"
+    assert "p4blo" in library["defaultTargets"]
 
 
 def test_schema_descriptor_identity_survives_move() -> None:

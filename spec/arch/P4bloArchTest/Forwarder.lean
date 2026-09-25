@@ -5,7 +5,7 @@ End-to-end replay of the forwarder's five STF vectors under the switch
 architecture (`P4bloArch.Switch`), the same rules the Python driver in
 `tests/test_corpus_forwarder.py` implements.
 
-`Tests/forwarder_vectors.json` holds, per vector file, one run per `packet`
+`../ir/P4bloIRTest/forwarder_vectors.json` holds, per vector file, one run per `packet`
 line: the entries installed before it, the ingress port, the packet, and
 the `expect` lines that follow it, each with its per-nibble mask and
 whether it ended in `$`. It was generated once from the repository root

@@ -112,7 +112,12 @@ so the required CI gate discovers them without a hand-maintained file list.
   externs. The reference architecture spec `spec/arch/` (`p4blo-arch`,
   imports `P4bloArch`) depends on it and supplies the switch, the extern
   families and the `p4blo-lean` endpoint. The `impl/lean/` user package
-  (`p4blo`, imports `P4blo`) depends on both, never the reverse. Whole-program validity and codec proofs remain work in progress,
+  (`p4blo`, imports `P4blo`) depends on both, never the reverse. In each
+  package, what a client may import lives under `<Root>/`, what only the
+  gate runs (tests, proof audits, fixtures) under `<Root>Test/` as one
+  default-target library, and at the root only the root module, Lake's
+  files, `README.md` and at most one `Main.lean` (`docs/design.md`, "The
+  Lean packages"). Whole-program validity and codec proofs remain work in progress,
   not guarantees supplied by this organization. A closed behavior is
   written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both

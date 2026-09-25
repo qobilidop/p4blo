@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# All three Lake packages, in dependency order, including every default proof
-# audit target and each package's tests: the IR specification, the reference
-# architecture specification, and the user library.
+# All three Lake packages, in dependency order: the IR specification, the
+# reference architecture specification, and the user library. `lake build`
+# builds each package's default targets, which include its <Root>Test library
+# and so check every proof audit's `#guard_msgs` pins; `lake test` then runs
+# the package's test driver.
 set -euo pipefail
 repo_root="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 cmp "$repo_root/spec/ir/lean-toolchain" "$repo_root/spec/arch/lean-toolchain"
