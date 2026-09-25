@@ -330,6 +330,25 @@ LOOP_UNTIL_LAST = state(
     """,
 )
 
+
+def test_last_index_wraps_at_next_index_zero() -> None:
+    """Before any extract `nextIndex` is 0 and `lastIndex` is `2^32 - 1`;
+    after one it is 0 (docs/ir-semantics.md, "`hs.lastIndex`"). A parser is
+    the only place P4 allows it."""
+    last = f"cast {{ to {{ bits: 8 }} operand {{ last_index {{ stack {{ {HDR_HS} }} }} }} }}"
+    before = state(
+        "start", f"body {{ assign {{ target {{ {META_N} }} value {{ {last} }} }} }}", ACCEPT
+    )
+    assert n(run(before, b"")) == Bits(8, 255)
+    after = state(
+        "start",
+        f"body {{ extract {{ target {{ {HS_NEXT} }} }} }}"
+        f" body {{ assign {{ target {{ {META_N} }} value {{ {last} }} }} }}",
+        ACCEPT,
+    )
+    assert n(run(after, b"\x0a")) == Bits(8, 0)
+
+
 LOOP_FOREVER = state(
     "start",
     f"body {{ extract {{ target {{ {HS_NEXT} }} }} }}",

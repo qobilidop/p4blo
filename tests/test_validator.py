@@ -229,7 +229,7 @@ blocks {
     instance: "ctr" method: "read" args { expr { var: "idx" } } args { lvalue { var: "val" } }
   } }
   body { call_extern { instance: "ctr" method: "size" result { var: "val" } } }
-  # 6-9: stack push, indexed write, lastIndex, setValid
+  # 6-9: stack push, indexed write, indexed read, setValid
   body { push { stack { member { base { var: "hdr" } field: "vlan" } } count: 1 } }
   body { assign {
     target { member {
@@ -243,7 +243,13 @@ blocks {
   } }
   body { assign {
     target { var: "idx" }
-    value { last_index { stack { member { base { var: "hdr" } field: "vlan" } } } }
+    value { cast { to { bits: 32 } operand { member {
+      base { index {
+        base { member { base { var: "hdr" } field: "vlan" } }
+        index { literal { bits { width: 32 value: "1" } } }
+      } }
+      field: "vid"
+    } } } }
   } }
   body { set_valid { header { index {
     base { member { base { var: "hdr" } field: "vlan" } } index { var: "idx" }
@@ -418,6 +424,7 @@ HDR, META, IDX, HIT, VAL, T16, TMP = (
 )
 HDR_IPV4 = member(HDR, "ipv4")
 HDR_VLAN = member(HDR, "vlan")
+VLAN_LAST_INDEX = f"last_index {{ stack {{ {HDR_VLAN} }} }}"
 HDR_ETH = member(HDR, "eth")
 TTL = member(HDR_IPV4, "ttl")
 PROTO = member(HDR_IPV4, "proto")
@@ -795,10 +802,29 @@ def test_block_kind_stmt_in_action(text: str) -> None:
     [
         (ING, assign(T16, "lookahead { type { bits: 16 } }")),
         (DEP, 'emit { value { lookahead { type { header: "eth" } } } }'),
+        # P4 §8.18: lastIndex, and so `last`, exist only in a parser.
+        (ING, assign(IDX, VLAN_LAST_INDEX)),
+        (SUB, f"set_valid {{ header {{ {index(HDR_VLAN, VLAN_LAST_INDEX)} }} }}"),
     ],
 )
 def test_parser_only(block: int, text: str) -> None:
     assert v.PARSER_ONLY in broken(lambda p: add_stmt(p, block, text))
+
+
+def test_last_index_in_an_action_is_parser_only() -> None:
+    def mutate(p: pb.Program) -> None:
+        body = p.blocks[ING].actions[0].body.add()
+        body.CopyFrom(stmt(assign(IDX, VLAN_LAST_INDEX)))
+
+    assert v.PARSER_ONLY in broken(mutate)
+
+
+def test_last_index_in_a_parser_is_fine() -> None:
+    program = valid()
+    last = index(HDR_VLAN, VLAN_LAST_INDEX)
+    add_parser_stmt(program, PARSE_IPV4, assign(TMP, cast("bits: 16", VLAN_LAST_INDEX)))
+    add_parser_stmt(program, PARSE_IPV4, f"set_valid {{ header {{ {last} }} }}")
+    assert codes(program) == []
 
 
 VLAN_NEXT = f"next {{ stack {{ {HDR_VLAN} }} }}"

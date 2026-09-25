@@ -60,9 +60,9 @@ every SpecTec name exists at the pinned commit.
 
 | Class | Entries |
 |---|---|
-| same | 41 |
+| same | 42 |
 | refines undefined | 7 |
-| deviates | 6 |
+| deviates | 5 |
 | not representable | 2 |
 | total | 56 |
 
@@ -184,9 +184,10 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   two sides of an assignment or the arguments of a call are evaluated is
   therefore unobservable. `&&`, `||` and the conditional operator
   evaluate only the operands they need; an assignment evaluates its
-  right-hand side before it resolves its target. When a target is
-  resolved does matter once a call sits between resolving it and
-  writing it; "Copy-back target" below records that difference.
+  right-hand side before it resolves its target. An extern call with a
+  result is not an expression: it resolves the result's target before
+  the call, as the next section's "Copy-back target" says, because the
+  call can write its `out` arguments.
   - P4: none
   - SpecTec: `Expr_eval/land-false`, `Expr_eval/lor-true`, `Expr_eval/cond-true`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
   - Lean: `evaluate`, `Execution.dispatch`
@@ -226,28 +227,27 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Class: deviates. An out-of-range write does nothing in SpecTec too, but `Expr_eval/headerStack` reads `hs[i]` with `i >= S` as the last element, valid or not, and `Lvalue_read/stack-out-of-bounds` reads it as element `0` made invalid with its stored fields; p4blo gives one answer, an invalid zero header, in both places.
 - **`hs.lastIndex`** is `nextIndex - 1` as a `bit<32>`; when
   `nextIndex == 0` its value is `2^32 - 1`, the wrapped result. P4
-  says undefined. P4 allows `hs.lastIndex` only in parsers, and so does
-  SpecTec's typing. p4blo's validator currently accepts it in controls
-  too, and prints such a program to P4 that P4's typing rejects; a
-  separate fix that rejects it outside parsers is in progress.
+  says undefined. It exists only in a parser, as in P4, so `hs.last`,
+  which the eDSL spells `hs[hs.lastIndex]`, does too; the validator
+  rejects it in a control, an action or a deparser with `PARSER_ONLY`.
   - P4: §8.18
   - SpecTec: `Expr_eval/stack-lastIndex`, `Expr_ok/headerStack-lastIndex`
   - Lean: `evaluate`
-  - Python: `p4blo.interp.expr.last_index`
-  - Test: `tests/test_interp_control.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`
-  - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, where p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only inside a parser or a parser state.
+  - Python: `p4blo.interp.expr.last_index`, `p4blo.validator._Validator.type_of`
+  - Test: `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/test_interp_expr.py::test_stack_index_and_last_index`, `tests/test_validator.py::test_parser_only`, `tests/test_validator.py::test_last_index_in_a_parser_is_fine`
+  - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, and p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only in a parser, as the validator does.
 - **`hs.last` on an empty stack.** The IR has no `last`; `hs.last` is
   elaborated to `hs[hs.lastIndex]`. With `nextIndex == 0` that indexes
   element `2^32 - 1`, which reads as a zero invalid header by the
   out-of-range rule and raises no error. P4 and SpecTec reject there
   with `StackOutOfBounds`. The elaboration is the deviation: it is not
-  how the language defines `hs.last` at `nextIndex == 0`. The coverage
-  table's row for `hs.last` is to be corrected separately.
+  how the language defines `hs.last` at `nextIndex == 0`, and the
+  coverage table says so on its `hs.last` row.
   - P4: §8.18
   - SpecTec: `Expr_eval/stack-last-out-of-bounds`, `Lvalue_eval/stack-last-out-of-bounds`, `Expr_eval/stack-last-in-bounds`
   - Lean: `evaluate`, `elementOf`
   - Python: `p4blo.edsl.views.Stack.last`, `p4blo.interp.expr.last_index`, `p4blo.interp.expr.element_of`
-  - Test: `tests/test_edsl.py::test_stack_last_is_the_element_at_last_index`, `tests/test_interp_control.py::test_last_index_wraps_at_next_index_zero`, `tests/corpus/stacks`
+  - Test: `tests/test_edsl.py::test_stack_last_is_the_element_at_last_index`, `tests/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/corpus/stacks`
   - Class: deviates. `Expr_eval/stack-last-out-of-bounds` and `Lvalue_eval/stack-last-out-of-bounds` reject with `StackOutOfBounds` when `nextIndex` is `0` or above the size, and `Expr_eval/stack-last-in-bounds` reads element `nextIndex - 1` otherwise, which the elaboration matches only for `nextIndex >= 1`.
 
 ## Lvalues and assignment
@@ -309,37 +309,33 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - Python: `p4blo.interp.stmt.push_front`, `p4blo.interp.stmt.pop_front`
   - Test: `tests/test_interp_control.py::test_push_front_shifts_up_and_pops_the_last`, `tests/test_interp_control.py::test_pop_front_shifts_down_and_clears_the_last`, `tests/test_interp_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
   - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps stored fields: after `push_front(n)` the first `n` elements keep their own old fields, `pop_front(n)` rotates the first `n` elements to the back and invalidates them there, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
-- **Block calls.** A sub-block call copies `in` arguments in, runs the
-  block, and copies `out` and `inout` arguments back in parameter
-  order. Two `out` or `inout` arguments that alias the same storage
+- **Block calls.** A sub-block call copies `in` arguments in, resolves
+  `out` and `inout` ones, runs the block, and copies `out` and `inout`
+  arguments back in parameter order. Two `out` or `inout` arguments that alias the same storage
   are a validator error, so copy order never matters; an `in` argument
   may overlap them, since it is copied in before anything is written
   (§6.8).
   - P4: §6.8
   - SpecTec: `Call_eval/controlApplyMethodCallee`, `Call_eval/parserApplyMethodCallee`, `Copy_in`, `Copy_out`
-  - Lean: `argumentValue`, `copyBack`, `Execution.dispatch`
-  - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_back`, `p4blo.validator._Validator.check_args`
+  - Lean: `argumentValue`, `copyIn`, `copyBack`, `Execution.dispatch`
+  - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.validator._Validator.check_args`
   - Test: `tests/test_interp_control.py::test_sub_control_call_copies_in_and_out`, `tests/test_interp_control.py::test_an_in_argument_overlapping_an_inout_one_is_copied_in_first`, `tests/test_validator.py::test_call_alias`, `tests/test_validator.py::test_no_alias`
   - Class: same. `Copy_in` evaluates every argument into the callee's frame before the body runs and `Copy_out` writes `out` and `inout` parameters back in parameter order; where a copy-back lands is the next entry.
-- **Copy-back target.** Copy-back writes to the argument's lvalue as it
-  resolves when the call returns, not as it resolved at copy-in: an
-  index expression inside the argument is evaluated again. The two
-  differ only when the call changes a variable the index reads, which
-  an action can do directly, since it sees its block's variables, and a
-  block or extern call can do through another `out` argument. P4
-  resolves the lvalue once, at copy-in (§6.8). The result lvalue of an
-  extern call has the same problem: it is resolved after the `out`
-  arguments are written, so `hs[t] = r.m(t)` with `t` an `out` argument
-  writes the element the new `t` names. This is not a deliberate
-  choice; it is listed so that the difference is known. The fix,
-  resolving every such lvalue at copy-in, is in progress and changes
-  both interpreters.
+- **Copy-back target.** An `out` or `inout` argument is resolved once,
+  at copy-in: every index expression inside it is evaluated then, in
+  argument order, and copy-back writes through the element it named,
+  even if the call has since changed a variable the index reads. An
+  action can change one directly, since it sees its block's variables;
+  a block or extern call can change one through another `out` argument
+  copied back earlier. An extern call's result target is resolved the
+  same way, before the call. `hs.next` is not resolved here; only an
+  extract uses it. P4 resolves the lvalue once, at copy-in (§6.8).
   - P4: §6.8
   - SpecTec: `Copy_in_arg/inout`, `Copy_in_arg/out`, `Copy_out_argument/non-dontcare`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
-  - Lean: `copyBack`, `callExtern`
-  - Python: `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
-  - Test: `tests/test_interp_control.py::test_direct_action_call_passes_directional_arguments`, `tests/test_interp_control.py::test_sub_control_call_copies_in_and_out`
-  - Class: deviates. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, and `Copy_out_argument/non-dontcare` writes through that reference; for `x = e.m(...)`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont` resolves `x` before it evaluates the call.
+  - Lean: `resolveLValue`, `resolveArg`, `copyIn`, `copyBack`, `callExtern`, `Execution.dispatch`
+  - Python: `p4blo.interp.expr.resolve_lvalue`, `p4blo.interp.stmt.resolve_arg`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
+  - Test: `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
+  - Class: same. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, `Copy_out_argument/non-dontcare` writes through that reference, and an assignment of an extern call's result resolves its target before the call.
 - **Actions read and write their block's variables.** An action runs in
   its block's activation with its parameters layered on top, so it
   reads the block's current variables and its writes to them persist.
