@@ -118,8 +118,10 @@ so the required CI gate discovers them without a hand-maintained file list.
   gate runs (tests, proof audits, fixtures) under `<Root>Test/` as one
   default-target library, and at the root only the root module, Lake's
   files, `README.md` and at most one `Main.lean` (`docs/design.md`, "The
-  Lean packages"). Whole-program validity and codec proofs remain work in progress,
-  not guarantees supplied by this organization. A closed behavior is
+  Lean packages"). Whole-program validity is decided by a checker proved
+  sound and progress is proved for valid programs; termination and the
+  codec proofs through Program and Export remain open, not guarantees
+  supplied by this organization. A closed behavior is
   written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both
   interpreters second.
