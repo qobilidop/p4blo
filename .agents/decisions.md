@@ -524,6 +524,12 @@ The exact theorem statements, premises and exclusions are in
   proof drafts and a set of reviews existed for a day only as untracked
   files on one machine, and two "unique" branches turned out to hold
   nothing `main` lacked. (2026-09-24)
+- **A push is gated on the recorded exit status, never on a command
+  that reads the log.** Reason: on 2026-09-24 a push was chained behind
+  `tail` of a gate log whose last line was `exit=1`; `tail` succeeds, so
+  main was red on origin for one commit. Gate a push with
+  `grep -qx exit=0 <log> && git push`, or read the status in a separate
+  step and decide. (2026-09-24)
 - **The full gate runs before a step is pushed; structural tests are a
   smoke check.** Reason: during the specification split the layout, link
   and boundary tests all passed while every codec test was failing on an
