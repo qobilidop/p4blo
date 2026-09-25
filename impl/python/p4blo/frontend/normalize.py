@@ -11,12 +11,17 @@ block's parameters and locals, and assignments of a variable to itself.
   locals `v0`, `v1`, ... in the order of their first use, reading states
   in order, then the body, then actions in order; an action parameter
   keeps its name, since table entries name action data by it;
+- an instance of a stateless extern family (`checksum16`, `crc16`,
+  `crc32`; docs/arch-supports.md, "Extern families") is renamed after its
+  type, `checksum16#0`, in the order of first use: it has no state to
+  observe, and the v1model shim prints it as a function call, so its name
+  does not survive a round trip through the printer;
 - `x = x` is removed.
 
 Everything a host or the architecture sees keeps its name: blocks, tables,
-actions, keys, extern instances, errors and the fields of every type. Two
-programs with equal normal forms are the same program up to those
-renamings, which no execution can observe.
+actions, keys, stateful extern instances, errors and the fields of every
+type. Two programs with equal normal forms are the same program up to
+those renamings, which no execution can observe.
 """
 
 from __future__ import annotations
@@ -37,6 +42,7 @@ def normalize(program: pb.Program) -> pb.Program:
         items = sorted(getattr(p, field_name), key=lambda d: d.name)
         del getattr(p, field_name)[:]
         getattr(p, field_name).extend(items)
+    _rename_stateless_instances(p)
     instances = sorted(p.extern_instances, key=lambda d: d.name)
     del p.extern_instances[:]
     p.extern_instances.extend(instances)
@@ -46,6 +52,55 @@ def normalize(program: pb.Program) -> pb.Program:
     del p.blocks[:]
     p.blocks.extend(blocks)
     return p
+
+
+STATELESS_FAMILIES = frozenset({"checksum16", "crc16", "crc32"})
+
+
+def _rename_stateless_instances(p: pb.Program) -> None:
+    stateless = {
+        i.name: i.extern_type
+        for i in p.extern_instances
+        if i.extern_type.split(".", 1)[0] in STATELESS_FAMILIES
+    }
+    order: list[str] = []
+
+    def note(m: Message) -> None:
+        if isinstance(m, pb.CallExtern) and m.instance in stateless and m.instance not in order:
+            order.append(m.instance)
+        for _, value in m.ListFields():
+            if isinstance(value, Message):
+                note(value)
+            elif not isinstance(value, str | bytes | int | float | bool):
+                for x in value:
+                    if isinstance(x, Message):
+                        note(x)
+
+    for block in p.blocks:
+        note(block)
+    order += sorted(set(stateless) - set(order))
+    counts: dict[str, int] = {}
+    mapping: dict[str, str] = {}
+    for name in order:
+        t = stateless[name]
+        mapping[name] = f"{t}#{counts.get(t, 0)}"
+        counts[t] = counts.get(t, 0) + 1
+    for i in p.extern_instances:
+        i.name = mapping.get(i.name, i.name)
+
+    def rename(m: Message) -> None:
+        if isinstance(m, pb.CallExtern) and m.instance in mapping:
+            m.instance = mapping[m.instance]
+        for _, value in m.ListFields():
+            if isinstance(value, Message):
+                rename(value)
+            elif not isinstance(value, str | bytes | int | float | bool):
+                for x in value:
+                    if isinstance(x, Message):
+                        rename(x)
+
+    for block in p.blocks:
+        rename(block)
 
 
 def _normalize_block(block: pb.Block) -> None:
