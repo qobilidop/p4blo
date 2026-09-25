@@ -656,7 +656,9 @@ class Block:
             setattr(self, pname, kind_of(t).at(core.var(pname), None))
         for lname, t in type(self).__locals__:
             with provenance():
-                setattr(self, lname, kind_of(t).at(core.local(lname, kind_of(t).pb_type), None))
+                pb_type = build.pb_type(t)
+                kind = kind_of(t)
+                setattr(self, lname, kind.at(core.local(lname, pb_type), None))
 
     @classmethod
     def _make_core(cls, build: Build) -> CoreBlock:

@@ -10,6 +10,8 @@ from p4blo.edsl import (
     Control,
     Deparser,
     EdslError,
+    Enum,
+    Header,
     In,
     InOut,
     Parser,
@@ -55,6 +57,29 @@ class Scalar(Control):
         self.assign(self.value, self.value + 1)
 
 
+class LocalHeader(Header):
+    value: bit8
+
+
+class Local(Struct):
+    header: LocalHeader
+
+
+class Color(Enum):
+    RED: Color
+    BLUE: Color
+
+
+class ScalarWithLocals(Control):
+    value: InOut[bit8]
+    scratch: Local
+    shade: Color
+
+
+class PolicyWithLocals(Control[Headers, Metadata]):
+    scratch: Local
+
+
 class Shared(Control[Headers, Metadata]):
     pass
 
@@ -91,6 +116,33 @@ def test_scalar_block_compiles_without_program_roots_or_exports() -> None:
     assert not hasattr(compiled, "headers")
     assert not hasattr(compiled, "metadata")
     assert not hasattr(compiled, "exports")
+
+
+def test_standalone_block_registers_local_type_closure() -> None:
+    compiled = BlockLibrary(ScalarWithLocals).compile()
+    assert [(local.name, local.type.WhichOneof("kind")) for local in compiled.blocks[0].locals] == [
+        ("scratch", "struct"),
+        ("shade", "enum_type"),
+    ]
+    assert [decl.name for decl in compiled.header_types] == ["LocalHeader"]
+    assert [decl.name for decl in compiled.struct_types] == ["Local"]
+    assert [decl.name for decl in compiled.enum_types] == ["Color"]
+    assert not hasattr(compiled, "headers")
+    assert not hasattr(compiled, "metadata")
+    assert not hasattr(compiled, "exports")
+
+
+def test_assembled_block_registers_local_type_closure() -> None:
+    program = arch.assemble(
+        BlockLibrary(PolicyWithLocals),
+        name="local_types",
+        headers=Headers,
+        metadata=Metadata,
+        exports={"policy": PolicyWithLocals},
+    )
+    validator.check(program)
+    assert [decl.name for decl in program.header_types] == ["LocalHeader"]
+    assert [decl.name for decl in program.struct_types] == ["Headers", "Metadata", "Local"]
 
 
 def test_shared_subblock_and_extern_are_declared_once() -> None:
