@@ -53,6 +53,7 @@ import hashlib
 import importlib
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -540,13 +541,35 @@ def stale_lean(lean: Sequence[str | Path], root: Path = ROOT) -> str | None:
 
     A binary built before a semantics change answers for the old sources,
     so `check_lean` would pass falsely and `refresh` would record stale
-    answers under the current source digest. A modification-time
-    comparison is what can be known without a build tool; the required
-    gate builds Lean first, so this guards local use.
+    answers under the current source digest. Lake knows exactly whether
+    the endpoint matches its sources, by content hash, so when the tree
+    is a Lake workspace and `lake` is on PATH the question goes to
+    `lake build p4blo-lean --no-build`, which fails when a build is
+    required. Without Lake, a modification-time comparison is what can be
+    known, and a comment edit trips it; the required gate builds Lean
+    first, so both forms guard local use only.
     """
     binary = _binary(lean)
     if binary is None:
         return None
+    lake = shutil.which("lake")
+    arch_root = root / "spec" / "arch"
+    if lake and (arch_root / "lakefile.toml").is_file() and binary.is_relative_to(arch_root):
+        query = subprocess.run(
+            [lake, "build", "p4blo-lean", "--no-build"],
+            cwd=arch_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if query.returncode == 0:
+            return None
+        needed = [line for line in query.stdout.splitlines() if line.startswith("- ")]
+        return (
+            f"{binary} does not match its sources; Lake would rebuild "
+            f"{', '.join(n[2:] for n in needed) or 'the endpoint'}. Run scripts/check-lean.sh "
+            "before asking it for answers."
+        )
     built = binary.stat().st_mtime
     newest = max(semantics_files(root), key=lambda p: p.stat().st_mtime)
     changed = newest.stat().st_mtime

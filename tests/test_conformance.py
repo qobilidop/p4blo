@@ -378,6 +378,12 @@ def test_only_semantics_sources_are_digested(tmp_path: Path) -> None:
     assert conformance.lean_provenance(root)["sources"] != before
 
 
+def test_lean_agrees_that_the_built_endpoint_is_current(lean_binary: Path) -> None:
+    """With Lake on PATH the guard asks Lake, which tracks content, not times:
+    a touched or comment-edited source is not a stale binary."""
+    assert conformance.stale_lean([lean_binary], conformance.ROOT) is None
+
+
 def test_a_binary_older_than_its_sources_answers_nothing(tmp_path: Path) -> None:
     root = spec_copy(tmp_path)
     binary = tmp_path / "p4blo-lean"
