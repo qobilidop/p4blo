@@ -10,115 +10,58 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch
+from p4blo import arch, ir
 from p4blo.drt.case import Case
-from p4blo.drt.programs import binary, bits, boolean, parser_condition_program, scalar_program
+from p4blo.drt.generate import generate
+from p4blo.drt.programs import (
+    ARITHMETIC,
+    COMPARISONS,
+    Leaves,
+    binary,
+    bits,
+    boolean,
+    packet_scalar_program,
+    parser_condition_program,
+    scalar_expression,
+    scalar_program,
+)
+from p4blo.drt.programs import WIDTHS as PROGRAM_WIDTHS
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
 from p4blo.v0 import p4blo_pb2 as pb
+from tests.test_drt_families import HypothesisChooser
 
-WIDTHS = st.sampled_from([1, 7, 8, 9, 16, 31, 32, 64, 65, 127])
-ARITHMETIC = [
-    pb.BINARY_OP_ADD,
-    pb.BINARY_OP_SUB,
-    pb.BINARY_OP_MUL,
-    pb.BINARY_OP_ADD_SAT,
-    pb.BINARY_OP_SUB_SAT,
-    pb.BINARY_OP_BIT_AND,
-    pb.BINARY_OP_BIT_OR,
-    pb.BINARY_OP_BIT_XOR,
-]
-COMPARISONS = [
-    pb.BINARY_OP_EQ,
-    pb.BINARY_OP_NE,
-    pb.BINARY_OP_LT,
-    pb.BINARY_OP_LE,
-    pb.BINARY_OP_GT,
-    pb.BINARY_OP_GE,
-]
+WIDTHS = st.sampled_from(PROGRAM_WIDTHS)
 
 
 @st.composite
 def scalar(draw: st.DrawFn, width: int | None, depth: int = 3) -> pb.Expr:
-    """Shrinking preserves the requested type, including nested operands."""
-    kinds = ["leaf"] if depth == 0 else ["leaf", "unary", "binary", "cast", "mux"]
-    if width is not None and depth:
-        kinds += ["slice", "shift"]
-        if width > 1:
-            kinds.append("concat")
-    kind = draw(st.sampled_from(kinds))
-    if kind == "leaf":
-        if width is None:
-            return boolean(draw(st.booleans()))
-        maximum = (1 << width) - 1
-        edges = sorted({0, 1, maximum, maximum - 1, min(width, maximum)})
-        return bits(width, draw(st.one_of(st.sampled_from(edges), st.integers(0, maximum))))
-    if kind == "unary":
-        op = (
-            pb.UNARY_OP_NOT
-            if width is None
-            else draw(st.sampled_from([pb.UNARY_OP_COMPLEMENT, pb.UNARY_OP_NEGATE]))
-        )
-        return pb.Expr(unary=pb.Unary(op=op, operand=draw(scalar(width, depth - 1))))
-    if kind == "binary":
-        if width is None:
-            op = draw(st.sampled_from([*COMPARISONS, pb.BINARY_OP_AND, pb.BINARY_OP_OR]))
-            operand_width = None if op in (pb.BINARY_OP_AND, pb.BINARY_OP_OR) else draw(WIDTHS)
-        else:
-            op, operand_width = draw(st.sampled_from(ARITHMETIC)), width
-        return binary(
-            op, draw(scalar(operand_width, depth - 1)), draw(scalar(operand_width, depth - 1))
-        )
-    if kind == "cast":
-        source_width = 1 if width is None else draw(WIDTHS)
-        target = pb.Type(boolean=pb.BoolType()) if width is None else pb.Type(bits=width)
-        return pb.Expr(cast=pb.Cast(to=target, operand=draw(scalar(source_width, depth - 1))))
-    if kind == "mux":
-        return pb.Expr(
-            mux=pb.Mux(
-                **{
-                    "condition": draw(scalar(None, depth - 1)),
-                    "then": draw(scalar(width, depth - 1)),
-                    "otherwise": draw(scalar(width, depth - 1)),
-                }
-            )
-        )
-    assert width is not None
-    if kind == "slice":
-        lo = draw(st.integers(0, 16))
-        extra = draw(st.integers(0, 16))
-        return pb.Expr(
-            slice=pb.Slice(
-                operand=draw(scalar(width + lo + extra, depth - 1)),
-                hi=lo + width - 1,
-                lo=lo,
-            )
-        )
-    if kind == "shift":
-        op = draw(st.sampled_from([pb.BINARY_OP_SHL, pb.BINARY_OP_SHR]))
-        return binary(op, draw(scalar(width, depth - 1)), draw(scalar(draw(WIDTHS), depth - 1)))
-    assert kind == "concat"
-    left_width = draw(st.integers(1, width - 1))
-    return binary(
-        pb.BINARY_OP_CONCAT,
-        draw(scalar(left_width, depth - 1)),
-        draw(scalar(width - left_width, depth - 1)),
-    )
+    """Shrinking preserves the requested type, including nested operands:
+    every decision of `scalar_expression` is drawn from a typed menu."""
+    return scalar_expression(HypothesisChooser(draw), width, depth)
+
+
+@st.composite
+def packet_scalar(draw: st.DrawFn, width: int | None) -> pb.Expr:
+    """The same, with leaves that read the parsed input."""
+    return scalar_expression(HypothesisChooser(draw), width, 3, Leaves(packet=True))
 
 
 def check_expression(expression: pb.Expr, width: int | None, lean_binary: Path) -> None:
     check_program(scalar_program(expression, width), lean_binary)
 
 
-def check_program(program: pb.Program, lean_binary: Path) -> None:
+def check_program(
+    program: pb.Program, lean_binary: Path, cases: Sequence[Case] = (Case(pb.Entries(), 0, b""),)
+) -> None:
     # compare_program validates; generator mistakes fail, never get filtered.
-    cases = [Case(pb.Entries(), 0, b"")]
     try:
         report = compare_program(program, cases, 4, [lean_binary])
     except ProtocolError as error:
@@ -247,3 +190,18 @@ def test_lean_agrees_on_shrinking_typed_programs(
     lean_binary: Path, data: st.DataObject, width: int | None
 ) -> None:
     check_expression(data.draw(scalar(width)), width, lean_binary)
+
+
+@settings(max_examples=100, deadline=None, derandomize=True)
+@given(
+    data=st.data(),
+    width=st.one_of(st.none(), WIDTHS),
+    seed=st.integers(0, 2**32 - 1),
+)
+def test_lean_agrees_on_shrinking_packet_programs(
+    lean_binary: Path, data: st.DataObject, width: int | None, seed: int
+) -> None:
+    """Leaves that read fields, locals, a stack element and validity of a
+    parsed input, so that each packet computes something else."""
+    program = packet_scalar_program(data.draw(packet_scalar(width)), width)
+    check_program(program, lean_binary, generate(ir.Index.build(program), seed, 4))

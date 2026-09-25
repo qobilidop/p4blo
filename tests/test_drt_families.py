@@ -14,8 +14,9 @@ from __future__ import annotations
 import hashlib
 import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 import pytest
 from hypothesis import given, settings
@@ -37,18 +38,19 @@ SEEDS = range(200)
 
 
 class HypothesisChooser(Chooser):
-    """Decisions drawn from Hypothesis data: an option shrinks toward the
-    first, a number toward its lower bound."""
+    """Decisions drawn by Hypothesis, from `data.draw` or a composite's
+    `draw`: an option shrinks toward the first, a number toward its lower
+    bound."""
 
-    def __init__(self, data: st.DataObject) -> None:
+    def __init__(self, draw: st.DrawFn | Callable[[st.SearchStrategy[Any]], Any]) -> None:
         super().__init__()
-        self.data = data
+        self.draw = draw
 
     def pick(self, point: str, options: Sequence[str]) -> str:
-        return self.data.draw(st.sampled_from(list(options)), label=point)
+        return self.draw(st.sampled_from(list(options)))
 
     def integer(self, point: str, lo: int, hi: int) -> int:
-        return self.data.draw(st.integers(lo, hi), label=point)
+        return self.draw(st.integers(lo, hi))
 
 
 def check(generated: Sample, lean: Sequence[str | Path]) -> None:
@@ -219,4 +221,4 @@ def test_lean_agrees_on_spectec_profile_seeds(family: str, lean_binary: Path) ->
 def test_lean_agrees_on_shrinking_family_programs(
     lean_binary: Path, data: st.DataObject, family: str
 ) -> None:
-    check(FAMILIES[family](HypothesisChooser(data), "lean"), [lean_binary])
+    check(FAMILIES[family](HypothesisChooser(data.draw), "lean"), [lean_binary])

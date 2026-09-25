@@ -9,7 +9,11 @@ to the oracle. A seed names one program and its cases exactly: the family is
 `random.Random(seed)`, through the constructors of `p4blo.drt.programs` and
 `p4blo.drt.stateful_programs` (and the copy profiles of the DRT tests) and
 through `p4blo.drt.generate` for packets. Hypothesis is not used, because its
-draws are not a stable function of a seed across versions.
+draws are not a stable function of a seed across versions; the scalar
+expressions come from the generator the Hypothesis strategy uses too
+(`programs.scalar_expression`), driven by a `RandomChooser`, with leaves
+that read a parsed input so that each case computes something else, and
+with shift amounts narrow enough for the simulator.
 
 For each seed the program is validated and loaded, the Python interpreter
 runs the cases in order, and its outputs become the `expect` lines of an STF
@@ -47,13 +51,17 @@ sys.path.insert(0, str(ROOT))
 from p4blo import arch, ir, stf  # noqa: E402
 from p4blo.arch import v1model  # noqa: E402
 from p4blo.drt.case import Case, case_to_stf  # noqa: E402
+from p4blo.drt.choice import RandomChooser  # noqa: E402
 from p4blo.drt.generate import generate  # noqa: E402
+from p4blo.drt.programs import WIDTHS as PROGRAM_WIDTHS  # noqa: E402
 from p4blo.drt.programs import (  # noqa: E402
+    Leaves,
     binary,
     bits,
-    boolean,
+    has_lookahead,
+    packet_scalar_program,
     parser_condition_program,
-    scalar_program,
+    scalar_expression,
 )
 from p4blo.drt.run import Outcome, python_outcome  # noqa: E402
 from p4blo.drt.stateful_programs import (  # noqa: E402
@@ -94,27 +102,12 @@ CORPUS = sorted(
     ]
 )
 
-# The same widths, operators and shapes as the Hypothesis strategy in
-# tests/test_drt_programs.py.
-WIDTHS = (1, 7, 8, 9, 16, 31, 32, 64, 65, 127)
-ARITHMETIC = (
-    pb.BINARY_OP_ADD,
-    pb.BINARY_OP_SUB,
-    pb.BINARY_OP_MUL,
-    pb.BINARY_OP_ADD_SAT,
-    pb.BINARY_OP_SUB_SAT,
-    pb.BINARY_OP_BIT_AND,
-    pb.BINARY_OP_BIT_OR,
-    pb.BINARY_OP_BIT_XOR,
-)
-COMPARISONS = (
-    pb.BINARY_OP_EQ,
-    pb.BINARY_OP_NE,
-    pb.BINARY_OP_LT,
-    pb.BINARY_OP_LE,
-    pb.BINARY_OP_GT,
-    pb.BINARY_OP_GE,
-)
+# Shift amounts at most this wide stay under the simulator's limit of 2048
+# (`known_defect`, shift-limit), which is then never what a seed tests.
+SHIFT_WIDTHS = tuple(w for w in PROGRAM_WIDTHS if w <= 9)
+SCALAR_LABELS = tuple(str(w) for w in PROGRAM_WIDTHS)
+PACKET_LEAVES = Leaves(packet=True, shift_widths=SHIFT_WIDTHS)
+LOOKAHEAD_LEAVES = Leaves(lookahead=True, shift_widths=SHIFT_WIDTHS)
 
 
 @dataclass(frozen=True)
@@ -138,83 +131,6 @@ class Generated:
 # ---------------------------------------------------------------------------
 # Scalar expressions
 # ---------------------------------------------------------------------------
-
-
-class Scalars:
-    """Deterministic typed expressions, drawn as tests/test_drt_programs.py's
-    `scalar` strategy draws them; `lookahead` adds packet reads as leaves,
-    which only a parser may evaluate."""
-
-    def __init__(self, rng: random.Random, lookahead: bool = False) -> None:
-        self.rng = rng
-        self.lookahead = lookahead
-
-    def expr(self, width: int | None, depth: int = 3) -> pb.Expr:
-        rng = self.rng
-        kinds = ["leaf"] if depth == 0 else ["leaf", "unary", "binary", "cast", "mux"]
-        if width is not None and depth:
-            kinds += ["slice", "shift"]
-            if width > 1:
-                kinds.append("concat")
-        kind = rng.choice(kinds)
-        if kind == "leaf":
-            return self.leaf(width)
-        if kind == "unary":
-            op = (
-                pb.UNARY_OP_NOT
-                if width is None
-                else rng.choice([pb.UNARY_OP_COMPLEMENT, pb.UNARY_OP_NEGATE])
-            )
-            return pb.Expr(unary=pb.Unary(op=op, operand=self.expr(width, depth - 1)))
-        if kind == "binary":
-            if width is None:
-                op = rng.choice([*COMPARISONS, pb.BINARY_OP_AND, pb.BINARY_OP_OR])
-                operand = None if op in (pb.BINARY_OP_AND, pb.BINARY_OP_OR) else rng.choice(WIDTHS)
-            else:
-                op, operand = rng.choice(ARITHMETIC), width
-            return binary(op, self.expr(operand, depth - 1), self.expr(operand, depth - 1))
-        if kind == "cast":
-            source = 1 if width is None else rng.choice(WIDTHS)
-            target = pb.Type(boolean=pb.BoolType()) if width is None else pb.Type(bits=width)
-            return pb.Expr(cast=pb.Cast(to=target, operand=self.expr(source, depth - 1)))
-        if kind == "mux":
-            return pb.Expr(
-                mux=pb.Mux(
-                    **{
-                        "condition": self.expr(None, depth - 1),
-                        "then": self.expr(width, depth - 1),
-                        "otherwise": self.expr(width, depth - 1),
-                    }
-                )
-            )
-        assert width is not None
-        if kind == "slice":
-            lo = rng.randint(0, 16)
-            extra = rng.randint(0, 16)
-            operand = self.expr(width + lo + extra, depth - 1)
-            return pb.Expr(slice=pb.Slice(operand=operand, hi=lo + width - 1, lo=lo))
-        if kind == "shift":
-            op = rng.choice([pb.BINARY_OP_SHL, pb.BINARY_OP_SHR])
-            return binary(op, self.expr(width, depth - 1), self.expr(rng.choice(WIDTHS), depth - 1))
-        left = rng.randint(1, width - 1)
-        return binary(
-            pb.BINARY_OP_CONCAT, self.expr(left, depth - 1), self.expr(width - left, depth - 1)
-        )
-
-    def leaf(self, width: int | None) -> pb.Expr:
-        rng = self.rng
-        if self.lookahead and rng.random() < 0.3:
-            # A bool read is a cast of one bit, as the DRT's trap is.
-            read = pb.Expr(lookahead=pb.Lookahead(type=pb.Type(bits=width or 1)))
-            if width is None:
-                return pb.Expr(cast=pb.Cast(to=pb.Type(boolean=pb.BoolType()), operand=read))
-            return read
-        if width is None:
-            return boolean(rng.random() < 0.5)
-        maximum = (1 << width) - 1
-        edges = sorted({0, 1, maximum, maximum - 1, min(width, maximum)})
-        value = rng.choice(edges) if rng.random() < 0.5 else rng.randint(0, maximum)
-        return bits(width, value)
 
 
 def byte_aligned(program: pb.Program) -> pb.Program:
@@ -246,15 +162,29 @@ def _random_cases(program: pb.Program, rng: random.Random) -> tuple[Case, ...]:
 
 
 def scalar_family(seed: int, rng: random.Random) -> Generated:
-    width = rng.choice([None, *WIDTHS])
-    expression = Scalars(rng).expr(width)
-    program = byte_aligned(scalar_program(expression, width))
+    """An expression of `tests/test_drt_programs.py`'s generator whose leaves
+    also read a parsed input, so that every case computes something else."""
+    ch = RandomChooser(rng)
+    width = None if ch.chance("scalar.bool") else int(ch.choice("scalar.width", SCALAR_LABELS))
+    expression = scalar_expression(ch, width, 3, PACKET_LEAVES)
+    program = byte_aligned(packet_scalar_program(expression, width))
     kind = "bool" if width is None else f"bit<{width}>"
     return Generated(seed, "scalar", kind, program, _random_cases(program, rng))
 
 
 def parser_condition_family(seed: int, rng: random.Random) -> Generated:
-    condition = Scalars(rng, lookahead=True).expr(None)
+    """A `verify` condition holding at least one lookahead, placed on either
+    side of an `&&` or `||` when the drawn expression has none, so that a
+    short packet can fault it wherever it sits."""
+    ch = RandomChooser(rng)
+    condition = scalar_expression(ch, None, 3, LOOKAHEAD_LEAVES)
+    if not has_lookahead(condition):
+        read = scalar_expression(ch, None, 0, Leaves(lookahead=True))
+        while not has_lookahead(read):
+            read = scalar_expression(ch, None, 0, Leaves(lookahead=True))
+        op = pb.BINARY_OP_AND if ch.chance("condition.and") else pb.BINARY_OP_OR
+        pair = (condition, read) if ch.chance("condition.left") else (read, condition)
+        condition = binary(op, *pair)
     expected = rng.choice(["NoError", "NoMatch", "PacketTooShort"])
     program = byte_aligned(parser_condition_program(condition, expected))
     return Generated(
