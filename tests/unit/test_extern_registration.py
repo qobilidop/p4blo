@@ -11,9 +11,9 @@ from p4blo.arch.externs import BindError, Implementation, MethodShape, Registry,
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def load(registry: Registry) -> arch.Loaded:
+def load(registry: Registry, program: pb.Program | None = None) -> arch.Loaded:
     return arch.load(
-        custom_extern.build(),
+        program if program is not None else custom_extern.build(),
         registry=registry,
         contract=Contract(()),
         roles={"transform": pb.BLOCK_KIND_CONTROL},
@@ -22,12 +22,30 @@ def load(registry: Registry) -> arch.Loaded:
 
 def test_custom_family_runs_without_a_supplied_architecture() -> None:
     assert custom_extern.demo() == (1, 2)
-    first = load(custom_extern.registry())
-    second = load(custom_extern.registry())
-    assert first.externs["numbers"] is not second.externs["numbers"]
-    assert isinstance(first.externs["numbers"], custom_extern.SequenceBinding)
-    assert isinstance(second.externs["numbers"], custom_extern.SequenceBinding)
-    assert first.externs["numbers"].value == second.externs["numbers"].value == 0
+
+
+def test_one_registry_creates_fresh_state_per_instance_and_load() -> None:
+    program = custom_extern.build()
+    other = program.extern_instances.add()
+    other.CopyFrom(program.extern_instances[0])
+    other.name = "other"
+    other.args[0].bits.value = "7"
+
+    offered = custom_extern.registry()
+    first = load(offered, program)
+    second = load(offered, program)
+    numbers = first.externs["numbers"]
+    other_numbers = first.externs["other"]
+    second_numbers = second.externs["numbers"]
+    assert isinstance(numbers, custom_extern.SequenceBinding)
+    assert isinstance(other_numbers, custom_extern.SequenceBinding)
+    assert isinstance(second_numbers, custom_extern.SequenceBinding)
+    assert (numbers.value, other_numbers.value, second_numbers.value) == (0, 7, 0)
+
+    numbers.call("advance", [])
+    assert (numbers.value, other_numbers.value, second_numbers.value) == (1, 7, 0)
+    other_numbers.call("advance", [])
+    assert (numbers.value, other_numbers.value, second_numbers.value) == (1, 8, 0)
 
 
 def test_missing_registration_names_the_family() -> None:
