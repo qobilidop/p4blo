@@ -462,6 +462,16 @@ Six layers, each answering a different question.
    and mutation campaigns that check the tests would notice a wrong
    implementation.
 
+The test suites under `tests/` are grouped by the question they answer,
+each directory with a README in these terms: `unit/` holds layers 1 and
+2, `codec/` applies layer 1 to the wire encoding, `programs/` holds
+layers 3 and 4 for the corpus and the applications, `drt/` holds layer
+5 and the fault side of layer 6, `lean/` compares the Lean semantics with
+Python and with independent answers, and `external/` replays on the two
+oracles. `structure/` sits beside the layers: it checks no semantics, but
+pins the layout, the links and the ledger that make the evidence
+findable.
+
 Every external input, from the oracle commits to the Docker image
 digests and the GitHub Actions, is pinned and listed in
 [workflows.md](workflows.md), so anyone can reproduce the checks.
@@ -504,6 +514,9 @@ p4blo/
     drt/                            the differential loop and certificates
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs
+    unit/, codec/, programs/,       the suites, one directory per question
+    drt/, lean/, external/,         of the testing strategy above
+    structure/
     corpus/<program>/               source, golden, README, STF vectors
     examples/<application>/         application goldens, vectors, tests
     oracle/                         P4-SpecTec and BMv2 drivers, original programs

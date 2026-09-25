@@ -159,7 +159,7 @@ typechecked with p4c through Docker when it is available.
 | `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, IR semantics, architecture support, coverage, assurance, quickstart, workflows |
 | `.agents/` | agent state: current status, decisions register, roadmap, live notes and skills; `AGENTS.md` is the entry point |
-| `tests/` | everything that runs, including `pyright/`, the eDSL's static-check fixtures |
+| `tests/` | everything that runs: the suites grouped by question (`unit/`, `codec/`, `programs/`, `drt/`, `lean/`, `external/`, `structure/`, each with a README) and `pyright/`, the eDSL's static-check fixtures |
 
 ## Neighbors
 

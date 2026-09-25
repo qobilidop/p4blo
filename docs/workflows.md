@@ -209,9 +209,9 @@ misspelled field, state, action or table, an unequal width, or a
 `concat` used without `as_` is an error there before the build runs.
 `tests/unit/test_pyright.py` guards those static rules, with a file under
 `tests/pyright/must_fail/` per mistake and its expected diagnostic.
-`tests/programs/test_corpus.py` picks the directory up by itself: it validates,
-rebuilds the golden from the source, replays every vector under the
-switch, and checks the filter's fate decisions. Then run the oracle and
+`tests/programs/test_corpus.py` picks the directory up by itself: it
+validates, rebuilds the golden from the source, replays every vector
+under the switch, and checks the filter's fate decisions. Then run the oracle and
 the Lean-versus-Python gates, and add a row to the corpus table in
 `docs/assurance.md`. The sources are in p4c under
 `testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
@@ -229,6 +229,18 @@ are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
 The dynamic form for generated programs is a helper in
 `impl/python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
+
+**A test.** Put it in the directory of `tests/` whose README asks the
+question it answers (`unit/`, `codec/`, `programs/`, `drt/`, `lean/`,
+`external/` or `structure/`; `docs/design.md` maps them to the six
+layers), never at the top of `tests/`, which
+`tests/structure/test_package_layout.py` keeps free of test modules. A
+test that compares with real Lean takes the `lean_binary` fixture and a
+name starting with `test_lean_agrees`, so the required gate finds it in
+any directory. A module that drives an external oracle is listed by its
+file stem in `tests/conftest.py`'s `ORACLE_MODULES`, which marks it
+`oracle`; since the marker is keyed by stem, a new module must not reuse
+the stem of an oracle module in another directory.
 
 **An architecture.** A Python module under `impl/python/p4blo/arch/` with a
 `run(loaded, entries, ingress_port, packet)` method, no P4 in it; the
