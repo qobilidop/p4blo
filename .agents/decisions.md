@@ -256,9 +256,16 @@ these entries record why.
   request sequence from fresh state, and each reply with state and
   coverage), canonical so that a changed answer is a one-line diff;
   Python is checked against it without a Lean process and Lean by
-  regeneration. It is re-exported only after the semantics page states
-  the changed behavior. Fixtures hold concrete inputs, not generator
-  recipes, so a generator change never silently changes the corpus.
+  regeneration. `refresh` re-answers the tracked requests and never runs
+  a generator; `export` adds inputs. A fixture records the digest of the
+  semantics sources that answered it (the modules `spec/arch/Main.lean`
+  imports, minus laws, audits, probes and tests) and of the binary, and
+  a binary older than those sources is refused, so stale answers cannot
+  be written locally; the required gate builds Lean first. Format
+  version 2 lists only nonzero extern cells. Two contract fixtures
+  exercise rejected installs, floods, drops and out-of-range ports so
+  every reply shape the protocol allows is recorded. A changed answer is
+  refreshed only after the semantics page states the changed behavior.
   (2026-09-24)
 - **The SpecTec coverage scope is the rules and functions of 8-dynamic
   and the functions of 3-operations, including table-defined and builtin
