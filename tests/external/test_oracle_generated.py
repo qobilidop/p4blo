@@ -6,7 +6,7 @@ and counter sequences, aggregate copies, calls, corpus programs with random
 entries and packets, and the control and parser shape families), and into
 vectors whose `expect` lines are what the Python interpreter did. Here a
 fixed seed range runs through it, one test per seed. Without a built
-simulator the oracle tests skip, as in tests/test_oracle.py; the
+simulator the oracle tests skip, as in tests/external/test_oracle.py; the
 preparation, which needs no oracle, always runs.
 
 A divergence and an oracle error both fail. A seed whose every non-pass is a
@@ -30,7 +30,7 @@ from p4blo.drt.programs import binary, bits, scalar_program
 from p4blo.interp import tables
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from tests.oracle import generated  # noqa: E402

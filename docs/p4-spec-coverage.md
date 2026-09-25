@@ -59,7 +59,7 @@ rewrite of a row that was *excluded, by elaboration*, the row is now
 *elaborated*, since the rewrite has been performed; fourteen rows moved on
 2026-09-24 for that reason alone, and their notes are unchanged. The
 bridge's claims are checked on the corpus by
-`tests/test_frontend_spectec.py`; it is not a verified frontend.
+`tests/external/test_frontend_spectec.py`; it is not a verified frontend.
 
 ## Types
 
@@ -370,7 +370,7 @@ construct is excluded or elaborated away by a row above, which the entry
 names), `not-representable` (the construct is in, but the printer cannot
 produce input that reaches the rule), and `unhit` (reachable, not yet
 exercised; each entry names the generated input that would reach it).
-`tests/test_spectec_coverage.py` fails when an in-scope item is neither hit
+`tests/external/test_spectec_coverage.py` fails when an in-scope item is neither hit
 nor excluded, when an exclusion is stale, and when the counts below drift.
 
 At the pinned commit, over 33 programs and 93 vectors:

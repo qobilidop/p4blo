@@ -8,7 +8,7 @@ must resolve at the pinned commit, and the test that checks them must run
 without an OCaml toolchain, so the inventory is a committed JSON file,
 tests/oracle/spectec-rules.json, regenerated from the pinned checkout by
 this script. `--check` compares instead of writing and exits non-zero on
-drift, which is how tests/test_spectec_rules.py uses it when a checkout at
+drift, which is how tests/external/test_spectec_rules.py uses it when a checkout at
 the pin is available.
 
 Only the architecture-free sections are inventoried: everything under

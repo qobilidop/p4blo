@@ -48,7 +48,7 @@ BMv2 agrees about the write, which it ignores, and not about the read:
 `register_read` on an index at or beyond the array's size leaves the
 destination untouched rather than zeroing it, so a field keeps whatever
 the parser put there. Two of these vectors therefore diverge on BMv2 and
-are carried as a known divergence in `tests/test_oracle_bmv2.py`. P4
+are carried as a known divergence in `tests/external/test_oracle_bmv2.py`. P4
 leaves an out-of-range register access implementation-defined, p4blo's
 choice is written in `docs/ir-semantics.md` and implemented twice, and the
 divergence is documented rather than resolved; see `.agents/decisions.md`.

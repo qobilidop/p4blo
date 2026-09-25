@@ -56,7 +56,7 @@ its reason in prose, then six lines in this order:
 `tests/test_ledger.py` checks the shape of every entry, that every Lean
 and Python name exists where it is cited, that every test reference names
 a test, the counts below, and each entry's class against
-`tests/ledger-classes.json`; `tests/test_spectec_rules.py` checks that
+`tests/ledger-classes.json`; `tests/external/test_spectec_rules.py` checks that
 every SpecTec name exists at the pinned commit.
 
 | Class | Entries |
@@ -507,7 +507,7 @@ decision, not the parser's.
   - SpecTec: `ParserState_eval/cont`, `$enter_e`, `$exit_e`, `VarDecl_eval/non-initializer`
   - Lean: `Frame.forBlock`
   - Python: `p4blo.interp.env.Env.for_block`, `p4blo.frontend.blocks.BlockCx.zero`, `p4blo.edsl.core.blocks.Stmts.local`, `p4blo.edsl.core.blocks.zero_stmts`
-  - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `tests/unit/test_edsl_v2.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/lean/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
+  - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/external/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `tests/unit/test_edsl_v2.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/lean/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
   - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and the zero value the elaboration writes at the declaration is that default on every entry, which the bridge's `statelocal`, `actlocal` and `funclocal` probes check against SpecTec.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
@@ -574,7 +574,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `$select_action`, `$largest_priority_wins`, `$set_priorities_of_tableEntryListIR`, `$set_priorities_of_tableEntryListIR'`, `TableProperty_ok/largest-priority-wins`, `TableProperty_ok/priority-delta`
   - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`, `DeviationLaws.keyValueMatches_ternary`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.overlaps`, `p4blo.interp.tables.InstalledEntries.install`
-  - Test: `tests/unit/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/unit/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/unit/test_validator.py::test_entry_priority_overlap`, `tests/test_frontend_spectec.py::test_priority_translation_numbers_entries_as_the_specification`, `tests/corpus/priority`
+  - Test: `tests/unit/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/unit/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/unit/test_validator.py::test_entry_priority_overlap`, `tests/external/test_frontend_spectec.py::test_priority_translation_numbers_entries_as_the_specification`, `tests/corpus/priority`
   - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; a program's const-entry priorities are the ones `$set_priorities_of_tableEntryListIR` computes with the default properties, which the IR stores rather than recomputes and which the IL bridge reproduces from P4-SpecTec's typed IL; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.
 - **Priority outside ternary tables.** An entry of a table without a
   `ternary` key has priority `0`; the installer and the validator

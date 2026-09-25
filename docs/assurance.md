@@ -307,7 +307,7 @@ generated programs and not only the corpus: `tests/oracle/generated.py`
 derives programs and cases deterministically from seeds in six families
 (scalar expressions, parser conditions, stateful sequences, aggregate
 copies, sub-block calls, and corpus programs with random entries and
-packets), and `tests/test_oracle_generated.py` runs sixty of them in CI.
+packets), and `tests/external/test_oracle_generated.py` runs sixty of them in CI.
 A larger local campaign over seeds 0 to 1099, 1,100 programs and 3,851
 vectors, passed with no unexplained disagreement; every non-pass was one
 of two classified simulator defects below, the shift limit and the table
@@ -381,7 +381,7 @@ architecture's own rules are outside this inventory.
 Every closed behavior of the semantics page cites the SpecTec rule that
 decides it at the pinned commit and is classed *same*, *refines
 undefined*, *deviates* or *not representable*; `tests/test_ledger.py`
-and `tests/test_spectec_rules.py` check the shape, the names and the
+and `tests/external/test_spectec_rules.py` check the shape, the names and the
 classes. Separately, [p4-spec-coverage.md](p4-spec-coverage.md#rule-coverage-on-p4-spectec)
 records which of SpecTec's architecture-free rules the corpus and
 examples make the pinned simulator fire, with every unhit in-scope rule
@@ -393,7 +393,7 @@ with nothing architectural in between. A patch applied at build time adds
 a `p4blo` architecture to the pinned simulator that runs one parser,
 control or deparser per request on given headers, metadata, entries and
 extern state ([tests/oracle/README.md](../tests/oracle/README.md#the-block-runner)).
-`tests/test_oracle_block.py` repeats every block run of every vector on it
+`tests/external/test_oracle_block.py` repeats every block run of every vector on it
 and compares each block's outputs with the reference interpreter's: a
 parser's headers, metadata, bits consumed, acceptance and error; a
 control's headers and metadata; a deparser's bytes and bit count; and
@@ -419,7 +419,7 @@ The IL bridge makes the corpus's elaborations code: `p4blo.frontend`
 translates the IL P4-SpecTec's own typing and instantiation produce from a
 P4 program ([tests/oracle/README.md](../tests/oracle/README.md#the-il-export)),
 and each row of [p4-spec-coverage.md](p4-spec-coverage.md) says what it
-does with the construct. `tests/test_frontend_spectec.py` establishes, at
+does with the construct. `tests/external/test_frontend_spectec.py` establishes, at
 the pin, that six corpus goldens (csum16, parser_error, priority, stacks,
 subparser_stack, verify_error) are reproduced byte for byte from their P4
 originals; that the other four differ only as the test spells out, with

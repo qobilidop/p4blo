@@ -1,6 +1,6 @@
 """Block semantics against block semantics, on P4-SpecTec.
 
-`tests/test_oracle.py` replays every corpus vector through the v1model shim
+`tests/external/test_oracle.py` replays every corpus vector through the v1model shim
 and the simulator's V1Model architecture, so what it compares is a
 pipeline: a disagreement could be in a block, in the shim or in the
 architecture. Here every parser, control and deparser run the reference
@@ -48,11 +48,11 @@ from p4blo.interp.packet import Emitter
 from p4blo.interp.values import Bits, Header, Stack, Struct, Value, copy, zero
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from tests.oracle import block as oracle_block  # noqa: E402
-from tests.test_oracle import VECTORS, program_of  # noqa: E402
+from tests.external.test_oracle import VECTORS, program_of  # noqa: E402
 
 PROGRAMS = sorted({program_of(v) for v in VECTORS})
 

@@ -19,7 +19,7 @@ import pytest
 
 from p4blo import ir, stf
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from tests.oracle import firewall  # noqa: E402

@@ -77,9 +77,9 @@ scripts/check-lean.sh                              # all three Lean packages, au
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
 tests/oracle/build.sh                                  # the P4-SpecTec oracle, once
-uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
+uv run pytest tests/external/test_oracle.py                 # corpus vectors on that oracle
 docker build -t p4blo-bmv2 tests/oracle/bmv2             # the BMv2 oracle image, once
-uv run pytest tests/test_oracle_bmv2.py            # corpus vectors on BMv2
+uv run pytest tests/external/test_oracle_bmv2.py            # corpus vectors on BMv2
 docker build -t p4blo-xdp-build tests/oracle/xdp    # compile-only XDP profile
 P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/test_xdp_build.py # offline XDP gate
 ```

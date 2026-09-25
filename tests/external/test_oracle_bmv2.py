@@ -5,7 +5,7 @@ Docker image (tests/oracle/bmv2/Dockerfile), driven by tests/oracle/bmv2/run.py.
 Docker or without the image every replay test skips and says how to build it;
 with them, each `tests/corpus/<program>/*.stf` must pass, where a divergence and an
 oracle-side error (a construct the switch cannot load, a crash, a timeout)
-are both failures, labeled apart as in tests/test_oracle.py: the second is not
+are both failures, labeled apart as in tests/external/test_oracle.py: the second is not
 a disagreement, but it leaves the claim unchecked.
 
 One vector is a known, analysed divergence and is marked `xfail`: see
@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from p4blo import ir, stf  # noqa: E402
@@ -273,8 +273,8 @@ def test_known_bmv2_marker_does_not_hide_errors_or_corrections(tmp_path: Path, s
     """Exercise pytest's actual marker, not just metadata or the predicate."""
     source = tmp_path / "test_marker.py"
     source.write_text(
-        "from tests.test_oracle_bmv2 import CORPUS, marks, bmv2_run, REGISTER_BOUNDS_DETAIL\n"
-        "from tests.test_oracle_bmv2 import test_vector_passes_on_bmv2 as check_vector\n"
+        "from tests.external.test_oracle_bmv2 import CORPUS, marks, bmv2_run, REGISTER_BOUNDS_DETAIL\n"
+        "from tests.external.test_oracle_bmv2 import test_vector_passes_on_bmv2 as check_vector\n"
         "vector = CORPUS / 'register_bounds/bounds.stf'\n"
         "def test_probe(monkeypatch):\n"
         f"    status = {status!r}\n"

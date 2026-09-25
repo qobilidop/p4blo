@@ -17,8 +17,8 @@ locally before pushing, and check exit codes, not output.
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
 | Lean | `scripts/check-lean.sh` | all three packages build in dependency order, each audit/test driver passes, exit 0 |
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
-| Oracle | `uv run pytest tests/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
-| BMv2 oracle | `uv run pytest tests/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
+| Oracle | `uv run pytest tests/external/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
+| BMv2 oracle | `uv run pytest tests/external/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs the rest with `-n auto`; the oracle suites share one simulator and are run in series) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
 | Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
 | Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py tests/programs/test_firewall_boundaries.py tests/programs/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
@@ -145,7 +145,7 @@ and maintenance boundaries are in `website/README.md`.
 | Optional pinned development tools | [`flake.lock`](../flake.lock) | see [development setup](../README.md#development); review lock updates |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
 | Lean toolchain | `spec/ir/lean-toolchain`, `spec/arch/lean-toolchain`, `impl/lean/lean-toolchain` (must match) | edit all three; user package depends on local `../ir`, manifests committed |
-| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracle/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/test_spectec_rules.py`) |
+| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracle/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/external/test_spectec_rules.py`) |
 | opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/unit/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
@@ -164,7 +164,7 @@ satisfy those requirements.
 
 ```
 tests/oracle/build.sh                              # needs opam/GMP; prints the binary path
-P4BLO_ORACLE_DIR=~/.cache/p4blo/p4-spectec uv run pytest tests/test_oracle.py -v
+P4BLO_ORACLE_DIR=~/.cache/p4blo/p4-spectec uv run pytest tests/external/test_oracle.py -v
 uv run python tests/oracle/run.py -v tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
 ```
 

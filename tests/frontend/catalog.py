@@ -17,7 +17,7 @@ upstream has them.
 
 `probes/` holds small programs written here, each naming what it probes,
 with vectors whose expectations are P4-SpecTec's output
-(tests/test_frontend_spectec.py, section 5).
+(tests/external/test_frontend_spectec.py, section 5).
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ class CorpusSource:
         canonical form (declaration order, block-local names);
       - "documented": equal once the golden is adjusted by the differences
         its README or the bridge documents, which
-        tests/test_frontend_spectec.py spells out one by one.
+        tests/external/test_frontend_spectec.py spells out one by one.
     """
 
     program: str

@@ -65,9 +65,9 @@ specification and p4c's BMv2 backend give opposite answers.
   `0210010000b0` and `0311810000b0` on port 1 where the file expects port
   3. The vector's second and third expectations are p4c's with the port
   changed to 1, which is exactly those outputs; the printed golden passes
-  them on P4-SpecTec (`tests/test_oracle.py`). BMv2 compiled from the
+  them on P4-SpecTec (`tests/external/test_oracle.py`). BMv2 compiled from the
   source gives p4c's answer, a strict expected failure in
-  `tests/test_oracle_bmv2.py`; the printed golden passes on BMv2 too,
+  `tests/external/test_oracle_bmv2.py`; the printed golden passes on BMv2 too,
   because the printer writes explicit priorities with
   `largest_priority_wins = true` rather than relying on position.
   Entries keep the source's order in the golden. Two entries with equal

@@ -22,7 +22,7 @@ questions, each against P4 nobody wrote for p4blo:
    vector of P4-SpecTec's exact outputs, on its simulator and translated.
 
 Without a P4-SpecTec checkout that has `il-export` every test that needs
-it skips, as tests/test_oracle.py does, unless `P4BLO_REQUIRE_IL_EXPORT=1`
+it skips, as tests/external/test_oracle.py does, unless `P4BLO_REQUIRE_IL_EXPORT=1`
 makes it fail; the pins and the page check run regardless.
 """
 
@@ -46,7 +46,7 @@ from p4blo.frontend.export import Exporter, find_exporter
 from p4blo.frontend.normalize import normalize
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from tests.examples import catalog as examples  # noqa: E402

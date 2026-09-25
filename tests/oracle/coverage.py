@@ -8,7 +8,7 @@ statement of that surface is the set of SpecTec dynamic-semantics rules that
 p4blo's inputs exercise when the simulator runs them. This module measures
 it and writes tests/oracle/spectec-coverage.json, keyed by the names of the
 rule inventory tests/oracle/spectec-rules.json so the two fixtures join.
-tests/test_spectec_coverage.py checks the report against the hand-written
+tests/external/test_spectec_coverage.py checks the report against the hand-written
 exclusions in tests/oracle/spectec-coverage-exclusions.json.
 
 What P4-SpecTec measures, at the pinned commit
@@ -84,7 +84,7 @@ next declaration or closing brace). Two corrections are needed:
   analysis shared with a sibling rule, which then takes the credit: in
   5-typing, `CallableType_wf/actionTypeIR` holds the leaves of two other
   rules. No in-scope rule needs it at this pin, and
-  tests/test_spectec_coverage.py fails if one ever does, or has other
+  tests/external/test_spectec_coverage.py fails if one ever does, or has other
   than one leaf outside the named merges below.
 
 Rules with identical premises and conclusions are merged into one leaf by

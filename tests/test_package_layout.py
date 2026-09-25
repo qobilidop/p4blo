@@ -6,7 +6,7 @@ from pathlib import Path
 
 from p4blo.drt.run import default_lean_binary
 from p4blo.v0 import p4blo_pb2 as pb
-from tests import test_oracle, test_oracle_bmv2
+from tests.external import test_oracle, test_oracle_bmv2
 from tests.programs import test_corpus
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -26,7 +26,7 @@ from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests" / "oracle" / "spectec-rules.json"
 SCRIPT = ROOT / "scripts" / "spectec-rules.py"
 LEDGER = ROOT / "docs" / "ir-semantics.md"

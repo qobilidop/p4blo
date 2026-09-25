@@ -24,7 +24,7 @@ This module checks that shape and that every name an entry cites exists:
   so two entries swapping classes is caught.
 
 SpecTec names are checked against the pinned rule inventory by
-tests/test_spectec_rules.py, which reads the same `SpecTec:` lines.
+tests/external/test_spectec_rules.py, which reads the same `SpecTec:` lines.
 """
 
 from __future__ import annotations
