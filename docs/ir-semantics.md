@@ -121,7 +121,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   `S` elements and not on `nextIndex` (§8.16, §8.17).
   - P4: §8.16, §8.17
   - SpecTec: `$bin_lt`, `$bin_le`, `$bin_gt`, `$bin_ge`, `$bin_eq`, `$bin_ne`
-  - Lean: `bitsBinary`, `Value.equal`, `Value.equalList`
+  - Lean: `bitsBinary`, `Value.equal`, `Value.equalList`, `DeviationLaws.equal_bits_iff`, `DeviationLaws.equal_bool_iff`, `DeviationLaws.equalList_cons`, `DeviationLaws.equalList_scalar_iff`
   - Python: `p4blo.interp.expr.bits_binary`, `p4blo.interp.values.equal`
   - Test: `tests/test_interp_expr.py::test_comparisons_are_unsigned`, `tests/test_interp_expr.py::test_equality_on_every_type`, `tests/test_values.py::test_struct_and_stack_equality_are_elementwise`, `tests/test_values.py::test_stack_equality_ignores_next_index`
   - Class: same. `$bin_lt` and its siblings compare `bit<N>` values as unsigned integers, and `$bin_eq` compares bits, booleans, enums, errors and structs the same way and stacks elementwise ignoring the next index; wherever a header is compared, including inside a stack, the next entry applies.
@@ -130,7 +130,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   headers it compares the fields. This is P4's rule.
   - P4: §8.17
   - SpecTec: `$bin_eq`
-  - Lean: `Value.equal`, `DeviationLaws.header_equal_invalid`, `DeviationLaws.header_equal_valid_invalid`, `DeviationLaws.header_equal_valid`, `DeviationLaws.evaluate_eq_invalid_headers`
+  - Lean: `Value.equal`, `DeviationLaws.header_equal_invalid`, `DeviationLaws.header_equal_valid_invalid`, `DeviationLaws.header_equal_valid`, `DeviationLaws.header_equal_valid_iff`, `DeviationLaws.evaluate_eq_invalid_headers`
   - Python: `p4blo.interp.values.equal`
   - Test: `tests/test_values.py::test_header_equality_by_validity_then_fields`, `tests/test_interp_expr.py::test_equality_on_every_type`
   - Class: deviates. `$bin_eq` on two headers compares their type and stored fields and ignores the validity bit, so two invalid headers with different stored fields are unequal and a valid and an invalid header with equal fields are equal, which contradicts P4's rule.
@@ -530,7 +530,7 @@ A table match is evaluated over the installed entries; the program's
 - **Exact keys** match when every key equals the entry value.
   - P4: none
   - SpecTec: `TableMatch_eval/match`, `$match_keyset`
-  - Lean: `Installed.keyValueMatches`, `Installed.lookup`
+  - Lean: `Installed.keyValueMatches`, `Installed.lookup`, `DeviationLaws.keyValueMatches_exact`
   - Python: `p4blo.interp.tables.key_value_matches`, `p4blo.interp.tables.InstalledEntries.lookup`
   - Test: `tests/test_interp_tables.py::test_exact_hit_and_miss_without_a_default`
   - Class: same. `$match_keyset` matches a single-value set by `$bin_eq`.
@@ -544,7 +544,7 @@ A table match is evaluated over the installed entries; the program's
   [assurance.md](assurance.md#known-disagreements-with-the-oracles).
   - P4: none
   - SpecTec: `TableMatches_eval`, `$select_action`
-  - Lean: `Installed.beats`, `Installed.prefixLength`, `Installed.sameKeys`, `DeviationLaws.lookup_longest_prefix`, `DeviationLaws.lookup_hit`
+  - Lean: `Installed.beats`, `Installed.prefixLength`, `Installed.sameKeys`, `DeviationLaws.keyValueMatches_lpm`, `DeviationLaws.prefixLength_eq`, `DeviationLaws.prefixLength_single`, `DeviationLaws.rank_lpm`, `DeviationLaws.lookup_longest_prefix`, `DeviationLaws.lookup_longest_lpm`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.prefix_length`, `p4blo.interp.tables.same_keys`
   - Test: `tests/test_interp_tables.py::test_lpm_longest_prefix_wins_and_the_default_runs_on_a_miss`, `tests/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`, `tests/test_validator.py::test_table_lpm_count`, `tests/corpus/forwarder`
   - Class: refines undefined. SpecTec's table interface turns an LPM entry into a masked value with no priority, and `$select_action` chooses among several matches only by priority, so two matching LPM entries without priorities have no rule; the oracle adapter supplies the prefix length as the priority, and the interface's mask construction has the known defect recorded in assurance.md.
@@ -560,7 +560,7 @@ A table match is evaluated over the installed entries; the program's
   [assurance.md](assurance.md#known-disagreements-with-the-oracles).
   - P4: none; P4Runtime §9.1
   - SpecTec: `$select_action`, `$largest_priority_wins`
-  - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`, `DeviationLaws.lookup_hit`
+  - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`, `DeviationLaws.keyValueMatches_ternary`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.overlaps`, `p4blo.interp.tables.InstalledEntries.install`
   - Test: `tests/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/test_validator.py::test_entry_priority_overlap`, `tests/corpus/priority`
   - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.

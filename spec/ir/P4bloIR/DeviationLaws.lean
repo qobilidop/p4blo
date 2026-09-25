@@ -112,6 +112,78 @@ theorem evaluate_eq_valid_invalid (left right : Expr) (run run₁ run₂ : Run)
   rw [evaluate_eq left right run run₁ run₂ _ _ hl hr, header_equal_valid_invalid]
 
 -- ---------------------------------------------------------------------------
+-- Equality of scalars and of field lists (pins `Value.equal`, `equalList`)
+-- ---------------------------------------------------------------------------
+
+/-- Two `bit<N>` values are equal exactly when they are the same value: the
+same width and the same number.
+
+No premise. It does not relate values of different kinds. -/
+theorem equal_bits_iff (a b : Bits) : Value.equal (.bits a) (.bits b) = true ↔ a = b := by
+  obtain ⟨wa, va, ha⟩ := a
+  obtain ⟨wb, vb, hb⟩ := b
+  simp only [Value.equal_bits, Bool.and_eq_true, beq_iff_eq, Bits.mk.injEq]
+
+/-- Two booleans are equal exactly when they are the same boolean.
+
+No premise. -/
+theorem equal_bool_iff (a b : Bool) : Value.equal (.bool a) (.bool b) = true ↔ a = b := by
+  simp
+
+/-- Two values of the same scalar kind, both bits or both booleans, as two
+fields in one position of a header type are. -/
+def SameScalarKind : Value → Value → Prop
+  | .bits _, .bits _ | .bool _, .bool _ => True
+  | _, _ => False
+
+/-- Two field lists of one length whose values have the same scalar kind in
+every position, as the fields of two headers of one type do. -/
+inductive SameScalarKinds : List Value → List Value → Prop
+  | nil : SameScalarKinds [] []
+  | cons {x y : Value} {xs ys : List Value} :
+      SameScalarKind x y → SameScalarKinds xs ys → SameScalarKinds (x :: xs) (y :: ys)
+
+/-- Field lists are compared position by position: equal heads and equal
+tails.
+
+No premise. It is the step `header_equal_valid` and the struct and stack
+cases rest on; it does not say what `Value.equal` does on each field. -/
+theorem equalList_cons (x y : Value) (xs ys : List Value) :
+    Value.equalList (x :: xs) (y :: ys) = (Value.equal x y && Value.equalList xs ys) := by
+  simp [Value.equalList]
+
+/-- Two lists of bits and boolean fields, the same kind in each position,
+are equal exactly when they are the same list: every field value counts.
+
+Premise: the lists pair up position by position with the same scalar kind,
+as the fields of two headers of one type do. It does not cover nested
+compound values, nor lists of different kinds or lengths. -/
+theorem equalList_scalar_iff (fa fb : List Value) (h : SameScalarKinds fa fb) :
+    Value.equalList fa fb = true ↔ fa = fb := by
+  induction h with
+  | nil => simp [Value.equalList]
+  | @cons x y xs ys hxy _ ih =>
+    rw [equalList_cons, Bool.and_eq_true, ih, List.cons.injEq]
+    have : Value.equal x y = true ↔ x = y := by
+      cases x <;> cases y <;>
+        first
+        | rw [equal_bits_iff, Value.bits.injEq]
+        | rw [equal_bool_iff, Value.bool.injEq]
+        | exact (hxy : False).elim
+    rw [this]
+
+/-- Two valid headers whose fields are bits and booleans of the same kinds
+are equal exactly when their field values are all the same.
+
+Premise: the field lists pair up with the same scalar kind, as two headers of
+one type do. The type names are not compared; that a validated program
+compares headers of one type only is not established here. -/
+theorem header_equal_valid_iff (s t : String) (fa fb : List Value)
+    (h : SameScalarKinds fa fb) :
+    Value.equal (.header s true fa) (.header t true fb) = true ↔ fa = fb := by
+  rw [header_equal_valid, equalList_scalar_iff fa fb h]
+
+-- ---------------------------------------------------------------------------
 -- Zero values (Uninitialized variables; used by the stack laws)
 -- ---------------------------------------------------------------------------
 
@@ -616,6 +688,111 @@ key, the total prefix length otherwise. -/
 def rank (ternary : Bool) (entry : Entry) : Nat :=
   if ternary then entry.priority else Installed.prefixLength entry
 
+/-- The prefix length one key value contributes: its length for an `lpm`
+value, nothing for an exact or ternary one. -/
+def lpmLength : KeyValue → Nat
+  | .lpm _ len => len
+  | _ => 0
+
+private theorem foldl_prefix (ks : List KeyValue) (n : Nat) :
+    ks.foldl (fun n kv => match kv with | .lpm _ len => n + len | _ => n) n =
+      n + (ks.map lpmLength).sum := by
+  induction ks generalizing n with
+  | nil => simp
+  | cons kv rest ih =>
+    rw [List.foldl_cons, ih]
+    cases kv <;> simp [lpmLength] <;> omega
+
+/-- The prefix length `Installed.prefixLength` ranks an entry by is the sum
+of the lengths of its `lpm` key values as installed.
+
+No premise. It does not establish that a table has at most one `lpm` key,
+which is the validator's rule. -/
+theorem prefixLength_eq (entry : Entry) :
+    Installed.prefixLength entry = (entry.keys.map lpmLength).sum := by
+  have := foldl_prefix entry.keys 0
+  rw [Nat.zero_add] at this
+  exact this
+
+/-- An entry with one `lpm` key value and otherwise exact or ternary ones
+has the prefix length of that value.
+
+Premise: no other key value is an `lpm` one. -/
+theorem prefixLength_single (pre post : List KeyValue) (value len : Nat) (action : ActionCall)
+    (priority : Nat) (h : ∀ kv ∈ pre ++ post, lpmLength kv = 0) :
+    Installed.prefixLength ⟨pre ++ .lpm value len :: post, action, priority⟩ = len := by
+  have hz : ∀ l : List KeyValue, (∀ kv ∈ l, lpmLength kv = 0) → (l.map lpmLength).sum = 0 := by
+    intro l hl
+    induction l with
+    | nil => rfl
+    | cons kv rest ih =>
+      simp only [List.map_cons, List.sum_cons, hl kv (by simp),
+        ih (fun k hk => hl k (by simp [hk]))]
+  rw [prefixLength_eq]
+  simp only [List.map_append, List.map_cons, List.sum_append, List.sum_cons, lpmLength]
+  rw [hz pre (fun kv hkv => h kv (by simp [hkv])), hz post (fun kv hkv => h kv (by simp [hkv]))]
+  simp
+
+/-- In a table without a ternary key, the rank `lookup_hit` compares is the
+sum of the entry's `lpm` prefix lengths.
+
+No premise. -/
+theorem rank_lpm (entry : Entry) : rank false entry = (entry.keys.map lpmLength).sum := by
+  simp [rank, prefixLength_eq]
+
+/-- An exact key value matches exactly the key of that number.
+
+No premise. -/
+theorem keyValueMatches_exact (value : Nat) (key : Bits) :
+    Installed.keyValueMatches (.exact value) key = true ↔ key.value = value := by
+  simp [Installed.keyValueMatches]
+
+/-- An `lpm` key value of length `len` matches exactly the keys that agree
+with its value on their top `len` bits, bit by bit.
+
+Premise: the value fits the key's width, as installation checks. A length
+above the width compares every bit. It does not establish that the value is
+canonical (zero below its prefix), which the lookup does not need. -/
+theorem keyValueMatches_lpm (value len : Nat) (key : Bits) (hv : value < 2 ^ key.width) :
+    Installed.keyValueMatches (.lpm value len) key = true ↔
+      ∀ j, key.width - len ≤ j → j < key.width → key.value.testBit j = value.testBit j := by
+  simp only [Installed.keyValueMatches, beq_iff_eq]
+  constructor
+  · intro h j hlo hhi
+    have := congrArg (fun n => n.testBit (j - (key.width - len))) h
+    simp only [Nat.testBit_shiftRight] at this
+    rwa [Nat.add_sub_cancel' hlo] at this
+  · intro h
+    apply Nat.eq_of_testBit_eq
+    intro i
+    simp only [Nat.testBit_shiftRight]
+    by_cases hi : key.width - len + i < key.width
+    · exact h _ (Nat.le_add_right _ _) hi
+    · have hw : 2 ^ key.width ≤ 2 ^ (key.width - len + i) :=
+        Nat.pow_le_pow_right (by decide) (by omega)
+      rw [Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le key.isLt hw),
+        Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le hv hw)]
+
+/-- A ternary key value matches exactly the keys that agree with its value
+on every bit its mask sets.
+
+No premise. -/
+theorem keyValueMatches_ternary (value mask : Nat) (key : Bits) :
+    Installed.keyValueMatches (.ternary value mask) key = true ↔
+      ∀ j, mask.testBit j = true → key.value.testBit j = value.testBit j := by
+  simp only [Installed.keyValueMatches, beq_iff_eq]
+  constructor
+  · intro h j hm
+    have := congrArg (fun n => n.testBit j) h
+    simpa [Nat.testBit_and, hm] using this
+  · intro h
+    apply Nat.eq_of_testBit_eq
+    intro j
+    simp only [Nat.testBit_and]
+    cases hm : mask.testBit j
+    · simp
+    · simp [h j hm]
+
 private theorem beats_iff (e b : Entry) (ternary : Bool) :
     Installed.beats e b ternary = true ↔ rank ternary b < rank ternary e := by
   cases ternary <;> simp [Installed.beats, rank]
@@ -787,5 +964,21 @@ theorem lookup_longest_prefix (i : Installed) (ref : TableRef) (keys : List Bits
         Installed.prefixLength e' ≤ Installed.prefixLength e := by
   have := lookup_hit i ref keys decl m ht hk hl hhit
   simpa [rank, hnt] using this
+
+/-- In a table without a ternary key, a hit runs the action of a matching
+installed entry whose `lpm` prefix lengths add up to at least those of every
+matching installed entry: the longest prefix, counted as installed, wins.
+
+Premises as in `lookup_longest_prefix`. With `prefixLength_single`, for a
+table with one `lpm` key this is that key's prefix length. -/
+theorem lookup_longest_lpm (i : Installed) (ref : TableRef) (keys : List Bits)
+    (decl : Table) (m : Match) (ht : i.table? ref = .ok decl)
+    (hk : keys.length = decl.keys.length)
+    (hnt : decl.keys.any (·.matchKind == .ternary) = false)
+    (hl : i.lookup ref keys = .ok m) (hhit : m.hit = true) :
+    ∃ e ∈ (i.entries.getD ref #[]).toList, Matches e keys ∧ m.action = some e.action ∧
+      ∀ e' ∈ (i.entries.getD ref #[]).toList, Matches e' keys →
+        (e'.keys.map lpmLength).sum ≤ (e.keys.map lpmLength).sum := by
+  simpa [prefixLength_eq] using lookup_longest_prefix i ref keys decl m ht hk hnt hl hhit
 
 end P4bloIR.DeviationLaws
