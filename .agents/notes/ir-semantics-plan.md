@@ -77,6 +77,26 @@ A change to any of these formats bumps its version and is announced in
 `status.md`. The two simulator patches are candidates to move to that
 project, which forks SpecTec anyway; until then they live here.
 
+Read on 2026-09-25 at its commit `fdaa520`: the project has an agreed
+design and scaffolding and no code yet, so nothing of it is consumable
+today. Two alignments follow from its design:
+
+- **Pins differ.** It pins P4-SpecTec at `8c8e0c6f` (2026-09-17, on the
+  Nano-P4 branch) and p4blo at `2730cfd9` (2026-09-22, main). The joint
+  milestone needs one pin, and `p4blo.watsup` is written against ours.
+  p4blo does not bump on its own; when that project fixes its pin at
+  its first milestone, p4blo bumps to the same commit through the
+  procedure in `docs/workflows.md` and re-checks the contract file.
+- **One program export, not two.** Its plan exports a program as
+  upstream's own derived JSON of the booted IL value
+  (`p4spectec run --dump-value`) and runs typing and instantiation in
+  Lean. p4blo's patch `0002` exports the instantiated typed IL in a
+  format of its own. When their export exists, `p4blo.frontend.il`
+  reads their format from their patch and patch `0002` is retired, so
+  that the same bytes feed both projects; until then `0002` stays.
+  The bridge's translation is unaffected: it starts from the
+  instantiated program either way.
+
 Active work in this repository after 2026-09-25: the reorganization's
 last item and a compaction. Termination (C2) and codec composition
 (C3) stay backlog, not active; they do not overlap with the rendering
