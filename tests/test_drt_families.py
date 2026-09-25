@@ -139,8 +139,8 @@ def test_the_spectec_profile_leaves_out_the_ledgers_deviations() -> None:
             assert all(c.packet for c in generated.cases), "STF cannot send an empty packet"
     removed = lean_features - spectec_features
     for feature in [
-        "validity=invalid",
-        "validity=packet",
+        "eq_header.validity=invalid",
+        "eq_header.validity=packet",
         "parser.transition=loop",
         "subparser.transition=loop",
         "eq_stack.push=packet",
