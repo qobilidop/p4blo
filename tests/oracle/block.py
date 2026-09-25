@@ -31,7 +31,8 @@ A reply is the block's outputs (`BlockOutputs` names them), with `state`,
 the simulator's own JSON state of every extern object, to pass back
 unchanged in the next request, and `externs`, a readable view of registers
 and counters; or `{"error": "<the simulator's diagnostic>"}`. State belongs
-to the process that produced it and is refused by any other.
+to the process and the program that produced it and is refused by any
+other; the simulator also refuses a value outside its type.
 
 Values are p4blo's wire-format `Literal` in protobuf's JSON mapping for
 scalars (`{"bits": {"width": 8, "value": "255"}}`, `{"boolean": true}`,
@@ -92,6 +93,20 @@ __all__ = [
 INCLUDE_DIR = Path(__file__).resolve().parent / "include"
 # Where the patch puts the architecture's relations, inside the checkout.
 WATSUP = Path("p4spec/lib/backend-sim/p4blo/p4blo.watsup")
+# The patches build.sh applies, and the stamp it writes after a build:
+# "<commit> <digest of the patches>".
+PATCHES_DIR = Path(__file__).resolve().parent / "patches"
+STAMP = Path(".p4blo-built")
+
+
+def patches_digest(patches_dir: Path = PATCHES_DIR) -> str:
+    """The digest build.sh stamps: `git hash-object` of every patch's file
+    name, a newline and its content, in name order."""
+    data = b"".join(
+        patch.name.encode() + b"\n" + patch.read_bytes()
+        for patch in sorted(patches_dir.glob("*.patch"))
+    )
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
 
 
 class BlockError(Exception):
@@ -121,7 +136,9 @@ class BlockOracle:
     def watsup(self) -> Path:
         return self.root / WATSUP
 
-    def command(self) -> list[str]:
+    def command(self, *, trace: bool = False) -> list[str]:
+        """The server's command line; `trace` makes it write the spec's
+        execution trace to standard error."""
         return [
             str(self.binary),
             "block",
@@ -131,6 +148,7 @@ class BlockOracle:
             str(self.oracle.include),
             "-i",
             str(INCLUDE_DIR),
+            *(["-trace"] if trace else []),
         ]
 
     def missing(self) -> str | None:
@@ -142,6 +160,15 @@ class BlockOracle:
             return (
                 f"{self.watsup} is missing: the checkout was built without "
                 "tests/oracle/patches; rerun tests/oracle/build.sh"
+            )
+        # A checkout built from another version of the patch would run, and
+        # answer for a plugin that is not the one in this tree.
+        stamp = self.root / STAMP
+        built = stamp.read_text().split() if stamp.is_file() else []
+        if built[1:] != [patches_digest()]:
+            return (
+                f"{stamp} does not name the current tests/oracle/patches: "
+                "rerun tests/oracle/build.sh"
             )
         return None
 
@@ -242,7 +269,31 @@ def entries_to_stf(index: ir.Index, entries: pb.Entries) -> str:
     """Host entries as the STF lines the simulator installs, rendered by
     `p4blo.drt.case` and translated by `run.translate` exactly as the
     pipeline oracle renders them (lpm prefixes as full-width wildcards with
-    their length as priority)."""
+    their length as priority).
+
+    The simulator resolves an entry's table by its unqualified name, and
+    this architecture does not apply V1Model's STF rewrites (block names
+    and `$valid$` in key names), so entries for a table name two blocks
+    declare, or for a table with a `$valid$` key name, would mean something
+    else here than in the pipeline; `BlockError` refuses them instead."""
+    for installed in entries.tables:
+        declared = sorted(
+            block for block, scope in index.scopes.items() if installed.table in scope.tables
+        )
+        if len(declared) > 1:
+            raise BlockError(
+                f"table {installed.table!r} is declared in {', '.join(declared)}; "
+                "the block runner finds tables by their unqualified name"
+            )
+        scope = index.scopes.get(installed.block)
+        table = scope.tables.get(installed.table) if scope is not None else None
+        for key in table.keys if table is not None else []:
+            name = ir.key_name(key) or ""
+            if "$valid$" in name:
+                raise BlockError(
+                    f"table {installed.table!r} has a key named {name!r}; the block "
+                    "runner does not rewrite $valid$ as V1Model's STF runner does"
+                )
     text = case_to_stf(index, Case(entries, 0, b"\x00"))
     lines = [line for line in text.splitlines() if line.startswith(("add ", "setdefault "))]
     if not lines:
@@ -286,7 +337,11 @@ class BlockOutputs:
 class BlockRunner:
     """One resident `p4spectec block` process and the programs printed for it."""
 
-    def __init__(self, oracle: BlockOracle, workdir: Path | None = None) -> None:
+    def __init__(
+        self, oracle: BlockOracle, workdir: Path | None = None, *, trace: bool = False
+    ) -> None:
+        """`trace` writes the spec's execution trace to the process's
+        standard error, `p4spectec-block.stderr` in `workdir`."""
         self.oracle = oracle
         self._tmp = (
             None if workdir is not None else tempfile.TemporaryDirectory(prefix="p4blo-block-")
@@ -294,7 +349,7 @@ class BlockRunner:
         self.workdir = workdir if workdir is not None else Path(self._tmp.name)  # type: ignore[union-attr]
         self._stderr: IO[str] = (self.workdir / "p4spectec-block.stderr").open("w")
         self._process = subprocess.Popen(
-            oracle.command(),
+            oracle.command(trace=trace),
             cwd=oracle.root,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

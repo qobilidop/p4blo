@@ -346,10 +346,14 @@ everything but the shim.
 before `make build` and stamps the build with the commit and a digest of
 the patches, so a changed patch resets the checkout to the pin and rebuilds;
 the CI cache key includes the patches. A checkout built before the patches
-existed has a stamp without the digest and rebuilds once. To change the
-plugin, edit it in a scratch checkout built by `build.sh`, then regenerate
-the patch there with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
-.../patches/0001-p4blo-block-architecture.patch && git reset`.
+existed has a stamp without the digest and rebuilds once. `block.py`
+refuses a checkout whose stamp names other patches than the tree's, so
+tests never run on a stale plugin. To change the plugin, edit it in a
+scratch checkout built by `build.sh` (`P4BLO_ORACLE_DIR` elsewhere than the
+shared one), iterate with `make build` there, then regenerate the patch
+with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
+.../patches/0001-p4blo-block-architecture.patch && git reset` and rerun
+`build.sh`, which reapplies it and stamps the build.
 
 `block.py` drives it. A `BlockRunner` keeps one `p4spectec block spec
 <p4blo.watsup> -i p4c/p4include -i tests/oracle/include` process resident,
@@ -370,9 +374,15 @@ deparser pads) and `bits` (the exact count) for a deparser. Every reply
 also has `state`, the simulator's own JSON state of every extern object, to
 pass back unchanged, and `externs`, registers and counters in readable
 form; a failure is `{"error": "<diagnostic>"}` and the session continues.
-State is tagged with the process that made it and refused by any other,
-because a register's cells are spec values whose identities only that
-process can interpret. Scalars take the shape of the IR's wire-format
+State is tagged with the process and the program that made it and refused
+by any other, because a register's cells are spec values whose identities
+only that process can interpret and object names are the program's; an
+object whose state does not parse is refused too. Every value written into
+the simulator must be of its variable's type: the declared type name, the
+width, a number that fits it, the declared fields and a `next_index` from
+0 to the stack's size; anything else is refused rather than run as a
+value no P4 program can hold. `-trace` (or `BlockRunner(..., trace=True)`) writes the
+spec's execution trace to the process's standard error. Scalars take the shape of the IR's wire-format
 `Literal` in protobuf's JSON mapping (`{"bits": {"width": 9, "value":
 "1"}}`, `{"boolean": true}`, `{"error": "NoError"}`, `{"enum_member":
 {...}}`); compound values, which the wire format does not have, are
@@ -381,37 +391,79 @@ process can interpret. Scalars take the shape of the IR's wire-format
 declaration order. Entries are rendered exactly as for the pipeline
 (`translate` above), so the lpm translation applies here too.
 
+A few choices belong to the architecture and its driver rather than to
+the blocks:
+
+- A request is set up in this order: the extern state, then the entries
+  (installed afresh each time), then fresh `packet_in` and `packet_out`
+  objects, then the globals `hdr` and `meta` recreated by `Var_init`, then
+  the block's arguments written over them. No extern family p4blo prints
+  can observe the order.
+- A parser's `hdr` is its `out` argument, so it is never taken from the
+  request: it starts as `Var_init` leaves it, and copy-in gives the block
+  its `$default` as for any `out` parameter.
+- On accept, the reply's `error` is the constant `NoError`. The spec's
+  accept result carries no error, and p4blo's parser reports `NoError`
+  on every accept, so the comparison of `error` is meaningful only on
+  reject, where it is the spec's own `REJECT` value.
+- A deparser's `bits` is compared with the number of bits the reference
+  interpreter emitted, so an emission that differs only in its last
+  partial byte is still seen.
+- Entries skip V1Model's STF rewrites (block names to `main.ig`/`main.eg`,
+  `$valid$` in key names to `isValid()`); the simulator resolves a table by
+  its unqualified name. `entries_to_stf` therefore refuses entries for a
+  table name that two blocks declare, which the simulator would resolve to
+  either, and for a table with a `$valid$` key name, which would match
+  differently; no corpus program has either.
+- A counter's byte count would be the length of the request's own packet,
+  empty for a control or deparser. p4blo prints every counter as
+  `CounterType.packets`, so no byte count is ever made.
+
 `tests/test_oracle_block.py` replays every corpus and example vector on the
-reference interpreter block by block, chained as the switch chains them,
-repeats each block run on the simulator with the same inputs and extern
-state carried from reply to reply, and compares each output: headers and
-metadata by path, bits consumed, acceptance, error, bytes, and every
+reference interpreter block by block, with inputs chained as the switch
+chains them (though every packet runs all three blocks, even one the
+switch would drop after a parse that ended inside a byte), repeats each
+block run on the simulator with the same inputs and extern state carried
+from reply to reply, and compares each output: headers and metadata by
+path, bits consumed, acceptance, error, bytes and bit count, and every
 register and counter cell after every block. It skips without a patched
 build. At the pin every vector agrees but three, which are strict expected
-failures with narrow classifiers:
+failures. Each is classified by a model of the simulator's behavior: the
+vector is run again with the model applied to the reference interpreter,
+and every difference must vanish. A model wraps the interpreter's own
+operation, checks that it gave P4's answer, and changes only what the
+deviation names, so a bug in the modeled operation still fails:
 
 - `tutorial_firewall/collisions.stf` and `connection.stf`, **padded
-  CRC32**: the second Bloom filter's cell indices differ. The vector is
-  run again with the reference interpreter's odd-byte CRC32 replaced by
-  the simulator's padding ([Stronger probes](#stronger-probes-and-known-limitations)),
-  and every difference must vanish. The pipeline comparison passes these
-  vectors because the wrong cells never change a packet.
+  CRC32**: the second Bloom filter's cell indices differ. The model pads
+  the reference interpreter's odd-byte CRC32 input as the simulator does
+  ([Stronger probes](#stronger-probes-and-known-limitations)), after
+  checking that the interpreter's binding gave `crc32(payload)`. The
+  pipeline comparison passes these vectors because the wrong cells never
+  change a packet.
 - `stacks/header-stack-ops-bmv2.stf`, **stack invalidation**: after
   `push_front` and `pop_front` the simulator keeps the stored fields of
   the vacated, invalid elements and pops to `nextIndex = S - n`, the
-  *deviates* entry of `docs/ir-semantics.md`. Only differences in an
-  element invalid on both sides and in `next_index` are accepted; a
-  validity bit, a valid element or any other output that differs fails.
+  *deviates* entry of `docs/ir-semantics.md`. The model keeps, after a
+  push, the first `n` elements' own old fields; after a pop, the popped
+  elements' fields in the last `n`, and `S - n` as `next_index`. It checks
+  first that the vacated elements are invalid zero headers and that a pop
+  gave `max(nextIndex - n, 0)`.
 
 What it does not compare: which inputs reach a block (the chain picks
 them, so a block is judged on what the vectors reach), table installation
 (both runs use the STF runner's encoding, with its known mask defect), the
-wire format, and anything an architecture decides. Two throwaway mutants
-of the reference interpreter, subtraction off by one and a parser that
-forgets its error, were each caught by four and six vectors.
+wire format, and anything an architecture decides. Throwaway mutants of
+the reference interpreter, applied to the vector tests only, were caught
+by these counts of vectors: subtraction off by one, 6; a parser that always
+reports `NoError`, 6; register writes to index 2 and above landing on
+`index ^ 1`, 4; `setInvalid` clearing stored fields, 1. Two mutants that an
+earlier, broader classifier hid are kept as tests: a `push_front` that
+leaves `nextIndex` alone fails the stacks vector, and an odd-byte CRC32
+binding that hashes the reversed payload fails both firewall vectors.
 
 ```sh
-uv run pytest tests/test_oracle_block.py -v    # about 35 seconds on an M-series Mac
+uv run pytest tests/test_oracle_block.py -v    # about 45 seconds on an M-series Mac
 ```
 
 ## Results
