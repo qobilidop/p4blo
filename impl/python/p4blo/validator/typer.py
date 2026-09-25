@@ -4,11 +4,18 @@ Expressions carry no annotations (docs/design.md, "The IR is
 post-elaboration"): a leaf's type comes from its declaration and an
 operator's from its operands, as the comments on the operators in the schema
 say. `Typer` computes that bottom-up and reports every problem on the way,
-which is how the validator typechecks.
+which is how the validator typechecks. It is also the only code in the
+package that computes an expression's type: `expr_type` runs the same
+methods on a program `check` accepted, for the interpreter, the printer and
+the STF reader, which need a width before they have a value (the width of a
+table key, of the header an `extract` or `lookahead` reads). One function
+means the validator and its consumers cannot disagree about a type;
+tests/test_typer.py guards the seam.
 """
 
 from __future__ import annotations
 
+from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
 from p4blo.validator.diagnostics import (
     CAST_INVALID,
@@ -18,7 +25,10 @@ from p4blo.validator.diagnostics import (
     PARSER_ONLY,
     REF_UNRESOLVED,
     SLICE_RANGE,
+    TYPE_INVALID,
     TYPE_MISMATCH,
+    Diagnostic,
+    ValidationError,
 )
 from p4blo.validator.names import (
     DIRECTION_NAMES,
@@ -290,3 +300,25 @@ class Typer(TypeChecks):
             case _:
                 self.report(EXPR_INVALID, "lvalue has no kind", path)
                 return None
+
+
+def expr_type(
+    expr: pb.Expr, index: ir.Index, scope: ir.BlockScope, action: str | None = None
+) -> pb.Type:
+    """The type of `expr` in a program `check` accepted, as seen from the
+    body of `scope`'s block, or from `action` in it.
+
+    The same methods the validator typechecks with, for callers that need a
+    width before they have a value: the interpreter, the printer and the STF
+    reader. An expression that does not type there raises `ValidationError`
+    with what the validator would report, which a checked program never
+    does.
+    """
+    typer = Typer(index.program, index=index)
+    decl = scope.actions[action] if action is not None else None
+    t = typer.type_of(expr, Scope(scope.block, "", scope, decl), "expr")
+    if t is None or typer.diagnostics:
+        raise ValidationError(
+            typer.diagnostics or [Diagnostic(TYPE_INVALID, "expression has no valid type", "expr")]
+        )
+    return t

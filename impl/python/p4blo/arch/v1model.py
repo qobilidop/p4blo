@@ -35,6 +35,8 @@ from dataclasses import dataclass, field
 
 from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.validator import ValidationError
+from p4blo.validator.typer import expr_type
 
 __all__ = [
     "PrintError",
@@ -830,7 +832,12 @@ class _ProgramPrinter:
             self.line(2, "largest_priority_wins = true;")
 
     def _key_width(self, key: pb.Key, block: pb.Block) -> int:
-        t = _Typer(self.index, self.index.scopes[block.name]).type_of(key.expr)
+        # The width, so that LPM prefixes become masks and entry values carry
+        # their width; the validator's typer decides it.
+        try:
+            t = expr_type(key.expr, self.index, self.index.scopes[block.name])
+        except ValidationError as e:
+            raise PrintError(str(e)) from None
         if t.WhichOneof("kind") != "bits":
             raise PrintError(
                 f"table key {print_expr(key.expr)} is {print_type(t)}; entries need a bit<N> key"
@@ -1002,98 +1009,3 @@ def _print_key_value(value: pb.KeyValue, match_kind: int, width: int) -> str:
             return f"{_bits(width, int(t.value))} &&& {_bits(width, int(t.mask))}"
         case _:
             raise PrintError("entry key value has no kind")
-
-
-# ---------------------------------------------------------------------------
-# Types of expressions, for what the text needs a width for
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class _Typer:
-    """The type of an expression in a block scope.
-
-    Only what the printer needs: the width of a table key, so that LPM
-    prefixes become masks and entry values carry their width. The validator
-    owns typechecking; this trusts a valid program.
-    """
-
-    index: ir.Index
-    scope: ir.BlockScope
-    action: str | None = None
-
-    def type_of(self, e: pb.Expr) -> pb.Type:
-        match e.WhichOneof("kind"):
-            case "literal":
-                return self._literal(e.literal)
-            case "var":
-                return self.scope.var(e.var, self.action).type
-            case "member":
-                base = self.type_of(e.member.base)
-                for f in self.index.fields(_type_name(base)):
-                    if f.name == e.member.field:
-                        return f.type
-                raise PrintError(f"no field {e.member.field!r} in {print_type(base)}")
-            case "index":
-                base = self.type_of(e.index.base)
-                if base.WhichOneof("kind") != "stack":
-                    raise PrintError(f"indexing a {print_type(base)}")
-                return pb.Type(header=base.stack.header)
-            case "last_index":
-                return pb.Type(bits=32)
-            case "unary":
-                return self.type_of(e.unary.operand)
-            case "binary":
-                return self._binary(e.binary)
-            case "cast":
-                return e.cast.to
-            case "slice":
-                return pb.Type(bits=e.slice.hi - e.slice.lo + 1)
-            case "is_valid":
-                return pb.Type(boolean=pb.BoolType())
-            case "mux":
-                return self.type_of(e.mux.then)
-            case "lookahead":
-                return e.lookahead.type
-            case _:
-                raise PrintError("expression has no kind")
-
-    def _literal(self, lit: pb.Literal) -> pb.Type:
-        match lit.WhichOneof("value"):
-            case "bits":
-                return pb.Type(bits=lit.bits.width)
-            case "boolean":
-                return pb.Type(boolean=pb.BoolType())
-            case "enum_member":
-                return pb.Type(enum_type=lit.enum_member.enum_type)
-            case "error":
-                return pb.Type(error=pb.ErrorType())
-            case _:
-                raise PrintError("literal has no value")
-
-    def _binary(self, b: pb.Binary) -> pb.Type:
-        if b.op == pb.BINARY_OP_CONCAT:
-            left, right = self.type_of(b.left), self.type_of(b.right)
-            return pb.Type(bits=left.bits + right.bits)
-        if b.op in (
-            pb.BINARY_OP_EQ,
-            pb.BINARY_OP_NE,
-            pb.BINARY_OP_LT,
-            pb.BINARY_OP_LE,
-            pb.BINARY_OP_GT,
-            pb.BINARY_OP_GE,
-            pb.BINARY_OP_AND,
-            pb.BINARY_OP_OR,
-        ):
-            return pb.Type(boolean=pb.BoolType())
-        return self.type_of(b.left)
-
-
-def _type_name(t: pb.Type) -> str:
-    match t.WhichOneof("kind"):
-        case "header":
-            return t.header
-        case "struct":
-            return t.struct
-        case _:
-            raise PrintError(f"{print_type(t)} has no fields")

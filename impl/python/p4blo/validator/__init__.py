@@ -16,7 +16,8 @@ that builds on the ones it needs, and `_Validator` here joins them; its
   base          `Checker`: the state of a run, and `report`
   names         names and references; scopes and where each statement may stand
   types         types, literals and parameters
-  typer         expressions and lvalues: their types
+  typer         expressions and lvalues: the one expression typer, which the
+                interpreter, the printer and the STF reader call as `expr_type`
   externs       extern types and instances
   calls         calls, their arguments and aliasing, and the call graph
   statements    statements
