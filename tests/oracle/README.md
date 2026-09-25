@@ -357,13 +357,11 @@ about three minutes.
   larger winning, the convention `docs/ir-semantics.md` fixed and the one
   p4c's runner has; unverified on a real ternary table until the acl
   program lands.
-- **Unchecked constructs.** Only what the forwarder uses has been run:
-  extract, select, lpm table with action data, `mark_to_drop`,
-  `egress_spec`, emit of a valid and of an invalid header, a parser
-  rejection with `PacketTooShort`. Header stacks, `verify`, registers,
-  counters and the `hash`-based checksum are exercised when their corpus
-  programs arrive; an unsupported construct shows up as an `error`
-  verdict, labeled `ORACLE ERROR` by the test.
+- **Unchecked constructs.** What the simulator has judged is exactly
+  what `spectec-coverage.json` says it fired: the twelve corpus programs,
+  the three examples and the generated families above. An unsupported
+  construct shows up as an `error` verdict, labeled `ORACLE ERROR` by
+  the test; none has so far.
 - **A harmless warning.** Every run prints
   `warning[elab/dec-missing-clauses]: function `sink` has no clauses
   defined` from the spec itself; `run.py` ignores it and it does not

@@ -264,6 +264,19 @@ aggregate copies, sub-block calls and changing host policies, all with
 type-preserving shrinking; invalid generated programs fail rather than
 being filtered away.
 
+The same generated families also run on the P4-SpecTec simulator
+through the printer and the v1model shim, so the primary oracle judges
+generated programs and not only the corpus: `tests/oracle/generated.py`
+derives programs and cases deterministically from seeds in six families
+(scalar expressions, parser conditions, stateful sequences, aggregate
+copies, sub-block calls, and corpus programs with random entries and
+packets), and `tests/test_oracle_generated.py` runs sixty of them in CI.
+A larger local campaign over seeds 0 to 1099, 1,100 programs and 3,851
+vectors, passed with no unexplained disagreement; every non-pass was one
+of two classified simulator defects below, the shift limit and the table
+mask, each accepted only by a classifier that checks the exact failure
+and, for the mask, that the simulator agrees with the corrected model.
+
 The adequacy criterion is coverage of the semantics' own rules, not test
 counts. `P4bloIR.Coverage` names 157 rules: one per case of the
 evaluator, the statement executor, the parser's transitions, table
@@ -339,6 +352,14 @@ unbounded, but the simulator's builtins stop with "shift amount too
 large" for any amount over 2048, where the IR's shift gives zero. This is
 a limit of the simulator, not a rule disagreement; generated programs on
 SpecTec must keep shift amounts within it or classify the error.
+
+**Pinned P4-SpecTec: the payload after a partial byte.** The IR pads the
+deparser's bits to a byte before the architecture appends the payload;
+the simulator's v1model code joins the payload at the bit level. P4
+leaves this to the target, and the semantics page records the choice.
+The generated oracle test pins one exact mismatch as a strict expected
+failure, and the generated scalar and parser-condition programs carry an
+explicit pad field so that the comparison is about their result.
 
 **Pinned P4-SpecTec: header equality and `pop_front`.** SpecTec's
 `$bin_eq` on headers ignores the validity bit, and its `pop_front(n)`

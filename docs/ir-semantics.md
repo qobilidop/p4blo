@@ -693,14 +693,17 @@ consume is the caller's decision.
   - Class: same. `$write_bits_from_value` concatenates a struct's fields in order and a stack's elements from index `0`, each invalid header contributing nothing.
 - **Bit alignment.** Emitted headers are concatenated at the bit
   level; a total that is not a multiple of eight is padded with zero
-  bits at the end. P4 leaves this to the target; BMv2 pads the same
-  way.
+  bits at the end, before the architecture appends any payload. P4
+  leaves this to the target. SpecTec's simulator joins the payload at
+  the bit level instead, so every emission that is not a whole number
+  of bytes differs from it once a payload follows; whether BMv2 pads
+  is not verified, since p4c rejects such headers for it.
   - P4: none
   - SpecTec: `$write_bits_from_value`
   - Lean: `Emitter.toBytes`, `Emitter.write`
   - Python: `p4blo.interp.packet.Emitter.to_bytes`
   - Test: `tests/test_interp_deparser.py::test_bits_are_concatenated_and_padded_to_a_byte_at_the_end`
-  - Class: refines undefined. SpecTec's emit appends bits with no padding, and what becomes of a partial byte is decided by its simulator's packet printer, outside the rules, which pads the last group of bits to a nibble rather than a byte.
+  - Class: refines undefined. SpecTec's emit appends bits with no padding, and what becomes of a partial byte is decided by its simulator's architecture code and packet printer, outside the rules: the payload is appended at the bit level and the printer pads the last group of bits to a nibble rather than a byte. The generated-program oracle test pins the exact mismatch as a strict expected failure.
 
 ## Externs
 
