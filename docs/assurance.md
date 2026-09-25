@@ -301,6 +301,24 @@ runner's result, and the reply itself still comes from the runner.
 and compares the unhit rules with `tests/drt-unhit-tags.json`, which
 lists every rule the generators cannot reach yet with the gap behind it;
 a rule that stops being hit fails the test, and the list may only shrink.
+
+The conformance corpus under `tests/conformance/` is the Lean semantics'
+answers kept as data: one fixture per input, each a program, an ordered request
+sequence from fresh extern state and the reply Lean gave to each request,
+with outputs, diagnostic or error, complete extern state and rule tags.
+The inputs are every corpus program and example with its STF vectors, the
+DRT's generated entries and packets at two seeds per program, and 36
+seeds of the generated program families. `tests/test_conformance.py`
+checks the Python interpreter against every fixture with no Lean process,
+comparing as the DRT compares, and in the `lean_agrees` gate answers every
+fixture again on Lean and requires identical bytes. The corpus is a test
+suite that needs neither implementation to be present, and a third
+implementation can consume it the way Python does. It is not a proof and
+says nothing beyond its inputs: it records what Lean answered, not that
+the answers are P4's, which the oracles and the rule ledger address. When
+the semantics changes an answer, the behavior is written in the semantics
+documents first, and the fixtures are then re-exported deliberately and
+their diff reviewed; see `tests/conformance/README.md`.
 Validator-only rules, installation checks, extern families and the
 architecture's own rules are outside this inventory. An independent
 review of the observer is under the agent reviews; its confirmed
