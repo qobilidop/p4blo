@@ -4,7 +4,7 @@
 # Depends one way on the IR specification. Lean core only; no Mathlib.
 name = "p4blo-arch"
 version = "0.1.0"
-defaultTargets = ["P4bloArch", "p4blo-lean"]
+defaultTargets = ["P4bloArch", "p4blo-lean", "ArchProofAudit"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "archTests"
 
@@ -14,6 +14,10 @@ path = "../ir"
 
 [[lean_lib]]
 name = "P4bloArch"
+
+# The axioms of the architecture's proofs, pinned with `#guard_msgs`.
+[[lean_lib]]
+name = "ArchProofAudit"
 
 # The pipe endpoint for differential testing: loads a program under the
 # switch with the reference extern families and answers packet requests.
