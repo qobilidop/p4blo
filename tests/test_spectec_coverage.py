@@ -11,13 +11,15 @@ Without any OCaml toolchain this checks that both fixtures name the pinned
 commit, that the report joins the inventory, that every in-scope item is hit
 or excluded, that no exclusion is stale, and that docs/p4-spec-coverage.md states the
 same counts. With the oracle and the coverage probe built at the pin, the
-report is also regenerated and compared, which takes about fifteen seconds
-and runs in the oracle CI job; elsewhere that test skips and says why.
+report is also regenerated and compared, which runs in the oracle CI job;
+elsewhere that test skips and says why, unless P4BLO_REQUIRE_SPECTEC_COVERAGE=1
+asks for it.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -161,9 +163,13 @@ def test_docs_state_the_report_counts() -> None:
 
 
 def test_report_matches_a_fresh_measurement() -> None:
+    """The oracle job sets P4BLO_REQUIRE_SPECTEC_COVERAGE=1, so that a
+    missing probe fails there instead of skipping."""
     root = coverage.oracle_root()
     for problem in (coverage.checkout_problem(root), coverage.probe_problem(root)):
         if problem is not None:
+            if os.environ.get("P4BLO_REQUIRE_SPECTEC_COVERAGE") == "1":
+                pytest.fail(f"required SpecTec coverage measurement is unavailable: {problem}")
             pytest.skip(problem)
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--check"],
