@@ -4,6 +4,8 @@ from struct import pack
 
 from examples.load_balancer.program import build
 from p4blo import arch, stf
+from p4blo.arch import reference
+from p4blo.arch.externs import supplied_registry
 
 POLICY = """
 add services hdr.ipv4.dst:0x0a000064 hdr.udp.dst_port:8080 select_group(group:1)
@@ -17,7 +19,7 @@ PREFIX = bytes.fromhex("000000000002000000000001080045000020007b400040116dedc000
 
 
 def main() -> None:
-    loaded = arch.load(build())
+    loaded = reference.load(build(), registry=supplied_registry())
     entries = loaded.entries(stf.to_entries(loaded.index, stf.parse(POLICY)))
     switch = arch.Switch(ports=4)
     for source_port, destination_port, payload in (

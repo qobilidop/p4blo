@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.edsl.externs import Checksum16, Register
+from p4blo.arch.externs.declarations import CRC16, Checksum16, Register
 from p4blo.v0 import p4blo_pb2 as pb
+
+ChecksumWords = p4.Bits[p4.L[144]]
+FlowTuple = p4.Bits[p4.L[96]]
+FlowRecord = p4.Var[p4.L[97]]
 
 
 class Ethernet(p4.Header):
@@ -75,7 +79,7 @@ class Parse(p4.Parser[Headers, Metadata]):
         return self.accept
 
 
-def checksum_data(ip: IPv4) -> p4.Bits[p4.L[144]]:
+def checksum_data(ip: IPv4) -> ChecksumWords:
     """IPv4 header words with the checksum word omitted (equivalent to zero)."""
     return p4.concat(
         ip.version,
@@ -89,20 +93,20 @@ def checksum_data(ip: IPv4) -> p4.Bits[p4.L[144]]:
         ip.protocol,
         ip.src,
         ip.dst,
-    ).as_(p4.Bits[p4.L[144]])
+    ).as_(ChecksumWords)
 
 
-checksum = Checksum16[p4.Bits[p4.L[144]]]("checksum")
-flow_hash = p4.CRC16[p4.Bits[p4.L[96]]]("flow_hash")
+checksum = Checksum16[ChecksumWords]("checksum")
+flow_hash = CRC16[FlowTuple]("flow_hash")
 # The top bit distinguishes an occupied record from an empty all-zero cell.
-flows = Register[p4.Bits[p4.L[97]]]("flows", size=16)
+flows = Register[FlowRecord]("flows", size=16)
 
 
 class Filter(p4.Control[Headers, Metadata]):
     expected_checksum: p4.bit16
     tuple_bits: p4.Var[p4.L[96]]
-    record: p4.Var[p4.L[97]]
-    resident: p4.Var[p4.L[97]]
+    record: FlowRecord
+    resident: FlowRecord
     digest: p4.bit16
     slot: p4.bit32
 
@@ -127,27 +131,44 @@ class Filter(p4.Control[Headers, Metadata]):
             self.tuple_bits,
             p4.concat(
                 self.meta.client, self.meta.server, self.meta.client_port, self.meta.server_port
-            ).as_(p4.Bits[p4.L[96]]),
+            ).as_(FlowTuple),
         )
         self.assign(self.digest, flow_hash.compute(self.tuple_bits))
         self.assign(self.slot, (self.digest & 15).cast(p4.bit32))
-        self.assign(self.record, p4.concat(p4.bit1(1), self.tuple_bits).as_(p4.Bits[p4.L[97]]))
+        self.assign(self.record, p4.concat(p4.bit1(1), self.tuple_bits).as_(FlowRecord))
         flows.read(self.resident, self.slot)
-        with self.if_(self.resident == self.record):
-            self.assign(self.meta.drop, False)
         # Only an inside SYN without ACK/FIN/RST can create a new pinhole.
-        with self.elif_(
+        new_outbound_syn = (
             (self.meta.ingress_port == 1)
             & ((self.hdr.tcp.flags & 0x17) == 0x02)
             & (self.resident == 0)
-        ):
+        )
+        with self.if_(self.resident == self.record):
+            self.assign(self.meta.drop, False)
+        with self.elif_(new_outbound_syn):
             flows.write(self.slot, self.record)
             self.assign(self.meta.drop, False)
+
+    def orient_flow(self) -> None:
+        """Build the branches that give both directions one client/server tuple."""
+        ip, tcp = self.hdr.ipv4, self.hdr.tcp
+        with self.if_(self.meta.ingress_port == 1):
+            self.assign(self.meta.client, ip.src)
+            self.assign(self.meta.server, ip.dst)
+            self.assign(self.meta.client_port, tcp.src)
+            self.assign(self.meta.server_port, tcp.dst)
+            self.assign(self.meta.egress_port, 2)
+        with self.else_():
+            self.assign(self.meta.client, ip.dst)
+            self.assign(self.meta.server, ip.src)
+            self.assign(self.meta.client_port, tcp.dst)
+            self.assign(self.meta.server_port, tcp.src)
+            self.assign(self.meta.egress_port, 1)
 
     def apply(self) -> None:
         self.assign(self.meta.drop, True)
         ip, tcp = self.hdr.ipv4, self.hdr.tcp
-        with self.if_(
+        supported_packet = (
             ip.is_valid()
             & tcp.is_valid()
             & (ip.version == 4)
@@ -157,22 +178,11 @@ class Filter(p4.Control[Headers, Metadata]):
             & (ip.fragment_offset == 0)
             & (tcp.data_offset == 5)
             & ((self.meta.ingress_port == 1) | (self.meta.ingress_port == 2))
-        ):
+        )
+        with self.if_(supported_packet):
             self.assign(self.expected_checksum, checksum.compute(checksum_data(ip)))
             with self.if_(ip.checksum == self.expected_checksum):
-                # Both directions use the same client/server tuple and policy.
-                with self.if_(self.meta.ingress_port == 1):
-                    self.assign(self.meta.client, ip.src)
-                    self.assign(self.meta.server, ip.dst)
-                    self.assign(self.meta.client_port, tcp.src)
-                    self.assign(self.meta.server_port, tcp.dst)
-                    self.assign(self.meta.egress_port, 2)
-                with self.else_():
-                    self.assign(self.meta.client, ip.dst)
-                    self.assign(self.meta.server, ip.src)
-                    self.assign(self.meta.client_port, tcp.dst)
-                    self.assign(self.meta.server_port, tcp.src)
-                    self.assign(self.meta.egress_port, 1)
+                self.orient_flow()
                 self.apply_table(self.services)
                 with self.if_(self.meta.permitted):
                     self.inspect_flow()
@@ -189,9 +199,7 @@ program = p4.Program(
     "example_firewall",
     headers=Headers,
     metadata=Metadata,
-    parser=Parse,
-    control=Filter,
-    deparser=Emit,
+    exports={"parser": Parse, "control": Filter, "deparser": Emit},
     externs=[checksum, flow_hash, flows],
 )
 

@@ -80,6 +80,22 @@ This avoids a separate validity array and makes it possible to inspect the
 entire state after every packet. Sixteen slots intentionally make capacity
 and collisions easy to reproduce. No custom extern hides the flow policy.
 
+The program's `exports` explicitly maps roles to blocks. The host selects
+`reference.load` and passes `supplied_registry()` to bind the declared externs
+to the supplied implementations, then chooses `Switch(ports=4)`. Extern
+declarations describe typed calls; the registry supplies their execution.
+
+`ChecksumWords`, `FlowTuple` and `FlowRecord` name the checksum input,
+flow identity and writable register-record types. `orient_flow` is an ordinary
+Python build helper: calling it records the direction branches in place.
+`inspect_flow` is a declared action: calling it records an action call in the
+IR. Neither helper processes a packet while `build()` runs. Symbolic
+conditions such as `supported_packet` still require `with self.if_(...)`.
+
+The demo inspects the `flows` runtime register by name through
+`loaded.externs`. It reuses the same loaded object for all three packets,
+so the cell written by the outbound SYN remains available to the reply.
+
 ## Evidence and boundaries
 
 Verification assets live in [`tests/examples/firewall/`](../../tests/examples/firewall/).

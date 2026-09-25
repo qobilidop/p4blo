@@ -40,6 +40,16 @@ the switch. This separation is why changing a route does not rebuild the IR.
 The checksum helper is ordinary Python composition of typed eDSL expressions,
 not a separate runtime implementation.
 
+The program's `exports` explicitly maps roles to blocks. The host selects
+`reference.load` and passes `supplied_registry()` to bind the declared externs
+to the supplied implementations, then chooses `Switch(ports=4)`. Extern
+declarations describe typed calls; the registry supplies their execution.
+
+`ChecksumWords` names the 144-bit expression type used by `checksum_data`.
+`supported_packet` names a symbolic condition; `with self.if_(...)` records
+its runtime branch. Ordinary Python names and helper calls compose the IR at
+build time, while `self.assign` records packet-time writes.
+
 ## Exact scope
 
 - Untagged Ethernet with EtherType `0x0800`, version 4, IHL 5 and a complete

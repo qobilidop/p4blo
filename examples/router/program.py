@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.edsl.externs import Checksum16
+from p4blo.arch.externs.declarations import Checksum16
 from p4blo.v0 import p4blo_pb2 as pb
+
+ChecksumWords = p4.Bits[p4.L[144]]
 
 
 class Ethernet(p4.Header):
@@ -52,7 +54,7 @@ class Parse(p4.Parser[Headers, Metadata]):
         return self.accept
 
 
-def checksum_data(ip: IPv4) -> p4.Bits[p4.L[144]]:
+def checksum_data(ip: IPv4) -> ChecksumWords:
     """IPv4 header words with the checksum word omitted (equivalent to zero)."""
     return p4.concat(
         ip.version,
@@ -66,10 +68,10 @@ def checksum_data(ip: IPv4) -> p4.Bits[p4.L[144]]:
         ip.protocol,
         ip.src,
         ip.dst,
-    ).as_(p4.Bits[p4.L[144]])
+    ).as_(ChecksumWords)
 
 
-checksum = Checksum16[p4.Bits[p4.L[144]]]("checksum")
+checksum = Checksum16[ChecksumWords]("checksum")
 
 
 class Route(p4.Control[Headers, Metadata]):
@@ -97,7 +99,7 @@ class Route(p4.Control[Headers, Metadata]):
         # Controls also run after parser failure: begin with a closed gate.
         self.assign(self.meta.drop, True)
         ip = self.hdr.ipv4
-        with self.if_(
+        supported_packet = (
             ip.is_valid()
             & (ip.version == 4)
             & (ip.ihl == 5)
@@ -105,7 +107,8 @@ class Route(p4.Control[Headers, Metadata]):
             & (ip.ttl > 1)
             & ((ip.flags & 5) == 0)
             & (ip.fragment_offset == 0)
-        ):
+        )
+        with self.if_(supported_packet):
             self.assign(self.meta.expected_checksum, checksum.compute(checksum_data(ip)))
             with self.if_(ip.checksum == self.meta.expected_checksum):
                 self.apply_table(self.routes)
@@ -121,9 +124,7 @@ program = p4.Program(
     "example_router",
     headers=Headers,
     metadata=Metadata,
-    parser=Parse,
-    control=Route,
-    deparser=Emit,
+    exports={"parser": Parse, "control": Route, "deparser": Emit},
     externs=[checksum],
 )
 

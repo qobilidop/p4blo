@@ -2,6 +2,8 @@
 
 from examples.router.program import build
 from p4blo import arch, stf
+from p4blo.arch import reference
+from p4blo.arch.externs import supplied_registry
 
 POLICY = """
 add routes hdr.ipv4.dst:0x0a000000/8 forward(src_mac:0x100, dst_mac:0x101, port:1)
@@ -14,7 +16,7 @@ PACKET = bytes.fromhex(
 
 
 def main() -> None:
-    loaded = arch.load(build())
+    loaded = reference.load(build(), registry=supplied_registry())
     switch = arch.Switch(ports=4)
     for label, policy in (
         ("specific route", POLICY),

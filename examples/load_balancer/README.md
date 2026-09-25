@@ -64,6 +64,17 @@ fourth remain unchanged. This illustrates why affinity is conditional on
 configuration: remapping a bucket moves its existing flows. There is no flow
 cache or automatic migration policy.
 
+The program's `exports` explicitly maps roles to blocks. The host selects
+`reference.load` and passes `supplied_registry()` to bind the declared externs
+to the supplied implementations, then chooses `Switch(ports=4)`. Extern
+declarations describe typed calls; the registry supplies their execution.
+
+`ChecksumWords` and `FlowTuple` name the expression widths. The ordinary
+Python helpers `checksum_data` and `flow_key` compose symbolic expressions;
+`self.assign` records their uses in packet-time operations. Likewise,
+`supported_packet` names an expression that `with self.if_(...)` turns into
+a runtime branch.
+
 ## Behavioral contract
 
 - Untagged Ethernet, IPv4 version 4 with IHL 5, and a complete eight-byte UDP
