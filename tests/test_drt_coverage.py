@@ -14,11 +14,13 @@ stops being hit is a regression, and a listed tag that becomes hit is a
 stale entry to remove. An empty file is the goal.
 
 The campaigns are those the other differential tests retain: the corpus
-sample of `tests/test_drt.py` (seed 42, 200 cases per program), the typed
-scalar programs of `tests/test_drt_programs.py` (its fixed boundary
-families and its derandomized Hypothesis examples), and the stateful
-sequences of `tests/test_drt_stateful_programs.py` (its fixed families and
-its derandomized campaigns). Every case must also agree; a divergence is
+sample of `tests/test_drt.py` (seed 42, 200 cases per program) and its
+`MIXED` program (the same sample), the typed scalar programs of
+`tests/test_drt_programs.py` (its fixed boundary families and its
+derandomized Hypothesis examples), the stateful sequences of
+`tests/test_drt_stateful_programs.py` (its fixed families and its
+derandomized campaigns), and the shape families of
+`tests/test_drt_families.py` at their fixed seeds. Every case must also agree; a divergence is
 reported by those modules and fails here too, since coverage of a run that
 disagrees measures nothing.
 """
@@ -39,10 +41,14 @@ from hypothesis import strategies as st
 from p4blo import ir, validator
 from p4blo.drt.case import Case
 from p4blo.drt.coverage import RuleCoverage, rule_inventory
+from p4blo.drt.families import FAMILIES, sample
+from p4blo.drt.generate import generate
 from p4blo.drt.programs import binary, bits, boolean, parser_condition_program, scalar_program
 from p4blo.drt.run import compare, compare_program, parse_reply
 from p4blo.drt.stateful_programs import UPDATE_OPS, WIDTHS, StatefulSpec, stateful_program
 from p4blo.v0 import p4blo_pb2 as pb
+from tests.test_drt import mixed
+from tests.test_drt_families import SEEDS as FAMILY_SEEDS
 from tests.test_drt_programs import ARITHMETIC, COMPARISONS, scalar
 from tests.test_drt_programs import WIDTHS as SCALAR_WIDTHS
 from tests.test_drt_stateful_programs import (
@@ -86,6 +92,18 @@ class Campaign:
             self.coverage.update(report.rule_coverage)
             if not report.passed:
                 self.failures.append(report.summary())
+
+    def mixed(self) -> None:
+        """The `MIXED` program of `tests/test_drt.py`, sampled as the corpus is."""
+        program = mixed()
+        self.program(program, generate(ir.Index.build(program), 42, 200, PORTS))
+
+    def shape_families(self) -> None:
+        """The fixed seeds of `tests/test_drt_families.py`."""
+        for family in sorted(FAMILIES):
+            for seed in FAMILY_SEEDS:
+                generated = sample(family, seed)
+                self.program(generated.program, generated.cases)
 
     def scalar_families(self) -> None:
         """The fixed families of `tests/test_drt_programs.py`."""
@@ -211,6 +229,8 @@ def test_lean_agrees_and_hits_every_rule_tag(lean_binary: Path) -> None:
     inventory = rule_inventory([lean_binary])
     campaign = Campaign([lean_binary])
     campaign.corpus()
+    campaign.mixed()
+    campaign.shape_families()
     campaign.scalar_families()
     campaign.scalar_examples()
     campaign.stateful_families()
@@ -233,7 +253,7 @@ def test_lean_agrees_and_hits_every_rule_tag(lean_binary: Path) -> None:
         "tags listed in tests/drt-unhit-tags.json are now hit; remove them:\n"
         + "\n".join(f"  {tag}" for tag in stale)
     )
-    assert len(known) <= 33, "the unhit list grew; it may only shrink"
+    assert len(known) <= 0, "the unhit list grew; it may only shrink"
 
 
 def test_the_unhit_list_names_reasons() -> None:
