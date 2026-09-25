@@ -184,6 +184,10 @@ class BlockCx:
         # Actions bound in some table and also used unbound.
         self.bound_actions: set[str] = set()
         self.pre: list[pb.Stmt] = []
+        # True while translating a parser state, an action or an inlined
+        # function: code P4 enters afresh each time, whose declarations
+        # without an initializer start at their default on every entry.
+        self.reentered = False
 
     # -- names
 
@@ -203,6 +207,48 @@ class BlockCx:
 
     def hoist(self, stmts: Iterable[pb.Stmt]) -> None:
         self.pre.extend(stmts)
+
+    def zero(self, target: pb.LValue, t: pb.Type) -> list[pb.Stmt]:
+        """Statements that give `target` the IR's zero value of `t`
+        (docs/ir-semantics.md, "Uninitialized variables"): zero bits,
+        `false`, `NoError`, an enum's first member, a header invalid with
+        zero fields, a struct field by field, and a stack emptied by popping
+        all of it, which leaves every element invalid with zero fields and
+        `nextIndex` at 0."""
+        tr = self.tr
+        match t.WhichOneof("kind"):
+            case "bits":
+                return [assign(target, lit_bits(t.bits, 0))]
+            case "boolean":
+                return [assign(target, pb.Expr(literal=pb.Literal(boolean=False)))]
+            case "error":
+                return [assign(target, pb.Expr(literal=pb.Literal(error="NoError")))]
+            case "enum_type":
+                first = tr.enum_types[t.enum_type].members[0]
+                lit = pb.EnumLiteral(enum_type=t.enum_type, member=first)
+                return [assign(target, pb.Expr(literal=pb.Literal(enum_member=lit)))]
+            case "header":
+                out = [pb.Stmt(set_invalid=pb.SetInvalid(header=target))]
+                for f in tr.header_types[t.header].fields:
+                    out.extend(self.zero(lmember(target, f.name), f.type))
+                return out
+            case "struct":
+                out: list[pb.Stmt] = []
+                for f in tr.struct_types[t.struct].fields:
+                    out.extend(self.zero(lmember(target, f.name), f.type))
+                return out
+            case "stack":
+                return [pb.Stmt(pop=pb.Pop(stack=target, count=t.stack.size))]
+            case kind:
+                raise il.ILError(f"no zero value for a {kind}")
+
+    def _reentered[T](self, f: Callable[[], T]) -> T:
+        saved = self.reentered
+        self.reentered = True
+        try:
+            return f()
+        finally:
+            self.reentered = saved
 
     # -- types and values
 
@@ -1129,13 +1175,18 @@ class BlockCx:
             self.scope = inner
 
     def _var_decl(self, s: Node) -> list[pb.Stmt]:
+        """A declaration inside a body, hoisted to a block local. Without
+        an initializer it is re-zeroed where it stood when the body is
+        entered afresh each time (a state, an action, an inlined function):
+        P4 gives it its default on every entry, while a block local keeps
+        its value (docs/ir-semantics.md, "State-local variables")."""
         name = s.text(2)
         t = self.tr.type_of(s.node(1), name)
         local = self.add_local(name, t)
         self.scope.bind(name, VarB(local))
         init = s.opt(3)
         if init is None:
-            return []
+            return self.zero(lvar(local), t) if self.reentered else []
         assert isinstance(init, Node)
         return [assign(lvar(local), self.expr(init.node(0)))]
 
@@ -1527,12 +1578,16 @@ class BlockCx:
                 and a is not None
             ):
                 out.append(assign(lvar(local), self.expr(a)))
+            else:
+                # An `out` parameter starts at its default on every call,
+                # like a local declared without an initializer.
+                out.extend(self.zero(lvar(local), t))
             if p.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT) and a is not None:
                 copy_out.append((self.lvalue_of_expr(a), local))
         self.scope = fscope
         try:
             stmts = body[:-1] if returns else body
-            out.extend(self.stmts(stmts))
+            out.extend(self._reentered(lambda: self.stmts(stmts)))
             if returns and tail is not None and tail.c == "RETURN % ;":
                 value = self.expr(tail.node(0))
                 if result is not None:
@@ -1587,7 +1642,7 @@ class BlockCx:
                             "tableActionIR", f"{name}: a bound argument the body also reaches"
                         )
                     self.scope.bind(pname, BoundArgB(te, saved_scope))
-            action.body.extend(self.stmts(decl.node(3).nodes(1)))
+            action.body.extend(self._reentered(lambda: self.stmts(decl.node(3).nodes(1))))
             for local, number in marker:
                 action.body.append(assign(lvar(local), lit_bits(8, number)))
         finally:
@@ -1800,7 +1855,7 @@ class BlockCx:
 
     def state(self, st: Node) -> pb.State:
         name = st.text(1)
-        body = self.stmts(st.nodes(2))
+        body = self._reentered(lambda: self.stmts(st.nodes(2)))
         trans = st.node(3).node(0)
         state = pb.State(name=name, body=body)
         if trans.c == "% ;":

@@ -497,16 +497,18 @@ decision, not the parser's.
   block starts and kept across states. SpecTec gives each state a fresh
   local frame on every entry, so a variable declared inside a state
   without an initializer takes its default again each time the state
-  is entered. A hoisted state-local keeps its value across a revisit
-  unless the elaboration writes the zero value where the declaration
-  stood. The eDSL hoists a local without such a write, and no P4
-  frontend exists yet to settle it.
+  is entered; a call of an action or a function does the same for the
+  locals it declares and for a function's `out` parameters. A hoisted
+  local would keep its value across a revisit, so the elaboration writes
+  the zero value where such a declaration stood, and where an inlined
+  function's `out` parameter is bound. The IL bridge does; the eDSL's
+  hoisting does not write it yet.
   - P4: §12.4
   - SpecTec: `ParserState_eval/cont`, `$enter_e`, `$exit_e`, `VarDecl_eval/non-initializer`
   - Lean: `Frame.forBlock`
-  - Python: `p4blo.interp.env.Env.for_block`
-  - Test: `tests/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`
-  - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and whether p4blo's elaboration matches that by writing the zero value at the declaration is undecided.
+  - Python: `p4blo.interp.env.Env.for_block`, `p4blo.frontend.blocks.BlockCx.zero`
+  - Test: `tests/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/test_frontend_spectec.py::test_probe_agrees_with_spectec`
+  - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and the zero value the elaboration writes at the declaration is that default on every entry, which the bridge's `statelocal`, `actlocal` and `funclocal` probes check against SpecTec.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
   `HeaderTooShort`, `ParserTimeout`, `ParserInvalidArgument`. A program

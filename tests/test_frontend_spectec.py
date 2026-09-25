@@ -17,6 +17,9 @@ questions, each against P4 nobody wrote for p4blo:
    can name is a row of the page.
 4. **New programs.** Five p4c programs the corpus does not include run from
    source on the Python interpreter against p4c's own STF vectors.
+5. **Probes.** Small programs written for what the corpus misses (the
+   bridge review's defects and the rows no corpus program reaches) pass a
+   vector of P4-SpecTec's exact outputs, on its simulator and translated.
 
 Without a P4-SpecTec checkout that has `il-export` every test that needs
 it skips, as tests/test_oracle.py does, unless `P4BLO_REQUIRE_IL_EXPORT=1`
@@ -29,6 +32,7 @@ import functools
 import hashlib
 import os
 import re
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -51,6 +55,7 @@ from tests.frontend import catalog, p4c_stf  # noqa: E402
 CORPUS = ROOT / "tests" / "corpus"
 FRONTEND = ROOT / "impl" / "python" / "p4blo" / "frontend"
 COVERAGE = ROOT / "docs" / "p4-spec-coverage.md"
+PROBES = catalog.HERE / "probes"
 
 
 # The oracle workflow sets this, so that a checkout without `il-export`
@@ -101,7 +106,7 @@ def test_every_source_file_is_pinned() -> None:
     on_disk = {
         str(p.relative_to(catalog.HERE))
         for p in catalog.HERE.rglob("*")
-        if p.suffix in (".p4", ".stf")
+        if p.suffix in (".p4", ".stf") and p.parent != PROBES
     }
     assert on_disk == set(catalog.SHA256)
 
@@ -478,3 +483,25 @@ def test_new_p4c_program_passes_its_own_vectors(exporter: Exporter, name: str) -
     source = catalog.HERE / "p4c" / f"{name}.p4"
     program = _translated(exporter, source, name).program
     assert p4c_stf.replay(program, source.with_suffix(".stf").read_text()) == []
+
+
+# ---------------------------------------------------------------------------
+# 5. Probes, against P4-SpecTec's simulator
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", sorted(p.stem for p in PROBES.glob("*.p4")))
+def test_probe_agrees_with_spectec(exporter: Exporter, name: str) -> None:
+    """Each probe says in its first lines what it checks. Its vector's
+    expectations are exact bytes: P4-SpecTec's simulator must pass it, on
+    the source, and so must the translation, on the Python interpreter."""
+    source = PROBES / f"{name}.p4"
+    vector = source.with_suffix(".stf")
+    command = [str(exporter.binary), "sim", str(exporter.spec), "-arch", "v1model"]
+    command += ["-i", str(exporter.include), "-p", str(source), "-stf", str(vector)]
+    done = subprocess.run(
+        command, cwd=exporter.root, capture_output=True, text=True, timeout=300, check=False
+    )
+    assert done.returncode == 0, f"P4-SpecTec fails the vector:\n{done.stderr[-2000:]}"
+    program = _translated(exporter, source, name).program
+    assert p4c_stf.replay(program, vector.read_text()) == []
