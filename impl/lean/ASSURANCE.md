@@ -1107,7 +1107,10 @@ these selected faults, not universal mutation adequacy or Python equivalence.
 
 `spec/ir/P4bloIR/DeviationLaws.lean` states what the production evaluator,
 executor, lookup and emitter do on the cases the ledger classes as
-*deviates* or *refines undefined*. On 2026-09-24, in the isolated worktree of
+*deviates* or *refines undefined*. Four entries with those classes have no
+law there: the installation checks "Host entries are canonical" and
+"Entries name their action", and the extern-model entries "Binding" and
+"Where an implementation closes something P4 leaves open". On 2026-09-24, in the isolated worktree of
 branch `work/deviation-theorems` (based on `103649e`), each edit below was
 applied alone to the named production file and the module was built from
 `spec/ir/` with `lake build P4bloIR.DeviationLaws`; the file was restored
@@ -1137,8 +1140,10 @@ from its saved text after each run, and `git status` showed it clean.
    deleted. Build exits 1 at `enterState_revisit`.
 9. **Shortest prefix wins**: `Installed.beats` compared prefix lengths with
    `<`. Build exits 1 at the private `beats_iff`, which ties `beats` to the
-   independently defined `rank` of `lookup_hit`, so neither `lookup_hit` nor
-   `lookup_longest_prefix` builds.
+   `rank` of `lookup_hit`, so neither `lookup_hit` nor
+   `lookup_longest_prefix` builds. `rank` is defined without `beats` but on
+   `Installed.prefixLength`, which this campaign left unpinned; the
+   campaign below pins it.
 
 All nine are **proof/build rejection** in the new module, none an
 unused-variable or unused-simp-argument lint. Two further families are
@@ -1164,3 +1169,40 @@ that file exits 1:
 After the campaign the restored module, the audits and `lake test` pass
 under `scripts/check-lean.sh`. These are selected faults, not a mutation
 score; the Python side has its own tests for the same entries.
+
+### Helper laws: the review's surviving mutants
+
+The independent review of that campaign found three semantic mutants of
+production helpers that every deviation law survived, because the laws
+used the helpers without saying what they compute. The laws added for them
+(`prefixLength_eq`, `keyValueMatches_lpm`, `equalList_cons` and the laws
+built on them), the `!=` laws and the parser laws over whole executions
+(`step_advances` and the theorems built on it) were then challenged the same
+way on 2026-09-24, in the isolated worktree of branch `work/helper-laws`
+(based on `8c674fc`, with the new laws in place): each edit applied alone by
+a script that replaces an anchor asserted to occur once, the module built
+from `spec/ir/` with `lake build P4bloIR.DeviationLaws`, and the production
+file restored and compared byte for byte with `cmp` after each run.
+
+14. **Prefix length counts nothing** (review mutant D): `prefixLength`'s
+    `lpm` arm became `n`, so every entry ranks 0 and the first matching
+    entry installed wins. Build exits 1 at `prefixLength_eq`.
+15. **LPM matches every key** (review mutant E): the `lpm` arm of
+    `keyValueMatches` became `true`. Build exits 1 at `keyValueMatches_lpm`.
+16. **Field values ignored** (review mutant G): the cons arm of
+    `Value.equalList` dropped `equal x y`. Build exits 1 at
+    `equalList_cons`.
+17. **A block call forgets the revisit record**: the `.block` arm of
+    `Execution.dispatch` reset `visits` to empty after installing the
+    callee's frame, so a sub-parser applied twice at one cursor would not
+    time out. Build exits 1 in the proof of `step_advances`, at the private
+    lemma that every dispatch advances.
+18. **`advance` moves the cursor back**: `Packet.advance?` set the cursor
+    to `n` instead of `cursor + n`. Build exits 1 in the proof of
+    `step_advances`, at the private lemma for `advance`.
+
+19. **`!=` is `==`**: the `.ne` arm of `evaluate` dropped its `!`. Build
+    exits 1 at `evaluate_ne` and `evaluate_ne_eq`.
+
+All six are proof/build rejections of statements that are false under the
+edit, none a lint.
