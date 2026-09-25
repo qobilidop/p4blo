@@ -1369,6 +1369,25 @@ def calls() -> None:
         ["call.copyOut.order"],
     )
 
+    # r.read writes `hdr.s[t].a` through the lvalue resolved before the
+    # call: out of range when x is 2, a field of the invalid s[1] when x is
+    # 1, a field of the valid s[0] when x is 0.
+    t = [local("t", bits(32))]
+    p = program(
+        "externReadIndexed",
+        control(
+            assign("t", cast(bits(32), E("hdr.h.a"))),
+            set_valid("hdr.s[0]"),
+            call_extern("r", "read", arg_out("hdr.s[t].a"), arg_in(lit(32, 1))),
+            locals=t,
+            externs=True,
+        ),
+    )
+    out = ["call.extern.out", "call.param.out", "lvalue.member"]
+    case(p, [2], ["stack.index.writeOutOfRange", *out], ["header.field.writeInvalid"])
+    case(p, [1], ["header.field.writeInvalid", *out], ["stack.index.writeOutOfRange"])
+    case(p, [0], out, ["stack.index.writeOutOfRange", "header.field.writeInvalid"])
+
 
 def deparsers() -> None:
     """The deparser entries."""

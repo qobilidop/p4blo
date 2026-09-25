@@ -678,15 +678,19 @@ def readTags (run : Run) : LValue → List Tag
 
 /-- The closed behaviors of writing through `lv`, as `writeLValue` recurses:
 a field of an invalid header, and a stack index past the end, where the
-recursion stops because the write does nothing. -/
+recursion stops because the write does nothing. A field of an element past
+the end reads as an invalid header, but nothing is written, so it is not a
+write to an invalid header. -/
 def writeBehaviors (run : Run) : LValue → List Tag
   | .var _ => []
   | .member base _ =>
+    let below := writeBehaviors run base
     readTags run base ++
-      (match peek (readLValue base) run with
+      (if below.contains .«stack.index.writeOutOfRange» then []
+      else match peek (readLValue base) run with
         | some (.header _ false _) => [.«header.field.writeInvalid»]
         | _ => []) ++
-      writeBehaviors run base
+      below
   | .index base idx =>
     readTags run base ++ exprTags run idx ++
       match peek (readLValue base) run, peek (evaluate idx) run with
