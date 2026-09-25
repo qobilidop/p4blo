@@ -1,16 +1,17 @@
 # pyright: strict
-"""The program: roles as keywords, classes and instances as references.
+"""The program: named block exports, classes and instances as references.
 
     program = Program("forwarder", headers=headers, metadata=metadata,
-                      parser=MyParser, control=MyIngress, deparser=MyDeparser,
+                      exports={"parser": MyParser, "control": MyIngress,
+                               "deparser": MyDeparser},
                       externs=[csum], errors=errors)
     program.build()  # a pb.Program
 
 `build()` runs the second clock once (see `p4blo.edsl.__init__`): it makes
 a core `Program`, declares the errors, registers the headers and metadata
 structs and every type they reach, declares the externs in the order
-given, then assembles the parser, the control and the deparser in that
-order, each a class instantiated once with its methods run against a
+given, then assembles the exported blocks in mapping order, each a class
+instantiated once with its methods run against a
 recording `self`. A sub-block is built when first called, ahead of its
 caller. Each `build()` starts afresh, so a program may be built twice.
 
@@ -23,8 +24,8 @@ classes given, after core.p4's seven.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, get_args, get_origin
+from collections.abc import Mapping, Sequence
+from typing import get_args, get_origin
 
 from p4blo.edsl.blocks import Block, Control, Deparser, ExternResult, Parser
 from p4blo.edsl.core.blocks import Block as CoreBlock
@@ -115,7 +116,12 @@ class Build:
 
 
 class Program:
-    """A program: its name, types, blocks by role, externs and errors."""
+    """A program: its name, types, named block exports, externs and errors.
+
+    Export names are labels chosen by the caller's architecture. A program
+    may export any number of parser, control or deparser blocks, including
+    just one control. The eDSL assigns no packet pipeline roles.
+    """
 
     def __init__(
         self,
@@ -123,27 +129,23 @@ class Program:
         *,
         headers: type[Struct],
         metadata: type[Struct],
-        parser: type[Parser[Any, Any]],
-        control: type[Control[Any, Any]],
-        deparser: type[Deparser[Any]],
+        exports: Mapping[str, type[Block]],
         externs: Sequence[Extern] = (),
         errors: type[Errors] | Sequence[type[Errors]] = (),
     ) -> None:
         self.name = name
         self.headers = headers
         self.metadata = metadata
-        self.parser = parser
-        self.control = control
-        self.deparser = deparser
+        self.exports = tuple(exports.items())
         self.externs = list(externs)
         self.errors: list[type[Errors]] = [errors] if isinstance(errors, type) else list(errors)
-        for role, cls, kind in (
-            ("parser", parser, Parser),
-            ("control", control, Control),
-            ("deparser", deparser, Deparser),
-        ):
-            if not (isinstance(cls, type) and issubclass(cls, kind)):  # pyright: ignore[reportUnnecessaryIsInstance]
-                raise EdslError(f"{role} must be a {kind.__name__} class, got {cls!r}")
+        for role, cls in self.exports:
+            if not role:
+                raise EdslError("an export needs a role")
+            if not (isinstance(cls, type) and issubclass(cls, (Parser, Control, Deparser))):  # pyright: ignore[reportUnnecessaryIsInstance]
+                raise EdslError(
+                    f"export {role!r} must be a Parser, Control or Deparser class, got {cls!r}"
+                )
 
     def build(self) -> pb.Program:
         """The IR of the program, built afresh."""
@@ -161,11 +163,7 @@ class Program:
             build.core.metadata = build.core.types.structs[build.struct(self.metadata, "metadata")]
         for instance in self.externs:
             build.extern(instance)
-        for role, cls in (
-            ("parser", self.parser),
-            ("control", self.control),
-            ("deparser", self.deparser),
-        ):
+        for role, cls in self.exports:
             block = build.block(cls)
             with provenance():
                 build.core.export(role, block)
