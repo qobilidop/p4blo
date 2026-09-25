@@ -407,7 +407,40 @@ audit files; these entries record the shape.
 ## Process
 
 - **Independent review after each step**, filed under `.agents/reviews/`,
-  findings fixed on `main`. (2026-09-22)
+  with the reviewed revision or patch, reproducible findings, checks and
+  limitations; findings fixed on the working branch before integration.
+  Reason: review must cover what is merged, and a report is evidence only
+  when a later reader can identify its subject. (2026-09-25)
+- **PRs are the default for substantive changes; final-revision CI gates
+  merging.** Trivial non-behavioral maintenance may go directly to `main`.
+  Authorized work includes autonomous commits, pushes and merges, without
+  bypassing protections. Integrate sub-agent commits on the PR branch,
+  keep review and local/remote evidence distinct, and verify the final
+  head SHA before merging. Preserve coherent commits with a merge commit;
+  squash WIP/fixups with their rationale and attribution retained; rebase
+  only for an explicit linear-history preference. Reason: adopt the
+  user's p4-spectec-lean workflow so defects are caught before main changes,
+  while preserving independently useful history. (2026-09-25)
+- **PR descriptions carry durable rationale and concise AI disclosure.**
+  Explain the problem, outcome, tradeoffs, validation and relevant limits
+  without conversation context. Re-read against the final diff. Name the
+  authoring agent/model from active-session evidence in one sentence;
+  agent review is not human review. Reason: apply the user's practices in
+  p4-spectec-lean and Git/Google/GitHub contribution guidance without a
+  boilerplate template. Sources and adoption boundaries are in
+  `notes/engineering-practices.md`. (2026-09-25)
+- **Generated-file checks compare inventory and bytes with both index
+  and working tree from a clean temporary generation.** An in-place
+  `buf generate` followed by `git diff` misses untracked new outputs and
+  can leave stale outputs behind. One script serves local and schema CI
+  gates; negative tests challenge the guard. (2026-09-25)
+- **A tracked file may not exceed 5 MiB in index or working tree.**
+  Stage new deliverables before the gate. Prefer reproducible generation,
+  small losslessly compressed snapshots with raw checksums, or pinned
+  external artifacts; never rewrite published history without explicit
+  scope. Reason: adopt p4-spectec-lean's preventive artifact budget while
+  every current file fits without migration (largest about 0.5 MiB).
+  This is a project budget, not a hosting limit. (2026-09-25)
 - **Uncertain choices record a confidence and a revisit trigger.**
   (2026-09-23)
 - **Unfinished work is parked as a pushed branch, never as an uncommitted
@@ -417,8 +450,9 @@ audit files; these entries record the shape.
   status and never on a command that reads the log (a `tail` once pushed
   a red main). A builder hands back with lint, types, the tests covering
   its files and the Lean gate when it touched Lean, and the full gate
-  only for a cross-cutting change; the integrator merges in batches and
-  gates once. `scripts/check.sh` deselects the oracle suites and runs the
+  only for a cross-cutting change; the integrator combines changes on the
+  PR branch in batches and gates once per batch before push, with final
+  remote CI before merge. `scripts/check.sh` deselects the oracle suites and runs the
   rest in parallel with fixture-heavy modules pinned to one worker, under
   a minute in all; the oracle workflows run the rest. At most two heavy
   jobs share the machine at once. (2026-09-24, 2026-09-25)

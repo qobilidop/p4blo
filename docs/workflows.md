@@ -8,9 +8,12 @@ tools listed there. `uv` does not install those external tools.
 
 ## Gates
 
-`main` is green when all of these pass, and five workflows run them on
-every push: Python and schema, Lean, two P4 oracles and compile-only XDP. Run them
-locally before pushing, and check exit codes, not output.
+`main` is green when all of these pass. Five validation workflows run on
+pull requests and pushes to `main`: Python and schema, Lean, two P4
+oracles and compile-only XDP. Run the full local gate before pushing,
+plus the specialist gates affected by the change; record unavailable
+tools and skipped checks explicitly. Remote CI must pass for the final
+PR revision before merge. Check exit codes, not output.
 
 | Gate | Command | Expected |
 |---|---|---|
@@ -25,6 +28,8 @@ locally before pushing, and check exit codes, not output.
 | Forwarding application BMv2 profile | `uv run pytest tests/lean/test_lean_forwarder_apply.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
+| Repository file sizes | `uv run python scripts/check-file-sizes.py`, also in the structure tests | every indexed blob and tracked working file is at most 5 MiB; stage new deliverables first |
+| Generated protobuf files | `uv run python scripts/check-generated.py`, part of the local and schema CI gates | fresh output inventory and bytes equal both index and working tree; no missing, stale or untracked generated files |
 | Original XDP compile profile | `P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py` | pinned original compiles; offline ELF/BTF positive/negative checks pass without BPF syscalls; separate CI requires image, local missing image skips without required flag |
 
 A larger differential sweep, for a change to either interpreter:
@@ -175,6 +180,47 @@ translates the STF dialect. The build script creates the pinned OCaml switch;
 `uv` manages only the Python replay driver and tests.
 
 ## Changing things
+
+Use a branch and pull request for substantive changes, including tooling
+and policy. Keep each commit a coherent change with its tests and necessary
+documentation; explain the prior problem and why the chosen approach
+solves it. Stage new deliverables before the full local gate so checks of
+the index see the intended submission. Review the staged diff and commit
+message before committing.
+
+A PR description explains the problem, resulting behavior, consequential
+tradeoffs and validation for a reader without the conversation. Distinguish
+local checks from remote CI and name meaningful skips or limitations. Link
+supporting evidence, but keep enough context in the description to make it
+useful if a link disappears. Update it against the final diff after review.
+These practices follow [Google's change-description guidance](https://google.github.io/eng-practices/review/developer/cl-descriptions.html),
+[small-change guidance](https://google.github.io/eng-practices/review/developer/small-cls.html),
+[Git's contribution guidance](https://git-scm.com/docs/SubmittingPatches)
+and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes).
+
+Independent review and applicable CI must cover the final revision being
+merged. Check the PR head SHA and the checks associated with it; a passing
+run for an earlier revision is not sufficient. Required jobs that are
+missing, pending, cancelled or skipped do not establish a pass. Fix
+findings on the branch and rerun affected checks. Follow repository
+protections without bypasses. Prefer merge commits when the individual
+commits form a useful history; squash a WIP/fixup sequence with a considered
+message. Agent coordination and attribution rules are in `AGENTS.md`.
+
+Generated artifacts must have a reproducible source and regeneration
+command. The protobuf check generates into a temporary directory and
+compares file names and bytes with both staged and working copies; it does
+not repair the checkout while checking it. A test for a new guard should
+demonstrate that an invalid candidate is rejected, not merely that today's
+repository passes.
+
+The 5 MiB per-file limit is a project budget, well below hosting limits.
+Prefer reproducible generation, a small losslessly compressed snapshot
+with its raw-content checksum, or a checksum-pinned external artifact.
+Ignored logs and build outputs remain local. Review expected history growth
+when updating snapshots; removing a large file later does not remove its
+old blobs. See [GitHub's repository-size guidance](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
+Published-history changes require explicit agreement on the affected refs.
 
 **A closed behavior.** Write it in `docs/ir-semantics.md` first, or in
 `docs/arch-supports.md` when an architecture or extern family owns it, then
