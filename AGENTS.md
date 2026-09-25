@@ -240,8 +240,10 @@ reviewed commits on the PR branch in batches, runs the full gate once per
 batch before pushing, then merges the PR only after its final revision
 passes remote CI, and removes the worktrees.
 Before splitting a public API change, agree concrete caller examples and
-an acceptance case that would expose a false abstraction boundary. Record
-cross-agent API signatures and commit dependencies in the working note.
+an acceptance case that would expose a false abstraction boundary. Follow
+that case through source, wire types, validation, execution and proof premises;
+a clean facade alone is not a boundary. Record cross-agent API signatures
+and commit dependencies in the working note.
 When two slices depend on each other, hand off committed patches with
 explicit pending checks, then validate the integrated batch; do not have
 both agents wait for the other's green commit. Never amend a handed-off

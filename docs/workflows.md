@@ -334,8 +334,10 @@ loop:
 1. Specify the application story, packet profile, host assumptions and failure
    behavior. Establish independent expected outcomes before relying on replay.
    For an authoring API change, first write representative caller examples
-   and a boundary counterexample: a block library must compile a scalar-only
-   control without inventing a packet pipeline or global H/M roots.
+   and a boundary counterexample: a block library must compile and validate a
+   scalar-only control without inventing a packet pipeline or global H/M roots.
+   Trace that witness through source, wire, validation and execution. Include
+   multiple blocks of each kind so the example cannot hide a fixed pipeline.
 2. Build the smallest complete runnable scenario through public APIs. Record
    concrete authoring, configuration, inspection and diagnostic difficulties.
 3. Challenge correctness with boundary and persistent-sequence tests,

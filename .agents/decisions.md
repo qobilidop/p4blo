@@ -146,15 +146,21 @@ A decision the design document already settles is not repeated here.
   not a complete program.** It bundles block definitions and shared type,
   error and extern declarations, with no global H/M roots, export roles,
   ports or packet-fate policy. Independent compilation produces a fragment,
-  not a whole-program validity certificate. Architecture support assembles
-  the library into the existing wire Program and supplies execution logic.
+  not a whole-program validity certificate.
+  The protobuf and Lean core use BlockLibrary too. Architecture BlockBindings
+  selects H/M roots and exports; core validity and progress concern libraries,
+  while architecture binding checks and entry theorems retain their guarantees.
   Reason: the user rejected `p4.Program` as conflating core authoring with
   architecture composition; arbitrary export names alone do not remove the
   wire envelope's H/M calling convention. (2026-09-25)
 - **Architecture assembly recompiles a library in one shared context.**
   It does not link independently compiled protobuf fragments. This preserves
   declaration order and shared type, sub-block and extern identities without
-  introducing a linker or changing wire semantics. (2026-09-25)
+  introducing a linker. Core protobuf libraries exclude binding fields; an
+  explicitly architecture-owned flat BlockAssembly adapter preserves existing
+  payload fields/bytes. Descriptor names and generated APIs change intentionally.
+  Reason: keep old corpus transports without putting binding choices back into
+  the core or claiming that an assembly is a complete program. (2026-09-25)
 - **Concrete extern declarations are architecture support; registration is
   explicit and local.** `edsl.Extern` is generic; supplied typed families and
   dynamic helpers live in `arch.externs.declarations`. A Registry binds

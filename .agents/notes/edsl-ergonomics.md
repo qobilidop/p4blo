@@ -55,35 +55,9 @@ worktrees will be created from each committed integrated milestone.
 
 ## Current checkpoint
 
-Implementation and caller migration are complete. Independent review is
-checking the local-type dependency fix at `c150d31`; status.md records local
-checks and remaining integration gates. Initial named-export Program API,
-explicit loader, concrete extern split and readability changes were implemented
-in isolated commits. During integration
-the user clarified that public `p4.Program` itself mixes core and architecture.
-The final design must start from independently authored P4 blocks, with
-composition and role assignment in architecture support; the wire Program
-container can remain an assembly detail. The named-export Program proposal
-is superseded and must not be shipped as the public authoring API.
-
-That correction is implemented in the final API below. Lean and the first
-full integration gate passed; current evidence and remaining obligations are
-in status.md. No goldens, wire schema or Lean semantics changed.
-
-
-## Final API contract after user steering
-
-`p4.BlockLibrary(*block_classes, externs=..., errors=...)` is the reusable
-source collection. `.compile()` returns a CompiledLibrary fragment without
-H/M roots or exports. No public typed `p4.Program` remains. Generic
-`arch.assemble(library, name=..., headers=..., metadata=..., exports=...)`
-and the optional `arch.reference.assemble` pipeline adapter produce the
-existing wire Program through one compiler context. `arch.load` requires
-registry/contract/role kinds; `arch.reference.load` is the explicitly named
-supplied environment. Concrete extern imports and explicit local registration
-remain as agreed. A scalar-only block is a required independence witness.
-
-The three examples retain one program.py each with block definitions, a
-BlockLibrary and a small reference assembly `build()` for the existing test
-contract. Their demos explicitly select the reference environment and supplied
-extern registry. This retains independent readability and exact IR goldens.
+The initial Python-only boundary at 97cc1d8 was extended after user review.
+The current contract and ownership are in [edsl-wire-boundary.md](edsl-wire-boundary.md),
+and exact evidence and remaining integration are in ../status.md. Both the
+core protobuf and Lean value are BlockLibrary; H/M roots and exports are
+separate architecture bindings. Multiple blocks of each kind are supported.
+The compatibility transport is architecture-owned BlockAssembly, not Program.

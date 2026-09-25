@@ -52,3 +52,21 @@ The durable changes are in AGENTS.md's agent workflow, the application/API
 procedure in docs/workflows.md, and the executable import-boundary,
 standalone-library and extern-isolation tests. The transient scripts remain
 ignored local artifacts, not repository tools or handoff dependencies.
+
+## What the deeper boundary review changed
+
+Stopping at the Python facade preserved a misleading core wire abstraction.
+The user's protobuf question exposed H/M assumptions in core validity, entry
+helpers and printer defaults. Following one scalar/no-root witness through
+all representations produced the actual separation; a second witness with
+two blocks of every kind guards against silently rebuilding a fixed pipeline.
+Existing entry proofs moved with their definitions, and binding soundness was
+preserved explicitly instead of treating successful compilation as evidence.
+
+Mechanical migrations need token-aware, idempotent replacements and collision
+checks. The local scripts stopped on missing/ambiguous anchors, but rerunning
+a broad `pb.Export` substitution also matched its new `apb.Export` spelling;
+a new `wire` module alias collided with existing codec parameters. Syntax,
+types, targeted tests and the full gate exposed these, and the final fixes use
+unambiguous aliases and preserve independent fixtures. Assemble and validate
+all edits from an immutable snapshot before writing a migration batch.

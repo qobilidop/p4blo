@@ -1,54 +1,58 @@
 # Status
 
-Where the work stands now. Updated at every checkpoint and compacted at
-milestone boundaries, so this file holds current state only; history up
-to this compaction is in git at the archive commit
-`26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and up to the
-previous one at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
+Current truth and resumable work. Earlier history is archived at
+`26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and previously at
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 
 Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
-The user extended the boundary to protobuf BlockLibrary with multiple blocks
-of each kind. PR #2 is held at `97cc1d8`; see
-[wire-boundary plan](notes/edsl-wire-boundary.md). Earlier pending/push notes
-below describe that pre-extension checkpoint, not the current integration.
-The authorized scope, acceptance criteria, isolated worktrees and next steps
-are in [edsl-ergonomics.md](notes/edsl-ergonomics.md). Integration branch:
-`work/edsl-ergonomics`, base `80eba84`. The block-library API, explicit
-architecture assembly and extern binding, three example rewrites and caller
-migrations are implemented. Independent integrated review and final local/
-remote gates are pending; nothing has been pushed yet.
+Branch `work/edsl-ergonomics`, original base `80eba84`; [PR #2](https://github.com/qobilidop/p4blo/pull/2)
+is open at the earlier `97cc1d8` revision and must not merge until updated.
+The user extended the separation through the protobuf and Lean types;
+[wire-boundary plan](notes/edsl-wire-boundary.md) records the accepted design.
 
-The user clarified that `p4.Program` must leave the public authoring API:
-blocks and their shared declarations form an optional BlockLibrary, while
-architecture logic forms a complete executable system. The wire Program
-remains an assembly envelope, not the core authoring abstraction.
+Implementation is complete at `37356009137d7f1bad5a284c01d59eace1841726`:
 
-Local evidence: `scripts/check-lean.sh` passed. At `fb41e27`, the full
-`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` passed: 5184 tests, one optional XDP
-image skip, four expected failures, formatting/lint/types/schema/generation
-and workflow checks green. The two main P4-SpecTec/BMv2 oracle suites passed
-79 tests with two documented expected failures. All three examples retain
-exact text and binary goldens, their demos match the READMEs, and standalone
-library compilation and targeted Pyright pass.
+- Typed Python BlockLibrary compiles directly to core protobuf BlockLibrary;
+  Lean uses the same abstraction. It holds arbitrary blocks and declarations,
+  with no global H/M roots, exports or fixed count of any block kind.
+- Architecture BlockBindings owns roots and exports. An optional flat
+  BlockAssembly transport preserves existing payloads; architecture code
+  supplies invocation policy, host contracts and explicit extern binding.
+- Core validity/progress remains proved over libraries. Binding validity and
+  its sound checker, fixed H/M entry helpers and existing entry theorems now
+  live in architecture support. Wrong signatures and role kinds fail at load.
+- The three applications retain exact text/binary goldens and behavior;
+  ordinary aliases/helpers improve readability. A custom extern and a library
+  with two blocks of each kind exercise composition beyond the supplied switch.
 
-Independent review found missing registration of a type used only by a block
-local in scalar-only compilation. Fixed at `c150d31`, with nested header,
-struct and enum regression tests. Independent review through `58275b8` is
-clear; its [report](reviews/edsl-implementation.md) records 34 focused passes,
-151 broader passes, clean types/lint, the custom extern and a scratch router
-policy change. Library settings remain publicly reassignable; bypassing the
-constructor's nonempty/duplicate checks this way is a nonblocking API
-consistency observation, not a demonstrated incorrect runtime behavior.
+Checked local evidence on that implementation tree, all exiting 0:
 
-At frozen `58275b8`, the final `P4BLO_REQUIRE_LEAN=1 scripts/check.sh` passed:
-5186 passed, one optional XDP-image skip, four expected failures; every other
-local gate stage passed. `uv run python scripts/check-assurance.py` exited 0
-with the Python fault catalogue, Lean CRC fault, paired codec/observer faults,
-independent anchors and restored baselines checked. Its first run was
-invalidated by concurrent documentation edits and is not counted as evidence.
-Next: final metadata review/local gate, then final-revision PR CI and
-integration. The reflection and workflow lessons are in
-[edsl-reflection.md](notes/edsl-reflection.md).
+- All three packages through `scripts/check-lean.sh`, including proof audits.
+- `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: 5195 passed, one optional local XDP
+  image skip, four expected failures; lint/types/schema/generation pass.
+- `python -m p4blo.conformance check-lean`: all 89 retained fixtures reproduce
+  unchanged answers; the original fixture provenance is retained and the new
+  semantics-source digest is reported explicitly, not treated as answer drift.
+- On equivalent oracle-adapter commit `f6ec9ef`: P4-SpecTec block suite
+  67 passed/3 expected failures; frontend suite 98 passed; main corpus 35 passed.
+  BMv2 and final frozen-tree assurance will be checked before the final push.
+
+Independent review through `3bd8e03` found no semantic defects; see
+[boundary review](reviews/library-boundary.md). It checked preserved theorem
+premises, scalar/six-block core acceptance, projection isolation and nine
+malformed bindings against Python and Lean. The earlier typed-compiler review
+found the local-only declaration-closure bug, fixed at `c150d31`; its report
+is [here](reviews/edsl-implementation.md). Final integrated review is pending.
+Library source settings remain reassignable; bypassing constructor checks by
+assignment is a nonblocking consistency observation, not a shown runtime bug.
+
+Next: freeze a committed checkpoint, run assurance and main oracle adapters,
+finish final review, update PR #2, pass CI on its exact head and merge. Then
+close the scope, finalize the [reflection](notes/edsl-reflection.md), compact
+state and remove integrated worktrees/branches. Do not resume roadmap work.
+The prior successful assurance at `58275b8` covered the pre-extension API;
+it is not evidence for this final split. Its first attempt was invalidated
+by concurrent tracked documentation edits and never counted as a pass.
 
 Engineering-practice maintenance is merged on `main` at `264fd63` through
 [PR #1](https://github.com/qobilidop/p4blo/pull/1), from base `045f3de`.
