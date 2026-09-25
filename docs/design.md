@@ -481,9 +481,9 @@ digests and the GitHub Actions, is pinned and listed in
 ```
 p4blo/
   README.md, AGENTS.md              the front door; the agents' entry point
-  docs/                             design, ir-semantics, arch-supports,
-                                    coverage, assurance,
-                                    quickstart, workflows
+  docs/                             design, ir-semantics (with its generated
+                                    ledger-xref), arch-supports, coverage,
+                                    assurance, quickstart, workflows
   .agents/                          agent working state: status, decisions, roadmap
   spec/ir/                          Lake package p4blo-ir (P4bloIR): the IR
     P4bloIR/                        abstract IR, semantics, codecs, proofs

@@ -186,6 +186,9 @@ A change that alters one of Lean's recorded answers fails
 refresh the fixtures with `uv run python -m p4blo.conformance refresh`
 from committed Lean sources and review their diff, in which every changed
 step line is a changed answer (`tests/conformance/README.md`).
+After editing a ledger entry, regenerate its cross-reference table with
+`uv run python scripts/ledger-xref.py`;
+`tests/structure/test_ledger_xref.py` fails until it is current.
 
 **The schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in

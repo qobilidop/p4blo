@@ -25,6 +25,10 @@ resolved by adding it here, not by patching one side. A divergence
 between p4blo and an oracle that traces to an entry here is documented,
 not a failure; claim 2 allows exactly those.
 
+[ledger-xref.md](ledger-xref.md) lists every entry in one generated
+table with its class and its P4, SpecTec, Lean, Python and test
+references.
+
 ## How to read an entry
 
 Each entry is a bullet with a bold behavior name, then p4blo's choice and
@@ -53,11 +57,11 @@ its reason in prose, then six lines in this order:
     for the reason the prose gives.
   - *not representable*: the situation cannot arise in SpecTec's IL.
 
-`tests/structure/test_ledger.py` checks the shape of every entry, that every Lean
-and Python name exists where it is cited, that every test reference names
-a test, the counts below, and each entry's class against
-`tests/ledger-classes.json`; `tests/external/test_spectec_rules.py` checks that
-every SpecTec name exists at the pinned commit.
+`tests/structure/test_ledger.py` checks the shape of every entry, that
+every Lean and Python name exists where it is cited, that every test
+reference names a test, the counts below, and each entry's class against
+`tests/ledger-classes.json`; `tests/external/test_spectec_rules.py`
+checks that every SpecTec name exists at the pinned commit.
 
 | Class | Entries |
 |---|---|

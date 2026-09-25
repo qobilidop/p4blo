@@ -11,10 +11,12 @@ layout and the import boundaries (`test_package_layout.py`,
 `test_boundaries.py`), check that every relative link resolves and that
 `docs/` never links into `.agents/` (`test_docs_links.py`), that the
 ledger in `docs/ir-semantics.md` is well formed and cites names that
-exist (`test_ledger.py`), that the quickstart and the homepage run the
-program they show (`test_quickstart.py`, `test_website.py`), that the
-package imports (`test_smoke.py`), and that the XDP profile compiles
-(`test_xdp_build.py`, compile-only, never a kernel execution oracle).
+exist (`test_ledger.py`) and that its generated cross-reference table
+is current (`test_ledger_xref.py`), that the quickstart and the
+homepage run the program they show (`test_quickstart.py`,
+`test_website.py`), that the package imports (`test_smoke.py`), and that
+the XDP profile compiles (`test_xdp_build.py`, compile-only, never a
+kernel execution oracle).
 
 ```
 uv run pytest tests/structure
