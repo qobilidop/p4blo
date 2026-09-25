@@ -22,7 +22,7 @@ import pytest
 
 from p4blo import conformance
 from p4blo.conformance import Fixture, Step
-from tests.conformance import inputs
+from tests.conformance import inputs, mutants
 
 FIXTURES = conformance.DEFAULT_DIR
 PATHS = conformance.fixture_paths(FIXTURES)
@@ -53,6 +53,12 @@ def test_the_contract_is_exercised() -> None:
     outputs = [r["outputs"] for r in replies if isinstance(r.get("outputs"), list)]
     assert any(len(o) > 1 for o in outputs if isinstance(o, list))
     assert any("diagnostic" in r for r in replies)
+
+
+@pytest.mark.parametrize("name", mutants.MUTANTS)
+def test_python_mutants_are_caught(name: str) -> None:
+    """Each deliberate interpreter fault fails some fixture's check."""
+    assert mutants.killers(name) != []
 
 
 def test_the_corpus_stays_small() -> None:

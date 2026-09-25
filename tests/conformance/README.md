@@ -164,3 +164,25 @@ A binary built before the sources it is meant to answer for would make
 older than the newest digested source, and say which. The required CI gate
 builds Lean immediately before the tests, so this guard is for local use;
 the per-fixture pytest checks do not repeat it.
+
+## Mutants
+
+Deliberate faults the corpus catches. The Python ones are in `mutants.py`
+(`uv run python -m tests.conformance.mutants`), each applied in-process
+to one function of the reference interpreter, and
+`tests/test_conformance.py` requires each to be caught. Recorded at the
+export that added the contract fixtures:
+
+| Mutant | Fault | Caught by |
+|---|---|---|
+| `sub-off-by-one` | `bit<N>` subtraction subtracts one more (`p4blo.interp.expr.bits_binary`) | 8 fixtures, among them `stf-corpus-forwarder-forward` and `family-seed08` |
+| `count-twice` | a counter's `count` adds two (`Counter.call`) | 11 fixtures, among them `stf-corpus-stateful-persist`, on state alone |
+| `flood-to-ingress` | a flood also leaves on the ingress port (`Switch.run`) | `contract-fate` only |
+| `lpm-unchecked` | an LPM value with bits outside its prefix installs (`tables.check_key_value`) | `contract-forwarder-install` only |
+| Lean `flood-to-ingress` | in `spec/arch/P4bloArch/Switch.lean`, `(List.range sw.ports).filter (· != ingress)` becomes `(List.range sw.ports)` | `contract-fate`, requests 0 and 1 |
+
+The Lean mutant is run by hand on a copy, never in a checkout: copy
+`spec/` with its `.lake` to a scratch directory, make the edit there, run
+`lake build p4blo-lean` in the copy's `arch`, and run
+`check-lean --lean <copy>/arch/.lake/build/bin/p4blo-lean`, which exits 1
+naming the requests above.
