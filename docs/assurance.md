@@ -387,6 +387,31 @@ the extern families run on the simulator's V1Model implementations; the
 block runner compares block semantics, not an architecture or the wire
 format.
 
+The IL bridge makes the corpus's elaborations code: `p4blo.frontend`
+translates the IL P4-SpecTec's own typing and instantiation produce from a
+P4 program ([tests/oracle/README.md](../tests/oracle/README.md#the-il-export)),
+and each row of [p4-spec-coverage.md](p4-spec-coverage.md) says what it
+does with the construct. `tests/test_frontend_spectec.py` establishes, at
+the pin, that five corpus goldens (csum16, parser_error, stacks,
+subparser_stack, verify_error) are reproduced byte for byte from their P4
+originals and tutorial_firewall up to declaration order and local names;
+that the other four differ only as the test spells out, with their vectors
+agreeing packet by packet except where the difference shows; that every
+corpus and example golden the v1model printer prints translates back to
+itself up to declaration order and the names of block locals and stateless
+extern instances, priority excepted since the printer writes mutable
+entries; that excluded constructs are refused by their row; and
+that five p4c programs outside the corpus pass their own STF vectors on
+the Python interpreter. One difference is P4-SpecTec's and is kept: it
+reads `@priority(n)` as a priority where the larger wins, and p4c and
+BMv2 let the smaller win, so priority's translation routes two of its
+three packets as SpecTec's own simulator does, not as its p4c vector
+expects. This is evidence on these programs, not a verified frontend: the
+bridge's elaborations are not proved to preserve meaning, P4-SpecTec's
+typing is trusted as the reference for what the source means, and the
+metadata contract inherits the printer's imprecision about v1model's drop
+port.
+
 ## Known disagreements with the oracles
 
 Every known disagreement is a strict expected failure restricted to a

@@ -57,6 +57,10 @@ jobs:
         run: nix develop -c uv run pytest tests/test_firewall.py -k spectec -v
       - name: Run generated programs and cases on the oracle
         run: nix develop -c uv run pytest tests/test_oracle_generated.py -v
+      - name: Translate P4 source into IR through the IL bridge
+        run: nix develop -c uv run pytest tests/test_frontend_spectec.py -v
+        env:
+          P4BLO_REQUIRE_IL_EXPORT: "1"
       - name: Build the SpecTec coverage probe
         run: nix develop .#oracle -c python3 tests/oracle/coverage.py build
       - name: Check SpecTec rule coverage against the pinned simulator

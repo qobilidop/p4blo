@@ -1,0 +1,183 @@
+diff --git a/p4spec/bin/main.ml b/p4spec/bin/main.ml
+index 4be966e..f079b6b 100644
+--- a/p4spec/bin/main.ml
++++ b/p4spec/bin/main.ml
+@@ -678,6 +678,49 @@ let parse_command =
+            | Sys_error msg -> file_error ("file error: " ^ msg)
+            | e -> file_error ("unknown error: " ^ Printexc.to_string e)))
+ 
++(* Export a program's typed and instantiated IL as JSON (backend-il/), for
++   p4blo's frontend: the output of `Program_ok` and of `Program_inst`. *)
++let il_export_command =
++  Core.Command.basic
++    ~summary:"print a P4 program's typed and instantiated IL as JSON"
++    (let open Core.Command.Let_syntax in
++     let open Core.Command.Param in
++     let%map paths_spec = anon (non_empty_sequence_as_list ("path" %: string))
++     and includes_p4 = flag "-i" (listed string) ~doc:"P4 include paths"
++     and path_p4 = flag "-p" (required string) ~doc:"P4 program" in
++     fun () ->
++       run_with_diagnostics
++         ~action:(fun () ->
++           let* spec_sim = P4spectec.spec_of_mode SL_mode paths_spec in
++           let* simulator = P4spectec.build_sim spec_sim in
++           Ok (spec_sim, simulator))
++         ~on_success:(fun (spec_sim, simulator) ->
++           let (module Simulator : SIM) = simulator in
++           Inst.Hook.register [];
++           Inst.Hook.init_spec spec_sim;
++           let eval relname =
++             match Simulator.Interp.eval_program relname includes_p4 path_p4 with
++             | Pass values -> Ok values
++             | Fail (`Syntax diagnostic) -> Error diagnostic
++             | Fail (`Runtime failure) -> Error (diagnostic_of_failure failure)
++           in
++           let result =
++             let* typed = eval "Program_ok" in
++             let* inst = eval "Program_inst" in
++             match (typed, inst) with
++             | [ program ], [ global; store ] ->
++                 Backend_il.Il_export.export ~program ~global ~store
++                 |> Yojson.Safe.to_channel stdout;
++                 print_newline ();
++                 Ok ()
++             | _ ->
++                 Error
++                   (Diagnostic.error ~source:"p4" Util.Source.no_region
++                      "unexpected arity of Program_ok or Program_inst")
++           in
++           Inst.Hook.finish ();
++           result))
++
+ let command =
+   Core.Command.group
+     ~summary:"p4spectec: a language design framework for the p4_16 language"
+@@ -702,6 +745,7 @@ let command =
+       ("splice", splice_command);
+       (* Interfacing with P4 *)
+       ("parse", parse_command);
++      ("il-export", il_export_command);
+     ]
+ 
+ let () = Command_unix.run ~version command
+diff --git a/p4spec/lib/backend-il/dune b/p4spec/lib/backend-il/dune
+new file mode 100644
+index 0000000..6777850
+--- /dev/null
++++ b/p4spec/lib/backend-il/dune
+@@ -0,0 +1,4 @@
++(library
++ (name backend_il)
++ (public_name p4spectec.backend_il)
++ (libraries util domain lang bignum.bigint yojson))
+diff --git a/p4spec/lib/backend-il/il_export.ml b/p4spec/lib/backend-il/il_export.ml
+new file mode 100644
+index 0000000..68281c7
+--- /dev/null
++++ b/p4spec/lib/backend-il/il_export.ml
+@@ -0,0 +1,94 @@
++(* Structural JSON for IL values.
++
++   p4blo (https://github.com/qobilidop/p4blo) translates a P4 program into
++   its own IR from the program the spec itself typed and instantiated, so
++   that elaboration is a function over the spec's output rather than a
++   second parser. This module writes those values as JSON that a reader can
++   walk without the spec's grammar: every variant value names its syntax
++   type and its constructor, and every field is kept.
++
++     BoolV b             true / false
++     NumV (Nat n)        n, as a JSON integer of any size
++     NumV (Int i)        {"int": i}
++     TextV s             {"text": s}
++     StructV fields      {"t": <type>, "s": [[<atom>, <value>], ...]}
++     CaseV (mixop, vs)   {"t": <type>, "c": <mixop>, "a": [<value>, ...]}
++     TupleV vs           {"tuple": [<value>, ...]}
++     OptV v              {"opt": <value> or null}
++     ListV vs            [<value>, ...]
++     FuncV id            {"func": id}
++     ExternV j           {"extern": j}
++
++   <type> is the name of the value's syntax type (`expressionIR`, `typeIR`,
++   ...) and <mixop> the constructor as the spec writes it, with `%` for each
++   argument (`BinE % % %` is written "BinE%%%"). Struct fields keep their
++   order. Nothing is normalized or dropped. *)
++
++open Lang
++module Mixfix = Domain.Mixfix
++
++let type_name (typ : Il.typ') : string =
++  match typ with
++  | Il.VarT (id, _) -> id.it
++  | Il.BoolT -> "bool"
++  | Il.NumT `NatT -> "nat"
++  | Il.NumT `IntT -> "int"
++  | Il.TextT -> "text"
++  | Il.TupleT _ -> "tuple"
++  | Il.IterT _ -> "iter"
++  | Il.FuncT _ -> "func"
++
++(* The mixop without the backquotes Mixfix.to_string adds. *)
++let mixop_name (valuecase : Il.valuecase) : string =
++  let s = Mixfix.to_string valuecase in
++  let n = String.length s in
++  if n >= 2 && s.[0] = '`' && s.[n - 1] = '`' then String.sub s 1 (n - 2)
++  else s
++
++let rec value_to_json (value : Il.value) : Yojson.Safe.t =
++  match value.it with
++  | Il.BoolV b -> `Bool b
++  | Il.NumV (`Nat n) -> `Intlit (Bigint.to_string n)
++  | Il.NumV (`Int i) -> `Assoc [ ("int", `Intlit (Bigint.to_string i)) ]
++  | Il.TextV s -> `Assoc [ ("text", `String s) ]
++  | Il.StructV fields ->
++      `Assoc
++        [
++          ("t", `String (type_name value.note.typ));
++          ( "s",
++            `List
++              (List.map
++                 (fun ((atom : Il.atom), v) ->
++                   `List
++                     [
++                       `String (Domain.Atom.string_of_atom atom.it);
++                       value_to_json v;
++                     ])
++                 fields) );
++        ]
++  | Il.CaseV valuecase ->
++      `Assoc
++        [
++          ("t", `String (type_name value.note.typ));
++          ("c", `String (mixop_name valuecase));
++          ("a", `List (List.map value_to_json (Mixfix.args valuecase)));
++        ]
++  | Il.TupleV values -> `Assoc [ ("tuple", `List (List.map value_to_json values)) ]
++  | Il.OptV None -> `Assoc [ ("opt", `Null) ]
++  | Il.OptV (Some v) -> `Assoc [ ("opt", value_to_json v) ]
++  | Il.ListV values -> `List (List.map value_to_json values)
++  | Il.FuncV id -> `Assoc [ ("func", `String id.it) ]
++  | Il.ExternV json -> `Assoc [ ("extern", json) ]
++
++(* The export: the typed program (the output of `Program_ok`) and the
++   instantiation (the outputs of `Program_inst`: the global layer and the
++   store of instantiated objects). *)
++let export ~(program : Il.value) ~(global : Il.value) ~(store : Il.value) :
++    Yojson.Safe.t =
++  `Assoc
++    [
++      ("format", `String "p4spectec-il-export/1");
++      ("program", value_to_json program);
++      ("global", value_to_json global);
++      ("store", value_to_json store);
++    ]
+diff --git a/p4spec/lib/dune b/p4spec/lib/dune
+index 3cb3512..78655ba 100644
+--- a/p4spec/lib/dune
++++ b/p4spec/lib/dune
+@@ -15,4 +15,5 @@
+   (re_export backend_testgen_neg)
+   (re_export backend_splice)
+   (re_export backend_sim)
+-  (re_export backend_boot)))
++  (re_export backend_boot)
++  (re_export backend_il)))

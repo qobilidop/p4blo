@@ -59,8 +59,9 @@ Goals:
   selected properties of the Lean-authored ones against the same
   semantics that runs them.
 
-Non-goals: performance of any component; running existing P4 source
-(there is no P4 text parser; the printer goes the other way); P4Runtime,
+Non-goals: performance of any component; a P4 parser or typechecker of
+p4blo's own (P4 source enters through P4-SpecTec's typing and
+instantiation and the IL bridge, checked on the corpus, not verified); P4Runtime,
 hardware targets or a p4c backend, which is the first thing a community
 version would build with 4ward's route as precedent; replacing any
 existing tool; a browser playground; universal correctness of the Python
@@ -339,6 +340,19 @@ decides longest prefix and const-entry and ternary priorities. Where an
 oracle is wrong, the disagreement is recorded as a strict, narrowly
 classified expected failure rather than adapted away; the list is in
 assurance.md.
+
+The IL bridge goes the other way, from P4 source to IR, and makes
+elaboration a function rather than a set of rulings. A patch adds an
+`il-export` command to the pinned P4-SpecTec that prints what its own
+typing and instantiation relations make of a program, and
+`p4blo.frontend` translates that IL construct by construct, as the
+coverage table prescribes: in-rows to their messages, elaborated rows by
+their elaboration, excluded rows refused by name. The v1model shim runs in
+reverse to bind V1Switch's blocks to the roles and `standard_metadata` to
+the metadata contract. It is checked by reproducing the corpus goldens
+from their P4 originals, by reading back every golden the printer prints,
+and by running p4c programs the corpus does not include against their own
+vectors; it is a checked translation, not a verified frontend.
 
 ### Differential testing and proofs
 

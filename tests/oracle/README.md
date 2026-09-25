@@ -466,6 +466,44 @@ binding that hashes the reversed payload fails both firewall vectors.
 uv run pytest tests/test_oracle_block.py -v    # about 45 seconds on an M-series Mac
 ```
 
+## The IL export
+
+The IL bridge (`impl/python/p4blo/frontend/`, docs/design.md "Printer and
+oracles") translates P4 source into IR through P4-SpecTec's own typing and
+instantiation rather than a parser of its own. The simulator runs any
+relation but reports only whether it passed, so
+`patches/0002-il-export.patch` adds a command that prints the result:
+
+```
+p4spectec il-export spec -i p4c/p4include -p <program>.p4
+```
+
+It parses the program, runs `Program_ok` (typing, giving the typed program
+`p4programIR`) and `Program_inst` (instantiation, giving the global
+instantiation layer and the store of instantiated objects), and prints all
+three as one JSON document, `{"format": "p4spectec-il-export/1", "program",
+"global", "store"}`. Values are written structurally by the new
+`p4spec/lib/backend-il/il_export.ml`: a variant as `{"t": <syntax type>,
+"c": <constructor with % for each argument>, "a": [...]}`, a record as
+`{"t", "s": [[atom, value], ...]}`, a natural number as a JSON integer, and
+text, options, tuples, lists and the rest as the module's header lists, so
+that `p4blo.frontend.il` reads it without the spec's grammar. Nothing is
+normalized or dropped. The patch touches nothing the `sim` and `block`
+commands run, applies with or without `0001`, and adds the library to the
+`p4spectec` umbrella and the command to `main.ml`. A typical program exports
+in about a second, most of it elaborating the spec.
+
+`p4blo.frontend.export` finds the command as `run.py` finds the simulator
+(`$P4BLO_ORACLE_BIN`, `$P4BLO_ORACLE_DIR`, the default directory) and
+checks that the binary lists `il-export`; a checkout built before the patch
+existed rebuilds once, since the stamp digests every patch.
+`tests/test_frontend_spectec.py` skips without it, and fails instead under
+`P4BLO_REQUIRE_IL_EXPORT=1`, which the oracle workflow sets. To change the
+backend, edit it in a scratch checkout built by `build.sh`, stage the new
+directory with `git add -N p4spec/lib/backend-il`, and regenerate the patch
+with `git diff` against the tree with `0001` applied, as for the block
+runner.
+
 ## Results
 
 2026-09-22, at the pinned commit, on the five forwarder vectors: all
