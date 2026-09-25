@@ -36,6 +36,9 @@ A decision the design document already settles is not repeated here.
   copied build cache once shadowed renamed modules. Rebuild from empty
   build directories after a move, and never rebuild Lean while a test in
   the same worktree runs the executable. (2026-09-23)
+- **CI runs the Lean differential suite with `-n auto --dist loadgroup`**,
+  as the local gate does: 3,045 tests took 259 s serially and 86 s on four
+  workers locally, and were 851 s serial in CI. (2026-09-25)
 - **Local Docker disk pressure is not permission to delete unrelated
   images**; remove only own artifacts. (2026-09-23)
 
