@@ -7,7 +7,8 @@ sub-parser call is a statement that walks states.
 
 Calls follow docs/ir-semantics.md, "Controls": `in` arguments are copied in,
 `out` parameters start at zero, `out` and `inout` arguments are copied back
-in parameter order. Every entry of a block or action binds by name in a
+in parameter order, through the lvalues their indices resolved to at copy-in
+("Copy-back target"). Every entry of a block or action binds by name in a
 fresh activation (see `env.py`).
 """
 
@@ -28,6 +29,7 @@ from p4blo.interp.expr import (
     header_to_bits,
     literal_value,
     read_lvalue,
+    resolve_lvalue,
     write_lvalue,
     zero_header,
 )
@@ -146,9 +148,38 @@ def argument_value(param: pb.Param, arg: pb.Arg, env: Env) -> Value:
     return copy(read_lvalue(arg.lvalue, env))
 
 
+def resolve_arg(param: pb.Param, arg: pb.Arg, env: Env) -> pb.Arg:
+    """The argument that copy-back will write through: an `out` or `inout`
+    lvalue with its indices resolved now, at copy-in (docs/ir-semantics.md,
+    "Copy-back target"); any other argument unchanged."""
+    if param.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT) and arg.HasField("lvalue"):
+        resolved = resolve_lvalue(arg.lvalue, env)
+        if resolved is not arg.lvalue:
+            return pb.Arg(lvalue=resolved)
+    return arg
+
+
+def copy_in(
+    params: Iterable[pb.Param], args: Iterable[pb.Arg], env: Env
+) -> tuple[list[Value], list[pb.Arg]]:
+    """Copy the arguments in, in order: each one is resolved, then the
+    parameter's initial value is taken through the resolved argument, as
+    SpecTec's `Copy_in_arg` evaluates the lvalue and then reads through it.
+    Returns the values in parameter order and the resolved arguments that
+    copy-back uses."""
+    values: list[Value] = []
+    resolved: list[pb.Arg] = []
+    for param, arg in zip(params, args, strict=True):
+        arg = resolve_arg(param, arg, env)
+        values.append(argument_value(param, arg, env))
+        resolved.append(arg)
+    return values, resolved
+
+
 def copy_back(params: Iterable[pb.Param], args: Iterable[pb.Arg], values: Env, env: Env) -> None:
     """Write `out` and `inout` parameters back to their arguments, in
-    parameter order."""
+    parameter order. The arguments are the resolved ones `copy_in` returned,
+    so an index is not evaluated again."""
     for param, arg in zip(params, args, strict=True):
         if param.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT):
             write_lvalue(arg.lvalue, values.read(param.name), env)
@@ -162,12 +193,13 @@ def call_block(cb: pb.CallBlock, env: Env) -> None:
     if len(cb.args) != len(block.params):
         raise InterpError(f"block {block.name!r} takes {len(block.params)} arguments")
     callee = env.enter_block(block)
-    for param, arg in zip(block.params, cb.args, strict=True):
-        callee.vars[param.name] = argument_value(param, arg, env)
+    values, args = copy_in(block.params, cb.args, env)
+    for param, value in zip(block.params, values, strict=True):
+        callee.vars[param.name] = value
     try:
         run_block(block, callee)
     finally:
-        copy_back(block.params, cb.args, callee, env)
+        copy_back(block.params, args, callee, env)
 
 
 def run_block(block: pb.Block, env: Env) -> None:
@@ -184,13 +216,11 @@ def call_action(ca: pb.CallAction, env: Env) -> None:
     action = env.scope.actions[ca.action]
     if len(ca.args) != len(action.params):
         raise InterpError(f"action {action.name!r} takes {len(action.params)} arguments")
-    params = {
-        param.name: argument_value(param, arg, env)
-        for param, arg in zip(action.params, ca.args, strict=True)
-    }
+    values, args = copy_in(action.params, ca.args, env)
+    params = {param.name: value for param, value in zip(action.params, values, strict=True)}
     inner = env.enter_action(action.name, params)
     execute(action.body, inner)
-    copy_back(action.params, ca.args, inner, env)
+    copy_back(action.params, args, inner, env)
 
 
 def run_action_call(call: pb.ActionCall, env: Env) -> None:
@@ -207,7 +237,11 @@ def run_action_call(call: pb.ActionCall, env: Env) -> None:
 
 def call_extern(ce: pb.CallExtern, env: Env) -> None:
     """Call a method on an extern instance through its binding, then copy
-    the `out` and `inout` results and the return value back."""
+    the `out` and `inout` results and the return value back. The result
+    lvalue is resolved first, as an assignment's target, and the out
+    arguments at copy-in, so the method's own outputs cannot move either
+    (docs/ir-semantics.md, "Copy-back target")."""
+    target = resolve_lvalue(ce.result, env) if ce.HasField("result") else None
     instance = env.index.extern_instances[ce.instance]
     extern_type = env.index.extern_types[instance.extern_type]
     method = next((m for m in extern_type.methods if m.name == ce.method), None)
@@ -217,23 +251,21 @@ def call_extern(ce: pb.CallExtern, env: Env) -> None:
         raise InterpError(f"method {ce.method!r} takes {len(method.params)} arguments")
     if instance.name not in env.externs:
         raise InterpError(f"extern instance {instance.name!r} is not bound")
-    args = [
-        argument_value(param, arg, env) for param, arg in zip(method.params, ce.args, strict=True)
-    ]
-    result = env.externs[instance.name].call(ce.method, args)
+    values, resolved = copy_in(method.params, ce.args, env)
+    result = env.externs[instance.name].call(ce.method, values)
     written = [
         arg
-        for param, arg in zip(method.params, ce.args, strict=True)
+        for param, arg in zip(method.params, resolved, strict=True)
         if param.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT)
     ]
     if len(result.outs) != len(written):
         raise InterpError(f"method {ce.method!r} produced {len(result.outs)} out values")
     for arg, value in zip(written, result.outs, strict=True):
         write_lvalue(arg.lvalue, value, env)
-    if ce.HasField("result"):
+    if target is not None:
         if result.returns is None:
             raise InterpError(f"method {ce.method!r} returned nothing")
-        write_lvalue(ce.result, result.returns, env)
+        write_lvalue(target, result.returns, env)
 
 
 # ---------------------------------------------------------------------------

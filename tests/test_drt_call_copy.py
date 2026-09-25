@@ -22,6 +22,7 @@ from p4blo.interp.values import Header, Value
 from p4blo.interp.values import copy as copy_value
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.test_drt_aggregate_copy import place, read
+from tests.test_lean_call_copyback import copyback_program, expected_copyback
 
 CallKind = Literal["action", "block"]
 
@@ -152,6 +153,29 @@ def test_lean_agrees_call_copy_generated(
 ) -> None:
     values = data.draw(st.lists(st.integers(0, (1 << width) - 1), min_size=3, max_size=3))
     check_call(*call_program(kind, width, valid, *values), lean_binary)
+
+
+@settings(max_examples=40, deadline=None, derandomize=True)
+@given(
+    kind=st.sampled_from(["action", "block"]),
+    first=st.integers(0, 3),
+    second=st.integers(0, 3),
+    overlap=st.booleans(),
+    packet=st.binary(min_size=2, max_size=4),
+)
+def test_lean_agrees_call_copy_computed_index_generated(
+    lean_binary: Path, kind: CallKind, first: int, second: int, overlap: bool, packet: bytes
+) -> None:
+    """An `inout` argument `hdr.hs[t]` whose callee moves `t`: copy-back
+    writes the element `t` named at copy-in (docs/ir-semantics.md,
+    "Copy-back target"), including past the end, where it writes nothing."""
+    program = copyback_program(kind, first, second, overlap)
+    case = Case(pb.Entries(), 0, packet)
+    report = compare_program(program, [case], 4, [lean_binary])
+    assert report.passed, report.summary()
+    assert run_python(arch.load(program), case, 4) == [
+        (0, expected_copyback(first, packet, overlap))
+    ]
 
 
 @pytest.mark.parametrize("kind", ["action", "block"])

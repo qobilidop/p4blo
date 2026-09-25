@@ -333,6 +333,31 @@ def read_lvalue(lv: pb.LValue, env: Env) -> Value:
             raise InterpError("lvalue has no kind")
 
 
+def resolve_lvalue(lv: pb.LValue, env: Env) -> pb.LValue:
+    """`lv` with the index expression of every `LIndex` on its path evaluated
+    now and replaced by its literal: the storage reference that a call keeps
+    from copy-in to copy-back (docs/ir-semantics.md, "Copy-back target").
+
+    Returns `lv` itself when it has no index. `stack.next` stays symbolic,
+    as SpecTec keeps it, because only `extract` resolves it.
+    """
+    match lv.WhichOneof("kind"):
+        case "var" | "next":
+            return lv
+        case "member":
+            base = resolve_lvalue(lv.member.base, env)
+            if base is lv.member.base:
+                return lv
+            return pb.LValue(member=pb.LMember(base=base, field=lv.member.field))
+        case "index":
+            base = resolve_lvalue(lv.index.base, env)
+            i = expect_bits(evaluate(lv.index.index, env))
+            literal = pb.Literal(bits=pb.BitsLiteral(width=i.width, value=str(i.value)))
+            return pb.LValue(index=pb.LIndex(base=base, index=pb.Expr(literal=literal)))
+        case _:
+            raise InterpError("lvalue has no kind")
+
+
 def write_lvalue(lv: pb.LValue, value: Value, env: Env) -> None:
     """Store a copy of `value` at `lv`.
 

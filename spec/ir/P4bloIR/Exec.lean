@@ -11,7 +11,8 @@ statement that walks states.
 
 Calls follow docs/ir-semantics.md, "Controls": `in` arguments are copied in,
 `out` parameters start at zero, `out` and `inout` arguments are copied back
-in parameter order. Every entry of a block or action binds by name in a
+in parameter order, through the lvalues their indices resolved to at copy-in
+("Copy-back target"). Every entry of a block or action binds by name in a
 fresh activation (see `Env`).
 
 `Execution.step` is a total transition function over an explicit continuation
@@ -174,8 +175,27 @@ def argumentValue (param : Param) (arg : Arg) : M Value := do
     | .expr e => evaluate e
     | .lvalue lv => readLValue lv
 
+/-- The argument that copy-back will write through: an `out` or `inout`
+lvalue with its indices resolved now, at copy-in (docs/ir-semantics.md,
+"Copy-back target"); any other argument unchanged. -/
+def resolveArg (param : Param) (arg : Arg) : M Arg :=
+  if param.direction == .out || param.direction == .inout then
+    match arg with
+    | .lvalue lv => do pure (.lvalue (← resolveLValue lv))
+    | .expr e => pure (.expr e)
+  else pure arg
+
+/-- Copy one argument in: resolve it, then take the parameter's initial
+value through the resolved argument, as SpecTec's `Copy_in_arg` evaluates
+the lvalue and then reads through it. Returns the value and the resolved
+argument that copy-back uses. -/
+def copyIn (param : Param) (arg : Arg) : M (Value × Arg) := do
+  let arg ← resolveArg param arg
+  pure (← argumentValue param arg, arg)
+
 /-- Write `out` and `inout` parameters back to their arguments, in
-parameter order, from the callee's activation `values`. -/
+parameter order, from the callee's activation `values`. The arguments are
+the resolved ones `copyIn` returned, so an index is not evaluated again. -/
 def copyBack (params : List Param) (args : List Arg) (values : Frame) : M Unit := do
   for (param, arg) in params.zip args do
     if param.direction == .out || param.direction == .inout then
@@ -195,9 +215,13 @@ def withAction (name : String) (params : Std.HashMap String Value) (body : List 
   pure inner
 
 /-- Call a method on an extern instance, then copy the `out` and `inout`
-results and the return value back (docs/ir-semantics.md, "Externs"). -/
+results and the return value back (docs/ir-semantics.md, "Externs"). The
+result lvalue is resolved first, as an assignment's target, and the out
+arguments at copy-in, so the method's own outputs cannot move either
+("Copy-back target"). -/
 def callExtern (inst method : String) (args : List Arg) (result : Option LValue) :
     M Unit := do
+  let result ← result.mapM resolveLValue
   let index ← getIndex
   let some instance_ := index.externInstances[inst]? | throwInterp s!"unknown extern instance '{inst}'"
   let some externType := index.externTypes[instance_.externType]?
@@ -206,7 +230,9 @@ def callExtern (inst method : String) (args : List Arg) (result : Option LValue)
     | throwInterp s!"extern '{externType.name}' has no method '{method}'"
   if args.length != decl.params.length then
     throwInterp s!"method '{method}' takes {decl.params.length} arguments"
-  let values ← (decl.params.zip args).mapM fun (p, a) => argumentValue p a
+  let copied ← (decl.params.zip args).mapM fun (p, a) => copyIn p a
+  let values := copied.map Prod.fst
+  let args := copied.map Prod.snd
   let (externs, r) ← liftExcept ((← get).externs.call inst method values)
   modify fun run => { run with externs }
   let written := (decl.params.zip args).filterMap fun (p, a) =>
@@ -223,7 +249,8 @@ def callExtern (inst method : String) (args : List Arg) (result : Option LValue)
 namespace Execution
 
 /-- Defunctionalized control flow. Return items carry the frame layers and
-copyback arguments that used to live in recursive monadic continuations. -/
+copyback arguments that used to live in recursive monadic continuations; the
+copyback arguments are the ones resolved at copy-in (`copyIn`). -/
 inductive Work
   | statements (body : List Stmt)
   | statement (stmt : Stmt)
@@ -295,10 +322,13 @@ def dispatch : Work → M (List Work)
     if args.length != action.params.length then
       throwInterp s!"action '{action.name}' takes {action.params.length} arguments"
     let mut params : Std.HashMap String Value := {}
+    let mut resolved : List Arg := []
     for (param, arg) in action.params.zip args do
-      params := params.insert param.name (← argumentValue param arg)
+      let (value, arg) ← copyIn param arg
+      params := params.insert param.name value
+      resolved := resolved ++ [arg]
     setFrame { outer with action := some action.name, actionVars := some params }
-    pure [.statements action.body, .actionReturn outer (some (action.params, args))]
+    pure [.statements action.body, .actionReturn outer (some (action.params, resolved))]
   | .actionReturn outer copy => do
     let inner ← getFrame
     setFrame { inner with action := outer.action, actionVars := outer.actionVars }
@@ -310,11 +340,14 @@ def dispatch : Work → M (List Work)
     if args.length != block.params.length then
       throwInterp s!"block '{block.name}' takes {block.params.length} arguments"
     let mut callee ← liftExcept (Frame.forBlock index block)
+    let mut resolved : List Arg := []
     for (param, arg) in block.params.zip args do
-      callee := { callee with vars := callee.vars.insert param.name (← argumentValue param arg) }
+      let (value, arg) ← copyIn param arg
+      callee := { callee with vars := callee.vars.insert param.name value }
+      resolved := resolved ++ [arg]
     let caller ← getFrame
     setFrame callee
-    pure [.runBlock block, .blockReturn caller block.params args]
+    pure [.runBlock block, .blockReturn caller block.params resolved]
   | .blockReturn caller params args => do
     let calleeAfter ← getFrame
     setFrame caller

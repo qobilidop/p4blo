@@ -9,7 +9,7 @@ the rules of 8-dynamic and the functions of 3-operations.
 
 Without any OCaml toolchain this checks that both fixtures name the pinned
 commit, that the report joins the inventory, that every in-scope item is hit
-or excluded, that no exclusion is stale, and that docs/coverage.md states the
+or excluded, that no exclusion is stale, and that docs/p4-spec-coverage.md states the
 same counts. With the oracle and the coverage probe built at the pin, the
 report is also regenerated and compared, which takes about fifteen seconds
 and runs in the oracle CI job; elsewhere that test skips and says why.
@@ -32,7 +32,7 @@ REPORT = ROOT / "tests" / "oracle" / "spectec-coverage.json"
 EXCLUSIONS = ROOT / "tests" / "oracle" / "spectec-coverage-exclusions.json"
 INVENTORY = ROOT / "tests" / "oracle" / "spectec-rules.json"
 SCRIPT = ROOT / "tests" / "oracle" / "coverage.py"
-COVERAGE_DOC = ROOT / "docs" / "coverage.md"
+COVERAGE_DOC = ROOT / "docs" / "p4-spec-coverage.md"
 
 sys.path.insert(0, str(ROOT))
 from tests.oracle import coverage  # noqa: E402
@@ -55,7 +55,7 @@ def in_scope(item: dict[str, Any]) -> bool:
 
 
 def coverage_rows() -> set[str]:
-    """The first cells of docs/coverage.md's construct tables, backticks removed."""
+    """The first cells of docs/p4-spec-coverage.md's construct tables, backticks removed."""
     rows: set[str] = set()
     for line in COVERAGE_DOC.read_text(encoding="utf-8").splitlines():
         if line.startswith("| ") and not line.startswith(("| IL construct", "| Status")):
@@ -121,7 +121,7 @@ def test_exclusions_are_well_formed() -> None:
         if not str(entry.get("reason", "")).strip():
             problems.append(f"{where}: no reason")
         if category == "excluded-construct" and entry.get("row") not in rows:
-            problems.append(f"{where}: row {entry.get('row')!r} is not a docs/coverage.md row")
+            problems.append(f"{where}: row {entry.get('row')!r} is not a p4-spec-coverage.md row")
         if category == "unhit" and not str(entry.get("reach", "")).strip():
             problems.append(f"{where}: an unhit item says which input would reach it")
     assert not problems, "\n".join(problems)
@@ -142,7 +142,7 @@ def counts() -> dict[str, Counter[str]]:
 def test_docs_state_the_report_counts() -> None:
     text = COVERAGE_DOC.read_text(encoding="utf-8")
     section = text.split("## Rule coverage on P4-SpecTec", 1)
-    assert len(section) == 2, "docs/coverage.md has no rule coverage section"
+    assert len(section) == 2, "docs/p4-spec-coverage.md has no rule coverage section"
     table: dict[str, tuple[int, int]] = {}
     for line in section[1].splitlines():
         match = re.match(

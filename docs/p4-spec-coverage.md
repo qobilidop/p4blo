@@ -111,8 +111,8 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `errorAccessExpressionIR` (`error.X`) | in | `Literal.error` | |
 | `memberAccessExpressionIR`: field of a header or struct | in | `Member` | Reading a field of an invalid header is closed in ir-semantics.md. |
 | `memberAccessExpressionIR`: `TYPE name . member` (enum member) | in | `Literal.enum_member` | |
-| `memberAccessExpressionIR`: `hs.lastIndex` | in | `LastIndex` | `bit<32>`; `nextIndex == 0` closed in ir-semantics.md. |
-| `memberAccessExpressionIR`: `hs.last` | elaborated | `Index(hs, LastIndex(hs))` | Stacks and subparser_stack READMEs: how the language defines it. |
+| `memberAccessExpressionIR`: `hs.lastIndex` | in | `LastIndex` | `bit<32>`; parser-only in P4, and `nextIndex == 0` closed in ir-semantics.md (`hs.lastIndex`). |
+| `memberAccessExpressionIR`: `hs.last` | elaborated | `Index(hs, LastIndex(hs))` | Parser-only in P4. Faithful when the stack is non-empty; on `nextIndex == 0` P4-SpecTec raises `StackOutOfBounds` where the elaborated form reads a zero invalid header, a listed deviation (ir-semantics.md, `hs.last` on an empty stack). Stacks and subparser_stack READMEs use it. |
 | `memberAccessExpressionIR`: `hs.next` | in | `LValue.next` | Parser only, as the target of an extract. |
 | `memberAccessExpressionIR`: `hs.size` | excluded, by elaboration | the constant `StackType.size` | Compile-time known. |
 | `memberAccessExpressionIR`: `t.apply().hit`, `.miss`, `.action_run` | see the table section | | |
@@ -148,7 +148,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | IL construct (production) | Status | p4blo form or elaboration | Note |
 |---|---|---|---|
 | `emptyStatementIR` | excluded, by elaboration | none | |
-| `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Headers). |
+| `assignmentStatementIR` with `assignop` `=` | in | `Assign` | Assigning a header copies validity (ir-semantics.md, Assigning a header). |
 | `assignmentStatementIR` with a compound `assignop` (`+=` and the rest) | excluded, by elaboration | `a = a op b` | Design: other sugar. Precedent: p4c `RemoveOpAssign`. |
 | `callStatementIR`: action call from a control body | in | `CallAction` | |
 | `callStatementIR`: extern method on an instance | in | `CallExtern` | `result` present exactly when the method returns. |
@@ -183,7 +183,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. |
 | its `constructorParameterListIR` | elaborated | one block per instantiation, arguments substituted | The block-instances decision covers extern state but does not say what a constructor argument becomes. No corpus program has one. |
 | `parserLocalDeclarationIR`: `constantDeclarationIR` | elaborated | folded | As in blocks. |
-| `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. |
+| `parserLocalDeclarationIR`: `variableDeclarationIR` | in | `Block.locals` | Subparser_stack README: a parser-scoped local written by a sub-parser call and read by a select. A local declared inside a state without an initializer is hoisted the same way, but P4-SpecTec re-defaults it on every entry of the state; whether the elaboration must insert a zeroing assignment at the state's entry is undecided (ir-semantics.md, State-local variables). |
 | `parserLocalDeclarationIR`: `instantiationIR` | see the declarations section | | |
 | `valueSetDeclarationIR` | excluded, by scope | none | Design. |
 | `parserStateIR` | in | `State` | `accept` and `reject` are `Target`s, not states. |
@@ -203,7 +203,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `tableDeclarationIR` | in | `Table` | Its `typeIR` is the `TABLE` object type, a typing note with no residue. |
 | `tableKeysPropertyIR`, `tableKeyIR`: the expression | in | `Key.expr` | Keys are bits. A bool key is cast to `bit<1>`; a plain enum key is its member index in `bit<32>` (ir-semantics.md, Keys are bits; schema `Key`). |
 | `tableKeyIR`: the key name (`# nameIR`) | in | `Key.name` | Decision: per-table action copies set `Key.name` to p4c's key names. |
-| `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in ir-semantics.md, Tables. |
+| `tableKeyIR`: match kind `exact`, `lpm`, `ternary` | in | `MatchKind` | Ties closed in ir-semantics.md (LPM, Ternary). |
 | `tableKeyIR`: match kind `selector` | excluded, by thesis | none | Action selectors and profiles. |
 | `tableKeyIR`: match kinds `range`, `optional` | excluded, by thesis | none | Declared by v1model and PSA, not core.p4. Nothing rules. |
 | `tableActionsPropertyIR`, `tableActionIR`: the action reference | in | `Table.actions` | Names of actions of the block. |

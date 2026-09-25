@@ -59,7 +59,7 @@ an archived note is one command away:
    and how to make each kind of change.
 5. `docs/ir-semantics.md` and `spec/ir/proto/p4blo/v0/p4blo.proto` when touching
    meaning or syntax, `docs/arch-supports.md` when touching what an
-   architecture or extern family decides; `docs/coverage.md` for what P4 constructs are in.
+   architecture or extern family decides; `docs/p4-spec-coverage.md` for what P4 constructs are in.
 
 ## Environment
 
