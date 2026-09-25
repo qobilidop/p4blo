@@ -3,38 +3,76 @@
 p4c's `table-entries-priority-bmv2`, a companion to the ACL: one ternary
 table whose `const entries` carry `@priority` annotations, with three
 vectors that each match more than one entry. It is the only priority-bearing
-`const entries` in p4c's v1model suite, so it is the program that pins the
-frontend's mapping from p4c's convention onto the IR's.
+`const entries` in p4c's v1model suite, so it is the program that pins how
+the IR numbers const entries, and the one place where the language
+specification and p4c's BMv2 backend give opposite answers.
 
 | | |
 |---|---|
-| Source | [p4lang/p4c](https://github.com/p4lang/p4c) `testdata/p4_16_samples/table-entries-priority-bmv2.p4` |
+| Source | [p4lang/p4c](https://github.com/p4lang/p4c) `testdata/p4_16_samples/table-entries-priority-bmv2.p4`, pinned at `tests/frontend/p4c/table-entries-priority-bmv2.p4` |
 | IR | `priority.txtpb`, regenerated from the eDSL |
 | eDSL | `priority.py` |
-| Vectors | `table_entries_priority.stf`, p4c's file with the edit listed in its header |
+| Vectors | `table_entries_priority.stf`, p4c's file with the two edits listed in its header |
 
 ## Elaborated away
 
-- **`@priority`.** p4c's BMv2 backend (`backends/bmv2/common/control.h`,
-  `convertTableEntries`) numbers const entries with a counter that starts
-  at 1 and advances after every entry, annotated or not: an annotated
-  entry takes its annotation, an unannotated one the counter's value, and
-  BMv2 lets the smaller number win. The source's entries are therefore
+- **Priorities, by the specification's numbering.** P4 1.2.5 section
+  14.2.1.4, as P4-SpecTec mechanizes it in
+  `$set_priorities_of_tableEntryListIR`
+  (`spec/5-typing/5.02.2-typing-table-context.watsup` at the pin), numbers
+  the entries of a table with the defaults `largest_priority_wins = true`
+  and `priority_delta = 1`: an entry written with `priority = n:` keeps
+  `n`, and the larger wins. When no entry has one, the first takes
+  `(size - 1) * delta + 1` and each later one the previous minus the
+  delta, so list order decides. `@priority(n)` is not that syntax: it is
+  p4c's non-standard annotation (the source's own comment says the
+  language decided against it), and the specification's typing carries
+  it as an annotation without reading it. None of the source's entries
+  therefore has a priority in the language's sense, and the three are
+  numbered by position ([decisions.md](../../../.agents/decisions.md),
+  "Entry priority"):
 
-  | entry | source | p4c priority | IR priority |
-  |---|---|---|---|
-  | 1 | `0x1111 &&& 0xF ... @priority(3)` | 3 | 1 |
-  | 2 | `0x1181` | 2 | 2 |
-  | 3 | `0x1181 &&& 0xF00F ... @priority(1)` | 1 | 3 |
+  | entry | source | rule | IR priority | p4c/BMv2 number (smaller wins) |
+  |---|---|---|---|---|
+  | 1 | `0x1111 &&& 0xF ... @priority(3)` | first, (3 - 1) * 1 + 1 | 3 | 3, its annotation |
+  | 2 | `0x1181` | previous minus delta, 3 - 1 | 2 | 2, the counter |
+  | 3 | `0x1181 &&& 0xF00F ... @priority(1)` | previous minus delta, 2 - 1 | 1 | 1, its annotation |
 
-  The IR's priority is larger-wins everywhere
-  ([decisions.md](../../../.agents/decisions.md), "Entry priority"), so the
-  mapping is `IR = 4 - p4c`, any order-reversing injection of the three
-  numbers being equivalent. Entries keep the source's order in the golden;
-  the printer prints them in descending priority without annotations so
-  that p4c, numbering by position, sees the same order. Two entries with
-  the same p4c priority and overlapping keys would have no faithful IR
-  form, since the IR rejects that tie at validation; the source has none.
+  The numbers happen to coincide; what differs is which one wins. p4c's
+  BMv2 backend (`backends/bmv2/common/control.h`, `convertTableEntries`)
+  numbers const entries with a running counter, annotated entries taking
+  their annotation, and BMv2 lets the smaller number win, so the third
+  entry ranks highest there and the first ranks highest here. The
+  source's comment ("the 3rd entry in the list below will win") and p4c's
+  vectors describe BMv2's reading. That P4-SpecTec ignores the
+  annotations was checked at the pin: with `@priority(3)` and
+  `@priority(1)` swapped, or both removed, it routes every packet exactly
+  as it does the original.
+
+  The packets decide as follows, with the entries each one matches:
+
+  | vector line | packet `t` | matches | specification (IR, P4-SpecTec) | p4c's file (BMv2) |
+  |---|---|---|---|---|
+  | 24 | `0001` | 1 | port 1 | port 1 |
+  | 29 | `1001` | 1, 3 | port 1 (priority 3 over 1) | port 3 |
+  | 34 | `1181` | 1, 2, 3 | port 1 (priority 3 over 2, 1) | port 3 |
+
+  The specification's column was established independently of p4blo:
+  P4-SpecTec at the pin, run on p4c's unedited program and p4c's unedited
+  STF file (`p4spectec sim spec -arch v1model -i p4c/p4include -p
+  table-entries-priority-bmv2.p4 -stf table-entries-priority-bmv2.stf`,
+  exit 1), passes the first packet and fails the other two, outputting
+  `0210010000b0` and `0311810000b0` on port 1 where the file expects port
+  3. The vector's second and third expectations are p4c's with the port
+  changed to 1, which is exactly those outputs; the printed golden passes
+  them on P4-SpecTec (`tests/test_oracle.py`). BMv2 compiled from the
+  source gives p4c's answer, a strict expected failure in
+  `tests/test_oracle_bmv2.py`; the printed golden passes on BMv2 too,
+  because the printer writes explicit priorities with
+  `largest_priority_wins = true` rather than relying on position.
+  Entries keep the source's order in the golden. Two entries with equal
+  priority and overlapping keys would have no faithful IR form, since the
+  IR rejects that tie at validation; the source has none.
 - **Canonical ternary values.** `0x1111 &&& 0xF` is stored as value `0x1`
   under mask `0xF` and `0x1181 &&& 0xF00F` as `0x1001` under `0xF00F`,
   since an entry value may set no bit outside its mask

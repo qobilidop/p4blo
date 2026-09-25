@@ -71,17 +71,18 @@ class ingress(Control[Header_t, Meta_t]):
     def a_with_control_params(self, x: bit9) -> None:
         self.assign(self.meta.egress_port, x)
 
-    # The source's entries, in its order, with p4c's priorities 3, 2, 1
-    # (smaller wins) mapped to the IR's 1, 2, 3 (larger wins); see the
-    # README.
+    # The source's entries, in its order, with the priorities the language
+    # specification gives them (larger wins). `@priority` is p4c's
+    # annotation, not the language's `priority =`, so no entry has one and
+    # the three are numbered by position, 3, 2, 1; see the README.
     t_ternary = Table(
         keys=(ternary(Header_t.h.t),),
         actions=[a, a_with_control_params],
         default=a(),
         entries=[
-            entry(masked(0x1111 & 0xF, 0xF), a_with_control_params(bit9(1)), priority=1),
+            entry(masked(0x1111 & 0xF, 0xF), a_with_control_params(bit9(1)), priority=3),
             entry(0x1181, a_with_control_params(bit9(2)), priority=2),
-            entry(masked(0x1181 & 0xF00F, 0xF00F), a_with_control_params(bit9(3)), priority=3),
+            entry(masked(0x1181 & 0xF00F, 0xF00F), a_with_control_params(bit9(3)), priority=1),
         ],
     )
 
