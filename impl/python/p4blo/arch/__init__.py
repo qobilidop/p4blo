@@ -1,9 +1,10 @@
 """Architectures: ordinary Python that runs a program's blocks.
 
-This is the experiment for claim 3 of docs/design.md. An architecture is a
-function of one shape, from an ingress port and a packet to egress ports
-and packets, that calls the program's blocks and acts on the metadata they
-leave. Two are here, a filter and a switch, and neither contains P4.
+This is the experiment for claim 3 of docs/design.md. The supplied packet
+architectures take an ingress port and a packet, call the program's blocks,
+and interpret their metadata to return egress ports and packets. Two are
+here, a filter and a switch, and neither contains P4. Other architecture
+compositions can use their own inputs and execution logic.
 
     contract.py   the metadata contract and the view of M it gives
     assembly.py   compose a block library with chosen H/M and exports
@@ -34,6 +35,8 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 
 class Architecture(Protocol):
+    """The packet-processing shape consumed by `stf_driver`."""
+
     diagnostics: list[str]
 
     def run(

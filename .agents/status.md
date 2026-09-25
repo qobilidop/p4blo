@@ -29,12 +29,22 @@ library compilation and targeted Pyright pass.
 
 Independent review found missing registration of a type used only by a block
 local in scalar-only compilation. Fixed at `c150d31`, with nested header,
-struct and enum regression tests; 14 focused API tests pass. The reviewer is
-rechecking it. The first assurance run completed semantic stages but its
-provenance guard rejected concurrent documentation edits; it is not a pass.
-Next: finish review and rerun full/assurance gates on the final frozen tree,
-then final-revision PR CI and integration. The reflection and workflow lessons
-are in [edsl-reflection.md](notes/edsl-reflection.md).
+struct and enum regression tests. Independent review through `58275b8` is
+clear; its [report](reviews/edsl-implementation.md) records 34 focused passes,
+151 broader passes, clean types/lint, the custom extern and a scratch router
+policy change. Library settings remain publicly reassignable; bypassing the
+constructor's nonempty/duplicate checks this way is a nonblocking API
+consistency observation, not a demonstrated incorrect runtime behavior.
+
+At frozen `58275b8`, the final `P4BLO_REQUIRE_LEAN=1 scripts/check.sh` passed:
+5186 passed, one optional XDP-image skip, four expected failures; every other
+local gate stage passed. `uv run python scripts/check-assurance.py` exited 0
+with the Python fault catalogue, Lean CRC fault, paired codec/observer faults,
+independent anchors and restored baselines checked. Its first run was
+invalidated by concurrent documentation edits and is not counted as evidence.
+Next: final metadata review/local gate, then final-revision PR CI and
+integration. The reflection and workflow lessons are in
+[edsl-reflection.md](notes/edsl-reflection.md).
 
 Engineering-practice maintenance is merged on `main` at `264fd63` through
 [PR #1](https://github.com/qobilidop/p4blo/pull/1), from base `045f3de`.

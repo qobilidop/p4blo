@@ -194,11 +194,17 @@ adapter. It does not define a required architecture for p4blo programs.
 
 ## Adding an architecture
 
-On the Python side, a module under `impl/python/p4blo/arch/` with a `run`
-method of the shape `run(loaded, entries, ingress_port, packet)` returning
-the egress ports and packets, using `load` for the once-per-program work
-and the `Metadata` view for the contract fields; it may extend the
-contract vocabulary by declaring new fields. If programs must run under
+A custom architecture may live outside p4blo. It assembles a block library,
+loads with an explicit registry and contract, then calls blocks according to
+its own logic. The [custom extern example](../examples/custom_extern.py) runs
+a control without a packet pipeline. Neither ports nor packet fate are
+mandatory inputs to an architecture composition.
+
+To use the supplied STF driver, provide a `run` method of the shape
+`run(loaded, entries, ingress_port, packet)` returning egress ports and
+packets. Use `load` for the once-per-program work and the `Metadata` view
+for contract fields; a contract may declare its own fields. Supplied
+adapters live under `impl/python/p4blo/arch/`. If programs must run under
 it in the differential tests, a Lean twin follows the same rules and the
 `p4blo-lean` endpoint learns to select it. The rules above are the ones a
 new architecture is expected to share unless it has a reason not to,
