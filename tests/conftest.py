@@ -47,7 +47,27 @@ ORACLE_MODULES = {
 }
 
 
+# Modules whose module-scoped fixture is expensive (a Lean export, a compiled
+# program): their tests stay on one worker under `--dist loadgroup`, so the
+# fixture runs once instead of once per worker.
+GROUPED_MODULES = {
+    "test_lean_forwarder_apply",
+    "test_lean_forwarder_tables",
+    "test_lean_forwarder_action",
+    "test_lean_guarded_control_call",
+    "test_lean_guarded_call_prefix",
+    "test_corpus_forwarder",
+    "test_firewall",
+    "test_firewall_generated",
+    "test_firewall_boundaries",
+}
+
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
-        if item.path.stem in ORACLE_MODULES:
+        # BMv2 tests also live in mixed modules; the BMv2 workflow selects
+        # them by name (`-k bmv2`), so the name is the rule here too.
+        if item.path.stem in ORACLE_MODULES or "bmv2" in item.name:
             item.add_marker(pytest.mark.oracle)
+        if item.path.stem in GROUPED_MODULES:
+            item.add_marker(pytest.mark.xdist_group(name=item.path.stem))

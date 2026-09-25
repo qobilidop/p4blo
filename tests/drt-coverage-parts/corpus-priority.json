@@ -1,0 +1,30 @@
+{
+ "part": "corpus:priority",
+ "hits": [
+  "call.param.none",
+  "call.tableAction",
+  "emit.header.invalid",
+  "emit.header.valid",
+  "expr.literal",
+  "expr.member",
+  "expr.var",
+  "header.field.readInvalid",
+  "lvalue.member",
+  "parser.extract.header",
+  "parser.extract.tooShort",
+  "parser.target.accept",
+  "parser.transition.direct",
+  "stmt.apply",
+  "stmt.assign",
+  "stmt.emit",
+  "stmt.extract",
+  "table.constEntry",
+  "table.hit",
+  "table.key.ternary",
+  "table.miss",
+  "table.miss.defaultAction",
+  "table.miss.hostDefault",
+  "table.ternary.priority",
+  "table.ternary.priorityZero"
+ ]
+}

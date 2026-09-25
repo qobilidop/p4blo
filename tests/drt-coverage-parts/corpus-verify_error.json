@@ -1,0 +1,23 @@
+{
+ "part": "corpus:verify_error",
+ "hits": [
+  "emit.header.invalid",
+  "emit.header.valid",
+  "expr.equality.error",
+  "expr.literal",
+  "expr.member",
+  "expr.ne",
+  "expr.var",
+  "header.field.writeInvalid",
+  "lvalue.member",
+  "parser.extract.header",
+  "parser.extract.tooShort",
+  "parser.verify.fail",
+  "stmt.assign",
+  "stmt.conditional",
+  "stmt.conditional.then",
+  "stmt.emit",
+  "stmt.extract",
+  "stmt.verify"
+ ]
+}

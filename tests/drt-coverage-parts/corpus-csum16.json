@@ -1,0 +1,25 @@
+{
+ "part": "corpus:csum16",
+ "hits": [
+  "call.extern",
+  "call.extern.result",
+  "call.param.in",
+  "emit.header.invalid",
+  "emit.header.valid",
+  "expr.add",
+  "expr.literal",
+  "expr.member",
+  "expr.var",
+  "header.field.readInvalid",
+  "header.field.writeInvalid",
+  "lvalue.member",
+  "parser.extract.header",
+  "parser.extract.tooShort",
+  "parser.target.accept",
+  "parser.transition.direct",
+  "stmt.assign",
+  "stmt.callExtern",
+  "stmt.emit",
+  "stmt.extract"
+ ]
+}

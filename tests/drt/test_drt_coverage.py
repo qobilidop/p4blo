@@ -5,8 +5,10 @@ for JavaScript, replaces test counts as the measure of the differential
 campaigns (docs/assurance.md, "Differential and generated testing"). The
 Lean side reports the tags of `P4bloIR.Coverage` for every request; this
 module reruns the retained campaigns at their fixed seeds and examples,
-accumulates the tags, and compares the unhit tags of the inventory, which
-`p4blo-lean coverage-inventory` prints, with `tests/drt-unhit-tags.json`.
+accumulates the tags, one part per test with the tags each part hits
+recorded under `tests/drt-coverage-parts/`, and compares the union's
+unhit tags of the inventory, which `p4blo-lean coverage-inventory`
+prints, with `tests/drt-unhit-tags.json`.
 That file lists every tag the retained campaigns cannot reach yet, with
 the generator gap that keeps it unhit; it is the work list of
 coverage-guided generation, and it must shrink, never grow: a tag that
@@ -29,12 +31,14 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 from types import ModuleType
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -85,25 +89,33 @@ class Campaign:
     def scalar(self, expression: pb.Expr, width: int | None) -> None:
         self.program(scalar_program(expression, width), [Case(pb.Entries(), 0, b"")])
 
+    def corpus_program(self, program_dir: Path) -> None:
+        """One corpus program sampled as `tests/drt/test_drt.py` samples it."""
+        report = compare(program_dir, 42, 200, PORTS, self.lean)
+        self.coverage.update(report.rule_coverage)
+        if not report.passed:
+            self.failures.append(report.summary())
+
     def corpus(self) -> None:
         """The corpus sample of `tests/drt/test_drt.py`."""
         for program_dir in PROGRAMS:
-            report = compare(program_dir, 42, 200, PORTS, self.lean)
-            self.coverage.update(report.rule_coverage)
-            if not report.passed:
-                self.failures.append(report.summary())
+            self.corpus_program(program_dir)
 
     def mixed(self) -> None:
         """The `MIXED` program of `tests/drt/test_drt.py`, sampled as the corpus is."""
         program = mixed()
         self.program(program, generate(ir.Index.build(program), 42, 200, PORTS))
 
+    def shape_family(self, family: str) -> None:
+        """One family at the fixed seeds of `tests/drt/test_drt_families.py`."""
+        for seed in FAMILY_SEEDS:
+            generated = sample(family, seed)
+            self.program(generated.program, generated.cases)
+
     def shape_families(self) -> None:
         """The fixed seeds of `tests/drt/test_drt_families.py`."""
         for family in sorted(FAMILIES):
-            for seed in FAMILY_SEEDS:
-                generated = sample(family, seed)
-                self.program(generated.program, generated.cases)
+            self.shape_family(family)
 
     def scalar_families(self) -> None:
         """The fixed families of `tests/drt/test_drt_programs.py`."""
@@ -225,20 +237,62 @@ class Campaign:
         run()
 
 
-def test_lean_agrees_and_hits_every_rule_tag(lean_binary: Path) -> None:
+PARTS_DIR = Path(__file__).resolve().parents[1] / "drt-coverage-parts"
+CAMPAIGN_PARTS = (
+    [f"corpus:{p.name}" for p in PROGRAMS]
+    + ["mixed"]
+    + [f"shape:{family}" for family in sorted(FAMILIES)]
+    + ["scalar_families", "scalar_examples", "stateful_families", "stateful_examples"]
+)
+
+
+def run_part(campaign: Campaign, part: str) -> None:
+    """Run one named part of the retained campaigns."""
+    kind, _, argument = part.partition(":")
+    if kind == "corpus":
+        campaign.corpus_program(CORPUS / argument)
+    elif kind == "shape":
+        campaign.shape_family(argument)
+    else:
+        getattr(campaign, kind)()
+
+
+@pytest.mark.parametrize("part", CAMPAIGN_PARTS)
+def test_lean_agrees_on_campaign_part(lean_binary: Path, part: str) -> None:
+    """One part of the retained campaigns agrees with Lean and hits exactly
+    the rule tags recorded for it in tests/drt-coverage-parts/. Parts are
+    separate tests so the parallel runner can spread them; the union check
+    below joins the recorded sets. `P4BLO_UPDATE_COVERAGE_PARTS=1` rewrites
+    a part's record instead of comparing, for a deliberate generator change."""
     inventory = rule_inventory([lean_binary])
     campaign = Campaign([lean_binary])
-    campaign.corpus()
-    campaign.mixed()
-    campaign.shape_families()
-    campaign.scalar_families()
-    campaign.scalar_examples()
-    campaign.stateful_families()
-    campaign.stateful_examples()
+    run_part(campaign, part)
     assert campaign.failures == []
     assert campaign.coverage.unreported == 0, "every Lean reply must carry its coverage"
     assert campaign.coverage.unknown(inventory) == []
-    unhit = set(campaign.coverage.unhit(inventory))
+    hits = sorted(campaign.coverage.hits)
+    record = PARTS_DIR / (part.replace(":", "-") + ".json")
+    if os.environ.get("P4BLO_UPDATE_COVERAGE_PARTS") == "1":
+        record.write_text(json.dumps({"part": part, "hits": hits}, indent=1) + "\n")
+    recorded = json.loads(record.read_text(encoding="utf-8"))
+    assert recorded["part"] == part
+    assert hits == recorded["hits"], (
+        f"{part} hits changed; if the generators changed on purpose, rerun with "
+        "P4BLO_UPDATE_COVERAGE_PARTS=1 and review the diff"
+    )
+
+
+def test_lean_agrees_that_every_rule_tag_is_hit(lean_binary: Path) -> None:
+    """The union of the recorded parts covers the inventory, except the tags
+    tests/drt-unhit-tags.json lists; a tag that stops being hit is a
+    regression, a listed tag that is hit is stale, and the list may only
+    shrink. The parts' own tests keep the records honest."""
+    inventory = rule_inventory([lean_binary])
+    records = {r.stem: json.loads(r.read_text(encoding="utf-8")) for r in PARTS_DIR.glob("*.json")}
+    expected = {part.replace(":", "-") for part in CAMPAIGN_PARTS}
+    assert set(records) == expected, f"records and parts differ: {set(records) ^ expected}"
+    hit = set().union(*(set(r["hits"]) for r in records.values()))
+    unhit = set(inventory) - hit
     known: dict[str, str] = json.loads(UNHIT.read_text(encoding="utf-8"))["unhit"]
     assert set(known) <= set(inventory), (
         f"unknown tags listed as unhit: {set(known) - set(inventory)}"

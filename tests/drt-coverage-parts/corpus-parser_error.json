@@ -1,0 +1,24 @@
+{
+ "part": "corpus:parser_error",
+ "hits": [
+  "emit.header.valid",
+  "emit.struct",
+  "expr.eq",
+  "expr.equality.error",
+  "expr.literal",
+  "expr.member",
+  "expr.var",
+  "lvalue.member",
+  "parser.extract.header",
+  "parser.extract.tooShort",
+  "parser.target.accept",
+  "parser.transition.direct",
+  "stmt.assign",
+  "stmt.conditional",
+  "stmt.conditional.otherwise",
+  "stmt.conditional.then",
+  "stmt.emit",
+  "stmt.extract",
+  "stmt.setValid"
+ ]
+}

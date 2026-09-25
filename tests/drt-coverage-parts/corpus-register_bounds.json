@@ -1,0 +1,28 @@
+{
+ "part": "corpus:register_bounds",
+ "hits": [
+  "call.extern",
+  "call.extern.out",
+  "call.param.in",
+  "call.param.out",
+  "emit.header.invalid",
+  "emit.header.valid",
+  "expr.add",
+  "expr.cast",
+  "expr.cast.extend",
+  "expr.member",
+  "expr.var",
+  "header.field.readInvalid",
+  "header.field.writeInvalid",
+  "lvalue.member",
+  "lvalue.var",
+  "parser.extract.header",
+  "parser.extract.tooShort",
+  "parser.target.accept",
+  "parser.transition.direct",
+  "stmt.callExtern",
+  "stmt.emit",
+  "stmt.extract",
+  "value.uninitialized"
+ ]
+}
