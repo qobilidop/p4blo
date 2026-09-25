@@ -266,6 +266,18 @@ This does not prove that the statements express the intended P4 semantics.
 #guard_msgs in
 #print axioms P4bloIR.DeviationLaws.evaluate_eq_valid_invalid
 
+/-- info: 'P4bloIR.DeviationLaws.evaluate_ne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_ne
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_ne_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_ne_eq
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_ne_eq_error' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_ne_eq_error
+
 /-- info: 'P4bloIR.DeviationLaws.equal_bits_iff' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.DeviationLaws.equal_bits_iff

@@ -121,7 +121,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   `S` elements and not on `nextIndex` (§8.16, §8.17).
   - P4: §8.16, §8.17
   - SpecTec: `$bin_lt`, `$bin_le`, `$bin_gt`, `$bin_ge`, `$bin_eq`, `$bin_ne`
-  - Lean: `bitsBinary`, `Value.equal`, `Value.equalList`, `DeviationLaws.equal_bits_iff`, `DeviationLaws.equal_bool_iff`, `DeviationLaws.equalList_cons`, `DeviationLaws.equalList_scalar_iff`
+  - Lean: `bitsBinary`, `Value.equal`, `Value.equalList`, `DeviationLaws.equal_bits_iff`, `DeviationLaws.equal_bool_iff`, `DeviationLaws.equalList_cons`, `DeviationLaws.equalList_scalar_iff`, `DeviationLaws.evaluate_eq`, `DeviationLaws.evaluate_ne`, `DeviationLaws.evaluate_ne_eq`, `DeviationLaws.evaluate_ne_eq_error`
   - Python: `p4blo.interp.expr.bits_binary`, `p4blo.interp.values.equal`
   - Test: `tests/test_interp_expr.py::test_comparisons_are_unsigned`, `tests/test_interp_expr.py::test_equality_on_every_type`, `tests/test_values.py::test_struct_and_stack_equality_are_elementwise`, `tests/test_values.py::test_stack_equality_ignores_next_index`
   - Class: same. `$bin_lt` and its siblings compare `bit<N>` values as unsigned integers, and `$bin_eq` compares bits, booleans, enums, errors and structs the same way and stacks elementwise ignoring the next index; wherever a header is compared, including inside a stack, the next entry applies.

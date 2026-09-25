@@ -111,6 +111,54 @@ theorem evaluate_eq_valid_invalid (left right : Expr) (run run₁ run₂ : Run)
     (evaluate (.binary .eq left right)).run run = (.ok (.bool false), run₂) := by
   rw [evaluate_eq left right run run₁ run₂ _ _ hl hr, header_equal_valid_invalid]
 
+/-- `!=` evaluates its left operand, then its right, and gives the negation
+of `Value.equal` on them, leaving the run the operands left.
+
+Premises: the two operand evaluations in sequence, from any run. It does not
+establish that either operand evaluation succeeds. -/
+theorem evaluate_ne (left right : Expr) (run run₁ run₂ : Run) (a b : Value)
+    (hl : (evaluate left).run run = (.ok a, run₁))
+    (hr : (evaluate right).run run₁ = (.ok b, run₂)) :
+    (evaluate (.binary .ne left right)).run run = (.ok (.bool (!Value.equal a b)), run₂) := by
+  simp [evaluate, run_bind, run_map, hl, hr]
+
+/-- `!=` is the negation of `==` on the same operands, whatever kind of value
+they are: whenever `==` gives a boolean, `!=` gives its negation and leaves
+the same run.
+
+Premise: `==` evaluates, from this run, to `b`. No premise on the kind of
+the operands, so it covers bits, booleans, enums, errors, headers, structs
+and stacks alike. -/
+theorem evaluate_ne_eq (left right : Expr) (run run' : Run) (b : Bool)
+    (h : (evaluate (.binary .eq left right)).run run = (.ok (.bool b), run')) :
+    (evaluate (.binary .ne left right)).run run = (.ok (.bool (!b)), run') := by
+  simp only [evaluate, run_bind, run_pure] at h ⊢
+  revert h
+  rcases (evaluate left).run run with ⟨_ | a, run₁⟩
+  · simp
+  · simp only
+    rcases (evaluate right).run run₁ with ⟨_ | c, run₂⟩
+    · simp
+    · simp only [Prod.mk.injEq, Except.ok.injEq, Value.bool.injEq]
+      rintro ⟨rfl, rfl⟩
+      exact ⟨rfl, rfl⟩
+
+/-- `!=` fails exactly as `==` does on the same operands: with the same
+fault and the same run.
+
+Premise: `==` fails from this run with `fault`. -/
+theorem evaluate_ne_eq_error (left right : Expr) (run run' : Run) (fault : Fault)
+    (h : (evaluate (.binary .eq left right)).run run = (.error fault, run')) :
+    (evaluate (.binary .ne left right)).run run = (.error fault, run') := by
+  simp only [evaluate, run_bind, run_pure] at h ⊢
+  revert h
+  rcases (evaluate left).run run with ⟨_ | a, run₁⟩
+  · simp
+  · simp only
+    rcases (evaluate right).run run₁ with ⟨_ | c, run₂⟩
+    · simp
+    · simp
+
 -- ---------------------------------------------------------------------------
 -- Equality of scalars and of field lists (pins `Value.equal`, `equalList`)
 -- ---------------------------------------------------------------------------
