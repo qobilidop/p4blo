@@ -6,14 +6,17 @@ The corpus is a dozen hand-written programs; the differential tests against
 Lean change the program itself. This module takes the same program families
 to the oracle. A seed names one program and its cases exactly: the family is
 `FAMILIES[seed % len(FAMILIES)]`, and everything else comes from
-`random.Random(seed)`, through the constructors of `p4blo.drt.programs` and
-`p4blo.drt.stateful_programs` (and the copy profiles of the DRT tests) and
-through `p4blo.drt.generate` for packets. Hypothesis is not used, because its
-draws are not a stable function of a seed across versions; the scalar
-expressions come from the generator the Hypothesis strategy uses too
-(`programs.scalar_expression`), driven by a `RandomChooser`, with leaves
-that read a parsed input so that each case computes something else, and
-with shift amounts narrow enough for the simulator.
+`random.Random(seed)`, through the constructors of `p4blo.drt.programs`,
+`p4blo.drt.stateful_programs` and `p4blo.drt.families` (and the copy
+profiles of the DRT tests) and through `p4blo.drt.generate` for packets.
+Hypothesis is not used, because its draws are not a stable function of a
+seed across versions; the scalar expressions come from the generator the
+Hypothesis strategy uses too (`programs.scalar_expression`), driven by a
+`RandomChooser`, with leaves that read a parsed input so that each case
+computes something else, and with shift amounts narrow enough for the
+simulator. The control and parser families run in their `spectec`
+profile, which leaves out what the ledger records as deviating from the
+simulator.
 
 For each seed the program is validated and loaded, the Python interpreter
 runs the cases in order, and its outputs become the `expect` lines of an STF
@@ -52,6 +55,7 @@ from p4blo import arch, ir, stf  # noqa: E402
 from p4blo.arch import v1model  # noqa: E402
 from p4blo.drt.case import Case, case_to_stf  # noqa: E402
 from p4blo.drt.choice import RandomChooser  # noqa: E402
+from p4blo.drt.families import FAMILIES as SHAPES  # noqa: E402
 from p4blo.drt.generate import generate  # noqa: E402
 from p4blo.drt.programs import WIDTHS as PROGRAM_WIDTHS  # noqa: E402
 from p4blo.drt.programs import (  # noqa: E402
@@ -266,11 +270,24 @@ def call_copy_family(seed: int, rng: random.Random) -> Generated:
 
 def corpus_family(seed: int, rng: random.Random) -> Generated:
     """A corpus or example program with random entries and packets, as
-    `python -m p4blo.drt` sends them to Lean."""
-    path = rng.choice(CORPUS)
+    `python -m p4blo.drt` sends them to Lean. The program goes round the
+    corpus with the seed, so that consecutive seeds of this family reach
+    every program before any repeats."""
+    path = CORPUS[(seed // len(FAMILIES)) % len(CORPUS)]
     program = ir.load_text(path)
     name = str(path.parent.relative_to(ROOT))
     return Generated(seed, "corpus", name, program, _random_cases(program, rng))
+
+
+def shape_family(name: str) -> Callable[[int, random.Random], Generated]:
+    """A family of `p4blo.drt.families` in its `spectec` profile, which
+    leaves out what the ledger records as deviating from the simulator."""
+
+    def family(seed: int, rng: random.Random) -> Generated:
+        drawn = SHAPES[name](RandomChooser(rng), "spectec")
+        return Generated(seed, name, drawn.describe(), drawn.program, drawn.cases)
+
+    return family
 
 
 type Family = Callable[[int, random.Random], Generated]
@@ -282,6 +299,8 @@ FAMILIES: dict[str, Family] = {
     "aggregate_copy": aggregate_copy_family,
     "call_copy": call_copy_family,
     "corpus": corpus_family,
+    "control": shape_family("control"),
+    "parser": shape_family("parser"),
 }
 
 

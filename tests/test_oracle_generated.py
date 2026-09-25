@@ -2,11 +2,12 @@
 
 tests/oracle/generated.py turns a seed into a program from one of the DRT's
 generated families (scalar expressions, parser conditions, stateful register
-and counter sequences, aggregate copies, calls, and corpus programs with
-random entries and packets), and into vectors whose `expect` lines are what
-the Python interpreter did. Here a fixed seed range runs through it, one test
-per seed. Without a built simulator the oracle tests skip, as in
-tests/test_oracle.py; the preparation, which needs no oracle, always runs.
+and counter sequences, aggregate copies, calls, corpus programs with random
+entries and packets, and the control and parser shape families), and into
+vectors whose `expect` lines are what the Python interpreter did. Here a
+fixed seed range runs through it, one test per seed. Without a built
+simulator the oracle tests skip, as in tests/test_oracle.py; the
+preparation, which needs no oracle, always runs.
 
 A divergence and an oracle error both fail. A seed whose every non-pass is a
 diagnosed simulator defect is a strict expected failure listed in `KNOWN`,
@@ -35,10 +36,10 @@ sys.path.insert(0, str(ROOT))
 from tests.oracle import generated  # noqa: E402
 from tests.oracle import run as oracle_run  # noqa: E402
 
-# Ten programs per family, about three minutes on an M-series Mac.
-SEEDS = range(60)
+# Ten programs per family, about four minutes on an M-series Mac.
+SEEDS = range(80)
 # Seeds in SEEDS the pinned simulator cannot judge, by diagnosed defect.
-KNOWN = {0: "shift-limit", 25: "shift-limit"}
+KNOWN = {5: "table-mask"}
 FAMILY_NAMES = list(generated.FAMILIES)
 
 

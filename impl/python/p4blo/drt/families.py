@@ -463,12 +463,13 @@ class _Control:
         shape = ch.choice("call.shape", ("in_inout", "out", "header"))
         nested = ch.chance("call.nested")
         name = f"f{k}"
-        action = self.block.actions.add(name=name)
         inner_body: list[pb.Stmt] = []
         if nested:
+            # Declared first: printed P4 must declare an action before a call.
             inner = self.block.actions.add(name=f"f{k}_inner")
             inner.params.add(name="z", type=BIT8, direction=INOUT)
             inner.body.append(assign("z", binary(pb.BINARY_OP_BIT_XOR, E("z"), lit(8, 0x5A))))
+        action = self.block.actions.add(name=name)
         targets = ["hdr.h.a", "hdr.g.a", f"hdr.o.r{k}"]
         target = ch.choice("call.target", targets)
         args: list[pb.Arg] = []
