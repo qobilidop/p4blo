@@ -11,7 +11,7 @@ open P4bloIR P4bloIR.Execution P4bloIR.ScalarStatements
 open Fields FieldCommandExamples P4bloIR.PlainCallEntry P4bloIR.PlainCallReturn
 
 def body : List Stmt := CallInitializers.body ++ GuardedForwardPolicy.guardedForward.lower
-def program : Program := CallEntry.WithBody.program body
+def program : BlockLibrary := CallEntry.WithBody.program body
 def index : Index := CallEntry.WithBody.index body
 
 theorem body_prefix : body = GuardedCallPrefix.body [] := by

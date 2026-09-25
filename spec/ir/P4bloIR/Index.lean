@@ -8,7 +8,7 @@ import P4bloIR.IR
 `Index` resolves names to declarations, as `impl/python/p4blo/ir.py`'s `Index`
 does, and `Index.build` enforces the same naming rules: every name is
 non-empty and unique in its scope, and a block-level name may not reuse a
-program-level one. Program-level declarations (header, struct, enum and
+program-level one. BlockLibrary-level declarations (header, struct, enum and
 extern types, extern instances and blocks) share one namespace; a block's
 params, locals, actions, tables and states share another; an action's
 params may not reuse a name of the enclosing block. The error list has its
@@ -64,9 +64,9 @@ def BlockScope.var? (scope : BlockScope) (name : String) (action : Option String
 /-- Every declaration of a program by name. Mirrors ir.py's `Index`.
 `programNames` holds every program-level name, since they share one
 namespace; `errors` maps each error name to its position in
-`Program.errors`. -/
+`BlockLibrary.errors`. -/
 structure Index where
-  program : Program
+  program : BlockLibrary
   headerTypes : HashMap String HeaderType := {}
   structTypes : HashMap String StructType := {}
   enumTypes : HashMap String EnumType := {}
@@ -112,7 +112,7 @@ private def buildScope (b : Block) (top : HashSet String) : Except String BlockS
 
 /-- Index `program`, rejecting a repeated or empty name within a scope and a
 block-level name that reuses a program-level one. -/
-def build (program : Program) : Except String Index := do
+def build (program : BlockLibrary) : Except String Index := do
   let where_ := "program"
   let (headerTypes, top) ← addAll {} program.headerTypes HeaderType.name {} where_
   let (structTypes, top) ← addAll {} program.structTypes StructType.name top where_
@@ -129,11 +129,6 @@ def build (program : Program) : Except String Index := do
     scopes := scopes.insert b.name (← buildScope b top)
   pure { program, headerTypes, structTypes, enumTypes, externTypes, externInstances, blocks,
          scopes, programNames := top, errors }
-
-/-- The block exported under `role`, if any. -/
-def exported? (index : Index) (role : String) : Option Block := do
-  let e ← index.program.exports.find? (·.role == role)
-  index.blocks[e.block]?
 
 /-- The fields of a header or struct type. -/
 def fields? (index : Index) (typeName : String) : Option (List Field) :=

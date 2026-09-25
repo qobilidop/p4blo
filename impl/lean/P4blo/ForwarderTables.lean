@@ -98,7 +98,6 @@ private theorem check_forward (i : Installed) (hi : i.index = Forwarder.index) (
   simp [Installed.checkAction, Forwarder.ipv4Table, RouteData.call, hi, forward_lookup,
     Forwarder.forwardAction, Installed.literalFits, d.dst.isLt, hp,
     bind, pure, Except.bind, Except.pure]
-  rfl
 
 private def append (i : Installed) (e : Entry) : Installed :=
   { i with entries := i.entries.insert ref ((i.entries.getD ref #[]).push e) }

@@ -74,11 +74,11 @@ def run : IO Unit := do
       outputWord ++ "0a0001010a000202deadbeefcafe"))
     let (answer, _) ← IO.ofExcept (P4blo.runSwitch sw externs route 0 packet)
     unless answer.outputs == [(2, expected)] && answer.diagnostic.isNone do
-      throw (IO.userError "in-memory Program: independent TTL/MAC/checksum answer")
+      throw (IO.userError "in-memory BlockLibrary: independent TTL/MAC/checksum answer")
   let arp ← IO.ofExcept (hexToBytes? "ffffffffffff000000000001080600010800060400010000000000010a0001010000000000000a000202")
   let (answer, _) ← IO.ofExcept (P4blo.runSwitch sw externs { tables := [] } 0 arp)
   unless answer.outputs == [(0, arp)] && answer.diagnostic.isNone do
-    throw (IO.userError "in-memory Program: independent ARP pass-through")
+    throw (IO.userError "in-memory BlockLibrary: independent ARP pass-through")
   IO.println "24 invalid states, 2 post-drop checksums and 4 in-memory forwarder answers passed"
 
 end P4blo.ForwarderTests

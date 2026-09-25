@@ -55,11 +55,8 @@ private theorem write_call (run : Run) (name localName : String)
     (callExtern name "write"
       [.expr (.var localName), .expr (.literal (.bits 1 1))] none).run run =
       (.ok (), writeResult run name cells position.val) := by
-  have din : (Direction.in == Direction.out) = false := by decide
-  have dinout : (Direction.in == Direction.inout) = false := by decide
   simp [callExtern, ScalarTyping.run_bind, get_run, modify_run, getIndex,
     getFrame, hi, hn, type_register, registerType, copyIn, resolveArg, argumentValue,
-    din, dinout,
     evaluate, readVar, hp, literalValue, Literal.toValue, Bits.wrap,
     Externs.call, hm, P4bloArch.model, P4bloArch.call, ExternState.register, he,
     P4bloIR.liftExcept, writeResult, cellsAfter]

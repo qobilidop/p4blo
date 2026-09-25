@@ -1,5 +1,4 @@
 import P4bloIRTest.Check
-import P4bloIRTest.Interp
 import P4bloIRTest.ScalarTyping
 import P4bloIRTest.ScalarStatements
 import P4bloIRTest.FieldLaws
@@ -42,13 +41,11 @@ with
 
 open P4bloIR
 
-def forwarderTests (p : Program) : T Unit := do
+def forwarderTests (p : BlockLibrary) : T Unit := do
   check "program name" (p.name == "forwarder")
   check "seven core errors" (p.errors.length == 7 && p.errors.head? == some "NoError")
   check "three blocks" (p.blocks.length == 3)
   check "block kinds" (p.blocks.map (·.kind) == [.parser, .control, .deparser])
-  check "headers and metadata" (p.headers == "headers" && p.metadata == "metadata")
-  check "three exports" (p.exports.map (·.role) == ["parser", "control", "deparser"])
   let parser := p.blocks[0]!
   check "parser start state" (parser.startState == "start")
   check "parser has three states" (parser.states.length == 3)
@@ -80,7 +77,7 @@ def forwarderTests (p : Program) : T Unit := do
   check "deparser emits two headers"
     (deparser.body.length == 2 && deparser.params.map (·.direction) == [.«in»])
 
-def roundtripTests (p : Program) : T Unit := do
+def roundtripTests (p : BlockLibrary) : T Unit := do
   let field (j : Lean.Json) (outer inner : String) := do
     (← j.getObjVal? outer).getObjVal? inner >>= Lean.Json.getStr?
   check "zero bits encode as a present decimal string"
@@ -92,7 +89,7 @@ def roundtripTests (p : Program) : T Unit := do
   check "zero ternary mask encodes as a present decimal string"
     (field (KeyValue.ternary 0 0).toJson "ternary" "mask" matches .ok "0")
   let encoded := (Lean.toJson p).pretty
-  match Program.fromJsonString encoded with
+  match BlockLibrary.fromJsonString encoded with
   | .ok p' => check "decode (encode p) == p" (p' == p)
   | .error e =>
     IO.println s!"     got: {e}"
@@ -103,7 +100,7 @@ def roundtripTests (p : Program) : T Unit := do
     ((encoded.splitOn "\"const_default_action\"").length == 1 &&
      (encoded.splitOn "\"start_state\"").length == 2)
 
-def indexTests (p : Program) : T Unit := do
+def indexTests (p : BlockLibrary) : T Unit := do
   match Index.build p with
   | .ok index =>
     check "index builds" true
@@ -115,7 +112,6 @@ def indexTests (p : Program) : T Unit := do
         == some "port")
     check "action params do not leak into the block"
       ((index.scopes["MyIngress"]?.bind (·.var? "port")).isNone)
-    check "exported control" ((index.exported? "control").map (·.name) == some "MyIngress")
     check "field index" (index.fieldIndex? "ipv4_t" "ttl" == some 7)
   | .error e =>
     IO.println s!"     got: {e}"
@@ -160,21 +156,21 @@ def negativeTests : T Unit := do
       (KeyValue.decode "" (Lean.Json.mkObj [("ternary", Lean.Json.mkObj (("value", Lean.Json.str "0") :: masks))]))
       "ternary.mask: expected a decimal number, got an empty string"
   checkError "unset oneof"
-    (Program.fromJsonString
+    (BlockLibrary.fromJsonString
       "{\"name\": \"x\", \"blocks\": [{\"name\": \"b\", \"kind\": \"BLOCK_KIND_PARSER\", \
        \"states\": [{\"name\": \"s\", \"transition\": {}}]}]}")
     "blocks[0].states[0].transition: no kind set"
   checkError "absent oneof message"
-    (Program.fromJsonString "{\"header_types\": [{\"name\": \"h\", \"fields\": [{\"name\": \"f\"}]}]}")
+    (BlockLibrary.fromJsonString "{\"header_types\": [{\"name\": \"h\", \"fields\": [{\"name\": \"f\"}]}]}")
     "header_types[0].fields[0].type: no kind set"
   checkError "two oneof cases"
-    (Program.fromJsonString "{\"header_types\": [{\"fields\": [{\"type\": {\"bits\": 1, \"boolean\": {}}}]}]}")
+    (BlockLibrary.fromJsonString "{\"header_types\": [{\"fields\": [{\"type\": {\"bits\": 1, \"boolean\": {}}}]}]}")
     "header_types[0].fields[0].type: more than one kind set"
   checkError "unspecified enum"
-    (Program.fromJsonString "{\"blocks\": [{\"name\": \"b\", \"kind\": \"BLOCK_KIND_UNSPECIFIED\"}]}")
+    (BlockLibrary.fromJsonString "{\"blocks\": [{\"name\": \"b\", \"kind\": \"BLOCK_KIND_UNSPECIFIED\"}]}")
     "blocks[0].kind: unspecified"
   checkError "missing enum"
-    (Program.fromJsonString "{\"blocks\": [{\"name\": \"b\"}]}")
+    (BlockLibrary.fromJsonString "{\"blocks\": [{\"name\": \"b\"}]}")
     "blocks[0].kind: unspecified"
   checkError "non-decimal literal"
     (Lean.fromJson? (α := Literal) (Lean.Json.mkObj [("bits", Lean.Json.mkObj [("width", 8), ("value", "0x1")])]))
@@ -183,21 +179,21 @@ def negativeTests : T Unit := do
     (Lean.fromJson? (α := Ty) (Lean.Json.mkObj [("bits", (4294967296 : Nat))]))
     "does not fit in uint32"
   checkError "wrong scalar type"
-    (Program.fromJsonString "{\"name\": 3}")
+    (BlockLibrary.fromJsonString "{\"name\": 3}")
     "name: expected a string"
   check "unknown keys are ignored"
-    (Program.fromJsonString "{\"name\": \"x\", \"source_file\": \"x.p4\"}" matches .ok _)
-  check "empty program decodes" (Program.fromJsonString "{}" matches .ok _)
+    (BlockLibrary.fromJsonString "{\"name\": \"x\", \"source_file\": \"x.p4\"}" matches .ok _)
+  check "empty program decodes" (BlockLibrary.fromJsonString "{}" matches .ok _)
   check "null is absent"
-    (match Program.fromJsonString "{\"name\": null}" with
-     | .ok p => p == { (default : Program) with name := "" }
+    (match BlockLibrary.fromJsonString "{\"name\": null}" with
+     | .ok p => p == { (default : BlockLibrary) with name := "" }
      | .error _ => false)
 
 def main (args : List String) : IO UInt32 := do
   let fixture := args.head?.getD "P4bloIRTest/forwarder.json"
   let text ← IO.FS.readFile fixture
   let ((), failures) ← (do
-    match Program.fromJsonString text with
+    match BlockLibrary.fromJsonString text with
     | .ok p =>
       check "fixture decodes" true
       forwarderTests p
@@ -208,7 +204,6 @@ def main (args : List String) : IO UInt32 := do
       IO.println s!"     got: {e}"
       check "fixture decodes" false
     negativeTests
-    interpTests
     ScalarTypingTests.tests
     ScalarStatementTests.tests
     FieldLawTests.tests

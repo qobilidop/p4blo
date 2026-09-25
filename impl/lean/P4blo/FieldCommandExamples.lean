@@ -76,8 +76,8 @@ def store (initialTTL : Fin 256) (ethernetValid ipv4Valid hit : Bool) : Store ro
     (.cons (.scalar 0x102030405060) (.cons (.scalar 7) .nil)))))
   (.cons (.scalar 19) .nil)))
 
-def program : P4bloIR.Program :=
-  { (default : P4bloIR.Program) with
+def program : P4bloIR.BlockLibrary :=
+  { (default : P4bloIR.BlockLibrary) with
     name := "field-command-witness",
     headerTypes := [⟨"Ethernet", ethernetFields.fields⟩, ⟨"IPv4", ipv4Fields.fields⟩],
     structTypes := [⟨"Headers", headerFields.fields⟩, ⟨"Metadata", metaFields.fields⟩, ⟨"Route", routeFields.fields⟩],

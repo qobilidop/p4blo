@@ -17,7 +17,7 @@ each block is traced from the configuration the real entry point starts
 from. It calls the real `runParser` and `runControl` for the values the
 next block needs and traces each block beside them, so the flow between
 blocks is the switch's own. The initial configurations are rebuilt here as
-`P4bloIR.Interp` builds them; the architecture tests check that the traced
+`P4bloArch.Interp` builds them; the architecture tests check that the traced
 outcomes and the real ones agree.
 -/
 
@@ -52,7 +52,7 @@ def blockOf? (index : Index) (name : String) (kind : BlockKind) (arity : Nat) : 
   pure decl
 
 /-- The fresh activation of `decl` with `bindings` set, as the entry
-points of `P4bloIR.Interp` make it; `none` when it has no frame. -/
+points of `P4bloArch.Interp` make it; `none` when it has no frame. -/
 def activation (index : Index) (decl : Block) (bindings : List Value) : Option Frame := do
   let frame ← (Frame.forBlock index decl).toOption
   let vars := (decl.params.zip bindings).foldl

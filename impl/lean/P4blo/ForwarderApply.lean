@@ -274,7 +274,7 @@ theorem preserves_outside (c : Config) (run : Run) (s : Snapshot) :
     simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hn
     simp [Effect.result, dropped, Std.HashMap.getElem?_insert, Ne.symm hn.2]
 
-/-- Constructive instance: real Program/Index, initialized control scope,
+/-- Constructive instance: real BlockLibrary/Index, initialized control scope,
 arbitrary source values, and the proved actual installer, not fabricated maps. -/
 theorem populated_correct (c : Config) (store : Store roots) :
     let run : Run := {

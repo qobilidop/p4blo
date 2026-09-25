@@ -1,10 +1,11 @@
+import P4bloArch.Assembly
 import P4bloArchTest.Check
 import P4bloArch.Coverage
 
 /-!
 The coverage observer of `P4bloArch.Coverage`: fixed requests report the rule
 tags they must exercise, and every block traced by the observer ends where
-the real entry point of `P4bloIR.Interp` ends, so the tags describe the run
+the real entry point of `P4bloArch.Interp` ends, so the tags describe the run
 the reply comes from.
 
 The witness table, `P4bloArchTest/fixtures/witnesses.json`, pins each tag's
@@ -26,9 +27,9 @@ past the width, as protobuf JSON. Generated once from its text form with
 def program : String := "{\"name\":\"coverage\",\"errors\":[\"NoError\",\"PacketTooShort\",\"NoMatch\",\"StackOutOfBounds\",\"HeaderTooShort\",\"ParserTimeout\",\"ParserInvalidArgument\"],\"header_types\":[{\"name\":\"h_t\",\"fields\":[{\"name\":\"a\",\"type\":{\"bits\":8}}]}],\"struct_types\":[{\"name\":\"H\",\"fields\":[{\"name\":\"h\",\"type\":{\"header\":\"h_t\"}},{\"name\":\"s\",\"type\":{\"stack\":{\"header\":\"h_t\",\"size\":2}}}]},{\"name\":\"M\"}],\"blocks\":[{\"name\":\"P\",\"kind\":\"BLOCK_KIND_PARSER\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_OUT\"},{\"name\":\"meta\",\"type\":{\"struct\":\"M\"},\"direction\":\"DIRECTION_INOUT\"}],\"states\":[{\"name\":\"start\",\"body\":[{\"extract\":{\"target\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}}}}],\"transition\":{\"select\":{\"keys\":[{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}}],\"cases\":[{\"sets\":[{\"exact\":{\"bits\":{\"width\":8,\"value\":\"1\"}}}],\"target\":{\"reject\":{}}},{\"sets\":[{\"dont_care\":{}}],\"target\":{\"accept\":{}}}]}}}],\"start_state\":\"start\"},{\"name\":\"C\",\"kind\":\"BLOCK_KIND_CONTROL\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_INOUT\"},{\"name\":\"meta\",\"type\":{\"struct\":\"M\"},\"direction\":\"DIRECTION_INOUT\"}],\"body\":[{\"push\":{\"stack\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"s\"}},\"count\":3}},{\"assign\":{\"target\":{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}},\"value\":{\"binary\":{\"op\":\"BINARY_OP_SHL\",\"left\":{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}},\"right\":{\"literal\":{\"bits\":{\"width\":8,\"value\":\"9\"}}}}}}}]},{\"name\":\"D\",\"kind\":\"BLOCK_KIND_DEPARSER\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_IN\"}],\"body\":[{\"emit\":{\"value\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}}}},{\"emit\":{\"value\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"s\"}}}}]}],\"headers\":\"H\",\"metadata\":\"M\",\"exports\":[{\"role\":\"parser\",\"block\":\"P\"},{\"role\":\"control\",\"block\":\"C\"},{\"role\":\"deparser\",\"block\":\"D\"}]}"
 
 /-- The tags one request reports, or the load error. -/
-def tagsOf (p : Program) (host : Entries) (packet : ByteArray) : Except String (List String) := do
+def tagsOf (p : BlockAssembly) (host : Entries) (packet : ByteArray) : Except String (List String) := do
   let index ← Index.build p
-  let sw ← Switch.load index 4
+  let sw ← Switch.load index p.toBlockBindings 4
   let externs ← P4bloArch.bind index
   pure (Coverage.run sw externs host 0 packet).sorted
 
@@ -36,9 +37,9 @@ def tagsOf (p : Program) (host : Entries) (packet : ByteArray) : Except String (
 `runControl` and `runDeparser` end on the same inputs: the same acceptance,
 error, cursor and headers, then the same headers and metadata, then the same
 bytes. -/
-def tracesAgree (p : Program) (host : Entries) (packet : ByteArray) : Except String Bool := do
+def tracesAgree (p : BlockAssembly) (host : Entries) (packet : ByteArray) : Except String Bool := do
   let index ← Index.build p
-  let sw ← Switch.load index 4
+  let sw ← Switch.load index p.toBlockBindings 4
   let externs ← P4bloArch.bind index
   let installed ← Installed.build index (some host)
   let metadata ← Value.zero (.struct sw.metadataType) index
@@ -115,9 +116,9 @@ def replyJson : Except String SwitchResult → Lean.Json
       (r.diagnostic.map fun d => ("diagnostic", Lean.Json.str d)).toList)
 
 /-- The tags and the reply of one witness request, from fresh extern state. -/
-def runWitness (p : Program) (w : Witness) : Except String (List String × Lean.Json) := do
+def runWitness (p : BlockAssembly) (w : Witness) : Except String (List String × Lean.Json) := do
   let index ← Index.build p
-  let sw ← Switch.load index 4
+  let sw ← Switch.load index p.toBlockBindings 4
   let externs ← P4bloArch.bind index
   let tags := (Coverage.run sw externs w.entries 0 w.packet).sorted
   pure (tags, replyJson ((sw.run externs w.entries 0 w.packet).map (·.1)))
@@ -151,9 +152,9 @@ def witnessGaps (ws : List Witness) : List String :=
 its recorded reply, and the table covers the inventory. -/
 def witnessTests (path : System.FilePath) : T Unit := do
   let text ← IO.FS.readFile path
-  let parsed : Except String (List Program × List Witness) := do
+  let parsed : Except String (List BlockAssembly × List Witness) := do
     let j ← Lean.Json.parse text
-    let programs ← (← (← j.getObjVal? "programs").getArr?).toList.mapM (Program.decode "program")
+    let programs ← (← (← j.getObjVal? "programs").getArr?).toList.mapM (BlockAssembly.decode "program")
     let witnesses ← (← (← j.getObjVal? "cases").getArr?).toList.mapM Witness.decode
     pure (programs, witnesses)
   match parsed with
@@ -169,7 +170,7 @@ def witnessTests (path : System.FilePath) : T Unit := do
     let mut failed : List String := []
     for w in witnesses do
       let label := s!"{w.program} on {bytesToHex w.packet}"
-      match programs.find? (fun (p : Program) => p.name == w.program) with
+      match programs.find? (fun (p : BlockAssembly) => p.name == w.program) with
       | none => failed := failed ++ [s!"{label}: no program"]
       | some p =>
         match runWitness p w with
@@ -187,7 +188,7 @@ def witnessTests (path : System.FilePath) : T Unit := do
     for g in gaps do IO.println s!"     {g}"
     check "every tag has its witnesses" gaps.isEmpty
 
-def tests (forwarder : Program) : T Unit := do
+def tests (forwarder : BlockAssembly) : T Unit := do
   inventoryTests
   let bytes (l : List UInt8) : ByteArray := ⟨l.toArray⟩
   checkTags "a truncated packet hits parser.extract.tooShort"
@@ -198,11 +199,11 @@ def tests (forwarder : Program) : T Unit := do
   checkOk "a request that cannot run reports no tags"
     (do
       let index ← Index.build forwarder
-      let sw ← Switch.load index 4
+      let sw ← Switch.load index forwarder.toBlockBindings 4
       let externs ← P4bloArch.bind index
       pure (Coverage.run sw externs ⟨[]⟩ 9 (bytes [0])).sorted)
     (·.isEmpty)
-  match Program.fromJsonString program with
+  match BlockAssembly.fromJsonString program with
   | .error e =>
     IO.println s!"     got: {e}"
     check "coverage program decodes" false
@@ -217,13 +218,13 @@ def tests (forwarder : Program) : T Unit := do
       ["parser.extract.tooShort"]
     checkOk "a rejected parse is not a shift" (tagsOf p ⟨[]⟩ (bytes [1]))
       (!·.contains "parser.target.accept")
-    -- Outside the validated domain: `runParser` refuses a parser with a
-    -- third parameter, so nothing runs and nothing may be reported.
+    -- A third parser parameter is valid core syntax, but the architecture
+    -- rejects its entry binding before attempting a packet or tracing it.
     let extra : Param := { name := "extra", type := .bits 8, direction := .«in» }
     let widened := { p with blocks := p.blocks.map fun b =>
       if b.name == "P" then { b with params := b.params ++ [extra] } else b }
-    checkOk "a parser the switch refuses to run reports no tags"
-      (tagsOf widened ⟨[]⟩ (bytes [5])) (·.isEmpty)
+    checkError "the switch refuses an incompatible parser before tracing"
+      (tagsOf widened ⟨[]⟩ (bytes [5])) "EXPORT_SIGNATURE"
     for packet in [bytes [5], bytes [1], ByteArray.empty] do
       checkOk s!"traced blocks agree with the entry points on {packet.size} bytes"
         (tracesAgree p ⟨[]⟩ packet) id

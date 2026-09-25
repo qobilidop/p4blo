@@ -479,7 +479,7 @@ def Inv (idx : Index) (e : Externs) : Prop :=
 /-- A successful binding of a valid program's instances satisfies `Inv`.
 
 Premises: `Valid p idx` and `P4bloArch.bind idx = .ok e`. -/
-theorem bind_inv {p : Program} {idx : Index} {e : Externs} (hv : Valid p idx)
+theorem bind_inv {p : BlockLibrary} {idx : Index} {e : Externs} (hv : Valid p idx)
     (h : P4bloArch.bind idx = .ok e) : Inv idx e := by
   have L := Build.build_ok hv.index
   unfold P4bloArch.bind Externs.bind at h
@@ -658,7 +658,7 @@ values of the declared types.
 It does not establish that `bind` succeeds: a program whose extern types
 no family implements, or whose shapes or constructor arguments do not fit,
 is valid but fails at load, before any packet runs. -/
-theorem bind_contract {p : Program} {idx : Index} {e : Externs} (hv : Valid p idx)
+theorem bind_contract {p : BlockLibrary} {idx : Index} {e : Externs} (hv : Valid p idx)
     (h : P4bloArch.bind idx = .ok e) : (contract idx).inv e :=
   bind_inv hv h
 
@@ -666,7 +666,7 @@ theorem bind_contract {p : Program} {idx : Index} {e : Externs} (hv : Valid p id
 state satisfies some extern contract.
 
 Premises and limits: those of `bind_contract`. -/
-theorem bind_exists_contract {p : Program} {idx : Index} {e : Externs} (hv : Valid p idx)
+theorem bind_exists_contract {p : BlockLibrary} {idx : Index} {e : Externs} (hv : Valid p idx)
     (h : P4bloArch.bind idx = .ok e) : ∃ C : ExternContract idx, C.inv e :=
   ⟨contract idx, bind_contract hv h⟩
 

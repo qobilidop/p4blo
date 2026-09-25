@@ -10,7 +10,7 @@ namespace HostTrapTests
 def tests : T Unit := do
   -- Actual host installation must reject before an independently observable
   -- missing-parser trap. This is operational precedence, not global validity.
-  let indexed := Index.build { (default : Program) with structTypes := [⟨"M", []⟩] }
+  let indexed := Index.build { (default : BlockLibrary) with structTypes := [⟨"M", []⟩] }
   match indexed with
   | .error _ => check "host trap index builds" false
   | .ok index => do

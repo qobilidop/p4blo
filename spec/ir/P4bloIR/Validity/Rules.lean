@@ -564,20 +564,6 @@ def coreErrors : List String :=
   ["NoError", "PacketTooShort", "NoMatch", "StackOutOfBounds", "HeaderTooShort",
    "ParserTimeout", "ParserInvalidArgument"]
 
-/-- The parameters an exported block must have, by kind: its direction and
-whether it is the headers (`true`) or the metadata type. -/
-def exportSignature : BlockKind → List (Direction × Bool)
-  | .parser => [(.out, true), (.inout, false)]
-  | .control => [(.inout, true), (.inout, false)]
-  | .deparser => [(.in, true)]
-
-/-- An exported block's params match its kind's signature. -/
-def signatureOk (p : Program) (b : Block) : Bool :=
-  let want := exportSignature b.kind
-  b.params.length == want.length &&
-    (b.params.zip want).all fun (q, d, h) =>
-      q.direction == d && decide (q.type = .struct (if h then p.headers else p.metadata))
-
 /-- An extern type (validator, `check_extern_types`). -/
 def ExternTypeOk (idx : Index) (et : ExternType) : Prop :=
   NamesOk (et.constructorParams.map (·.name)) ∧
@@ -588,7 +574,7 @@ def ExternTypeOk (idx : Index) (et : ExternType) : Prop :=
       (∀ t, m.returns = some t → TyOk idx t)
 
 /-- The whole program is valid, and `idx` is its index. -/
-structure Valid (p : Program) (idx : Index) : Prop where
+structure Valid (p : BlockLibrary) (idx : Index) : Prop where
   index : Index.build p = .ok idx
   errors : coreErrors.isPrefixOf p.errors = true
   headers : ∀ h ∈ p.headerTypes, NamesOk (h.fields.map (·.name)) ∧
@@ -596,14 +582,10 @@ structure Valid (p : Program) (idx : Index) : Prop where
   structs : ∀ s ∈ p.structTypes, NamesOk (s.fields.map (·.name)) ∧
     TyOk idx (.struct s.name)
   enums : ∀ e ∈ p.enumTypes, NamesOk e.members ∧ e.members ≠ []
-  headersType : idx.structTypes[p.headers]? ≠ none
-  metadataType : idx.structTypes[p.metadata]? ≠ none
   externTypes : ∀ et ∈ p.externTypes, ExternTypeOk idx et
   externInstances : ∀ i ∈ p.externInstances, ∃ et, idx.externTypes[i.externType]? = some et ∧
     LitArgsTyped idx i.args et.constructorParams
   blocks : ∀ b ∈ p.blocks, ∃ sc, idx.scopes[b.name]? = some sc ∧ BlockTyped idx sc b
-  exportRoles : (p.exports.map (·.role)).Nodup
-  exports : ∀ e ∈ p.exports, ∃ b, idx.blocks[e.block]? = some b ∧ signatureOk p b = true
   blocksAcyclic : acyclic (p.blocks.map (·.name))
     (fun n => ((p.blocks.find? (·.name == n)).map blockCallees).getD []) = true
 

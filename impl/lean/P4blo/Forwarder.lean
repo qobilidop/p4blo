@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4blo.Interpreter
 import P4blo.NamedFields
 import P4blo.HeaderFields
@@ -18,7 +19,7 @@ computation follows table application even when its selected action drops.
 
 namespace P4blo.Forwarder
 
-open P4bloIR Fields
+open P4bloArch P4bloIR Fields
 
 def ethernetFields : Layout :=
   .cons "dstAddr" (.scalar (.bits 48)) <|
@@ -128,7 +129,7 @@ def deparser : Block :=
     body := [.emit (.member (.var "hdr") "ethernet"),
       .emit (.member (.var "hdr") "ipv4")] }
 
-def program : Program :=
+def program : BlockAssembly :=
   { name := "forwarder"
     errors := ["NoError", "PacketTooShort", "NoMatch", "StackOutOfBounds",
       "HeaderTooShort", "ParserTimeout", "ParserInvalidArgument"]

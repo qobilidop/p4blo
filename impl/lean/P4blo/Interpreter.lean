@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4bloArch.Switch
 import P4bloArch.Externs
 
@@ -10,18 +11,18 @@ checks names, not every typing/control-flow rule of the Python validator.
 
 namespace P4blo
 
-abbrev runParser := P4bloIR.runParser
-abbrev runControl := P4bloIR.runControl
-abbrev runDeparser := P4bloIR.runDeparser
+abbrev runParser := P4bloArch.runParser
+abbrev runControl := P4bloArch.runControl
+abbrev runDeparser := P4bloArch.runDeparser
 
 /-- Prepare a switch and fresh extern state. This performs indexing, extern
 binding under the reference extern families and the switch contract
 checks, NOT whole-program validation. -/
-def prepareSwitch (program : P4bloIR.Program) (ports : Nat := 4) :
+def prepareSwitch (program : P4bloArch.BlockAssembly) (ports : Nat := 4) :
     Except String (P4bloArch.Switch × P4bloIR.Externs) := do
   let index ← P4bloIR.Index.build program
   let externs ← P4bloArch.bind index
-  let sw ← P4bloArch.Switch.load index ports
+  let sw ← P4bloArch.Switch.load index program.toBlockBindings ports
   pure (sw, externs)
 
 /-- Execute against caller-owned persistent state and table configuration.

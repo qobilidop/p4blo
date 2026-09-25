@@ -49,7 +49,7 @@ inductive Value
   | bool (b : Bool)
   /-- A member of an enum, compared by name. -/
   | enum (enumType : String) (member : String)
-  /-- A name from `Program.errors`; `"NoError"` means no error. -/
+  /-- A name from `BlockLibrary.errors`; `"NoError"` means no error. -/
   | error (name : String)
   | header (typeName : String) (valid : Bool) (fields : List Value)
   | struct (typeName : String) (fields : List Value)

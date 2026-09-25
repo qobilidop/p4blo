@@ -1,4 +1,4 @@
-import P4bloIR.Interp
+import P4bloArch.Interp
 import P4bloIR.Validity.KindLaws
 
 /-!
@@ -6,7 +6,7 @@ import P4bloIR.Validity.KindLaws
 
 `progress` and `finishes_kind` speak about the step machine. This module
 states their consequence for the three functions an architecture calls,
-`runParser`, `runControl` and `runDeparser` of `P4bloIR.Interp`: given a
+`runParser`, `runControl` and `runDeparser` of `P4bloArch.Interp`: given a
 valid program, typed arguments, a contract-satisfying extern state and, for
 a control, entries `Installed.build` accepted, the machine inside never
 fails. A parser returns an outcome that accepts with `NoError` or rejects
@@ -25,29 +25,30 @@ the machine ends in to be the entry block's, which the invariant does not
 track; `structVar` is the check that remains.
 -/
 
-namespace P4bloIR.Validity.Entry
+namespace P4bloArch.Entry
+open P4bloIR P4bloIR.Validity
 
-/-- `P4bloIR.blockOf`, restated. -/
+/-- `P4bloArch.blockOf`, restated. -/
 def blockOf (index : Index) (name : String) (kind : BlockKind) (arity : Nat) (what : String) :
     Except String Block := do
   let some decl := index.blocks[name]? | throw s!"unknown block '{name}'"
   if decl.kind != kind || decl.params.length != arity then throw s!"block '{name}' is not a {what}"
   pure decl
 
-/-- `P4bloIR.structVar`, restated. -/
+/-- `P4bloArch.structVar`, restated. -/
 def structVar (run : Run) (name : String) : Except String Value := do
   let some v := run.frame.vars[name]? | throw s!"unknown variable '{name}'"
   let _ ← v.expectStruct
   pure v
 
-/-- `P4bloIR.finished`, restated. -/
+/-- `P4bloArch.finished`, restated. -/
 def finished (result : Except Fault Unit) : Except String Unit :=
   match result with
   | .ok () => pure ()
   | .error (.interp msg) => throw msg
   | .error (.parse e) => throw s!"parse error '{e}' outside a parser"
 
-/-- `P4bloIR.runParser`, restated. -/
+/-- `P4bloArch.runParser`, restated. -/
 def runParser (index : Index) (block : String) (packet : ByteArray) (metadata : Value)
     (externs : Externs) : Except String ParseOutcome := do
   let decl ← blockOf index block .parser 2 "parser of (out H, inout M)"
@@ -65,7 +66,7 @@ def runParser (index : Index) (block : String) (packet : ByteArray) (metadata : 
          metadata := ← structVar run metadataParam.name,
          consumedBits := packet.cursor, accepted, error, externs := run.externs }
 
-/-- `P4bloIR.runControl`, restated. -/
+/-- `P4bloArch.runControl`, restated. -/
 def runControl (index : Index) (block : String) (headers metadata : Value)
     (entries : Installed) (externs : Externs) : Except String (Value × Value × Externs) := do
   let decl ← blockOf index block .control 2 "control of (inout H, inout M)"
@@ -77,7 +78,7 @@ def runControl (index : Index) (block : String) (headers metadata : Value)
   finished result
   pure (← structVar run headersParam.name, ← structVar run metadataParam.name, run.externs)
 
-/-- `P4bloIR.runDeparser`, restated. -/
+/-- `P4bloArch.runDeparser`, restated. -/
 def runDeparser (index : Index) (block : String) (headers : Value) (externs : Externs) :
     Except String (ByteArray × Externs) := do
   let decl ← blockOf index block .deparser 1 "deparser of (in H)"
@@ -90,9 +91,9 @@ def runDeparser (index : Index) (block : String) (headers : Value) (externs : Ex
   let some emitter := run.emitter | throw "the deparser lost its buffer"
   pure (emitter.toBytes, run.externs)
 
-theorem runParser_eq : P4bloIR.runParser = runParser := rfl
-theorem runControl_eq : P4bloIR.runControl = runControl := rfl
-theorem runDeparser_eq : P4bloIR.runDeparser = runDeparser := rfl
+theorem runParser_eq : P4bloArch.runParser = runParser := rfl
+theorem runControl_eq : P4bloArch.runControl = runControl := rfl
+theorem runDeparser_eq : P4bloArch.runDeparser = runDeparser := rfl
 
 open Execution
 
@@ -138,7 +139,7 @@ theorem runControl_documented {G : Global} {n : String} {b : Block} {hp mp : Par
     (hinst : Installed.build G.idx host = .ok inst) (he : G.externs.inv e)
     (hterm : ∀ m : Machine, m.work = [.statements b.body] → ∃ o, Finishes m o) :
     ∃ run : Run, RunOk G run ∧
-      P4bloIR.runControl G.idx n hv mv inst e =
+      P4bloArch.runControl G.idx n hv mv inst e =
         (do pure (← structVar run hp.name, ← structVar run mp.name, run.externs)) := by
   have hkG : b.kind = G.kind := hk.trans hG.symm
   obtain ⟨sc, f, hsc, hfb, hok⟩ := entryFrame_ok (G := G) (vals := fun _ => none) hb hkG
@@ -203,7 +204,7 @@ theorem runDeparser_ok {G : Global} {n : String} {b : Block} {hp : Param} {hv : 
     (he : G.externs.inv e)
     (hterm : ∀ m : Machine, m.work = [.statements b.body] → ∃ o, Finishes m o) :
     ∃ (run : Run) (em : Emitter), RunOk G run ∧ run.emitter = some em ∧
-      P4bloIR.runDeparser G.idx n hv e = .ok (em.toBytes, run.externs) := by
+      P4bloArch.runDeparser G.idx n hv e = .ok (em.toBytes, run.externs) := by
   have hkG : b.kind = G.kind := hk.trans hG.symm
   obtain ⟨sc, f, hsc, hfb, hok⟩ := entryFrame_ok (G := G) (vals := fun _ => none) hb hkG
     (by intro q _ v h; cases h)
@@ -268,7 +269,7 @@ theorem runParser_documented {G : Global} {n : String} {b : Block} {hp mp : Para
     ∃ (run : Run) (p : Packet) (accepted : Bool) (error : String), RunOk G run ∧
       run.packet = some p ∧
       (accepted = true ∧ error = "NoError" ∨ accepted = false ∧ error ∈ G.p.errors) ∧
-      P4bloIR.runParser G.idx n bytes mv e =
+      P4bloArch.runParser G.idx n bytes mv e =
         (do pure { headers := ← structVar run hp.name, metadata := ← structVar run mp.name,
                    consumedBits := p.cursor, accepted, error, externs := run.externs }) := by
   have hkG : b.kind = G.kind := hk.trans hG.symm
@@ -318,4 +319,4 @@ theorem runParser_documented {G : Global} {n : String} {b : Block} {hp mp : Para
   · exact ⟨run, p, true, "NoError", hrun, hp', .inl ⟨rfl, rfl⟩, by simp [hp']⟩
   · exact ⟨run, p, false, err, hrun, hp', .inr ⟨rfl, herr⟩, by simp [hp']⟩
 
-end P4bloIR.Validity.Entry
+end P4bloArch.Entry

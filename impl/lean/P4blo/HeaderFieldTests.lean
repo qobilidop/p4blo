@@ -25,8 +25,8 @@ private def emptyRoots : Layout := .cons "empty" emptyHeader .nil
 private def inputModes : Modes emptyRoots := .cons (.param .«in») .nil
 private def emptyRef : HeaderRef emptyRoots := .mk .here .here
 private def emptyStore (valid : Bool) : Store emptyRoots := .cons (.aggregate valid .nil) .nil
-private def emptyProgram : P4bloIR.Program :=
-  { (default : P4bloIR.Program) with
+private def emptyProgram : P4bloIR.BlockLibrary :=
+  { (default : P4bloIR.BlockLibrary) with
     name := "header-validity",
     headerTypes := [⟨"Empty", []⟩], blocks := [inputModes.scope.block] }
 private def emptyIndex : P4bloIR.Index :=

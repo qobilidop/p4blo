@@ -35,7 +35,7 @@ private def runtimeObservations (frame : P4bloIR.Frame) : Option (Nat × Nat × 
   pure (a.value, b.value, c)
 
 private def initial (env : Env context) : P4bloIR.Run :=
-  let index : P4bloIR.Index := { program := { (default : P4bloIR.Program) with name := "untouched" } }
+  let index : P4bloIR.Index := { program := { (default : P4bloIR.BlockLibrary) with name := "untouched" } }
   { index
     frame := { modes.frame env with vars := env.values.insert "unrelated" (.bits (P4bloIR.Bits.wrap 8 165)) }
     packet := some { data := ⟨#[0xab, 0xcd]⟩, value := 0xabcd, cursor := 3 }
@@ -107,7 +107,7 @@ def run : IO Unit := do
   -- witness constructor. Its initialization should be zero, not the inputs
   -- installed by the packet test wrapper.
   let block := modes.scope.block
-  let index ← IO.ofExcept (P4bloIR.Index.build { (default : P4bloIR.Program) with blocks := [block] })
+  let index ← IO.ofExcept (P4bloIR.Index.build { (default : P4bloIR.BlockLibrary) with blocks := [block] })
   let frame ← IO.ofExcept (P4bloIR.Frame.forBlock index block)
   unless runtimeObservations frame == some (0, 0, false) do
     throw (IO.userError "Frame.forBlock must initialize declared scalar locals to zero")
@@ -118,7 +118,7 @@ def run : IO Unit := do
   for direction in [P4bloIR.Direction.«in», .out, .inout] do
     let declared : Modes [("x", .bits 8)] := .cons (.param direction) .nil
     let b := declared.scope.block
-    let i ← IO.ofExcept (P4bloIR.Index.build { (default : P4bloIR.Program) with blocks := [b] })
+    let i ← IO.ofExcept (P4bloIR.Index.build { (default : P4bloIR.BlockLibrary) with blocks := [b] })
     let f ← IO.ofExcept (P4bloIR.Frame.forBlock i b)
     unless (f.read? "x").any (· == .bits (P4bloIR.Bits.wrap 8 0)) do
       throw (IO.userError "Frame.forBlock parameter construction failed")

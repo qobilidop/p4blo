@@ -11,7 +11,7 @@ def store : Store roots := .cons (.aggregate () (.cons (.scalar 1) .nil))
   (.cons (.scalar 7) .nil)
 def value (n : Nat) : Value := .bits (Bits.wrap 8 n)
 
-def program : Program := { (default : Program) with structTypes := [⟨"Box", boxFields.fields⟩] }
+def program : BlockLibrary := { (default : BlockLibrary) with structTypes := [⟨"Box", boxFields.fields⟩] }
 def index : Index := (Index.build program).toOption.getD default
 def active : Run :=
   { index

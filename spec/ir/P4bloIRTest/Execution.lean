@@ -28,7 +28,7 @@ private def caller : Block := { (default : Block) with
   name := "Caller", kind := .control, locals := [{ name := "x", type := .bits 8 }] }
 
 private def setup (blocks : List Block) : Except String Run := do
-  let index ← Index.build { (default : Program) with blocks }
+  let index ← Index.build { (default : BlockLibrary) with blocks }
   let frame ← Frame.forBlock index caller
   pure { index, frame }
 
@@ -107,7 +107,7 @@ def tests : T Unit := do
       tables := [table] }
     checkOk s!"machine hit continuation follows action success only: fault={fail}"
       (do
-        let index ← Index.build { (default : Program) with blocks := [block] }
+        let index ← Index.build { (default : BlockLibrary) with blocks := [block] }
         let frame ← Frame.forBlock index block
         let entries ← Installed.build index none
         let (result, run) := (applyTable "t" (some (.var "hit"))).run { index, frame, entries := some entries }

@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 -- SPDX-FileCopyrightText: 2019 Stephen Ibanez
 -- SPDX-License-Identifier: Apache-2.0
 import P4blo.Forwarder
@@ -13,7 +14,7 @@ Forwarder layouts are reused as data, not its two-header frame/proof premises.
 -/
 
 namespace P4blo.TutorialFirewall
-open P4bloIR Fields
+open P4bloArch P4bloIR Fields
 
 def tcpFields : Layout :=
   .cons "srcPort" (.scalar (.bits 16)) <|
@@ -184,7 +185,7 @@ def registerType : ExternType :=
 private def computeType (name : String) (input output : Nat) : ExternType :=
   ⟨name, [], [⟨"compute", [⟨"data", .bits input, .in⟩], some (.bits output)⟩]⟩
 
-def program : Program :=
+def program : BlockAssembly :=
   { name := "tutorial_firewall"
     errors := ["NoError", "PacketTooShort", "NoMatch", "StackOutOfBounds",
       "HeaderTooShort", "ParserTimeout", "ParserInvalidArgument"]

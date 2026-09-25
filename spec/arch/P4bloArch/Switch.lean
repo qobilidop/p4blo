@@ -1,4 +1,5 @@
-import P4bloIR.Interp
+import P4bloArch.Assembly
+import P4bloArch.Interp
 
 /-!
 # The switch architecture
@@ -78,12 +79,14 @@ private def contractField (index : Index) (metadataType name : String) (expected
     pure (some { position, type := ty })
 
 /-- Load `index` under the switch with `ports` ports. -/
-def load (index : Index) (ports : Nat) : Except String Switch := do
-  let role (r : String) : Except String String := do
-    let some b := index.exported? r | throw s!"the program exports no '{r}' block"
+def load (index : Index) (bindings : BlockBindings) (ports : Nat) : Except String Switch := do
+  (Bindings.check bindings index).mapError toString
+  let role (r : String) (kind : BlockKind) : Except String String := do
+    let some b := bindings.exported? index r | throw s!"the program exports no '{r}' block"
+    if b.kind != kind then throw s!"export '{r}' has the wrong block kind"
     pure b.name
-  let metadataType := index.program.metadata
-  pure { index, parser := ← role "parser", control := ← role "control", deparser := ← role "deparser",
+  let metadataType := bindings.metadata
+  pure { index, parser := ← role "parser" .parser, control := ← role "control" .control, deparser := ← role "deparser" .deparser,
          metadataType,
          ingressPort := ← contractField index metadataType "ingress_port" (.bits 9),
          parserError := ← contractField index metadataType "parser_error" .error,

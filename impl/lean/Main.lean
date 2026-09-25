@@ -22,9 +22,9 @@ The package's one executable, `p4blo`. Each subcommand is named after the
 separate executable it replaces and does what that executable did.
 
 Two subcommands, `leanForwarder` and `leanTutorialFirewall`, export an
-authored application Program, or with `run` execute that same in-memory
-Program through the public user API; run mode decodes requests only, never a
-Program, and the extern state returned by each call persists for the next
+authored application BlockAssembly, or with `run` execute that same in-memory
+BlockAssembly through the public user API; run mode decodes requests only, never a
+BlockAssembly, and the extern state returned by each call persists for the next
 request. The others are test fixture exporters: they print authored syntax
 and inputs, never expected answers, which the cross-language tests specify
 independently. None is a whole-program compiler or a new wire protocol.
@@ -54,7 +54,7 @@ private def response (outcome : Except String SwitchResult) (externs : Externs) 
        ("state", externs.observe)] ++
       (result.diagnostic.map fun message => ("diagnostic", Lean.Json.str message)).toList)).compress
 
-private def serve (program : Program) : IO UInt32 := do
+private def serve (program : P4bloArch.BlockAssembly) : IO UInt32 := do
   let (sw, initial) ← IO.ofExcept (P4blo.prepareSwitch program 4)
   let stdin ← IO.getStdin
   let stdout ← IO.getStdout
@@ -74,8 +74,8 @@ private def serve (program : Program) : IO UInt32 := do
     stdout.flush
   return 0
 
-/-- Export the authored Program, or serve requests against it with `run`. -/
-private def application (name : String) (program : Program) : List String → IO UInt32
+/-- Export the authored BlockAssembly, or serve requests against it with `run`. -/
+private def application (name : String) (program : P4bloArch.BlockAssembly) : List String → IO UInt32
   | [] => do
     IO.println (Lean.toJson program).compress
     return 0
@@ -177,7 +177,7 @@ def guardedForward : IO Unit := do
 
 def callEntry : IO Unit := do
   IO.println (Lean.Json.mkObj [
-    ("program", P4bloIR.Program.toJson P4blo.CallEntry.program),
+    ("program", P4bloIR.BlockLibrary.toJson P4blo.CallEntry.program),
     ("args", Lean.toJson (P4bloIR.PlainCallEntry.args.map P4bloIR.Arg.toJson)),
     ("snapshots", Lean.toJson ([false, true].flatMap fun ev =>
       [false, true].map fun iv => P4blo.CallEntryTests.snapshot ev iv))]).compress
@@ -189,7 +189,7 @@ def callBodyEntry : IO Unit := do
       for iv in [false, true] do
         snapshots := snapshots ++ [← P4blo.CallBodyEntryTests.snapshot name body ev iv]
   IO.println (Lean.Json.mkObj [
-    ("program", P4bloIR.Program.toJson P4blo.CallBodyEntry.program),
+    ("program", P4bloIR.BlockLibrary.toJson P4blo.CallBodyEntry.program),
     ("args", Lean.toJson (P4bloIR.PlainCallEntry.args.map P4bloIR.Arg.toJson)),
     ("snapshots", Lean.toJson snapshots)]).compress
 
@@ -207,7 +207,7 @@ def guardedCallPrefix : IO Unit := do
     for priorDrop in [false, true] do
       snapshots := snapshots ++ [← P4blo.GuardedCallPrefixTests.snapshot c priorDrop]
   IO.println (Lean.Json.mkObj [
-    ("program", P4bloIR.Program.toJson P4blo.CallBodyEntry.program),
+    ("program", P4bloIR.BlockLibrary.toJson P4blo.CallBodyEntry.program),
     ("args", Lean.toJson (P4bloIR.PlainCallEntry.args.map P4bloIR.Arg.toJson)),
     ("snapshots", Lean.toJson snapshots)]).compress
 
@@ -217,7 +217,7 @@ def guardedControlCall : IO Unit := do
     for priorDrop in [false, true] do
       snapshots := snapshots ++ [← P4blo.GuardedControlCallTests.snapshot c priorDrop]
   IO.println (Lean.Json.mkObj [
-    ("program", P4bloIR.Program.toJson P4blo.GuardedControlCall.program),
+    ("program", P4bloIR.BlockLibrary.toJson P4blo.GuardedControlCall.program),
     ("args", Lean.toJson (P4bloIR.PlainCallEntry.args.map P4bloIR.Arg.toJson)),
     ("snapshots", Lean.toJson snapshots)]).compress
 

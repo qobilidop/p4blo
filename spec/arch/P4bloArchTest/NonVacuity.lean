@@ -1,3 +1,4 @@
+import P4bloArch.Assembly
 import P4bloArch.ContractLaws
 import P4bloIR.Progress
 import P4bloArchTest.Check
@@ -25,7 +26,7 @@ which `tests/lean/test_lean_agrees_validity.py` keeps equal to the golden.
 
 namespace ArchTests.Csum16
 
-open P4bloIR P4bloIR.Validity
+open P4bloArch P4bloIR P4bloIR.Validity
 
 /-- The `parserI` block of `csum16`. -/
 def parserI : Block :=
@@ -54,7 +55,7 @@ def deparserI : Block :=
     body := [.emit (.member (.var "hdr") "h")] }
 
 /-- `tests/corpus/csum16/csum16.txtpb`, as a Lean term. -/
-def program : Program where
+def program : BlockAssembly where
   name := "csum16"
   errors := ["NoError", "PacketTooShort", "NoMatch", "StackOutOfBounds", "HeaderTooShort",
     "ParserTimeout", "ParserInvalidArgument"]
@@ -75,9 +76,9 @@ theorem check_ok : ∃ idx, Validity.check program = .ok idx := by
     VarDecl.name, parserI, cIngress, deparserI, Except.mapError, ensure, each, need, resolve, checkNames, checkTypeRefs,
     checkType, checkParams, checkExternType, checkLiteralArgs, checkBlock, checkShape,
     checkStmts, checkStmt, checkExpr, checkLValue, checkArgs, checkResult, checkExtractTarget,
-    checkState, checkTarget, checkExports, checkField, expect, tyDeep, fuel, scalarField,
-    coreErrors, signatureOk, acyclic, blockCallees, allowed, Ctx.ofBlock, each.go,
-    checkNames.go, ends, exportSignature, blockCalls, resolveVar, Ctx.var?, resolveLocal,
+    checkState, checkTarget, checkField, expect, tyDeep, fuel, scalarField,
+    coreErrors, acyclic, blockCallees, allowed, Ctx.ofBlock, each.go,
+    checkNames.go, ends, blockCalls, resolveVar, Ctx.var?, resolveLocal,
     Std.HashMap.getElem_insert, Std.HashMap.getElem?_insert, Std.HashMap.size_insert,
     Std.HashMap.contains_insert, writable, VarDecl.type, fieldType?, isHeader, binaryType,
     emittable, checkLiteral, isOut, noAlias, noAlias.go]
@@ -148,7 +149,7 @@ theorem control_start_ok : ∃ (G : Global) (b : Block) (f : Frame) (e : Externs
 
 /-- The literal is the corpus program: the fixture decodes to it. -/
 def tests (path : String) : T Unit := do
-  match Program.fromJsonString (← IO.FS.readFile path) with
+  match BlockAssembly.fromJsonString (← IO.FS.readFile path) with
   | .ok p => check "csum16 literal is the corpus golden" (p == program)
   | .error e =>
     IO.println s!"     got: {e}"

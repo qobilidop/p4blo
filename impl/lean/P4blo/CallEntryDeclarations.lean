@@ -31,8 +31,8 @@ def block : P4bloIR.Block :=
     params := P4bloIR.PlainCallEntry.params,
     locals := [⟨"scratch", .bits 8⟩, ⟨"unrelated", .bits 8⟩], body }
 
-def program : P4bloIR.Program :=
-  { (default : P4bloIR.Program) with
+def program : P4bloIR.BlockLibrary :=
+  { (default : P4bloIR.BlockLibrary) with
     name := "plain-call-entry-declarations",
     headerTypes := FieldCommandExamples.program.headerTypes ++ [⟨"Result", resultFields.fields⟩],
     structTypes := FieldCommandExamples.program.structTypes ++ [⟨"H", observerFields.fields⟩],
@@ -148,7 +148,7 @@ abbrev initialized := WithBody.initialized []
 
 /-- Index construction is not global type validation: this extra declaration
 is accepted by the index, but cannot satisfy the initializer's extra premise. -/
-def badExtraProgram : P4bloIR.Program :=
+def badExtraProgram : P4bloIR.BlockLibrary :=
   { program with blocks := [{ block with locals := block.locals ++ [⟨"extra", .struct "Missing"⟩] }] }
 def badExtraIndex : P4bloIR.Index := (P4bloIR.Index.build badExtraProgram).toOption.getD default
 
