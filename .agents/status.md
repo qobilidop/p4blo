@@ -13,7 +13,7 @@ by a structural test of the bare-interpreter scripts (`b43147d` adds the
 XDP check found by [review](reviews/edsl-final-fixes.md)). The uncommitted
 closure-audit prose sweep from the interrupted Codex session was committed
 as `07409ad` and `7082a48`, with `c1bcc39` from review. Before pushing:
-`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` exited 0 (5198 passed, the optional
+`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` exited 0 (5199 passed, the optional
 XDP image skipped, 4 xfailed), and the CI coverage steps ran locally, each
 exiting 0: `nix develop .#oracle -c python3 tests/oracle/coverage.py build`,
 then `test_spectec_coverage.py` with `P4BLO_REQUIRE_SPECTEC_COVERAGE=1`,
