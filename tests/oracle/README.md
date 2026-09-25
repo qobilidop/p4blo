@@ -504,6 +504,22 @@ directory with `git add -N p4spec/lib/backend-il`, and regenerate the patch
 with `git diff` against the tree with `0001` applied, as for the block
 runner.
 
+`frontend_census.py` measures the bridge beyond the corpus. It is a local
+tool, run by hand and never by CI: it takes every program of p4c's
+`testdata/p4_16_samples/` that includes `v1model.p4` and has an STF vector,
+at the p4c commit P4-SpecTec's pin records as its submodule (the one
+`tests/frontend/catalog.py` pins; fetched once, sparsely, into
+`~/.cache/p4blo/p4c-census`), translates each through `il-export`, replays
+p4c's vector on the Python interpreter as `tests/frontend/p4c_stf.py` does,
+and writes one outcome per program to `frontend-census.json`: pass, fail,
+replay-error (the STF adapter cannot replay the vector), excluded (with
+the coverage row), not-translated (with the production), invalid, crash,
+or spectec-rejects. The file is sorted and holds no paths or timings, so
+`uv run python tests/oracle/frontend_census.py --check` reproduces it byte
+for byte on the same pins and fails on any difference; a change to the
+bridge that moves a program reruns it without `--check` and commits the
+new file. It takes about thirty seconds with six exports at a time.
+
 ## Results
 
 2026-09-22, at the pinned commit, on the five forwarder vectors: all

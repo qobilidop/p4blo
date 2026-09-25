@@ -1,0 +1,983 @@
+{
+ "format": "p4blo-frontend-census/1",
+ "p4c_commit": "6b7ec98e77dfc71c6e1309d9a76183cb31f35a8a",
+ "p4_spectec_commit": "2730cfd9e74048bb5439da0f8afcef124079a064",
+ "programs_total": 191,
+ "outcomes": {
+  "excluded": 74,
+  "fail": 1,
+  "not-translated": 12,
+  "pass": 98,
+  "replay-error": 4,
+  "spectec-rejects": 2
+ },
+ "excluded_by_row": {
+  "exitStatementIR": 21,
+  "headerUnionTypeIR": 14,
+  "varBitTypeIR (VARBIT<n>)": 12,
+  "returnStatementIR": 10,
+  "standard_metadata and other intrinsic metadata parameters": 7,
+  "fixedIntTypeIR (INT<n>)": 5,
+  "tableKeyIR: match kinds range, optional": 2,
+  "externFunctionDeclarationIR: an architecture's functions": 1,
+  "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR": 1,
+  "listTypeIR, tupleTypeIR": 1
+ },
+ "programs": [
+  {
+   "program": "arith-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "arith-inline-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "arith1-bmv2",
+   "outcome": "excluded",
+   "detail": "fixedIntTypeIR (INT<n>)"
+  },
+  {
+   "program": "arith2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "arith2-inline-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "arith3-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "arith4-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "arith5-bmv2",
+   "outcome": "excluded",
+   "detail": "fixedIntTypeIR (INT<n>)"
+  },
+  {
+   "program": "array-copy-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "bvec-hdr-bmv2",
+   "outcome": "not-translated",
+   "detail": "headerTypeIR: hdr.row is not bits or bool"
+  },
+  {
+   "program": "checksum-l4-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "checksum1-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "checksum2-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "checksum3-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "constant-in-calculation-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "default-action-arg-bmv2",
+   "outcome": "not-translated",
+   "detail": "parameterIR: vb has a default value"
+  },
+  {
+   "program": "default_action-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "enum-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "equality-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "equality-varbit-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "extern-funcs-bmv2",
+   "outcome": "excluded",
+   "detail": "externFunctionDeclarationIR: an architecture's functions"
+  },
+  {
+   "program": "flag_lost-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "forloop-bmv2",
+   "outcome": "excluded",
+   "detail": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR"
+  },
+  {
+   "program": "gauntlet_action_mux-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_action_return-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_arithref_cast-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_complex_initialization-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_copy_out-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_enum_assign-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "gauntlet_exit_after_valid-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_1-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_10-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_11-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_13-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_14-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_15-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_16-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_17-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_18-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_19-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_2-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_20-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_21-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_22-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_23-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_3-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_4-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_5-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_6-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_7-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_8-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_exit_combination_9-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_function_if_hdr_return-bmv2",
+   "outcome": "not-translated",
+   "detail": "functionDeclarationIR: do_function: a return other than the last statement"
+  },
+  {
+   "program": "gauntlet_function_return-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "gauntlet_function_return_cast-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_hdr_assign_1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_hdr_assign_2-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "gauntlet_hdr_function_cast-bmv2",
+   "outcome": "not-translated",
+   "detail": "functionDeclarationIR: do_function_1: a return other than the last statement"
+  },
+  {
+   "program": "gauntlet_hdr_in_value-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_hdr_init-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_hdr_int_initializer-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_hdr_out_in_action-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_hdr_set_valid-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_4-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_5-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_6-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_7-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_8-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_index_9-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_indirect_hdr_assign_1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_indirect_hdr_assign_2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_instance_overwrite-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "gauntlet_int_casting-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_int_slice-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_invalid_hdr_assign-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_invalid_hdr_short_circuit-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_list_as_in_argument-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_mux_eval-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_mux_hdr-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_mux_typecasting-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_mux_validity-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_nested_ifs_in_function-bmv2",
+   "outcome": "not-translated",
+   "detail": "functionDeclarationIR: do_function: a return other than the last statement"
+  },
+  {
+   "program": "gauntlet_nested_slice-bmv2",
+   "outcome": "not-translated",
+   "detail": "lvalueIR: slice: a slice nested inside an lvalue"
+  },
+  {
+   "program": "gauntlet_nested_switch-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "gauntlet_nested_table_calls-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_return_truncate-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_set_invalid-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_set_valid_in_function-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_short_circuit-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_side_effect_order_1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_side_effect_order_2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_side_effect_order_3-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_side_effect_order_4-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_side_effect_order_5-bmv2",
+   "outcome": "not-translated",
+   "detail": "functionDeclarationIR: do_thing: a return other than the last statement"
+  },
+  {
+   "program": "gauntlet_side_effects_in_mux-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_switch_exclusivity-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_switch_nested_table_apply-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_switch_shadowing-bmv2",
+   "outcome": "excluded",
+   "detail": "standard_metadata and other intrinsic metadata parameters"
+  },
+  {
+   "program": "gauntlet_table_call_in_expression-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_typedef_cast-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_uninitialized_bool_struct-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "gauntlet_variable_shadowing-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "gauntlet_various_ops-bmv2",
+   "outcome": "spectec-rejects",
+   "detail": ""
+  },
+  {
+   "program": "header-bool-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "header-stack-ops-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "invalid-hdr-warnings3-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "ipv6-switch-ml-bmv2",
+   "outcome": "excluded",
+   "detail": "fixedIntTypeIR (INT<n>)"
+  },
+  {
+   "program": "issue-2123-2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue-2123-3-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1000-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1025-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue1049-bmv2",
+   "outcome": "not-translated",
+   "detail": "callStatementIR: hash with max 65535, not a power of two"
+  },
+  {
+   "program": "issue1062-1-bmv2",
+   "outcome": "not-translated",
+   "detail": "tableKeyIR: a key of type error"
+  },
+  {
+   "program": "issue1097-2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1566-bmv2",
+   "outcome": "not-translated",
+   "detail": "its constructorParameterListIR: a constructor argument that is not a scalar constant"
+  },
+  {
+   "program": "issue1755-1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1755-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1768-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1814-1-bmv2",
+   "outcome": "replay-error",
+   "detail": "StfError: line 5: meta.test is wider than its 1-bit key"
+  },
+  {
+   "program": "issue1824-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue1879-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue2147-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2153-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2170-bmv2",
+   "outcome": "excluded",
+   "detail": "returnStatementIR"
+  },
+  {
+   "program": "issue2176-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2205-1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2205-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2221-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2225-bmv2",
+   "outcome": "excluded",
+   "detail": "exitStatementIR"
+  },
+  {
+   "program": "issue2287-bmv2",
+   "outcome": "not-translated",
+   "detail": "binaryExpressionIR with /, %: division of a value not known at compile time"
+  },
+  {
+   "program": "issue2343-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2375-1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2375-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2383-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2392-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2488-bmv2",
+   "outcome": "excluded",
+   "detail": "listTypeIR, tupleTypeIR"
+  },
+  {
+   "program": "issue2498-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue2614-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue3488-1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue3488-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue447-1-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue447-2-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue447-3-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue447-4-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue447-5-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue447-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "issue510-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue561-1-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue561-2-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue561-3-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue561-4-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue561-5-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue561-6-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue561-7-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "issue635-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue655-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue774-4-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue983-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "issue995-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "key-bmv2",
+   "outcome": "replay-error",
+   "detail": "StfError: cannot take the width of a binary key"
+  },
+  {
+   "program": "match-on-exprs-bmv2",
+   "outcome": "replay-error",
+   "detail": "StfError: line 7: ethernet.srcAddr.slice is wider than its 5-bit key"
+  },
+  {
+   "program": "opassign1-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "opassign2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "parser_error-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "predication_issue_1",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "predication_issue_2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "predication_issue_3",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "runtime-index-2-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "runtime-index-bmv2",
+   "outcome": "excluded",
+   "detail": "fixedIntTypeIR (INT<n>)"
+  },
+  {
+   "program": "saturated-bmv2",
+   "outcome": "excluded",
+   "detail": "fixedIntTypeIR (INT<n>)"
+  },
+  {
+   "program": "stack_complex-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "subparser-with-header-stack-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "table-entries-exact-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "table-entries-exact-ternary-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "table-entries-lpm-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "table-entries-optional-bmv2",
+   "outcome": "excluded",
+   "detail": "tableKeyIR: match kinds range, optional"
+  },
+  {
+   "program": "table-entries-priority-bmv2",
+   "outcome": "fail",
+   "detail": "port 1: unexpected 0210010000b0"
+  },
+  {
+   "program": "table-entries-range-bmv2",
+   "outcome": "excluded",
+   "detail": "tableKeyIR: match kinds range, optional"
+  },
+  {
+   "program": "table-entries-ser-enum-bmv2",
+   "outcome": "spectec-rejects",
+   "detail": ""
+  },
+  {
+   "program": "table-entries-ternary-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "ternary2-bmv2",
+   "outcome": "replay-error",
+   "detail": "StfError: line 16: tbl1 cannot run 'setbyte'; it has setbyte_1, noop"
+  },
+  {
+   "program": "test-parserinvalidargument-error-bmv2",
+   "outcome": "excluded",
+   "detail": "varBitTypeIR (VARBIT<n>)"
+  },
+  {
+   "program": "union-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "union-valid-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "union1-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "union2-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "union3-bmv2",
+   "outcome": "excluded",
+   "detail": "headerUnionTypeIR"
+  },
+  {
+   "program": "v1model-const-entries-bmv2",
+   "outcome": "pass",
+   "detail": ""
+  },
+  {
+   "program": "v1model-special-ops-bmv2",
+   "outcome": "not-translated",
+   "detail": "callStatementIR: mark_to_drop on something other than standard_metadata"
+  }
+ ]
+}
