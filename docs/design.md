@@ -547,8 +547,8 @@ for setup.
   typed schema is the grammar the Lean side decodes.
 
 The construct-by-construct survey of these IRs that shaped the schema is
-archived in git as `docs/notes/prior-art-ir.md` at tag
-`agents-archive/2026-09-24`.
+archived in git as `docs/notes/prior-art-ir.md` at commit
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6`.
 
 ## Appendix: naming
 

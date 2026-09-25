@@ -10,7 +10,7 @@ its extern constructions moved to `P4bloArch`, before it can build.
 
 | Branch | Tip | What it holds | What it lacks |
 |---|---|---|---|
-| `work/firewall-readback` | `75fdcf6` | the actual two-read prefix before the Bloom decision in Lean: copy-back, exact remaining queue, preservation of unrelated state; compiles standalone, theorem queries clean; a Python test draft | registration in the package and audits; the Python test was never run and uses wrong protobuf accessors; review; fault campaign. Plan: `docs/notes/firewall-readback-next.md` at tag `agents-archive/2026-09-24`; its review is on `work/parked-reviews` |
+| `work/firewall-readback` | `75fdcf6` | the actual two-read prefix before the Bloom decision in Lean: copy-back, exact remaining queue, preservation of unrelated state; compiles standalone, theorem queries clean; a Python test draft | registration in the package and audits; the Python test was never run and uses wrong protobuf accessors; review; fault campaign. Plan: `docs/notes/firewall-readback-next.md` at commit `9e8f7d47`; its review is on `work/parked-reviews` |
 | `work/forwarder-ingress` | `231e981` | actual table application composed with the first ingress guard, checksum pending; owner-reported Lean checks; Python and export drafts; its plan `docs/notes/forwarder-ingress.md` | the Python gates never ran and Pyright reports a wrong field name in the test; review; the checksum step; not a complete forwarding proof |
 | `work/parked-reviews` | `d18436b` | the reviews of the two drafts above and eight variant review versions whose final forms are archived | nothing; reference only |
 

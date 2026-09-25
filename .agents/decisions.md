@@ -4,8 +4,8 @@ The decisions in force, grouped by topic, each with its reason and the
 date it was made. This is a register, not a diary: an entry that is
 superseded is rewritten in place with the new date and reason, and an
 entry whose subject no longer exists is removed. The full chronological
-log up to the last compaction is in git at tag `agents-archive/2026-09-24`
-(`docs/decisions.md` there). A decision the design document already
+log up to the last compaction is in git at the archive commit
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (`docs/decisions.md` there). A decision the design document already
 settles is not repeated here.
 
 ## Environment and tooling
@@ -628,8 +628,8 @@ The exact theorem statements, premises and exclusions are in
   tree's commit is recorded as the archive commit in `status.md`.
   Compaction changes no claim and is reviewed against that commit; the
   procedure is the `compact-agent-state` skill. No git tags are created
-  (user's instruction, 2026-09-24); the first compaction's tag
-  `agents-archive/2026-09-24` predates the rule and stays. Notes that turn out to describe the artifact are promoted into
+  (user's instruction, 2026-09-24); the first compaction's tag was
+  deleted and its commit is `9e8f7d47`. Notes that turn out to describe the artifact are promoted into
   `docs/` instead. Reason: the resume read had grown to a diary, stale
   plans sat beside live ones, and git already kept every byte.
   (2026-09-24)
