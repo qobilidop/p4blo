@@ -1102,3 +1102,65 @@ after all six faults. The integrator owns the merged full Python/schema/
 oracle gate; this worktree performs no Docker build. Independent review:
 `docs/notes/reviews/field-commands.md`. A passed campaign is evidence against
 these selected faults, not universal mutation adequacy or Python equivalence.
+
+## Deviation laws: mutants of the ledger's closed cases
+
+`spec/ir/P4bloIR/DeviationLaws.lean` states what the production evaluator,
+executor, lookup and emitter do on the cases the ledger classes as
+*deviates* or *refines undefined*. On 2026-09-24, in the isolated worktree of
+branch `work/deviation-theorems` (based on `103649e`), each edit below was
+applied alone to the named production file and the module was built from
+`spec/ir/` with `lake build P4bloIR.DeviationLaws`; the file was restored
+from its saved text after each run, and `git status` showed it clean.
+
+1. **Invalid headers compare by fields** (SpecTec's `$bin_eq`): the header
+   arm of `Value.equal` became `if va != vb then false else equalList fa fb`.
+   Build exits 1 at `header_equal_invalid`.
+2. **Validity ignored**: the header arm became `equalList fa fb`, with the
+   validity binders renamed `_va` and `_vb` so that no unused-variable
+   lint fires. Build exits 1 at `header_equal_invalid`,
+   `header_equal_valid_invalid` and `header_equal_invalid_valid`.
+3. **Out-of-range read gives the last element** (SpecTec's
+   `Expr_eval/headerStack`): `elementOf` returned `elements.getLast?` when
+   present. Build exits 1 at `elementOf_out_of_range`.
+4. **Out-of-range write clamps to the last element**: `writeLValue`'s index
+   arm wrote at `min i (size - 1)` whenever the stack is nonempty. Build
+   exits 1 at `writeLValue_index_out_of_range`.
+5. **`lastIndex` saturates at zero** (SpecTec's `max(nextIndex, 1) - 1`).
+   Build exits 1 at `evaluate_lastIndex`.
+6. **`push_front` keeps the old fields** of the vacated elements (SpecTec's
+   `$invalidate_value`), still computing the zero header so the error path
+   is unchanged. Build exits 1 at `pushFront_eq`.
+7. **`pop_front` sets `nextIndex` to `size - n`** (SpecTec), with the
+   now-unused binder renamed `_nextIndex`. Build exits 1 at `popFront_eq`.
+8. **No revisit check**: the `ParserTimeout` line of `enterState` was
+   deleted. Build exits 1 at `enterState_revisit`.
+9. **Shortest prefix wins**: `Installed.beats` compared prefix lengths with
+   `<`. Build exits 1 at the private `beats_iff`, which ties `beats` to the
+   independently defined `rank` of `lookup_hit`, so neither `lookup_hit` nor
+   `lookup_longest_prefix` builds.
+
+All nine are **proof/build rejection** in the new module, none an
+unused-variable or unused-simp-argument lint. Two further families are
+rejected earlier by existing modules, before `DeviationLaws` is reached:
+a shift that reduces its amount modulo the width fails
+`ScalarLaws.shl_large`, and every emitter mutant below fails
+`Theorems.read_write` (for the write-order mutant only by an unused simp
+argument, a lint, not a semantic detection). To see the emitter theorems
+reject them on their own, `write_fits` and `toBytes_padded` were copied,
+with the five `Theorems` lemmas they use, into a scratch file importing only
+`P4bloIR.Packet`, which builds with exit 0 on the restored code; after each
+edit to `Packet.lean` and `lake build P4bloIR.Packet`, `lake env lean` on
+that file exits 1:
+
+10. **Writes prepend**: `Emitter.write` put the new bits above the old
+    ones. Rejected at `write_fits`.
+11. **An aligned total gains a zero byte**: padding `8 - width % 8`.
+    Rejected at `toBytes_padded`'s byte count.
+12. **Nibble padding**: padding `(4 - width % 4) % 4`. Rejected at the byte
+    count.
+13. **Padding with one bits**. Rejected at the value clause.
+
+After the campaign the restored module, the audits and `lake test` pass
+under `scripts/check-lean.sh`. These are selected faults, not a mutation
+score; the Python side has its own tests for the same entries.

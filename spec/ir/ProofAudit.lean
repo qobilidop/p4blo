@@ -237,3 +237,159 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.Frame.forBlock_missing' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.Frame.forBlock_missing
+
+/-- info: 'P4bloIR.DeviationLaws.header_equal_invalid' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.header_equal_invalid
+
+/-- info: 'P4bloIR.DeviationLaws.header_equal_valid_invalid' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.header_equal_valid_invalid
+
+/-- info: 'P4bloIR.DeviationLaws.header_equal_invalid_valid' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.header_equal_invalid_valid
+
+/-- info: 'P4bloIR.DeviationLaws.header_equal_valid' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.header_equal_valid
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_eq
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_eq_invalid_headers' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_eq_invalid_headers
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_eq_valid_invalid' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_eq_valid_invalid
+
+/-- info: 'P4bloIR.DeviationLaws.zeroHeader_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.zeroHeader_eq
+
+/-- info: 'P4bloIR.DeviationLaws.zero_bits' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.zero_bits
+
+/-- info: 'P4bloIR.DeviationLaws.zero_boolean' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.zero_boolean
+
+/-- info: 'P4bloIR.DeviationLaws.zero_error' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.zero_error
+
+/-- info: 'P4bloIR.DeviationLaws.elementOf_out_of_range' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.elementOf_out_of_range
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_index_out_of_range' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_index_out_of_range
+
+/-- info: 'P4bloIR.DeviationLaws.readLValue_index_out_of_range' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.readLValue_index_out_of_range
+
+/-- info: 'P4bloIR.DeviationLaws.writeLValue_index_out_of_range' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.writeLValue_index_out_of_range
+
+/-- info: 'P4bloIR.DeviationLaws.writeLValue_member_out_of_range' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.writeLValue_member_out_of_range
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_lastIndex' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_lastIndex
+
+/-- info: 'P4bloIR.DeviationLaws.lastIndex_empty' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.lastIndex_empty
+
+/-- info: 'P4bloIR.DeviationLaws.lastIndex_nonempty' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.lastIndex_nonempty
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_last_empty' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_last_empty
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_last_nonempty' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_last_nonempty
+
+/-- info: 'P4bloIR.DeviationLaws.pushFront_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.pushFront_eq
+
+/-- info: 'P4bloIR.DeviationLaws.pushFront_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.pushFront_spec
+
+/-- info: 'P4bloIR.DeviationLaws.pushFront_clamp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.pushFront_clamp
+
+/-- info: 'P4bloIR.DeviationLaws.popFront_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.popFront_eq
+
+/-- info: 'P4bloIR.DeviationLaws.popFront_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.popFront_spec
+
+/-- info: 'P4bloIR.DeviationLaws.popFront_clamp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.popFront_clamp
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_shl_large' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_shl_large
+
+/-- info: 'P4bloIR.DeviationLaws.evaluate_shr_large' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.evaluate_shr_large
+
+/-- info: 'P4bloIR.DeviationLaws.wrap_zero_value' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.wrap_zero_value
+
+/-- info: 'P4bloIR.DeviationLaws.write_fits' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.write_fits
+
+/-- info: 'P4bloIR.DeviationLaws.toBytes_padded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.toBytes_padded
+
+/-- info: 'P4bloIR.DeviationLaws.enterState_revisit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.enterState_revisit
+
+/-- info: 'P4bloIR.DeviationLaws.enterState_first' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.enterState_first
+
+/-- info: 'P4bloIR.DeviationLaws.enterState_again' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.enterState_again
+
+/-- info: 'P4bloIR.DeviationLaws.step_state_revisit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.step_state_revisit
+
+/-- info: 'P4bloIR.DeviationLaws.lookup_hit' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.lookup_hit
+
+/-- info: 'P4bloIR.DeviationLaws.lookup_miss' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.lookup_miss
+
+/-- info: 'P4bloIR.DeviationLaws.lookup_longest_prefix' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.DeviationLaws.lookup_longest_prefix

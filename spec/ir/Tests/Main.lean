@@ -15,6 +15,7 @@ import Tests.ParserCodec
 import Tests.BlockCodec
 import Tests.ProgramCodec
 import Tests.EntriesCodec
+import Tests.DeviationLaws
 
 /-!
 Tests for the decoder, the index and the interpreter, run by `lake test`
@@ -212,7 +213,8 @@ def main (args : List String) : IO UInt32 := do
     EntriesCodecTests.tests
     FrameInitializationTests.tests
     PlainCallEntryTests.tests
-    PlainCallReturnTests.tests).run []
+    PlainCallReturnTests.tests
+    DeviationLawTests.tests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0
