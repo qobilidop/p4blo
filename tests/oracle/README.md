@@ -314,6 +314,103 @@ The oracle checks packets, not extern state: a stateful sequence's
 register and counter cells are compared only as far as later packets read
 them. The differential tests against Lean compare the whole state.
 
+## The block runner
+
+Everything above compares pipelines: a printed program runs under the
+v1model shim on the simulator's V1Model architecture, which decides what
+happens between blocks, so a disagreement could lie in a block, in the shim
+or in the architecture. The block runner removes both. It is a small
+architecture, `p4blo`, added to the pinned simulator by
+`patches/0001-p4blo-block-architecture.patch`, that runs exactly one
+parser, control or deparser per request on the inputs the request gives and
+returns what the block left, as `p4blo-lean run` does for whole requests.
+
+The patch adds `p4spec/lib/backend-sim/p4blo/` (the architecture in
+`pipe.ml`; its spec relations, `P4blo_init`, `P4blo_parser`,
+`P4blo_control`, `P4blo_deparser` and their helpers, in `p4blo.watsup`),
+one case in `backend-sim/build.ml` that registers the architecture, and a
+`block` command in `p4spec/bin/main.ml` that reads JSON requests line by
+line. Nothing the `sim` command runs changes, and `p4blo.watsup` is passed
+to the command beside the spec directory rather than placed in it, so the
+spec every other test elaborates is untouched. The extern families p4blo
+prints (register, counter, and `hash` for checksum16, crc16 and crc32) are
+declared in `include/p4blo.p4` with V1Model's signatures and implemented by
+the V1Model simulator's own code; `impl/python/p4blo/arch/spectec_block.py`
+prints a program for the package, reusing the v1model printer for
+everything but the shim.
+
+`build.sh` applies every `patches/*.patch` in name order to a clean tree
+before `make build` and stamps the build with the commit and a digest of
+the patches, so a changed patch resets the checkout to the pin and rebuilds;
+the CI cache key includes the patches. A checkout built before the patches
+existed has a stamp without the digest and rebuilds once. To change the
+plugin, edit it in a scratch checkout built by `build.sh`, then regenerate
+the patch there with `git add -N p4spec/lib/backend-sim/p4blo && git diff >
+.../patches/0001-p4blo-block-architecture.patch && git reset`.
+
+`block.py` drives it. A `BlockRunner` keeps one `p4spectec block spec
+<p4blo.watsup> -i p4c/p4include -i tests/oracle/include` process resident,
+so the spec is elaborated once (well under a second) and each program is
+instantiated once, and sends requests of this shape:
+
+```json
+{"program": "<printed .p4>", "block": "parser",
+ "packet": "<hex>", "metadata": <value>, "entries": "<STF add lines>",
+ "state": <the state of an earlier reply, or null>}
+```
+
+A control request carries `headers` and `metadata`, a deparser request
+`headers`. The reply holds the block's outputs: `headers`, `metadata`,
+`consumed_bits`, `accepted` and `error` for a parser; `headers` and
+`metadata` for a control; `packet` (hex, zero-padded to a byte as p4blo's
+deparser pads) and `bits` (the exact count) for a deparser. Every reply
+also has `state`, the simulator's own JSON state of every extern object, to
+pass back unchanged, and `externs`, registers and counters in readable
+form; a failure is `{"error": "<diagnostic>"}` and the session continues.
+State is tagged with the process that made it and refused by any other,
+because a register's cells are spec values whose identities only that
+process can interpret. Scalars take the shape of the IR's wire-format
+`Literal` in protobuf's JSON mapping (`{"bits": {"width": 9, "value":
+"1"}}`, `{"boolean": true}`, `{"error": "NoError"}`, `{"enum_member":
+{...}}`); compound values, which the wire format does not have, are
+`{"header": {"type", "valid", "fields"}}`, `{"struct": {"type",
+"fields"}}` and `{"stack": {"next_index", "elements"}}`, fields by name in
+declaration order. Entries are rendered exactly as for the pipeline
+(`translate` above), so the lpm translation applies here too.
+
+`tests/test_oracle_block.py` replays every corpus and example vector on the
+reference interpreter block by block, chained as the switch chains them,
+repeats each block run on the simulator with the same inputs and extern
+state carried from reply to reply, and compares each output: headers and
+metadata by path, bits consumed, acceptance, error, bytes, and every
+register and counter cell after every block. It skips without a patched
+build. At the pin every vector agrees but three, which are strict expected
+failures with narrow classifiers:
+
+- `tutorial_firewall/collisions.stf` and `connection.stf`, **padded
+  CRC32**: the second Bloom filter's cell indices differ. The vector is
+  run again with the reference interpreter's odd-byte CRC32 replaced by
+  the simulator's padding ([Stronger probes](#stronger-probes-and-known-limitations)),
+  and every difference must vanish. The pipeline comparison passes these
+  vectors because the wrong cells never change a packet.
+- `stacks/header-stack-ops-bmv2.stf`, **stack invalidation**: after
+  `push_front` and `pop_front` the simulator keeps the stored fields of
+  the vacated, invalid elements and pops to `nextIndex = S - n`, the
+  *deviates* entry of `docs/ir-semantics.md`. Only differences in an
+  element invalid on both sides and in `next_index` are accepted; a
+  validity bit, a valid element or any other output that differs fails.
+
+What it does not compare: which inputs reach a block (the chain picks
+them, so a block is judged on what the vectors reach), table installation
+(both runs use the STF runner's encoding, with its known mask defect), the
+wire format, and anything an architecture decides. Two throwaway mutants
+of the reference interpreter, subtraction off by one and a parser that
+forgets its error, were each caught by four and six vectors.
+
+```sh
+uv run pytest tests/test_oracle_block.py -v    # about 35 seconds on an M-series Mac
+```
+
 ## Results
 
 2026-09-22, at the pinned commit, on the five forwarder vectors: all
