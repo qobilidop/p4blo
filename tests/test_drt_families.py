@@ -28,6 +28,7 @@ from p4blo.drt.choice import Chooser
 from p4blo.drt.families import FAMILIES, TARGETS, Profile, Sample, sample
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program
+from p4blo.interp import stmt
 from p4blo.v0 import p4blo_pb2 as pb
 
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
@@ -141,6 +142,8 @@ def test_the_spectec_profile_leaves_out_the_ledgers_deviations() -> None:
     for feature in [
         "eq_header.validity=invalid",
         "eq_header.validity=packet",
+        "parser.stmt=push",
+        "parser.stmt=pop",
         "parser.transition=loop",
         "subparser.transition=loop",
         "eq_stack.push=packet",
@@ -226,3 +229,50 @@ def test_lean_agrees_on_shrinking_family_programs(
     lean_binary: Path, data: st.DataObject, family: str
 ) -> None:
     check(FAMILIES[family](HypothesisChooser(data.draw), "lean"), [lean_binary])
+
+
+RIGHT_PUSH_FRONT = stmt.push_front
+RIGHT_POP_FRONT = stmt.pop_front
+
+
+def push_unclamped(stack: Any, n: int, index: Any) -> None:
+    """`push_front` whose `nextIndex` grows past the size."""
+    next_index = stack.next_index
+    RIGHT_PUSH_FRONT(stack, n, index)
+    stack.next_index = next_index + n
+
+
+def pop_unclamped(stack: Any, n: int, index: Any) -> None:
+    """`pop_front` whose `nextIndex` shrinks below zero."""
+    next_index = stack.next_index
+    RIGHT_POP_FRONT(stack, n, index)
+    stack.next_index = next_index - n
+
+
+@pytest.mark.parametrize(
+    ("name", "mutant", "feature"),
+    [
+        ("push_front", push_unclamped, "stmt=push"),
+        ("pop_front", pop_unclamped, "stmt=pop"),
+    ],
+    ids=["push", "pop"],
+)
+def test_lean_agrees_only_with_the_stack_clamps(
+    lean_binary: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    mutant: Callable[[Any, int, Any], None],
+    feature: str,
+) -> None:
+    """`stack.push.clamp` and `stack.pop.clamp` are observable: a Python
+    without the clamp disagrees with Lean on some retained parser seed that
+    pushes or pops, because the family reads `nextIndex` afterwards."""
+    monkeypatch.setattr(stmt, name, mutant)
+    for seed in SEEDS:
+        generated = sample("parser", seed)
+        if not any(f.endswith(feature) for f in generated.features):
+            continue
+        report = compare_program(generated.program, generated.cases, 4, [lean_binary], seed)
+        if not report.passed:
+            return
+    pytest.fail(f"no retained parser seed tells {name} without its clamp from Lean")

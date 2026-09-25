@@ -10,7 +10,10 @@ are all about shape: direct and nested action calls, equality on headers,
 structs, stacks and enums, whole-header assignment, stack indices taken
 from the packet, `advance`, `lookahead` of `bool` and headers, selects with
 ranges, several keys, no default and non-`bit` keys, explicit rejection in
-a sub-parser, and parser loops that consume nothing.
+a sub-parser, and parser loops that consume nothing. The parser family also
+pushes and pops the stack, in its lean profile, and then reads `lastIndex`
+and maybe extracts into `hs.next`, the only places where `nextIndex`, and
+so the clamps of `push_front` and `pop_front`, can be seen.
 
 A family is a function of a `Chooser` (`p4blo.drt.choice`), which makes
 every decision and names it. Every option is typed by construction, so any
@@ -141,6 +144,10 @@ TARGETS: dict[str, tuple[str, ...]] = {
     "subparser.stmt=verify": ("parser.verify.failNoError",),
     "parser.verify.error=NoError": ("parser.verify.failNoError",),
     "subparser.verify.error=NoError": ("parser.verify.failNoError",),
+    "parser.stmt=push": ("stack.push.clamp", "stack.push.oversize"),
+    "subparser.stmt=push": ("stack.push.clamp", "stack.push.oversize"),
+    "parser.stmt=pop": ("stack.pop.clamp", "stack.pop.oversize"),
+    "subparser.stmt=pop": ("stack.pop.clamp", "stack.pop.oversize"),
     "parser.transition=reject": ("parser.target.reject",),
     "subparser.transition=reject": ("parser.subparser.reject",),
     "parser.transition=loop": ("parser.timeout", "parser.revisit"),
@@ -871,6 +878,11 @@ class _Parser:
             "set_error",
             "if",
         ]
+        if self.profile == "lean":
+            # Left out of the spectec profile so that its programs, which
+            # the oracle campaign and the SpecTec coverage report name by
+            # seed, stay what they were.
+            kinds.extend(["push", "pop"])
         if self.may_call and not (self.profile == "spectec" and self.called):
             kinds.append("call_sp")
         kind = ch.choice(self.point("stmt"), kinds)
@@ -925,6 +937,8 @@ class _Parser:
                     # lastIndex of an empty stack deviates; read it after an extract.
                     return [extract("hdr.s.next"), assign(r, last)]
                 return [assign(r, last)]
+            case "push" | "pop":
+                return self.push_pop(kind, r)
             case "verify":
                 name = ch.choice(self.point("verify.error"), ("NoMatch", "NoError", "BadValue"))
                 verify = pb.Verify(condition=self.condition(), error=name)
@@ -955,6 +969,27 @@ class _Parser:
                 return [if_(self.condition(), then, otherwise)]
             case _:
                 return self.call()
+
+    def push_pop(self, kind: Literal["push", "pop"], r: str) -> list[pb.Stmt]:
+        """`push_front` or `pop_front` on `hdr.s` by up to three, past the
+        size or past `nextIndex` when the draw says so, then a read of
+        `nextIndex`: `lastIndex` into a result byte, and maybe an extract
+        into `hs.next`, which lands in the element `nextIndex` names.
+        Nothing else observes `nextIndex`, so without the read a wrong clamp
+        would go unseen. `lastIndex` is always read, because after a clamped
+        push only it tells the clamp apart: an extract fails at `nextIndex`
+        equal to the size as it would past it."""
+        count = self.ch.integer(self.point(kind), 1, 3)
+        stack = L("hdr.s")
+        if kind == "push":
+            stmts = [pb.Stmt(push=pb.Push(stack=stack, count=count))]
+        else:
+            stmts = [pb.Stmt(pop=pb.Pop(stack=stack, count=count))]
+        last = cast(BIT8, pb.Expr(last_index=pb.LastIndex(stack=E("hdr.s"))))
+        stmts.append(assign(r, last))
+        if self.ch.chance(self.point(f"{kind}.extract")):
+            stmts.append(extract("hdr.s.next"))
+        return stmts
 
     def call(self) -> list[pb.Stmt]:
         """`SP(hdr, k)`, where the key argument may itself read the packet."""
