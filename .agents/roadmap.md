@@ -9,8 +9,8 @@ are complete, and an item below becomes work only when the user scopes it.
 Landed results are summarized in [assurance.md](../docs/assurance.md) and
 `impl/lean/ASSURANCE.md`; the step-by-step record is in git.
 
-The mechanized relation to P4-SpecTec is a joint milestone with a
-separate project that compiles SpecTec into Lean; this repository
+The mechanized relation to P4-SpecTec is a joint milestone with
+`p4-spectec-lean`, the user's project that compiles SpecTec into Lean; this repository
 supplies the IR, the elaboration, the block contract `p4blo.watsup` and
 the validation suite, and builds no rendering of SpecTec itself
 (`decisions.md`, 2026-09-24).

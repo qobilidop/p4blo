@@ -303,9 +303,9 @@ these entries record why.
   refreshed only after the semantics page states the changed behavior.
   (2026-09-24)
 - **SpecTec is rendered into Lean elsewhere; this repository builds the
-  IR, its meaning, the elaboration and the validation suite.** A separate
-  project compiles P4-SpecTec's elaborated spec into Lean and verifies
-  that compiler. p4blo therefore builds no Lean rendering or interpreter
+  IR, its meaning, the elaboration and the validation suite.** The
+  user's project `p4-spectec-lean` (started 2026-09-25) compiles
+  P4-SpecTec's elaborated spec into Lean and verifies that compiler. p4blo therefore builds no Lean rendering or interpreter
   of SpecTec's rules, no trace-localized N+1 testing, no simulator patch
   beyond the two that exist, and no bridge census beyond the corpus. It
   keeps and freezes the oracle machinery as the rendering's test bed

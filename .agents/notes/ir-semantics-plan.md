@@ -34,9 +34,10 @@ Three consequences for the current repository:
 
 ## Division of labor with the SpecTec-to-Lean compiler
 
-Decided 2026-09-24. A separate project compiles P4-SpecTec's elaborated
-spec into Lean and verifies that compiler. This repository therefore
-owns exactly four things and builds nothing else about SpecTec:
+Decided 2026-09-24; the project, `p4-spectec-lean`, started on
+2026-09-25. It compiles P4-SpecTec's elaborated spec into Lean and
+verifies that compiler. This repository therefore owns exactly four
+things and builds nothing else about SpecTec:
 
 - **the IR and its meaning**: `spec/ir/`, the ledger, the deviation and
   validity theorems, the Python reference and its differential evidence;
@@ -52,13 +53,34 @@ owns exactly four things and builds nothing else about SpecTec:
   measurement, all with stable documented formats.
 
 Not built here: any rendering of SpecTec's rules into Lean, any Lean
-interpreter for them, N+1 differential testing with trace localization
-(the rendering makes it a theorem instead), further simulator patches
-beyond keeping the two existing ones applying at the pin, and any
-expansion of the bridge's census beyond the corpus and the programs the
-theorem's domain needs. The oracle machinery built in Phases 1 and 2
-stays as it is, frozen at maintenance: it is the test bed for the
-rendering, not a thing to grow.
+interpreter for them, any decoder of program IL into Lean types (the
+rendering project generates one from the syntax definitions), N+1
+differential testing with trace localization (the rendering makes it a
+theorem instead), further simulator patches beyond keeping the two
+existing ones applying at the pin, and any expansion of the bridge's
+census beyond the corpus and the programs the theorem's domain needs.
+The oracle machinery built in Phases 1 and 2 stays as it is, frozen at
+maintenance: it is the test bed for the rendering, not a thing to grow.
+
+What `p4-spectec-lean` consumes from here, each with a documented and
+stable format:
+
+| Interface | Where | Format |
+|---|---|---|
+| the block contract in SpecTec's language | `tests/oracle/p4blo.watsup` | watsup at the pinned commit |
+| the program-IL export | `tests/oracle/patches/0002-il-export.patch`, documented in `tests/oracle/README.md` ("The IL export") | `p4spectec-il-export/1` JSON: variants as `{"t","c","a"}`, records as `{"t","s"}` |
+| the conformance corpus | `tests/conformance/` with its README | `p4blo.conformance` version 2: program, requests, Lean's replies with state and rule tags |
+| block-level requests and replies | `tests/oracle/block.py`, documented in the README's block-runner section | JSON lines per block with the value shapes the README defines |
+| the rule inventory at the pin | `tests/oracle/spectec-rules.json` | one item per declaration, kind and name |
+
+A change to any of these formats bumps its version and is announced in
+`status.md`. The two simulator patches are candidates to move to that
+project, which forks SpecTec anyway; until then they live here.
+
+Active work in this repository after 2026-09-25: the reorganization's
+last item and a compaction. Termination (C2) and codec composition
+(C3) stay backlog, not active; they do not overlap with the rendering
+project and are picked up when the joint milestone needs them.
 
 ## What the state of the art looks like
 
