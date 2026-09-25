@@ -7,14 +7,17 @@ import ArchTests.ExecutionCertificate
 import ArchTests.CertificateWire
 import ArchTests.HostTrap
 import ArchTests.Coverage
+import ArchTests.NonVacuity
 
 /-!
 Tests for the reference architecture: the forwarder's vectors replayed under
 the switch, the extern families, the certificate example and its wire
-adapter. Run by `lake test` from the `spec/arch/` directory; the fixture
-paths may also be given as arguments (the program JSON, then the vectors
-JSON), and default to the IR specification's copies. The coverage witness
-table is read from `ArchTests/fixtures/witnesses.json`.
+adapter, and the csum16 literal of the progress example. Run by `lake test`
+from the `spec/arch/` directory; the fixture paths may also be given as
+arguments (the program JSON, then the vectors JSON), and default to the IR
+specification's copies. The coverage witness table is read from
+`ArchTests/fixtures/witnesses.json`, the csum16 program from
+`ArchTests/fixtures/csum16.json`.
 -/
 
 open P4bloIR
@@ -39,7 +42,8 @@ def main (args : List String) : IO UInt32 := do
     ExternFamiliesTests.tests
     ExecutionCertificateTests.tests
     certificateWireTests
-    HostTrapTests.tests).run []
+    HostTrapTests.tests
+    ArchTests.Csum16.tests "ArchTests/fixtures/csum16.json").run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0

@@ -89,10 +89,16 @@ DRT families and every program `tests/test_validator.py` validates: they
 agree on acceptance and on the first diagnostic code, up to wire problems
 that Lean's decoder rejects before any rule runs. For a program the
 checker accepts, `P4bloIR.Progress` proves that the step machine never
-reaches an `InterpError`, under an extern-binding contract and a
-successful installation. Codec tests intentionally include
-invalid-but-representable IR; successful decoding is not permission to
-execute it.
+reaches an `InterpError`, under four premises: the extern binding obeys
+the extern contract, the table entries come from a successful
+installation, the initial run fits the block kind, and every value the
+architecture passes for a block parameter has the parameter's type. The
+first is proved for the reference extern families whenever
+`P4bloArch.bind` succeeds, and the second whenever `Installed.build`
+does; the last two are the entry points' calling convention. A control or
+deparser run moreover ends in success: parser errors come only from
+parser runs. Codec tests intentionally include invalid-but-representable
+IR; successful decoding is not permission to execute it.
 
 Selected typed Lean expressions and commands have checked lowering and
 execution theorems under explicit context, index and frame premises. The
@@ -154,8 +160,8 @@ large allocations; JSON nesting, host memory and runtime limits apply.
 There is no proved global resource bound or validated-program termination
 theorem, and the Lean runner has no semantic fuel counter. Progress is
 proved: a finite run of a valid program ends in success or in a parser
-error the program declares, never in an `InterpError`; that every run is
-finite remains open. The DRT client
+error the program declares, never in an `InterpError`, and only a parser
+run ends in the error; that every run is finite remains open. The DRT client
 defaults to a ten-second request deadline; a transport deadline is a
 harness failure, never a semantic `ParserTimeout`.
 
@@ -209,7 +215,11 @@ interchangeable confidence score.
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `Build.build_ok` | `Index.build`'s maps read back into the program's lists: every declaration found by name is the program's under that name, program-level names share one namespace, and each block's scope is built from that block | That every name the program declares is found (only the directions later proofs use are stated) |
 | `Validity.check_sound` | A program the Lean checker accepts satisfies `Validity.Valid`, the validator's rules as relations over the program and its index | That the checker accepts every `Valid` program; agreement with the Python validator, which `tests/test_lean_agrees_validity.py` tests on finite inputs |
-| `Validity.progress`, `Steps.machineOk`, `finishes_documented`, `drive_documented` | From a well-formed machine of a `Valid` program, every step finishes with success or with a parser error the program declares, or reaches another well-formed machine; so no reachable machine and no finite run carries an `InterpError`. Premises: the extern binding obeys `ExternContract`, the entries satisfy `InstalledOk`, the initial run fits the block kind | Termination; that the reference architecture's extern families obey the contract; the checks the entry points in `P4bloIR.Interp` make outside the machine |
+| `Validity.progress`, `Steps.machineOk`, `finishes_documented`, `drive_documented` | From a well-formed machine of a `Valid` program, every step finishes with success or with a parser error the program declares, or reaches another well-formed machine; so no reachable machine and no finite run carries an `InterpError`. Premises: the extern binding obeys `ExternContract`, the entries satisfy `InstalledOk`, the initial run fits the block kind | Termination; the checks the entry points in `P4bloIR.Interp` make outside the machine |
+| `Validity.progress_outside_parser`, `Steps.machineOkNP`, `finishes_outside_parser`, `finishes_kind`, `parse_error_is_parser`, `dispatch_np` | A control or deparser machine of a `Valid` program that starts without a fault or a pending parser state steps without any fault, so a finite run ends in success; with `finishes_documented`, a parser error ends only a parser run. Premises: those of `progress` | Termination |
+| `Validity.Entry.runParser_documented`, `runControl_documented`, `runDeparser_ok` | On the actual entry functions: a parser returns an outcome accepting with `NoError` or rejecting with a declared error, a control returns the final run's headers, metadata and externs, and a deparser returns its emitted bytes, none failing inside the machine. Premises: a `Valid` program's block of the entry's kind and arity, parameter values of their types, externs satisfying the contract, entries from `Installed.build` for a control, and every run of the block finishing | Termination; that the final frame's headers and metadata variables hold structs, which `structVar` still checks |
+| `P4bloArch.Contract.bind_contract`, `call_ok`, `bind_inv` | Whenever `P4bloArch.bind` succeeds on a `Valid` program, the bound state satisfies the invariant of an `ExternContract` whose call obligation holds for `register`, `counter`, `checksum16`, `crc16` and `crc32`; audited by `spec/arch/ArchProofAudit.lean` | That binding succeeds; a valid program's extern types need not match a family |
+| `ArchTests.Csum16.control_start_ok`, `check_ok` | For the corpus program `csum16`, with no `native_decide`: the checker accepts it, binding and installation succeed, and the machine `runControl` starts is `MachineOk` with the reference contract, so every premise of `progress` is satisfiable together on a real program | Any other program; termination |
 | `Validity.build_installedOk` | A successful `Installed.build` satisfies `InstalledOk`: every lookup in a program table succeeds and selects an action of its block with data of its parameters' types | That installation succeeds for given host entries |
 | `Validity.initial_ok`, `entryFrame_ok` | The machines the entry points start, from `Frame.forBlock` with each parameter set to a value of its type, are well formed | That the values an architecture passes are typed |
 | `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |

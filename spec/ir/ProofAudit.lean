@@ -1,5 +1,7 @@
 import P4bloIR
 import P4bloIR.ScalarStatements
+import P4bloIR.Validity.KindLaws
+import P4bloIR.Validity.EntryLaws
 import Tests.ScalarStatements
 
 /-- info: 'P4bloIR.PlainCallReturn.copyBack_three' depends on axioms: [propext, Classical.choice, Quot.sound] -/
@@ -625,3 +627,55 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.Validity.build_installedOk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.Validity.build_installedOk
+
+/-- info: 'P4bloIR.Validity.dispatch_np' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.dispatch_np
+
+/-- info: 'P4bloIR.Validity.progress_outside_parser' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.progress_outside_parser
+
+/-- info: 'P4bloIR.Validity.Steps.machineOkNP' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Steps.machineOkNP
+
+/-- info: 'P4bloIR.Validity.finishes_outside_parser' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.finishes_outside_parser
+
+/-- info: 'P4bloIR.Validity.finishes_kind' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.finishes_kind
+
+/-- info: 'P4bloIR.Validity.parse_error_is_parser' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.parse_error_is_parser
+
+/-- info: 'P4bloIR.Validity.Entry.runParser_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.runParser_eq
+
+/-- info: 'P4bloIR.Validity.Entry.runControl_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.runControl_eq
+
+/-- info: 'P4bloIR.Validity.Entry.runDeparser_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.runDeparser_eq
+
+/-- info: 'P4bloIR.Validity.Entry.finishes_runOk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.finishes_runOk
+
+/-- info: 'P4bloIR.Validity.Entry.runParser_documented' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.runParser_documented
+
+/-- info: 'P4bloIR.Validity.Entry.runControl_documented' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.runControl_documented
+
+/-- info: 'P4bloIR.Validity.Entry.runDeparser_ok' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms P4bloIR.Validity.Entry.runDeparser_ok

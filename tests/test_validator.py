@@ -484,12 +484,20 @@ def test_nested_path() -> None:
     [
         lambda p: p.struct_types.add(name="H"),
         lambda p: p.blocks[ING].locals.add(name="hit", type=pb.Type(bits=1)),
-        lambda p: p.blocks[ING].actions[1].params.add(name="idx", type=pb.Type(bits=1)),
+        lambda p: (
+            p.blocks[ING]
+            .actions[1]
+            .params.add(name="idx", type=pb.Type(bits=1), direction=pb.DIRECTION_NONE)
+        ),
         lambda p: p.errors.append("NoError"),
         lambda p: p.header_types[0].fields.add(name="dst", type=pb.Type(bits=1)),
         lambda p: p.enum_types[0].members.append("RED"),
         lambda p: p.extern_types[0].methods.add(name="count"),
-        lambda p: p.extern_types[0].methods[1].params.add(name="idx", type=pb.Type(bits=1)),
+        lambda p: (
+            p.extern_types[0]
+            .methods[1]
+            .params.add(name="idx", type=pb.Type(bits=1), direction=pb.DIRECTION_IN)
+        ),
     ],
 )
 def test_name_duplicate(mutate) -> None:
@@ -1399,7 +1407,9 @@ def no_action(p: pb.Program) -> pb.Action:
     "mutate",
     [
         lambda p: no_action(p).body.add().CopyFrom(p.blocks[ING].actions[0].body[0]),
-        lambda p: no_action(p).params.add(name="port", type=pb.Type(bits=9)),
+        lambda p: no_action(p).params.add(
+            name="port", type=pb.Type(bits=9), direction=pb.DIRECTION_NONE
+        ),
     ],
 )
 def test_noaction_reserved(mutate) -> None:
