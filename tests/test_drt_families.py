@@ -53,10 +53,12 @@ class HypothesisChooser(Chooser):
         return self.draw(st.integers(lo, hi))
 
 
-def check(generated: Sample, lean: Sequence[str | Path]) -> None:
-    """Compare the sample; on disagreement save a replay bundle and fail."""
+def check(generated: Sample, lean: Sequence[str | Path], seed: int | None = None) -> None:
+    """Compare the sample; on disagreement save a replay bundle and fail.
+    The family seed, when the sample has one, names the failure and the
+    bundle, so `families.sample(family, seed)` rebuilds the program."""
     try:
-        report = compare_program(generated.program, generated.cases, 4, lean)
+        report = compare_program(generated.program, generated.cases, 4, lean, seed or 0)
     except ProtocolError as error:
         if error.report is None:
             raise
@@ -65,10 +67,12 @@ def check(generated: Sample, lean: Sequence[str | Path]) -> None:
         target = Path(os.environ.get("P4BLO_DRT_FAILURE_DIR", ".artifacts/drt"))
         target.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(generated.program.SerializeToString()).hexdigest()[:16]
-        bundle = target / f"{generated.family}-{digest}.json"
+        named = "" if seed is None else f"-seed{seed}"
+        bundle = target / f"{generated.family}{named}-{digest}.json"
         save(report, bundle)
+        where = "a Hypothesis example" if seed is None else f"family seed {seed}"
         pytest.fail(
-            f"{generated.describe()}\n{report.summary()}; replay {bundle}\n"
+            f"{generated.describe()} ({where})\n{report.summary()}; replay {bundle}\n"
             + "\n".join(d.describe() for d in report.divergences[:3])
             + f"\n{report.protocol_error or ''}"
         )
@@ -207,13 +211,13 @@ def test_the_command_line_runs_a_guided_campaign(capsys: pytest.CaptureFixture[s
 @pytest.mark.parametrize("family", sorted(FAMILIES))
 def test_lean_agrees_on_family_seeds(family: str, lean_binary: Path) -> None:
     for seed in SEEDS:
-        check(sample(family, seed), [lean_binary])
+        check(sample(family, seed), [lean_binary], seed)
 
 
 @pytest.mark.parametrize("family", sorted(FAMILIES))
 def test_lean_agrees_on_spectec_profile_seeds(family: str, lean_binary: Path) -> None:
     for seed in range(50):
-        check(sample(family, seed, "spectec"), [lean_binary])
+        check(sample(family, seed, "spectec"), [lean_binary], seed)
 
 
 @settings(max_examples=100, deadline=None, derandomize=True, database=None)
