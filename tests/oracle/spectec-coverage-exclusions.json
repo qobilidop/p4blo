@@ -268,6 +268,14 @@
    "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
+   "kind": "dec",
+   "name": "$find_constructorDef_e",
+   "file": "8-dynamic/8.01.1-eval-context.watsup",
+   "line": 248,
+   "category": "architecture",
+   "reason": "The finder for constructor calls. No rule of the pinned spec calls it: a constructor call is resolved when the program is instantiated, which the architecture layer does."
+  },
+  {
    "kind": "rule",
    "name": "Expr_eval/stringLiteral",
    "file": "8-dynamic/8.03.1-eval-expression.watsup",
@@ -1042,6 +1050,15 @@
    "reason": "Loops are excluded by scope; the printer emits no `for`."
   },
   {
+   "kind": "dec",
+   "name": "$values_of_setValue",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 578,
+   "category": "excluded-construct",
+   "row": "forStatementIR (all three forms), forInitStatementIR, forUpdateStatementIR, forCollectionExpressionIR",
+   "reason": "Enumerates a range for a `for` loop over it; `for` loops are out of scope (the row names them)."
+  },
+  {
    "kind": "rule",
    "name": "ForCollectionExpr_eval/left-abort",
    "file": "8-dynamic/8.06-eval-statement.watsup",
@@ -1159,6 +1176,24 @@
    "reason": "Excluded with `for`; the printer emits neither."
   },
   {
+   "kind": "dec",
+   "name": "$match_switchLabelIR_table",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 751,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on t.apply().action_run (with switchLabelIR, switchCaseIR)",
+   "reason": "Matches a label of a switch on `action_run`, which the IR elaborates into an action marker and an `If` chain (the row names it)."
+  },
+  {
+   "kind": "dec",
+   "name": "$is_non_fallthrough_switchCaseIR",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 769,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Decides whether a switch case falls through. The IR has no switch: a switch on an expression becomes an `If` chain (the row names it), and one on `action_run` a marker and an `If` chain."
+  },
+  {
    "kind": "rule",
    "name": "SwitchCases_table_eval/nil",
    "file": "8-dynamic/8.06-eval-statement.watsup",
@@ -1247,6 +1282,15 @@
    "category": "excluded-construct",
    "row": "switchStatementIR on an expression",
    "reason": "Excluded by elaboration into an If chain; the printer emits no `switch`."
+  },
+  {
+   "kind": "dec",
+   "name": "$match_switchLabelIR_general",
+   "file": "8-dynamic/8.06-eval-statement.watsup",
+   "line": 888,
+   "category": "excluded-construct",
+   "row": "switchStatementIR on an expression",
+   "reason": "Matches a label of a switch on an expression, which the IR elaborates into an `If` chain (the row names it)."
   },
   {
    "kind": "rule",

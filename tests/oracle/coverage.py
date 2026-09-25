@@ -98,8 +98,11 @@ it was entered, wherever that happened, constant folding during typing
 included. Syntax productions have no dynamic meaning and are left out.
 Definitions the inventory does not list, which are those of 9-arch, are
 reported under `outside_inventory`, flagged by section. Only 8-dynamic and
-3-operations are in scope for the exclusions test; the other sections are
-kept and flagged, since typing and instantiation run on every program too.
+3-operations are in scope; the exclusions test enforces their rules and
+functions. The other sections are kept, since typing and instantiation run
+on every program too, and a function of theirs that an in-scope file names
+is flagged `called_in_scope`, found statically, which says what widening
+the scope to the functions the dynamic semantics calls would cost.
 
 A hit rule is exercised, not verified equivalent: the simulator ran it on
 one of p4blo's printed programs, which says nothing about whether p4blo's
@@ -563,6 +566,25 @@ def run_stock(root: Path, p4_dirs: list[Path], stf_dirs: list[Path]) -> Stock:
 DECLARATION = re.compile(r"^\s*(syntax|relation|rule|rulegroup|dec|def|var|})(\s|$)")
 
 
+FUNCTION_NAME = re.compile(r"\$[A-Za-z_][A-Za-z0-9_']*")
+
+
+def called_in_scope(spec: Path, items: list[dict[str, Any]]) -> set[str]:
+    """The functions the in-scope sections name, statically: every `$name`
+    written in a file of 3-operations or 8-dynamic outside the line that
+    declares it. A function of another section that the dynamic semantics
+    calls is part of what it runs, whichever section defines it."""
+    declared = {(str(i["file"]), int(i["line"])) for i in items if i["kind"] == "dec"}
+    names: set[str] = set()
+    for section in IN_SCOPE:
+        for path in sorted((spec / section).rglob("*.watsup")):
+            file = path.relative_to(spec).as_posix()
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if (file, number) not in declared:
+                    names.update(FUNCTION_NAME.findall(line))
+    return names
+
+
 def spans(spec: Path, items: list[dict[str, Any]]) -> dict[tuple[str, int], tuple[int, int]]:
     """(file, line) of every rule and rule group -> its (first, last) line."""
     result: dict[tuple[str, int], tuple[int, int]] = {}
@@ -675,6 +697,7 @@ def build_report(
     items = [i for i in inventory["items"] if i["kind"] in KINDS]
     span = spans(root / "spec", items)
     leaves, stray = attribute(measurement, items, span)
+    called = called_in_scope(root / "spec", items)
     n = len(measurement.vectors)
 
     # Instruction universe per definition and per rule span.
@@ -744,6 +767,8 @@ def build_report(
             if name in per_origin:
                 row["instructions"] = per_origin[name]
         row["in_scope"] = item["section"] in IN_SCOPE
+        if item["kind"] == "dec" and item["section"] not in IN_SCOPE:
+            row["called_in_scope"] = str(item["name"]) in called
         rows.append(row)
     rows.sort(key=_key)
 

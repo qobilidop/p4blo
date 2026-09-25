@@ -5,7 +5,7 @@ makes on the pinned simulator: which items of the rule inventory
 (tests/oracle/spectec-rules.json) fire when the corpus and examples run.
 tests/oracle/spectec-coverage-exclusions.json is written by hand: every
 in-scope item that does not fire, with a category and a reason. In scope are
-the rules of 8-dynamic and the functions of 3-operations.
+the rules of 8-dynamic and the functions of 3-operations and 8-dynamic.
 
 Without any OCaml toolchain this checks that both fixtures name the pinned
 commit, that the report joins the inventory, that every in-scope item is hit
@@ -60,8 +60,12 @@ def key(item: dict[str, Any]) -> Key:
 
 
 def in_scope(item: dict[str, Any]) -> bool:
-    """The rules of 8-dynamic and the functions of 3-operations."""
-    return (item["kind"], item["section"]) in {("rule", "8-dynamic"), ("dec", "3-operations")}
+    """The rules of 8-dynamic and the functions of 3-operations and 8-dynamic."""
+    return (item["kind"], item["section"]) in {
+        ("rule", "8-dynamic"),
+        ("dec", "3-operations"),
+        ("dec", "8-dynamic"),
+    }
 
 
 def coverage_rows() -> set[str]:
