@@ -21,7 +21,8 @@ A fixture is a JSON object with exactly these fields,
   requests with the entries installed before each; `drt` names a golden
   and the seed and count of `p4blo.drt.generate.generate`; `family` names
   a seed of `tests/oracle/generated.py`'s `materialize`, its family and
-  description.
+  description; `contract` names a program and describes hand-written
+  requests for the parts of the contract the others never reach.
 - `lean`: what answered, as provenance only (see "Provenance" below):
   `sources`, a SHA-256 digest of the semantics sources; `commit`, the last
   commit that touched them; `binary`, a SHA-256 digest of the

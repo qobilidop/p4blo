@@ -45,6 +45,16 @@ def test_lean_agrees_with_fixture(path: Path, lean_binary: Path) -> None:
     assert conformance.check_lean_fixture(path, [lean_binary]) == []
 
 
+def test_the_contract_is_exercised() -> None:
+    """Error replies and replies with several outputs are part of the
+    contract a third implementation must meet; the corpus holds both."""
+    replies = [s.reply for p in PATHS for s in conformance.load(p).steps]
+    assert any("error" in r for r in replies)
+    outputs = [r["outputs"] for r in replies if isinstance(r.get("outputs"), list)]
+    assert any(len(o) > 1 for o in outputs if isinstance(o, list))
+    assert any("diagnostic" in r for r in replies)
+
+
 def test_the_corpus_stays_small() -> None:
     """A program with thousands of nonzero cells would multiply the size;
     the budget makes that a decision rather than an accident."""
@@ -99,6 +109,12 @@ def change_state_cell(reply: dict[str, object]) -> dict[str, object]:
     return reply
 
 
+def reword_error(reply: dict[str, object]) -> dict[str, object]:
+    if "error" not in reply:
+        return reply
+    return {**reply, "error": "Lean rejects this install"}
+
+
 def test_python_check_catches_a_flipped_output_byte(tmp_path: Path) -> None:
     path, number = corrupted(tmp_path, "stf-corpus-forwarder-forward", flip_output_byte)
     problems = conformance.check_python_fixture(path)
@@ -114,6 +130,17 @@ def test_python_check_catches_a_changed_state_cell(tmp_path: Path) -> None:
     assert problems[0].startswith(f"stf-corpus-stateful-persist: request {number}: ")
     # Packets agree; the state line names the register and both values.
     assert re.search(r"\nstate \w+: Python \{.*\}; fixture \{.*\}$", problems[0])
+
+
+def test_python_check_names_the_sides_without_rewriting_texts(tmp_path: Path) -> None:
+    """The side labels are built into the message, so a recorded text that
+    says "Lean" is quoted as it is."""
+    path, number = corrupted(tmp_path, "contract-forwarder-install", reword_error)
+    problems = conformance.check_python_fixture(path)
+    assert problems == [
+        f"contract-forwarder-install: request {number}: Python error: InstallError: lpm value "
+        "'167772672' has bits outside its prefix; fixture error: Lean rejects this install"
+    ]
 
 
 def test_python_check_rejects_a_hand_formatted_fixture(tmp_path: Path) -> None:
