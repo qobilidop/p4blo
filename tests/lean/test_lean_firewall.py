@@ -34,9 +34,9 @@ from tests.corpus.tutorial_firewall.tutorial_firewall import build
 from tests.test_firewall import Step, bypass, collision, connection, edges, shapes
 from tests.test_firewall_boundaries import persistence, truncated
 from tests.test_firewall_generated import Event, campaigns, model, targeted
-from tests.test_lean_forwarder import freeze
+from tests.lean.test_lean_forwarder import freeze
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "tests/corpus/tutorial_firewall"
 EXPORTER = ROOT / "impl/lean/.lake/build/bin/p4blo"
 VECTORS = sorted(CORPUS.glob("*.stf"))

@@ -14,9 +14,9 @@ from p4blo.interp import ExternResult, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_firewall import firewall as firewall
-from tests.test_lean_firewall_body import invalid_env
-from tests.test_lean_forwarder import freeze
+from tests.lean.test_lean_firewall import firewall as firewall
+from tests.lean.test_lean_firewall_body import invalid_env
+from tests.lean.test_lean_forwarder import freeze
 
 ARRAYS = [([], []), ([0], [0]), ([1], [1]), ([1, 0, 0, 1], [0, 1, 0]), ([0] * 4096, [1] * 4096)]
 POSITIONS = [(0, 0), (1, 2), (3, 1), (4095, 4095), (4096, 4096), (0xFFFFFFFF, 0xFFFFFFFF), (1, 1)]

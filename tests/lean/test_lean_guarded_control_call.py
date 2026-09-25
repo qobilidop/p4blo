@@ -24,20 +24,20 @@ from p4blo.interp.values import Bits, Struct, Value
 from p4blo.ir import BlockScope, Index
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_leaves import same_json
-from tests.test_lean_call_entry import shared_snapshot, value_json
-from tests.test_lean_call_return import frame_json, mutable_aggregate_ids, run_json
-from tests.test_lean_edsl_field_commands import field_command_program
-from tests.test_lean_edsl_fields import target
-from tests.test_lean_edsl_guarded_forwarding import (
+from tests.lean.test_lean_call_entry import shared_snapshot, value_json
+from tests.lean.test_lean_call_return import frame_json, mutable_aggregate_ids, run_json
+from tests.lean.test_lean_edsl_field_commands import field_command_program
+from tests.lean.test_lean_edsl_fields import target
+from tests.lean.test_lean_edsl_guarded_forwarding import (
     INPUTS,
     PAYLOAD,
     expected_packet,
     exported_programs,
 )
-from tests.test_lean_edsl_guarded_forwarding import (
+from tests.lean.test_lean_edsl_guarded_forwarding import (
     test_lean_agrees_on_guarded_forwarding as check_packet,
 )
-from tests.test_lean_guarded_call_prefix import (
+from tests.lean.test_lean_guarded_call_prefix import (
     CASES,
     expected_values,
     normalized,
@@ -45,7 +45,7 @@ from tests.test_lean_guarded_call_prefix import (
     strict_snapshot_equal,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="module")

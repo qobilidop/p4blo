@@ -31,10 +31,10 @@ from p4blo.interp.tables import InstalledEntries, InstallError, Match
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_leaves import same_json
-from tests.test_lean_call_return import index_json
-from tests.test_lean_forwarder import assert_program_identity, freeze
+from tests.lean.test_lean_call_return import index_json
+from tests.lean.test_lean_forwarder import assert_program_identity, freeze
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 REF = ("MyIngress", "ipv4_lpm")
 SHAPES = {
     "empty": [],

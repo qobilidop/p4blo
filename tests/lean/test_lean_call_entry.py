@@ -26,9 +26,9 @@ from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_leaves import same_json
-from tests.test_lean_edsl_field_commands import field_command_program
+from tests.lean.test_lean_edsl_field_commands import field_command_program
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_call_entry_exporter_is_a_default_target() -> None:

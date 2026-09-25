@@ -335,7 +335,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Copy_in_arg/inout`, `Copy_in_arg/out`, `Copy_out_argument/non-dontcare`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
   - Lean: `resolveLValue`, `resolveArg`, `copyIn`, `copyBack`, `callExtern`, `Execution.dispatch`
   - Python: `p4blo.interp.expr.resolve_lvalue`, `p4blo.interp.stmt.resolve_arg`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
-  - Test: `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
+  - Test: `tests/lean/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/lean/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/lean/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
   - Class: same. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, `Copy_out_argument/non-dontcare` writes through that reference, and an assignment of an extern call's result resolves its target before the call.
 - **Actions read and write their block's variables.** An action runs in
   its block's activation with its parameters layered on top, so it
@@ -507,7 +507,7 @@ decision, not the parser's.
   - SpecTec: `ParserState_eval/cont`, `$enter_e`, `$exit_e`, `VarDecl_eval/non-initializer`
   - Lean: `Frame.forBlock`
   - Python: `p4blo.interp.env.Env.for_block`, `p4blo.frontend.blocks.BlockCx.zero`, `p4blo.edsl.core.blocks.Stmts.local`, `p4blo.edsl.core.blocks.zero_stmts`
-  - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `tests/unit/test_edsl_v2.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
+  - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `tests/unit/test_edsl_v2.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/lean/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
   - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and the zero value the elaboration writes at the declaration is that default on every entry, which the bridge's `statelocal`, `actlocal` and `funclocal` probes check against SpecTec.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,

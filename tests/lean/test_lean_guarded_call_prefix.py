@@ -23,20 +23,20 @@ from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_call_body_entry import assert_selected_body
-from tests.test_lean_call_entry import independent_values, shared_snapshot, value_json
-from tests.test_lean_edsl_fields import target
-from tests.test_lean_edsl_guarded_forwarding import (
+from tests.lean.test_lean_call_body_entry import assert_selected_body
+from tests.lean.test_lean_call_entry import independent_values, shared_snapshot, value_json
+from tests.lean.test_lean_edsl_fields import target
+from tests.lean.test_lean_edsl_guarded_forwarding import (
     INPUTS,
     PAYLOAD,
     expected_packet,
     exported_programs,
 )
-from tests.test_lean_edsl_guarded_forwarding import (
+from tests.lean.test_lean_edsl_guarded_forwarding import (
     test_lean_agrees_on_guarded_forwarding as check_packet,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CASES = list(itertools.product(INPUTS, [False, True]))
 
 

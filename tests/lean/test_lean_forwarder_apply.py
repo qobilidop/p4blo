@@ -33,11 +33,11 @@ from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.oracle.bmv2 import run as bmv2_run
 from tests.codec.test_codec_leaves import same_json
-from tests.test_lean_edsl_fields import target
-from tests.test_lean_forwarder import assert_program_identity, freeze
-from tests.test_lean_forwarder_action import environment as action_environment
-from tests.test_lean_forwarder_action import run_json, selected_action
-from tests.test_lean_forwarder_tables import (
+from tests.lean.test_lean_edsl_fields import target
+from tests.lean.test_lean_forwarder import assert_program_identity, freeze
+from tests.lean.test_lean_forwarder_action import environment as action_environment
+from tests.lean.test_lean_forwarder_action import run_json, selected_action
+from tests.lean.test_lean_forwarder_tables import (
     ADDRESSES,
     REF,
     SHAPES,
@@ -48,9 +48,9 @@ from tests.test_lean_forwarder_tables import (
     inputs,
     packet_case,
 )
-from tests.test_lean_forwarder_tables import PROFILES as ROUTES
+from tests.lean.test_lean_forwarder_tables import PROFILES as ROUTES
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 STATES = list(itertools.product([False, True], [False, True], [False, True], [0, 1, 255]))
 CASES = {
     f"{route}/{address}/{ordinal % 24}": (route, address, STATES[ordinal % 24])

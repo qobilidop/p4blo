@@ -127,7 +127,7 @@ complete protobuf export equals the Python corpus program and the text
 golden byte for byte. Ordinary parser, action, table, extern and operator
 assembly remains an explicitly unverified seam. `p4blo leanTutorialFirewall run`
 prepares the same in-memory program through the public API and keeps
-extern state across requests; `tests/test_lean_firewall.py` runs both
+extern state across requests; `tests/lean/test_lean_firewall.py` runs both
 vectors, the collision profiles, all byte cuts, the persistence sequences
 and the generated campaigns against the same independent expectations,
 and separately checks a fixed-server transcript so that a server reset

@@ -34,7 +34,7 @@ from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "tests/corpus/forwarder"
 EXPORTER = ROOT / "impl/lean/.lake/build/bin/p4blo"
 VECTORS = sorted(CORPUS.glob("*.stf"))
@@ -456,7 +456,7 @@ def test_lean_agrees_forwarder_protocol_error_retains_inputs(
         raise ProtocolError(report.protocol_error or "transport failure", report)
 
     monkeypatch.setenv("P4BLO_DRT_FAILURE_DIR", str(tmp_path))
-    monkeypatch.setattr("tests.test_lean_forwarder.compare_program", failed)
+    monkeypatch.setattr("tests.lean.test_lean_forwarder.compare_program", failed)
     with pytest.raises(pytest.fail.Exception, match="complete mismatch saved"):
         compare_and_save(forwarder, [case], lean_binary, "transport")
     program, cases, ports, seed = replay.load(tmp_path / "lean-forwarder-transport.json")

@@ -36,7 +36,7 @@ from p4blo.v0 import p4blo_pb2 as pb
 from tests.unit import test_validator
 from tests.examples import catalog
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "tests" / "corpus"
 # Generated programs per family and profile; the families' own campaigns run
 # 200 seeds each against the interpreters, so a sample of their shapes here.

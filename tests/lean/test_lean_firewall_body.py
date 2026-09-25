@@ -18,8 +18,8 @@ from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.test_firewall import connection
-from tests.test_lean_firewall import firewall as firewall
-from tests.test_lean_forwarder import freeze
+from tests.lean.test_lean_firewall import firewall as firewall
+from tests.lean.test_lean_forwarder import freeze
 
 
 def expected_vars() -> dict[str, Value]:

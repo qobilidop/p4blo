@@ -10,14 +10,14 @@ from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_edsl_field_commands import (
+from tests.lean.test_lean_edsl_field_commands import (
     PAYLOAD,
     expected_packet,
 )
-from tests.test_lean_edsl_field_commands import (
+from tests.lean.test_lean_edsl_field_commands import (
     authored_field_commands as authored_field_commands,
 )
-from tests.test_lean_edsl_field_commands import (
+from tests.lean.test_lean_edsl_field_commands import (
     test_lean_agrees_on_authored_field_commands as check_authored_case,
 )
 

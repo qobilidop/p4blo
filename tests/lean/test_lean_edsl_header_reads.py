@@ -26,7 +26,7 @@ from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Header, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_edsl_fields import member, target
+from tests.lean.test_lean_edsl_fields import member, target
 
 PAYLOAD = bytes.fromhex("deadbeef")
 # Explicit expected answers, independent of exported source syntax/denotation.
@@ -202,7 +202,7 @@ def pre_read_observer(program: pb.Program) -> pb.Program:
 
 
 def test_header_read_exporter_is_a_default_target() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
     assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
@@ -210,7 +210,7 @@ def test_header_read_exporter_is_a_default_target() -> None:
 @pytest.fixture(scope="module")
 def authored_header_reads(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
     return exported_programs(exporter)

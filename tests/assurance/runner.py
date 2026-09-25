@@ -29,11 +29,11 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
 NODES = (
-    "tests/test_lean_forwarder_apply.py::test_lean_agrees_skip_default_packet_replay",
-    "tests/test_lean_forwarder_tables.py::test_lean_agrees_shortest_prefix_fault_replay",
-    "tests/test_lean_firewall_bloom.py::test_lean_agrees_bloom_read_alias_is_not_expected",
-    "tests/test_lean_firewall_bloom.py::test_lean_agrees_bloom_order_survives_final_cells",
-    "tests/test_lean_firewall_bloom.py::test_lean_agrees_bloom_observer_rejects_effects[repair]",
+    "tests/lean/test_lean_forwarder_apply.py::test_lean_agrees_skip_default_packet_replay",
+    "tests/lean/test_lean_forwarder_tables.py::test_lean_agrees_shortest_prefix_fault_replay",
+    "tests/lean/test_lean_firewall_bloom.py::test_lean_agrees_bloom_read_alias_is_not_expected",
+    "tests/lean/test_lean_firewall_bloom.py::test_lean_agrees_bloom_order_survives_final_cells",
+    "tests/lean/test_lean_firewall_bloom.py::test_lean_agrees_bloom_observer_rejects_effects[repair]",
     "tests/test_drt_aggregate_copy.py::test_lean_agrees_copy_observer_kills_aliasing",
     "tests/test_drt_replay.py::test_ambiguous_peer_cannot_produce_false_agreement",
 )
@@ -138,8 +138,8 @@ class Input:
 def inputs() -> tuple[Input, ...]:
     from tests.corpus.tutorial_firewall.tutorial_firewall import build
     from tests.test_firewall import connection
-    from tests.test_lean_forwarder_apply import application_packet
-    from tests.test_lean_forwarder_tables import packet_case
+    from tests.lean.test_lean_forwarder_apply import application_packet
+    from tests.lean.test_lean_forwarder_tables import packet_case
 
     forwarder = ir.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
     firewall = build()
@@ -324,8 +324,8 @@ class Run:
 
 def baseline_known_answers(selected: tuple[Input, ...]) -> None:
     from tests.test_firewall import connection
-    from tests.test_lean_forwarder_apply import application_output
-    from tests.test_lean_forwarder_tables import packet_expected
+    from tests.lean.test_lean_forwarder_apply import application_output
+    from tests.lean.test_lean_forwarder_tables import packet_expected
 
     for item in selected:
         loaded = arch.load(item.program)

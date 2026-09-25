@@ -22,8 +22,8 @@ from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_edsl_field_commands import PAYLOAD, field_command_program
-from tests.test_lean_edsl_fields import member, target
+from tests.lean.test_lean_edsl_field_commands import PAYLOAD, field_command_program
+from tests.lean.test_lean_edsl_fields import member, target
 
 INPUTS = {
     f"guard-{str(ev).lower()}-{str(iv).lower()}-{str(hit).lower()}-{ttl}": (ev, iv, hit, ttl)
@@ -139,12 +139,12 @@ def exported_programs(command: list[str]) -> dict[str, pb.Program]:
 
 @pytest.fixture(scope="module")
 def guarded_programs(lean_binary: Path) -> dict[str, pb.Program]:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     return exported_programs([str(root / "impl/lean/.lake/build/bin/p4blo"), "guardedForward"])
 
 
 def test_guarded_forward_exporter_is_a_default_target() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
     assert "p4blo" in package["defaultTargets"]
 

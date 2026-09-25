@@ -268,7 +268,7 @@ To reproduce, apply one exact edit above to this increment in an isolated
 worktree. Build all three packages with `scripts/check-lean.sh` before mutation;
 for Lean mutations run `lake +leanprover/lean4:v4.34.0 -d lean build` from
 the root after the development setup. Then run `lake test` in `impl/lean/` for
-the source known answers or required `uv run pytest 'tests/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`
+the source known answers or required `uv run pytest 'tests/lean/test_lean_edsl.py::test_lean_agrees_on_authored_scalar_known_answers[read-x]' -q`
 (substitute `read-add` for experiment 3). The direct differential check in
 experiment 4 uses the fixture's validated `read-x` program,
 `Case(pb.Entries(), 0, b"")`, four ports and `spec/arch/.lake/build/bin/p4blo-lean`;
@@ -486,7 +486,7 @@ the isolated worktree with its one-line Python mutation active:
 
 ```sh
 P4BLO_REQUIRE_LEAN=1 nix develop -c uv run pytest \
-  'tests/test_lean_edsl_statements.py::test_lean_agrees_on_authored_statement_known_answers[update-dependent]' -q
+  'tests/lean/test_lean_edsl_statements.py::test_lean_agrees_on_authored_statement_known_answers[update-dependent]' -q
 nix develop -c uv run python -m p4blo.drt.replay \
   /Users/qobilidop/my/work/p4blo-statement-mutants/.artifacts/drt/lean-statements-update-dependent.json \
   --lean /Users/qobilidop/my/work/p4blo-statement-mutants/ir/.lake/build/bin/p4blo-lean
@@ -727,7 +727,7 @@ declaration theorem. Writable field commands remain the next step.
 The default `fieldExpressions` executable exports seven authored expressions
 with case IDs, result widths and initial header validity. Fixed numeric
 inputs and expected answers are independently written in Lean tests and
-`tests/test_lean_edsl_fields.py`; the exporter emits no computed answer.
+`tests/lean/test_lean_edsl_fields.py`; the exporter emits no computed answer.
 The Python wrapper builds an ordinary validated program with a nested header
 root and metadata root. Its valid observer header reports every stored
 source field, stored header validity, an unrelated sentinel and the result.
@@ -808,7 +808,7 @@ From the root of an isolated checkout with this checkpoint's Lean binaries
 already built, apply one Python edit above, then run:
 
 ```sh
-nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl_fields.py -q -k 'known_answers and field-right'
+nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/lean/test_lean_edsl_fields.py -q -k 'known_answers and field-right'
 ```
 
 For faults 5 and 6, replace `field-right` with `field-add-invalid` and
@@ -984,7 +984,7 @@ an independent forwarding evaluator to make the example easier to prove.
 ### Full-state field-command conformance and adversarial campaign
 
 The default `fieldCommands` fixture exporter emits ten named body ASTs and
-declared inputs only. `tests/test_lean_edsl_field_commands.py` independently
+declared inputs only. `tests/lean/test_lean_edsl_field_commands.py` independently
 checks the complete ID/input set, declares the schema and writes expected
 final values. It invokes each authored body once in a real subcontrol with
 `hdr`/`meta` inout parameters, an input-only `route`, and local `scratch`.
@@ -1065,7 +1065,7 @@ Reconstruct each actual Python fault with its exact guard above in a separate
 checkout, build the unchanged Lean packages, then run from that checkout:
 
 ```sh
-nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl_field_commands.py -q -k 'authored_field_commands and dependent-wrap-invalid'
+nix develop -c env P4BLO_REQUIRE_LEAN=1 uv run pytest tests/lean/test_lean_edsl_field_commands.py -q -k 'authored_field_commands and dependent-wrap-invalid'
 ```
 
 For fault 6 substitute `dependent-next`. The tracked helper constructs and
@@ -1310,10 +1310,10 @@ kind refinement instead (mutant 6 below).
 
 ### Conformance
 
-`tests/test_lean_agrees_validity.py`, on 2026-09-24 at the branch
+`tests/lean/test_lean_agrees_validity.py`, on 2026-09-24 at the branch
 `work/validity`: 175 accepted programs (12 corpus, 3 examples, 40 seeds of
 each DRT family under both profiles) and the 308 programs
-`tests/test_validator.py` hands to `validator.validate`, recorded by
+`tests/unit/test_validator.py` hands to `validator.validate`, recorded by
 wrapping it, of which 285 are rejected. Both sides agree on every
 acceptance; on every rejection Lean's first code corresponds to Python's
 first by the test's code table, the identity except that 34 programs

@@ -26,7 +26,7 @@ from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Header, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_edsl_fields import member, target
+from tests.lean.test_lean_edsl_fields import member, target
 
 PAYLOAD = bytes.fromhex("deadbeef")
 # Inputs: ttl, Ethernet validity, IPv4 validity, route hit. Complete changed
@@ -205,7 +205,7 @@ def field_command_program(name: str, body: list[pb.Stmt]) -> pb.Program:
 
 
 def test_field_command_exporter_is_a_default_target() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
     assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
@@ -213,7 +213,7 @@ def test_field_command_exporter_is_a_default_target() -> None:
 @pytest.fixture(scope="module")
 def authored_field_commands(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
     completed = subprocess.run(

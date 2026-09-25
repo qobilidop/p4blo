@@ -66,7 +66,7 @@ INPUTS = {
 
 
 def test_user_proof_audit_and_exporter_are_default_targets() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
     assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
@@ -75,7 +75,7 @@ def test_user_proof_audit_and_exporter_are_default_targets() -> None:
 def authored_expressions(lean_binary: Path) -> dict[str, pb.Program]:
     # lean_binary enforces the shared absent-vs-broken/required gate policy.
     assert lean_binary.is_file()
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"missing Lean eDSL exporter: run {root}/scripts/check-lean.sh"
     completed = subprocess.run(

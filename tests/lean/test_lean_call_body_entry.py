@@ -14,10 +14,10 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_lean_call_entry import independent_values, observe_python_entry, value_json
-from tests.test_lean_edsl_guarded_forwarding import exported_programs
+from tests.lean.test_lean_call_entry import independent_values, observe_python_entry, value_json
+from tests.lean.test_lean_edsl_guarded_forwarding import exported_programs
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 PAIRS = list(itertools.product([False, True], repeat=2))
 
 
