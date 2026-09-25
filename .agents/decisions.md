@@ -142,6 +142,35 @@ A decision the design document already settles is not repeated here.
 
 ## Python eDSL
 
+- **Blocks are the public authoring unit; an optional `BlockLibrary` is
+  not a complete program.** It bundles block definitions and shared type,
+  error and extern declarations, with no global H/M roots, export roles,
+  ports or packet-fate policy. Independent compilation produces a fragment,
+  not a whole-program validity certificate. Architecture support assembles
+  the library into the existing wire Program and supplies execution logic.
+  Reason: the user rejected `p4.Program` as conflating core authoring with
+  architecture composition; arbitrary export names alone do not remove the
+  wire envelope's H/M calling convention. (2026-09-25)
+- **Architecture assembly recompiles a library in one shared context.**
+  It does not link independently compiled protobuf fragments. This preserves
+  declaration order and shared type, sub-block and extern identities without
+  introducing a linker or changing wire semantics. (2026-09-25)
+- **Concrete extern declarations are architecture support; registration is
+  explicit and local.** `edsl.Extern` is generic; supplied typed families and
+  dynamic helpers live in `arch.externs.declarations`. A Registry binds
+  independently described implementation Shapes through per-instance
+  factories. Generic loading requires registry, contract and role kinds;
+  `arch.reference` explicitly selects the supplied environment. Python
+  registration provides neither Lean semantics nor printer support.
+  Reason: core language constructs must not appear to include a built-in
+  switch or a fixed set of stateful services. (2026-09-25)
+- **Example readability precedes new syntax.** The router, firewall and
+  load balancer use domain type aliases, symbolic predicates and ordinary
+  build-time helpers, retaining explicit assignments and runtime branches.
+  Their unchanged IR goldens and independent packet/state tests are the
+  acceptance anchors. Keep each example self-contained; extract a shared
+  library only for a demonstrated authoring gain. (2026-09-25)
+
 - **The typed eDSL is type-safe by construction where pyright allows and
   run-time checked where it does not**, deviating from its design note in
   four places the type checker forced: width aliases and typed literals

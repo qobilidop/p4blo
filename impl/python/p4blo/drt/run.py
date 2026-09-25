@@ -476,7 +476,7 @@ def compare(
     """`count` random cases of the corpus program in `program_dir`, on the
     Python reference and on `lean` (the executable and leading arguments)."""
     program = ir.load_text(program_dir / f"{program_dir.name}.txtpb")
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     cases = generate(loaded.index, seed, count, ports)
     return compare_program(program, cases, ports, lean, seed)
 
@@ -489,7 +489,7 @@ def compare_program(
     seed: int = 0,
 ) -> Report:
     """Compare concrete inputs from fresh state, retaining every peer failure."""
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     with tempfile.TemporaryDirectory() as tmp:
         program_json = Path(tmp) / "program.json"
         program_json.write_text(ir.dump_json(program))

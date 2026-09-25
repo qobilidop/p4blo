@@ -221,7 +221,7 @@ def test_independent_crc_indices(port: int) -> None:
     ],
 )
 def test_known_packets_and_complete_state(sequence: list[Step]) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     assert snapshot(loaded) == expected_state(set())
     for item in sequence:
         assert tuple(run_python(loaded, item.case, 4)) == item.outputs
@@ -571,7 +571,7 @@ def mutant(name: str) -> tuple[pb.Program, list[Step]]:
 @pytest.mark.parametrize("name", MUTATIONS)
 def test_firewall_known_answers_kill_valid_semantic_mutations(name: str) -> None:
     program, sequence = mutant(name)
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     detected = False
     for item in sequence:
         outputs = tuple(run_python(loaded, item.case, 4))

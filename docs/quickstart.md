@@ -52,7 +52,7 @@ proof or universal Python correctness.
 
 ## Run the Python-authored programs
 
-This builds from the Python sources, validates through `arch.load`, and checks
+This builds from the Python sources, validates through `arch.reference.load`, and checks
 the independent STF packet expectations. Keep one `Loaded` object for an
 entire sequence: its externs hold the firewall's persistent registers.
 
@@ -69,7 +69,7 @@ for name, build, vector in [
     ("forwarder", forwarder, "forward.stf"),
     ("tutorial_firewall", firewall, "connection.stf"),
 ]:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     switch = arch.Switch(ports=4)
     driver = arch.stf_driver(switch, loaded)
     ports = []
@@ -94,7 +94,7 @@ tutorial_firewall: output ports [[], [2], [1], []]
 The firewall first drops an unsolicited reply, then an outbound SYN sets its
 two Bloom cells, the corresponding reply passes, and another unsolicited
 reply drops. `[]` means no output packet, **not necessarily an error**.
-Recreating `arch.load(...)` for each packet resets that state. Table entries
+Recreating `arch.reference.load(...)` for each packet resets that state. Table entries
 are installed from the vector's current configuration for each packet;
 they are separate from persistent extern state.
 
@@ -207,7 +207,7 @@ engine with a separate correctness claim.
 
 ## Diagnostics and checks
 
-Python construction may raise `EdslError` with a source location; `arch.load`
+Python construction may raise `EdslError` with a source location; `arch.reference.load`
 can reject validation, extern binding, missing exports or architecture-contract
 mismatches. Bad host entries are rejected by `loaded.entries(...)` before
 `Switch.run` starts. Runtime errors are separate from an ordinary drop.

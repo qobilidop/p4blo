@@ -8,29 +8,9 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from p4blo.edsl import (
-    Bits,
-    Bool,
-    Control,
-    Deparser,
-    Header,
-    L,
-    Parser,
-    Program,
-    Struct,
-    Table,
-    Transition,
-    action,
-    bit8,
-    bit9,
-    bit16,
-    bit32,
-    bit48,
-    concat,
-    lpm,
-    state,
-)
-from p4blo.edsl.externs import Checksum16
+from p4blo.arch import assemble
+from p4blo.edsl import Bits, Bool, Control, Deparser, Header, L, Parser, BlockLibrary, Struct, Table, Transition, action, bit8, bit9, bit16, bit32, bit48, concat, lpm, state
+from p4blo.arch.externs.declarations import Checksum16
 
 
 class ethernet_t(Header):
@@ -140,12 +120,4 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.ipv4)
 
 
-program = Program(
-    "forwarder",
-    headers=headers,
-    metadata=metadata,
-    parser=MyParser,
-    control=MyIngress,
-    deparser=MyDeparser,
-    externs=[csum],
-)
+program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser, externs=[csum]), name="forwarder", headers=headers, metadata=metadata, exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser})

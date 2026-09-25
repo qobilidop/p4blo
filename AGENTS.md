@@ -50,7 +50,9 @@ creates no git tags.
    finite scopes, assurance milestone 1, the application collection and
    the architecture-free IR semantics scope, are complete and frozen;
    maintenance does not reopen parked proofs. The status file names any
-   active engineering work.
+   active engineering work. The current authoring scope develops independent
+   P4 blocks and optional BlockLibrary bundles; architecture assembly remains
+   separate (see `.agents/notes/edsl-ergonomics.md` while active).
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
    not infer broader guarantees from counts.

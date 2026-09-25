@@ -15,6 +15,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "impl/python/p4blo"
 IR_SIDE = ("ir.py", "validator", "printer", "stf.py", "interp", "edsl")
@@ -52,6 +54,30 @@ def crossings(files: list[Path], forbidden: tuple[str, ...]) -> list[str]:
 
 def test_ir_side_never_imports_architecture_or_harness() -> None:
     assert crossings(modules(*IR_SIDE), ("p4blo.arch", "p4blo.drt")) == []
+
+
+def test_import_boundary_detects_a_concrete_extern_import(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A convenience re-export must not smuggle a family into the core."""
+    candidate = tmp_path / "edsl.py"
+    candidate.write_text("from p4blo.arch.externs.declarations import Register\n")
+    monkeypatch.setitem(crossings.__globals__, "ROOT", tmp_path)
+    assert crossings([candidate], ("p4blo.arch",)) == [
+        "edsl.py imports p4blo.arch.externs.declarations",
+        "edsl.py imports p4blo.arch.externs.declarations.Register",
+    ]
+
+
+def test_core_edsl_has_no_concrete_extern_families() -> None:
+    from p4blo import edsl
+    from p4blo.edsl import externs
+
+    for name in ("Register", "Counter", "Checksum16", "CRC16", "CRC32"):
+        assert not hasattr(edsl, name), name
+        assert not hasattr(externs, name), name
+    assert externs.__all__ == ["Extern"]
+    assert not (PACKAGE / "edsl/core/externs.py").exists()
 
 
 def test_architecture_never_imports_harness() -> None:

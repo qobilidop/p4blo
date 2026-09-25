@@ -136,7 +136,7 @@ def check_copy(program: pb.Program, expected: bytes, lean_binary: Path) -> None:
         bundle = directory / f"aggregate-copy-{digest}.json"
         save(report, bundle)
         pytest.fail(f"{report.summary()}; replay {bundle}; {report.protocol_error}")
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 @pytest.mark.parametrize("kind", ["header", "struct"])

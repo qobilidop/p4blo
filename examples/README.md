@@ -14,6 +14,10 @@ The firewall and load balancer do not import or require running the router.
 Each application is intentionally small, with its supported packet profile and
 limitations stated in its README.
 
+The [Python authoring guide](../docs/python-edsl.md) explains the eDSL,
+named exports and explicit extern registration. For a small extension outside
+the supplied switch, run `uv run python -m examples.custom_extern`.
+
 Each application has a complete `program.py`, a host-side `demo.py` and a
 behavioral contract in its README. Run from the repository root using the
 environment created by `uv sync --locked`; see the [setup guide](../README.md#getting-started).

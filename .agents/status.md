@@ -9,8 +9,24 @@ previous one at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
 The authorized scope, acceptance criteria, isolated worktrees and next steps
 are in [edsl-ergonomics.md](notes/edsl-ergonomics.md). Integration branch:
-`work/edsl-ergonomics`, base `80eba84`. Initial design inspection is in
-progress; no implementation checks have run yet.
+`work/edsl-ergonomics`, base `80eba84`. The block-library API, explicit
+architecture assembly and extern binding, three example rewrites and caller
+migrations are implemented. Independent integrated review and final local/
+remote gates are pending; nothing has been pushed yet.
+
+The user clarified that `p4.Program` must leave the public authoring API:
+blocks and their shared declarations form an optional BlockLibrary, while
+architecture logic forms a complete executable system. The wire Program
+remains an assembly envelope, not the core authoring abstraction.
+
+Local evidence so far: `scripts/check-lean.sh` passed; focused API tests
+(12), extern tests (6), and all three example demos, standalone compilation,
+exact text/binary golden comparisons and targeted Pyright passed. The first
+full gate had 5183 passes, 1 optional XDP skip, 4 expected failures and one
+stale diagnostic-line expectation after an import moved; the expected error
+was still correctly reported. Its line anchor is corrected and the full gate
+is being rerun. Next: independent review, adversarial assurance and applicable
+oracle checks, then final-revision PR CI and integration.
 
 Engineering-practice maintenance is merged on `main` at `264fd63` through
 [PR #1](https://github.com/qobilidop/p4blo/pull/1), from base `045f3de`.

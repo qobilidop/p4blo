@@ -328,7 +328,7 @@ def baseline_known_answers(selected: tuple[Input, ...]) -> None:
     from tests.programs.test_firewall import connection
 
     for item in selected:
-        loaded = arch.load(item.program)
+        loaded = arch.reference.load(item.program)
         if item.name == "firewall-connection":
             for case, step in zip(item.cases, connection(), strict=True):
                 actual = python_outcome(loaded, case, 4)

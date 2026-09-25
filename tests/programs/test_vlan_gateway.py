@@ -99,7 +99,7 @@ def sequence() -> tuple[list[Case], list[Outcome]]:
 
 
 def test_gateway_independent_packets_and_persistent_admissions() -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     cases, expected = sequence()
     for number, (case, answer) in enumerate(zip(cases, expected, strict=True)):
         assert python_outcome(loaded, case, 4) == answer, number
@@ -122,7 +122,7 @@ def test_lean_agrees_gateway_packets_and_persistent_admissions(
             return answer
 
         try:
-            report = compare_cases(program.name, arch.load(program), cases, 4, observe)
+            report = compare_cases(program.name, arch.reference.load(program), cases, 4, observe)
         except ProtocolError as error:
             if error.report is not None:
                 save(error.report, ROOT / ".artifacts/drt/vlan-gateway-protocol.json")

@@ -167,7 +167,7 @@ def check(program: pb.Program, case: Case, expected: bytes, lean_binary: Path) -
     assert validator.validate(program) == []
     report = compare_program(program, [case], 4, [lean_binary])
     assert report.passed, report.summary()
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 @pytest.mark.parametrize("kind", ["action", "block"])

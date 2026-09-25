@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Error,
@@ -21,7 +23,6 @@ from p4blo.edsl import (
     L,
     Out,
     Parser,
-    Program,
     Stack,
     Struct,
     Transition,
@@ -160,15 +161,13 @@ class DeparserI(Deparser[headers]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "subparser_stack",
+    return assemble(
+        BlockLibrary(parserI, cIngress, DeparserI, errors=errors),
+        name="subparser_stack",
         headers=headers,
         metadata=metadata,
-        errors=errors,
-        parser=parserI,
-        control=cIngress,
-        deparser=DeparserI,
-    ).build()
+        exports={"parser": parserI, "control": cIngress, "deparser": DeparserI},
+    )
 
 
 if __name__ == "__main__":

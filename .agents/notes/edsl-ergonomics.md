@@ -10,8 +10,9 @@ engineering reflection. Semantic/proof backlog is not reopened.
 
 - All three applications read more clearly, remain independently readable,
   and preserve their packet, fate and persistent-state contracts.
-- Generic authoring supports named block exports without requiring the
-  supplied parser/control/deparser pipeline or metadata vocabulary.
+- Independent P4 blocks compile without architecture roots or roles. An
+  optional BlockLibrary bundles shared declarations without claiming to be
+  a complete program; architecture assembly owns wire exports and H/M roots.
 - The core supplies generic extern declarations/calls; concrete families
   live in explicit support libraries. Registration, binding, instance state
   and runtime lifetime have a documented public API.
@@ -57,6 +58,34 @@ worktrees will be created from each committed integrated milestone.
 Design inspection in progress. Current friction: concrete externs exported
 from the core eDSL, implicit default runtime registry/contract/roles, typed
 Program requiring three pipeline roles, repeated wide type expressions and
-checksum construction, and deeply nested application policy. No API choice
-has yet been accepted. Next: compare agent proposals, settle the API, then
-implement and migrate.
+checksum construction, and deeply nested application policy. Initial named-export Program API, explicit loader, concrete extern split
+and readability changes were implemented in isolated commits. During integration
+the user clarified that public `p4.Program` itself mixes core and architecture.
+The final design must start from independently authored P4 blocks, with
+composition and role assignment in architecture support; the wire Program
+container can remain an assembly detail. The named-export Program proposal
+is superseded and must not be shipped as the public authoring API.
+
+Current committed API/example changes are provisional; root also has caller
+migrations and documentation in progress. Lean gate passed locally; first
+Pyright found one stale `arch.ROLES` reference. No full integration gate or
+review has passed yet. Next: settle independent block build/assembly API,
+revise examples and custom extension, then complete migration and gates.
+
+
+## Final API contract after user steering
+
+`p4.BlockLibrary(*block_classes, externs=..., errors=...)` is the reusable
+source collection. `.compile()` returns a CompiledLibrary fragment without
+H/M roots or exports. No public typed `p4.Program` remains. Generic
+`arch.assemble(library, name=..., headers=..., metadata=..., exports=...)`
+and the optional `arch.reference.assemble` pipeline adapter produce the
+existing wire Program through one compiler context. `arch.load` requires
+registry/contract/role kinds; `arch.reference.load` is the explicitly named
+supplied environment. Concrete extern imports and explicit local registration
+remain as agreed. A scalar-only block is a required independence witness.
+
+The three examples retain one program.py each with block definitions, a
+BlockLibrary and a small reference assembly `build()` for the existing test
+contract. Their demos explicitly select the reference environment and supplied
+extern registry. This retains independent readability and exact IR goldens.

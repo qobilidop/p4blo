@@ -45,7 +45,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.program is None:
         parser.error("run needs a program")
 
-    loaded = arch.load(ir.load_json(args.program.read_text()))
+    loaded = arch.reference.load(ir.load_json(args.program.read_text()))
     switch = arch.Switch(args.ports)
     for line in sys.stdin:
         if not line.strip():

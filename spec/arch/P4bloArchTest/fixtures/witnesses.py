@@ -1490,7 +1490,7 @@ def generate() -> dict[str, object]:
     remaining_cases()
     cases: list[dict[str, object]] = []
     for w in WITNESSES:
-        loaded = arch.load(PROGRAMS[w.program])
+        loaded = arch.reference.load(PROGRAMS[w.program])
         outcome = python_outcome(loaded, Case(w.entries, 0, w.packet), PORTS)
         assert outcome.error is None and outcome.diagnostic is None, (w.program, outcome)
         assert outcome.outputs is not None

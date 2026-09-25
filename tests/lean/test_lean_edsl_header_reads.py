@@ -236,7 +236,7 @@ def test_lean_agrees_on_authored_header_reads(
         pytest.fail(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
-    assert run_python(arch.load(program), case, 4) == [(0, expected_packet(name))]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected_packet(name))]
 
 
 @pytest.mark.parametrize("fault_kind", ["return", "side-effect"])
@@ -277,7 +277,7 @@ def test_lean_agrees_after_retained_validity_read_fault(
             case = Case(pb.Entries(), 0, PAYLOAD)
             weak_report = compare_program(weak, [case], 4, [lean_binary])
             assert weak_report.passed and weak_report.agreed == 1 and hits == 1
-            assert run_python(arch.load(weak), case, 4) == [(0, expected_packet(name))]
+            assert run_python(arch.reference.load(weak), case, 4) == [(0, expected_packet(name))]
         with pytest.raises(pytest.fail.Exception, match="replay"):
             test_lean_agrees_on_authored_header_reads(name, authored_header_reads, lean_binary)
         program, cases, ports, seed = replay.load(bundle)

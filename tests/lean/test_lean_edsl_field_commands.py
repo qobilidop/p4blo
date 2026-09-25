@@ -254,7 +254,7 @@ def test_lean_agrees_on_authored_field_commands(
         pytest.fail(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
-    assert run_python(arch.load(program), case, 4) == [(0, expected_packet(name))]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected_packet(name))]
 
 
 @pytest.mark.parametrize("fault_kind", ["validity", "sibling"])

@@ -59,7 +59,7 @@ def _resolve_keys(index: ir.Index, statements: list[stf.Statement]) -> list[stf.
 
 def replay(program: pb.Program, text: str) -> list[str]:
     """Replay a p4c STF file on `program`; the problems found, if any."""
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     run = arch.stf_driver(arch.Switch(ports=PORTS), loaded)
     statements = _resolve_keys(loaded.index, stf.parse(re.sub(r"\$([0-9]+)", r"[\1]", text)))
     installed: list[stf.Add | stf.SetDefault] = []

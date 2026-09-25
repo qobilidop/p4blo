@@ -268,7 +268,7 @@ def _outputs(
 ) -> list[tuple[int, list[tuple[int, bytes]]]]:
     """Every packet's outputs, entries resolved against `entries_of` (the
     golden's names, which vectors use) and installed by position."""
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     run = arch.stf_driver(arch.Switch(ports=4), loaded)
     roles = {e.role: e.block for e in program.exports}
     golden_roles = {e.block: e.role for e in entries_of.program.exports}

@@ -9,19 +9,20 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
+from p4blo.arch.externs.declarations import Counter, Register
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
     Parser,
-    Program,
     Struct,
     Transition,
     bit8,
     bit32,
     state,
 )
-from p4blo.edsl.externs import Counter, Register
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -91,15 +92,13 @@ class deparser(Deparser[Headers]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "stateful",
+    return assemble(
+        BlockLibrary(p, pipeline, deparser, externs=[r, pkts]),
+        name="stateful",
         headers=Headers,
         metadata=Meta,
-        parser=p,
-        control=pipeline,
-        deparser=deparser,
-        externs=[r, pkts],
-    ).build()
+        exports={"parser": p, "control": pipeline, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":

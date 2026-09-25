@@ -8,7 +8,9 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
@@ -17,7 +19,6 @@ from p4blo.edsl import (
     L,
     Out,
     Parser,
-    Program,
     Stack,
     Struct,
     Table,
@@ -194,14 +195,13 @@ class deparser(Deparser[packet_t]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "acl",
+    return assemble(
+        BlockLibrary(p, ingress, deparser),
+        name="acl",
         headers=packet_t,
         metadata=Meta,
-        parser=p,
-        control=ingress,
-        deparser=deparser,
-    ).build()
+        exports={"parser": p, "control": ingress, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":

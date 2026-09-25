@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 
 from p4blo import arch
+from p4blo.arch.externs import declarations as externs
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
 from p4blo.drt.run import compare_program
 from p4blo.edsl import core
-from p4blo.edsl.core import externs
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -31,7 +31,7 @@ def family_program(suffix: str) -> pb.Program:
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])
 def test_python_dispatches_existing_families(suffix: str) -> None:
-    assert set(arch.load(family_program(suffix)).externs) == {"r", "c", "s"}
+    assert set(arch.reference.load(family_program(suffix)).externs) == {"r", "c", "s"}
 
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])

@@ -58,7 +58,7 @@ PROGRAMS = sorted({program_of(v) for v in VECTORS})
 
 
 def load(path: Path) -> arch.Loaded:
-    return arch.load(ir.load_text(path.read_text()))
+    return arch.reference.load(ir.load_text(path.read_text()))
 
 
 @pytest.fixture(scope="module")
@@ -88,7 +88,7 @@ def test_block_printer_has_no_shim(path: Path) -> None:
     assert "#include <p4blo.p4>" in text
     assert "v1model" not in text
     assert "standard_metadata" not in text
-    parts = [loaded.block(role) for role in arch.ROLES]
+    parts = [loaded.block(role) for role in arch.reference.ROLES]
     assert text.rstrip().endswith(f"P4blo({', '.join(f'{p}()' for p in parts)}) main;")
 
 

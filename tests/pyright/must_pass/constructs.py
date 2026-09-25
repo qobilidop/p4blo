@@ -13,35 +13,9 @@ from __future__ import annotations
 
 from enum import IntEnum
 
-from p4blo.edsl import (
-    Bits,
-    Bool,
-    Control,
-    Deparser,
-    Header,
-    L,
-    InOut,
-    Out,
-    Parser,
-    Program,
-    Stack,
-    Struct,
-    Table,
-    Transition,
-    Var,
-    action,
-    bit8,
-    bit9,
-    bit16,
-    bit32,
-    concat,
-    entry,
-    exact,
-    mux,
-    state,
-    ternary,
-)
-from p4blo.edsl.externs import Checksum16, Counter, Register
+from p4blo.arch import assemble
+from p4blo.edsl import Bits, Bool, Control, Deparser, Header, L, InOut, Out, Parser, BlockLibrary, Stack, Struct, Table, Transition, Var, action, bit8, bit9, bit16, bit32, concat, entry, exact, mux, state, ternary
+from p4blo.arch.externs.declarations import Checksum16, Counter, Register
 
 MAX_H2 = 5
 
@@ -200,12 +174,4 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.h2)
 
 
-program = Program(
-    "constructs",
-    headers=headers,
-    metadata=metadata,
-    parser=MyParser,
-    control=MyIngress,
-    deparser=MyDeparser,
-    externs=[r, pkts, csum],
-)
+program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser, externs=[r, pkts, csum]), name="constructs", headers=headers, metadata=metadata, exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser})

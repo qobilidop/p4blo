@@ -7,14 +7,15 @@ format.
 
 from __future__ import annotations
 
+from p4blo.arch import assemble
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     CoreErrors,
     Deparser,
     Error,
     Header,
     Parser,
-    Program,
     Struct,
     Transition,
     bit9,
@@ -66,14 +67,13 @@ class deparser(Deparser[parsed_packet_t]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "parser_error",
+    return assemble(
+        BlockLibrary(parse, ingress, deparser),
+        name="parser_error",
         headers=parsed_packet_t,
         metadata=local_metadata_t,
-        parser=parse,
-        control=ingress,
-        deparser=deparser,
-    ).build()
+        exports={"parser": parse, "control": ingress, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":

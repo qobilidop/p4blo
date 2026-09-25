@@ -371,7 +371,7 @@ def test_lean_agrees_overlapping_routes_packet(
         bundle.parent.mkdir(parents=True, exist_ok=True)
         save(report, bundle)
     assert report.passed and report.agreed == 1
-    assert run_python(arch.load(program), packet_case(), 4) == packet_expected()
+    assert run_python(arch.reference.load(program), packet_case(), 4) == packet_expected()
 
 
 def test_lean_agrees_shortest_prefix_fault_replay(

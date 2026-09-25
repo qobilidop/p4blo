@@ -8,7 +8,9 @@ format.
 
 from __future__ import annotations
 
+from p4blo.arch import assemble
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
@@ -16,7 +18,6 @@ from p4blo.edsl import (
     InOut,
     Out,
     Parser,
-    Program,
     Struct,
     Table,
     Transition,
@@ -98,14 +99,13 @@ class deparser(Deparser[Header_t]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "priority",
+    return assemble(
+        BlockLibrary(p, ingress, deparser),
+        name="priority",
         headers=Header_t,
         metadata=Meta_t,
-        parser=p,
-        control=ingress,
-        deparser=deparser,
-    ).build()
+        exports={"parser": p, "control": ingress, "deparser": deparser},
+    )
 
 
 if __name__ == "__main__":

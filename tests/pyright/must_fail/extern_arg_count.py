@@ -5,7 +5,7 @@ and an index, and this call gives it one."""
 from __future__ import annotations
 
 from p4blo.edsl import Bool, Control, Header, Struct, bit8, bit9, bit16, bit32
-from p4blo.edsl.externs import Register
+from p4blo.arch.externs.declarations import Register
 
 
 class ipv4_t(Header):

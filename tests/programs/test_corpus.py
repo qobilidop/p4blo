@@ -45,7 +45,7 @@ def test_edsl_source_rebuilds_the_golden(program_dir: Path) -> None:
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda v: f"{v.parent.name}/{v.stem}")
 def test_vector_replays_under_the_switch(vector: Path) -> None:
-    loaded = arch.load(golden(vector.parent))
+    loaded = arch.reference.load(golden(vector.parent))
     statements = stf.parse(vector.read_text())
     stf.assert_replay(loaded.index, statements, arch.stf_driver(arch.Switch(ports=4), loaded))
 
@@ -61,8 +61,8 @@ def test_the_filter_makes_the_same_fate_decisions(vector: Path) -> None:
     """
     program = golden(vector.parent)
     statements = stf.parse(vector.read_text())
-    switch = arch.stf_driver(arch.Switch(ports=4), arch.load(program))
-    filter_ = arch.stf_driver(arch.Filter(), arch.load(program))
+    switch = arch.stf_driver(arch.Switch(ports=4), arch.reference.load(program))
+    filter_ = arch.stf_driver(arch.Filter(), arch.reference.load(program))
     installed: list[stf.Statement] = []
     packets = 0
     for statement in statements:

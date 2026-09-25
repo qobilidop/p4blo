@@ -170,7 +170,7 @@ def test_lean_agrees_on_guarded_forwarding(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
     assert report.agreed == 1
-    assert run_python(arch.load(program), case, 4) == [(0, expected_packet(name))]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected_packet(name))]
 
 
 def test_lean_agrees_after_retained_guard_fault(

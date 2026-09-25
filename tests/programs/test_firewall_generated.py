@@ -141,7 +141,7 @@ def failure_path(report: Report, directory: Path) -> Path:
 
 
 def check_python(sequence: list[Step]) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     for item in sequence:
         actual = python_outcome(loaded, item.case, 4)
         assert actual.error is None and actual.diagnostic is None

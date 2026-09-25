@@ -558,7 +558,7 @@ def test_lean_agrees_apply_packets(
         bundle.parent.mkdir(parents=True, exist_ok=True)
         save(report, bundle)
     assert report.passed and report.agreed == 1
-    assert run_python(arch.load(program), case, 4) == application_output(name)
+    assert run_python(arch.reference.load(program), case, 4) == application_output(name)
 
 
 def test_lean_agrees_skip_default_packet_replay(

@@ -232,9 +232,9 @@ def test_the_table_mask_control_model_reproduces_python(
     the oracle anything."""
     program, case = lpm_precedence()
     assert generated.table_mask_control_agrees(program, case)
-    right = generated.python_outcome(arch.load(program), case, generated.SWITCH_PORTS)
+    right = generated.python_outcome(arch.reference.load(program), case, generated.SWITCH_PORTS)
     monkeypatch.setattr(tables, "beats", shortest_prefix_wins)
-    wrong = generated.python_outcome(arch.load(program), case, generated.SWITCH_PORTS)
+    wrong = generated.python_outcome(arch.reference.load(program), case, generated.SWITCH_PORTS)
     assert wrong.outputs != right.outputs
     assert not generated.table_mask_control_agrees(program, case)
     unused = cast(Any, None)

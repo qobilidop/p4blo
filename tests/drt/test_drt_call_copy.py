@@ -129,7 +129,7 @@ def check_call(program: pb.Program, expected: bytes, lean_binary: Path) -> None:
         bundle = directory / f"call-copy-{digest}.json"
         save(report, bundle)
         pytest.fail(f"{report.summary()}; replay {bundle}; {report.protocol_error}")
-    assert run_python(arch.load(program), case, 4) == [(0, expected + case.packet)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected + case.packet)]
 
 
 @pytest.mark.parametrize("kind", ["action", "block"])
@@ -173,7 +173,7 @@ def test_lean_agrees_call_copy_computed_index_generated(
     case = Case(pb.Entries(), 0, packet)
     report = compare_program(program, [case], 4, [lean_binary])
     assert report.passed, report.summary()
-    assert run_python(arch.load(program), case, 4) == [
+    assert run_python(arch.reference.load(program), case, 4) == [
         (0, expected_copyback(first, packet, overlap))
     ]
 

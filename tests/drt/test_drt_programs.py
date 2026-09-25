@@ -150,7 +150,9 @@ def test_lean_agrees_on_faulting_unselected_branches(lean_binary: Path) -> None:
     for condition, expected_error in cases:
         program = parser_condition_program(condition, expected_error)
         check_program(program, lean_binary)
-        assert run_python(arch.load(program), Case(pb.Entries(), 0, b""), 4) == [(0, b"\x80")]
+        assert run_python(arch.reference.load(program), Case(pb.Entries(), 0, b""), 4) == [
+            (0, b"\x80")
+        ]
 
 
 @pytest.mark.parametrize("width", [1, 7, 8, 9, 31, 32, 65])

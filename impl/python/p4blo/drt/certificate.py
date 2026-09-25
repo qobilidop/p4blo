@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Literal, NotRequired, TypedDict
 
 from p4blo import ir
-from p4blo.arch.externs import default_registry
+from p4blo.arch.externs import supplied_registry
 from p4blo.arch.externs.counter import Counter
 from p4blo.arch.externs.register import Register
 from p4blo.drt.run import default_lean_binary
@@ -268,7 +268,7 @@ def _observe(program: pb.Program, register_value: int, counter_value: int) -> Cl
     """Execute the imported AST with the real Python statement interpreter."""
     index = ir.Index.build(program)
     block = index.blocks["C"]
-    externs = default_registry().bind(index)
+    externs = supplied_registry().bind(index)
     register = externs["r"]
     counter = externs["k"]
     if not isinstance(register, Register) or not isinstance(counter, Counter):

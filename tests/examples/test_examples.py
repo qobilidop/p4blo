@@ -36,10 +36,10 @@ def test_vectors_and_filter_fate(name: str) -> None:
     for vector in sorted((DATA / name).glob("*.stf")):
         program = build(name)
         statements = stf.parse(vector.read_text())
-        loaded = arch.load(program)
+        loaded = arch.reference.load(program)
         stf.assert_replay(loaded.index, statements, arch.stf_driver(arch.Switch(4), loaded))
-        filters = arch.stf_driver(arch.Filter(), arch.load(program))
-        switches = arch.stf_driver(arch.Switch(4), arch.load(program))
+        filters = arch.stf_driver(arch.Filter(), arch.reference.load(program))
+        switches = arch.stf_driver(arch.Switch(4), arch.reference.load(program))
         installed: list[stf.Statement] = []
         for statement in statements:
             if isinstance(statement, stf.Add | stf.SetDefault):

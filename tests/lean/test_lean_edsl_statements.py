@@ -130,4 +130,4 @@ def test_lean_agrees_on_authored_statement_known_answers(
         )
     # Both interpreters can agree on an unintended but well-typed source
     # command; independent expected bytes are a different essential oracle.
-    assert run_python(arch.load(program), case, 4) == [(0, EXPECTED[name][1])]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, EXPECTED[name][1])]

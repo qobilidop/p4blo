@@ -22,6 +22,15 @@ the sense that the differential tests, the oracles and the proofs about
 authored applications run programs under them, not in the sense of a
 standard anyone else implements.
 
+The generic Python loader, `p4blo.arch.load`, requires an explicit extern
+registry, metadata contract and mapping of required roles to block kinds.
+`p4blo.arch.reference.load` selects the supplied switch/filter environment
+as a convenience; it is not a mandatory architecture. Independent P4 blocks
+are collected in a `BlockLibrary`; `reference.assemble` or a custom adapter
+selects wire exports and H/M roots. Another composition can use the same
+block definitions without the supplied pipeline defaults. See
+[Python authoring](python-edsl.md) for the public API and a custom extern.
+
 ## The metadata contract
 
 An architecture communicates with a program only through the program's
@@ -109,9 +118,10 @@ compare whole packets in and out under one architecture on both sides.
 
 ## Extern families
 
-An extern implementation ships twice, a Python implementation and a Lean
-model, pinned to each other by corpus vectors and by independent known
-answers. The IR sees only a shape; these are the families the supplied
+Each supplied extern implementation ships twice, a Python implementation
+and a Lean model, pinned to each other by corpus vectors and independent
+known answers. Custom Python registrations do not acquire a Lean model
+or a P4 printing translation automatically. The IR sees only a shape; these are the families the supplied
 registry binds. A family name is the segment before the first dot:
 `register.8` and `register` bind the same service, subject to the
 declaration's shape, and a suffix neither changes the algorithm nor
@@ -178,6 +188,9 @@ recirculate and multicast groups have no counterpart.
   `0 .. ports - 1` for the switch.
 - **Architecture-specific match kinds and services.** Only exact, LPM
   and ternary keys and the five extern families above exist.
+
+The block-oracle package named `P4blo` is an isolated P4-SpecTec testing
+adapter. It does not define a required architecture for p4blo programs.
 
 ## Adding an architecture
 

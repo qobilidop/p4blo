@@ -129,7 +129,7 @@ def test_lean_agrees_on_decimal_request_rejection_without_state_change(
     call = control.body.add().call_extern
     call.instance, call.method = "ticks", "count"
     call.args.add(expr=bits(32, 0))
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     valid = json_format.MessageToDict(entries, preserving_proto_field_name=True)
     malformed = json.loads(json.dumps(valid))
     key = malformed["tables"][0]["entries"][0]["keys"][0]

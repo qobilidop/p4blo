@@ -1,5 +1,5 @@
-# expect: reportCallIssue line 41
-# expect: reportArgumentType line 41
+# expect: reportCallIssue line 42
+# expect: reportArgumentType line 42
 """A member of one enum assigned to a place of another.
 
 `assign` is overloaded over the kinds of target, so the failure shows as
@@ -9,7 +9,8 @@ both the failed overload resolution and the argument that caused it.
 from __future__ import annotations
 
 from p4blo.edsl import Bool, Control, Enum, Header, Struct, Transition, bit8, state
-from p4blo.edsl import Deparser, Parser, Program
+from p4blo.arch import assemble
+from p4blo.edsl import Deparser, Parser, BlockLibrary
 
 
 class Color(Enum):
@@ -53,11 +54,4 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.h)
 
 
-program = Program(
-    "enums",
-    headers=headers,
-    metadata=metadata,
-    parser=MyParser,
-    control=MyIngress,
-    deparser=MyDeparser,
-)
+program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser), name="enums", headers=headers, metadata=metadata, exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser})

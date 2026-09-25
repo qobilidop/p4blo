@@ -249,8 +249,11 @@ are classes whose annotated fields are real attributes (`ttl: bit8`), so
 a misspelled field is an unknown attribute; parsers, controls and
 deparsers are classes whose states and actions are methods, so a `select`
 target is `self.parse_ipv4` and a table's action list holds the methods
-themselves; a program names its roles as keyword arguments, never as
-strings. Widths are `Literal` type parameters, `Bits[L[8]]`, spelled
+themselves; block classes can be compiled independently or collected in a
+`BlockLibrary` with their shared declarations. A library has no pipeline
+roles or global H/M roots; an architecture assembles its selected blocks
+into the wire envelope. The [authoring guide](python-edsl.md) explains
+this boundary. Widths are `Literal` type parameters, `Bits[L[8]]`, spelled
 through the aliases `bit1`..`bit64`; `Var[W]` is a place of that width
 and `Bits[W]` any value, so assigning to an expression is a static error.
 `concat`, slices and `lookahead` have widths the type system cannot
@@ -287,6 +290,11 @@ literal used as a target is caught only at run time; `Bool`, `Enum` and
 any value with the width checked at run time; and a failed `assign`
 surfaces as `reportCallIssue` because `assign` is overloaded over target
 kinds.
+
+The [Python authoring guide](python-edsl.md) explains independent blocks,
+block libraries, readability patterns from the three applications, and the explicit extern
+declaration, registration and binding lifecycle. Concrete extern families
+live in architecture support, outside the generic eDSL.
 
 ### The Lean packages
 

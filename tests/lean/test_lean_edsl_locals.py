@@ -18,16 +18,17 @@ from pathlib import Path
 import pytest
 
 from p4blo import arch, validator
+from p4blo.arch import assemble
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
     L,
     Parser,
-    Program,
     Stack,
     Struct,
     Transition,
@@ -119,25 +120,23 @@ class Emit(Deparser[headers]):
 
 
 def statelocal() -> pb.Program:
-    return Program(
-        "edsl_statelocal",
+    return assemble(
+        BlockLibrary(StateLocalParser, PassControl, Emit),
+        name="edsl_statelocal",
         headers=headers,
         metadata=metadata,
-        parser=StateLocalParser,
-        control=PassControl,
-        deparser=Emit,
-    ).build()
+        exports={"parser": StateLocalParser, "control": PassControl, "deparser": Emit},
+    )
 
 
 def actlocal() -> pb.Program:
-    return Program(
-        "edsl_actlocal",
+    return assemble(
+        BlockLibrary(ExtractParser, ActionLocalControl, Emit),
+        name="edsl_actlocal",
         headers=headers,
         metadata=metadata,
-        parser=ExtractParser,
-        control=ActionLocalControl,
-        deparser=Emit,
-    ).build()
+        exports={"parser": ExtractParser, "control": ActionLocalControl, "deparser": Emit},
+    )
 
 
 # name: (program, input packet, the one output packet on port 0). The state
@@ -157,7 +156,9 @@ def test_the_programs_validate(name: str) -> None:
 @pytest.mark.parametrize("name", CASES)
 def test_python_sees_a_fresh_local_at_every_entry(name: str) -> None:
     program, packet, expected = CASES[name]
-    assert run_python(arch.load(program), Case(pb.Entries(), 0, packet), 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), Case(pb.Entries(), 0, packet), 4) == [
+        (0, expected)
+    ]
 
 
 @pytest.mark.parametrize("name", CASES)
@@ -178,4 +179,4 @@ def test_lean_agrees_on_edsl_locals_at_every_entry(name: str, lean_binary: Path)
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
     assert report.agreed == 1
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]

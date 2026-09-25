@@ -7,18 +7,19 @@ format.
 
 from __future__ import annotations
 
+from p4blo.arch import assemble
+from p4blo.arch.externs.declarations import Checksum16
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
     Parser,
-    Program,
     Struct,
     Transition,
     bit16,
     state,
 )
-from p4blo.edsl.externs import Checksum16
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -65,15 +66,13 @@ class DeparserI(Deparser[Parsed_packet]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "csum16",
+    return assemble(
+        BlockLibrary(parserI, cIngress, DeparserI, externs=[csum]),
+        name="csum16",
         headers=Parsed_packet,
         metadata=Metadata,
-        parser=parserI,
-        control=cIngress,
-        deparser=DeparserI,
-        externs=[csum],
-    ).build()
+        exports={"parser": parserI, "control": cIngress, "deparser": DeparserI},
+    )
 
 
 if __name__ == "__main__":

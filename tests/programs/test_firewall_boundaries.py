@@ -76,7 +76,7 @@ def persistence(length: int) -> list[Step]:
 
 @pytest.mark.parametrize("length", range(55))
 def test_atomic_parser_boundaries(length: int) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     metadata = loaded.metadata.zero()
     loaded.metadata.write(metadata, "ingress_port", 1)
     result = interp.run_parser(
@@ -96,7 +96,7 @@ def test_atomic_parser_boundaries(length: int) -> None:
 
 @pytest.mark.parametrize("length", range(55))
 def test_unmodified_firewall_packet_and_state_boundaries(length: int) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     item = truncated(length)
     switch = arch.Switch(4)
     assert (
@@ -109,7 +109,7 @@ def test_unmodified_firewall_packet_and_state_boundaries(length: int) -> None:
 
 @pytest.mark.parametrize("length", range(54))
 def test_valid_malformed_valid_state_persists(length: int) -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     for item in persistence(length):
         assert tuple(run_python(loaded, item.case, 4)) == item.outputs
         assert snapshot(loaded) == item.state
@@ -203,7 +203,7 @@ def test_parser_observer_preserves_the_original_parser() -> None:
     assert [b for b in original.blocks if b.kind == pb.BLOCK_KIND_PARSER] == [
         b for b in observer.blocks if b.kind == pb.BLOCK_KIND_PARSER
     ]
-    loaded = arch.load(observer)
+    loaded = arch.reference.load(observer)
     for length in range(55):
         assert run_python(loaded, Case(pb.Entries(), 1, FRAME[:length]), 4) == [
             (0, observer_output(length))

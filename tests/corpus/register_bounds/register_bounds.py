@@ -7,19 +7,20 @@ format.
 
 from __future__ import annotations
 
+from p4blo.arch import assemble
+from p4blo.arch.externs.declarations import Register
 from p4blo.edsl import (
+    BlockLibrary,
     Control,
     Deparser,
     Header,
     Parser,
-    Program,
     Struct,
     Transition,
     bit8,
     bit32,
     state,
 )
-from p4blo.edsl.externs import Register
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -70,15 +71,13 @@ class D(Deparser[headers]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "register_bounds",
+    return assemble(
+        BlockLibrary(P, C, D, externs=[r]),
+        name="register_bounds",
         headers=headers,
         metadata=metadata,
-        parser=P,
-        control=C,
-        deparser=D,
-        externs=[r],
-    ).build()
+        exports={"parser": P, "control": C, "deparser": D},
+    )
 
 
 if __name__ == "__main__":

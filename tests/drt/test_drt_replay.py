@@ -140,7 +140,7 @@ def test_bad_protobuf_replay_is_a_controlled_cli_error(
 def test_ambiguous_peer_cannot_produce_false_agreement(tmp_path: Path, field: str) -> None:
     program = register_program()
     cases = [Case(pb.Entries(), 0, bytes.fromhex("0005ff"))]
-    actual = python_outcome(arch.load(program), cases[0], 4)
+    actual = python_outcome(arch.reference.load(program), cases[0], 4)
     assert actual.outputs is not None and actual.error is None and actual.diagnostic is None
     reply = {
         "outputs": [[port, packet.hex()] for port, packet in actual.outputs],
@@ -237,9 +237,11 @@ def test_replay_keeps_the_prefix_that_establishes_register_state(tmp_path: Path)
     # A broken implementation resets state before each packet. The second
     # request alone cannot expose the fault; replaying the prefix must.
     def reset_each_packet(case: Case) -> Outcome:
-        return python_outcome(arch.load(program), case, 4)
+        return python_outcome(arch.reference.load(program), case, 4)
 
-    report = compare_cases("register_bounds", arch.load(program), cases, 4, reset_each_packet)
+    report = compare_cases(
+        "register_bounds", arch.reference.load(program), cases, 4, reset_each_packet
+    )
     assert [d.number for d in report.divergences] == [1]
     assert report.divergences[0].python.outputs == ((0, bytes.fromhex("000308")),)
     bundle = tmp_path / "failure.json"
@@ -249,7 +251,7 @@ def test_replay_keeps_the_prefix_that_establishes_register_state(tmp_path: Path)
     assert recovered_cases == cases
     recovered = compare_cases(
         "register_bounds",
-        arch.load(recovered_program),
+        arch.reference.load(recovered_program),
         recovered_cases,
         ports,
         reset_each_packet,
@@ -266,7 +268,9 @@ def test_replay_preserves_values_stf_cannot_express(tmp_path: Path) -> None:
     entries = pb.Entries(tables=[pb.TableEntries(block="C", table="unknown")])
     entries.tables[0].default_action.args.add(boolean=True)
     cases = [Case(entries, -1, b"")]
-    report = compare_cases("register_bounds", arch.load(program), cases, 4, lambda _: Outcome())
+    report = compare_cases(
+        "register_bounds", arch.reference.load(program), cases, 4, lambda _: Outcome()
+    )
     bundle = tmp_path / "invalid.json"
     save(report, bundle)
     assert load(bundle)[1] == cases
@@ -277,11 +281,12 @@ def test_matching_errors_are_not_a_successful_valid_input_campaign() -> None:
     case = Case(pb.Entries(), 99, b"\x00")
     report = compare_cases(
         "register_bounds",
-        arch.load(program),
+        arch.reference.load(program),
         [case],
         4,
         lambda _: Outcome(
-            error="ingress_port 99 is not a port of this switch", state=snapshot(arch.load(program))
+            error="ingress_port 99 is not a port of this switch",
+            state=snapshot(arch.reference.load(program)),
         ),
     )
     assert not report.divergences
@@ -320,7 +325,7 @@ def test_report_inputs_do_not_alias_mutable_protobuf_entries() -> None:
         raise ProtocolError("injected fault")
 
     with pytest.raises(ProtocolError) as error:
-        compare_cases("register_bounds", arch.load(program), [case], 4, fail)
+        compare_cases("register_bounds", arch.reference.load(program), [case], 4, fail)
     report = error.value.report
     assert report is not None and not report.passed
     entries.tables.add(block="changed")

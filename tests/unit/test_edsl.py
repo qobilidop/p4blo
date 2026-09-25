@@ -17,6 +17,7 @@ import pytest
 from google.protobuf import text_format
 
 from p4blo import arch, ir, validator
+from p4blo.arch.externs import declarations as edsl_externs
 from p4blo.edsl.core import (
     EdslError,
     Program,
@@ -35,7 +36,6 @@ from p4blo.edsl.core import (
     range_,
     ternary,
 )
-from p4blo.edsl.core import externs as edsl_externs
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
@@ -1275,7 +1275,7 @@ def test_an_int_shift_amount_wider_than_the_left_operand_builds() -> None:
     shifts = [st.assign.value.binary.right.literal.bits for st in program.blocks[1].body]
     assert (shifts[0].width, shifts[0].value) == (3, "4")
     assert (shifts[1].width, shifts[1].value) == (6, "1")
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     # v = 0b11 << 4 is 0 in bit<2>; pad = 0b111111 >> 1 is 0b011111.
     assert arch.Switch(2).run(loaded, loaded.entries(), 0, b"\xff") == [(0, b"\x1f")]
 

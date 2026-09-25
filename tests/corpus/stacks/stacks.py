@@ -13,7 +13,9 @@ from collections.abc import Callable, Sequence
 from enum import IntEnum
 from typing import Any
 
+from p4blo.arch import assemble
 from p4blo.edsl import (
+    BlockLibrary,
     Bool,
     Control,
     Deparser,
@@ -24,7 +26,6 @@ from p4blo.edsl import (
     InOut,
     L,
     Parser,
-    Program,
     Stack,
     Struct,
     Transition,
@@ -223,15 +224,13 @@ class DeparserI(Deparser[headers]):
 
 
 def build() -> pb.Program:
-    return Program(
-        "stacks",
+    return assemble(
+        BlockLibrary(parserI, cIngress, DeparserI, errors=errors),
+        name="stacks",
         headers=headers,
         metadata=metadata,
-        errors=errors,
-        parser=parserI,
-        control=cIngress,
-        deparser=DeparserI,
-    ).build()
+        exports={"parser": parserI, "control": cIngress, "deparser": DeparserI},
+    )
 
 
 if __name__ == "__main__":

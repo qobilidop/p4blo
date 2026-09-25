@@ -803,7 +803,7 @@ def check_python_fixture(path: Path) -> list[str]:
     except (ValueError, ProtocolError) as e:
         return [*problems, f"{fixture.name}: {e}"]
     try:
-        loaded = arch.load(program)
+        loaded = arch.reference.load(program)
     # Validation, the metadata contract and extern binding each raise their
     # own class; any of them means the recorded program does not load.
     except Exception as e:  # noqa: BLE001

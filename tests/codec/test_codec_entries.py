@@ -426,7 +426,7 @@ def expected_host_state(count: int) -> dict[str, object]:
 
 
 def observe_rejected_host(case: HostRejection) -> None:
-    loaded = arch.load(host_program())
+    loaded = arch.reference.load(host_program())
     valid = json_format.ParseDict(host_wire(), pb.Entries())
     request = Case(valid, 0, b"\xab\xcd")
     assert run_python(loaded, request, 4) == [(0, b"\x2a\xab\xcd")]
@@ -574,7 +574,7 @@ def test_program_startup_rejection_before_binding(kind: str) -> None:
         with pytest.raises(
             json_format.ParseError if kind == "json-type" else validator.ValidationError
         ):
-            arch.load(ir.load_json(json.dumps(wire)))
+            arch.reference.load(ir.load_json(json.dumps(wire)))
         assert binding.call_count == packet.call_count == 0
 
 

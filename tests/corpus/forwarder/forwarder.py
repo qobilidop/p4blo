@@ -9,15 +9,17 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+from p4blo.arch import assemble
+from p4blo.arch.externs.declarations import Checksum16
 from p4blo.edsl import (
     Bits,
+    BlockLibrary,
     Bool,
     Control,
     Deparser,
     Header,
     L,
     Parser,
-    Program,
     Struct,
     Table,
     Transition,
@@ -31,7 +33,6 @@ from p4blo.edsl import (
     lpm,
     state,
 )
-from p4blo.edsl.externs import Checksum16
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -149,19 +150,14 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.ipv4)
 
 
-program = Program(
-    "forwarder",
-    headers=headers,
-    metadata=metadata,
-    parser=MyParser,
-    control=MyIngress,
-    deparser=MyDeparser,
-    externs=[csum],
-)
-
-
 def build() -> pb.Program:
-    return program.build()
+    return assemble(
+        BlockLibrary(MyParser, MyIngress, MyDeparser, externs=[csum]),
+        name="forwarder",
+        headers=headers,
+        metadata=metadata,
+        exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser},
+    )
 
 
 if __name__ == "__main__":

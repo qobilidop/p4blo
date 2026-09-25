@@ -188,7 +188,7 @@ def test_lean_agrees_on_authored_field_known_answers(
     _, valid, answer = EXPECTED[name]
     # Every source field, the stored validity bit, and an unrelated root.
     expected = b"\xab\x01\x01\x12\x34\x00\x03\x01" + bytes([valid, 165]) + answer
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 def test_lean_agrees_after_retained_field_read_side_effect(

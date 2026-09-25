@@ -160,7 +160,7 @@ def test_lean_agrees_on_stateful_known_answer_sequence(lean_binary: Path) -> Non
     spec = StatefulSpec(8, 1, 1, pb.BINARY_OP_ADD)
     fields = [(0, 255), (0, 1), (1, 7), (0, 2)]
     check_sequence(spec, fields, lean_binary)
-    loaded = arch.load(stateful_program(spec))
+    loaded = arch.reference.load(stateful_program(spec))
     outcomes = [python_outcome(loaded, case, 4) for case in cases_for(spec, fields)]
     assert [o.outputs for o in outcomes] == [
         ((0, b"\x00\xff\xff"),),

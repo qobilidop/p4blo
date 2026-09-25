@@ -101,7 +101,7 @@ def fixed_run(cases: list[Case]) -> list[Outcome]:
         replies = process.stdout.splitlines()
         assert len(replies) == len(cases)
         outcomes = [checked_fixed_reply(reply) for reply in replies]
-        loaded = arch.load(build())
+        loaded = arch.reference.load(build())
         for case, actual in zip(cases, outcomes, strict=True):
             expected = python_outcome(loaded, case, 4)
             assert expected.error is None and actual.error is None
@@ -153,7 +153,7 @@ def check_sequence(program: pb.Program, sequence: list[Step], lean_binary: Path)
     cases = [item.case for item in sequence]
     # Save real engine inconsistencies before asserting independent policy answers.
     compare_and_save(program, cases, lean_binary)
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     for expected, actual in zip(sequence, fixed_run(cases), strict=True):
         python = python_outcome(loaded, expected.case, 4)
         assert python.error is None and actual.error is None
@@ -193,7 +193,9 @@ def test_lean_agrees_firewall_stf(firewall: pb.Program, lean_binary: Path, vecto
 
     stf.assert_replay(index, statements, output)
     assert next(replies, None) is None
-    stf.assert_replay(index, statements, arch.stf_driver(arch.Switch(ports=4), arch.load(firewall)))
+    stf.assert_replay(
+        index, statements, arch.stf_driver(arch.Switch(ports=4), arch.reference.load(firewall))
+    )
 
 
 @pytest.mark.parametrize(

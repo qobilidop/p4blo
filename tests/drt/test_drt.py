@@ -190,13 +190,13 @@ def test_generation_is_deterministic_per_seed() -> None:
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)
 def test_every_generated_entries_installs_on_the_corpus(program_dir: Path) -> None:
-    loaded = arch.load(golden(program_dir))
+    loaded = arch.reference.load(golden(program_dir))
     for case in generate(loaded.index, 3, 100):
         loaded.entries(case.entries)
 
 
 def test_every_generated_entries_installs_and_covers_every_kind() -> None:
-    loaded = arch.load(mixed())
+    loaded = arch.reference.load(mixed())
     kinds: Counter[str] = Counter()
     defaults = 0
     for case in generate(loaded.index, 5, 200):
@@ -217,7 +217,7 @@ def test_every_generated_entries_installs_and_covers_every_kind() -> None:
 @pytest.mark.parametrize("name", ["forwarder", "stacks", "subparser_stack"])
 def test_packets_reach_every_parser_state(name: str) -> None:
     program = golden(CORPUS / name)
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     seen: set[tuple[str, str]] = set()
     outcomes: Counter[str] = Counter()
     for case in generate(loaded.index, 11, 300):
@@ -233,7 +233,7 @@ def test_packets_reach_every_parser_state(name: str) -> None:
 
 def test_packets_satisfy_masked_and_range_key_sets() -> None:
     program = mixed()
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     seen: set[tuple[str, str]] = set()
     outcomes: Counter[str] = Counter()
     for case in generate(loaded.index, 2, 200):
@@ -248,7 +248,7 @@ def test_packets_satisfy_masked_and_range_key_sets() -> None:
 
 def test_table_lookups_hit_and_miss() -> None:
     """Entries and packets draw key fields from one pool, so hits happen."""
-    loaded = arch.load(golden(CORPUS / "forwarder"))
+    loaded = arch.reference.load(golden(CORPUS / "forwarder"))
     fates: Counter[str] = Counter()
     for case in generate(loaded.index, 13, 200):
         fates["forwarded" if run_python(loaded, case, PORTS) else "dropped"] += 1
@@ -352,7 +352,7 @@ def test_python_against_python_through_the_pipe_agrees(program_dir: Path) -> Non
 
 def test_a_flipped_byte_is_a_divergence_on_every_case_with_output() -> None:
     program_dir = CORPUS / "forwarder"
-    loaded = arch.load(golden(program_dir))
+    loaded = arch.reference.load(golden(program_dir))
     cases = generate(loaded.index, 7, 60, PORTS)
     with_output = sum(1 for case in cases if run_python(loaded, case, PORTS))
     report = compare(program_dir, 7, 60, PORTS, [*FAKE, "--flip"])
@@ -373,7 +373,7 @@ def test_a_dead_process_is_a_protocol_error(tmp_path: Path) -> None:
 
 
 def test_an_error_on_one_side_diverges_and_on_both_sides_agrees() -> None:
-    loaded = arch.load(golden(CORPUS / "forwarder"))
+    loaded = arch.reference.load(golden(CORPUS / "forwarder"))
     cases = generate(loaded.index, 1, 3)
     # An entry with no keys for a one-key table: Python fails to install it.
     bad = pb.Entries(
@@ -403,7 +403,7 @@ def test_an_error_on_one_side_diverges_and_on_both_sides_agrees() -> None:
 
 
 def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
-    loaded = arch.load(golden(CORPUS / "forwarder"))
+    loaded = arch.reference.load(golden(CORPUS / "forwarder"))
     case = Case(pb.Entries(), 0, b"\x00")
     python = python_outcome(loaded, case, PORTS)
     assert python.diagnostic is None
@@ -424,7 +424,7 @@ def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
 
 @pytest.mark.parametrize("program", ["forwarder", "mixed"])
 def test_case_to_stf_parses_and_replays_to_the_same_outputs(program: str) -> None:
-    loaded = arch.load(mixed() if program == "mixed" else golden(CORPUS / program))
+    loaded = arch.reference.load(mixed() if program == "mixed" else golden(CORPUS / program))
     index = loaded.index
     gen = Generator(index, 21, PORTS)
     for case in gen.cases(40):
@@ -476,7 +476,7 @@ def lean_report(
     program: pb.Program, cases: list[Case], lean_binary: Path, tmp_path: Path, ports: int = 4
 ) -> tuple[Outcome, ...]:
     """Every case on Python and on Lean; the report and the Lean outcomes."""
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     program_json = tmp_path / f"{program.name}.json"
     program_json.write_text(ir.dump_json(program))
     seen: list[Outcome] = []

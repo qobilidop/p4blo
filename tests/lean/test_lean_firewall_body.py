@@ -57,7 +57,7 @@ def expected_vars() -> dict[str, Value]:
 def invalid_env(
     program: pb.Program, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
 ) -> Env:
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     installed = loaded.entries(connection()[0].case.entries)
     packet = Packet(bytes.fromhex("deadbeef"))
     packet.cursor = 3
@@ -120,7 +120,7 @@ def observe_body(env: Env) -> None:
 
 
 def test_lean_agrees_firewall_actual_initialization(firewall: pb.Program) -> None:
-    loaded = arch.load(firewall)
+    loaded = arch.reference.load(firewall)
     frame = Env.for_block(loaded.index, loaded.index.blocks["MyIngress"], loaded.externs)
     assert freeze(frame.vars) == freeze(expected_vars())
     assert frame.action is None and frame.action_vars is None

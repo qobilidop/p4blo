@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.edsl.externs import Counter
+from p4blo.arch import assemble
+from p4blo.arch.externs.declarations import Counter
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -93,19 +94,14 @@ class Emit(p4.Deparser[Headers]):
         self.emit(self.hdr.vlan)
 
 
-program = p4.Program(
-    "vlan_gateway",
-    headers=Headers,
-    metadata=Metadata,
-    parser=Parse,
-    control=Gateway,
-    deparser=Emit,
-    externs=[admissions],
-)
-
-
 def build() -> pb.Program:
-    return program.build()
+    return assemble(
+        p4.BlockLibrary(Parse, Gateway, Emit, externs=[admissions]),
+        name="vlan_gateway",
+        headers=Headers,
+        metadata=Metadata,
+        exports={"parser": Parse, "control": Gateway, "deparser": Emit},
+    )
 
 
 if __name__ == "__main__":

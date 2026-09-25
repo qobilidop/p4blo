@@ -143,7 +143,7 @@ def test_lean_agrees_on_authored_scalar_known_answers(
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
     # Catch shared mistakes, including valid but unintended source expressions.
-    assert run_python(arch.load(program), case, 4) == [(0, expected)]
+    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
 
 
 def test_lean_agrees_after_retained_authoring_mutant(

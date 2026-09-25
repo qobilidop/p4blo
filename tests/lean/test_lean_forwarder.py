@@ -155,7 +155,7 @@ def test_lean_agrees_forwarder_stf(forwarder: pb.Program, lean_binary: Path, vec
     fixed = iter(fixed_run(cases))
     stf.assert_replay(index, statements, lambda _entries, _port, _packet: next(fixed))
     assert next(fixed, None) is None
-    loaded = arch.load(forwarder)
+    loaded = arch.reference.load(forwarder)
     stf.assert_replay(index, statements, arch.stf_driver(arch.Switch(ports=4), loaded))
 
 
@@ -184,7 +184,7 @@ def test_lean_agrees_forwarder_wrapping_ttl(
     case, expected = edge_case(ttl)
     compare_and_save(forwarder, [case], lean_binary, f"ttl-{ttl}")
     assert fixed_run([case]) == [expected]
-    assert run_python(arch.load(forwarder), case, 4) == expected
+    assert run_python(arch.reference.load(forwarder), case, 4) == expected
 
 
 @pytest.mark.parametrize("fault", ["guard", "default", "mac-order", "checksum-field"])
@@ -313,7 +313,7 @@ def freeze(value: Any) -> object:
 
 
 def invalid_env(program: pb.Program, valid: bool, drop: bool, port: int, ttl: int) -> Env:
-    loaded = arch.load(program)
+    loaded = arch.reference.load(program)
     installed = loaded.entries(edge_case(0)[0].entries)
     installed.default_actions[("MyIngress", "ipv4_lpm")] = pb.ActionCall(action="NoAction")
     loaded.externs["sentinel"] = Register(2, 8)
@@ -422,7 +422,7 @@ def test_lean_agrees_forwarder_invalid_observer_kills_hidden_effect(
             case = Case(pb.Entries(), 0, arp)
             report = compare_program(forwarder, [case], 4, [lean_binary])
             assert hits == 1 and report.passed and report.agreed == 1
-            assert run_python(arch.load(forwarder), case, 4) == [(0, arp)] and hits == 2
+            assert run_python(arch.reference.load(forwarder), case, 4) == [(0, arp)] and hits == 2
         prior = hits
         with pytest.raises(AssertionError, match="complete Python control state"):
             observe_invalid_control(invalid_env(forwarder, True, False, 3, 0))

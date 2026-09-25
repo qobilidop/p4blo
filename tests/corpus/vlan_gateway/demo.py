@@ -6,7 +6,7 @@ from tests.corpus.vlan_gateway.vlan_gateway import build
 
 
 def main() -> None:
-    loaded = arch.load(build())
+    loaded = arch.reference.load(build())
     policy = stf.to_entries(
         loaded.index,
         stf.parse(

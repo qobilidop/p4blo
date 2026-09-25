@@ -267,17 +267,24 @@ the Lean-versus-Python gates, and add a row to the corpus table in
 `testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
 the current programs is archived in git as `docs/corpus-candidates.md`.
 
-**An extern.** Add its implementation under `impl/python/p4blo/arch/externs/` with
-a `Shape`, register it in `default_registry`, add the Lean model in
+**An extern.** A custom Python extern can live outside this package: declare
+its typed interface, register an `Implementation` with a `Shape` and factory
+in a local `Registry`, and pass that registry to the loader. The runnable
+[custom extern example](../examples/custom_extern.py) and
+[authoring guide](python-edsl.md#declare-register-bind) show the lifecycle.
+Registration alone supplies neither Lean semantics nor P4 printing support.
+
+To extend the supplied, cross-checked families, add the implementation under
+`impl/python/p4blo/arch/externs/`, register it in `supplied_registry`, add the Lean model in
 `spec/arch/P4bloArch/Externs.lean`, its v1model form in
 `impl/python/p4blo/arch/v1model.py` (`print_extern_instance` and
 `V1modelStmtPrinter`, which the block architecture shares), and a typed
 family class in
-`impl/python/p4blo/edsl/externs.py`: a subclass of `Extern` whose methods
+`impl/python/p4blo/arch/externs/declarations.py`: a subclass of `Extern` whose methods
 are signatures with `In`/`Out`/`InOut` parameters, beside `Register`,
 `Counter` and `Checksum16`, from which the IR `ExternType` is derived.
 The dynamic form for generated programs is a helper in
-`impl/python/p4blo/edsl/core/externs.py`. Pin the two models with a corpus
+`impl/python/p4blo/arch/externs/declarations.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
 
 **A test.** Put it in the directory of `tests/` whose README asks the
