@@ -20,7 +20,7 @@ them, because `String.hash` is opaque to the kernel. No `native_decide`.
 
 `program` is the corpus golden written as a Lean term. `tests` checks it
 against `P4bloArchTest/fixtures/csum16.json`, the protobuf JSON of that golden,
-which `tests/test_lean_agrees_validity.py` keeps equal to the golden.
+which `tests/lean/test_lean_agrees_validity.py` keeps equal to the golden.
 -/
 
 namespace ArchTests.Csum16

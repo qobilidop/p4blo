@@ -3,7 +3,7 @@ import P4bloArchTest.Check
 /-!
 End-to-end replay of the forwarder's five STF vectors under the switch
 architecture (`P4bloArch.Switch`), the same rules the Python driver in
-`tests/test_corpus_forwarder.py` implements.
+`tests/programs/test_corpus_forwarder.py` implements.
 
 `../ir/P4bloIRTest/forwarder_vectors.json` holds, per vector file, one run per `packet`
 line: the entries installed before it, the ingress port, the packet, and
@@ -115,7 +115,7 @@ def replay (sw : Switch) (v : StfVector) : T Unit := do
       if let some d := result.diagnostic then IO.println s!"     diagnostic: {d}"
       check name ok
 
-/-- The port rules of .agents/decisions.md, as `tests/test_arch.py` checks them
+/-- The port rules of .agents/decisions.md, as `tests/unit/test_arch.py` checks them
 on the Python switch: an ingress port outside `[0, ports)` is the caller's
 error before anything runs, an egress port outside it drops the packet with
 a diagnostic, and 511 is just such a port. -/

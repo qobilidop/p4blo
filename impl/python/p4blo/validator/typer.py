@@ -10,7 +10,7 @@ methods on a program `check` accepted, for the interpreter, the printer and
 the STF reader, which need a width before they have a value (the width of a
 table key, of the header an `extract` or `lookahead` reads). One function
 means the validator and its consumers cannot disagree about a type;
-tests/test_typer.py guards the seam.
+tests/unit/test_typer.py guards the seam.
 """
 
 from __future__ import annotations

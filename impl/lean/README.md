@@ -95,7 +95,7 @@ authored syntax, JSON boundary and both production interpreters.
 Run `scripts/check-lean.sh` from the repo root to build and test all three packages
 and their audits. Testing this package alone does not run the specification's
 audit or tests. After building, run
-`P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_lean_edsl.py` for the 21
+`P4BLO_REQUIRE_LEAN=1 uv run pytest tests/lean/test_lean_edsl.py` for the 21
 cross-language known answers. `p4blo scalarExamples` is a test fixture exporter,
 not a new general-purpose interpreter or wire protocol.
 
@@ -151,7 +151,7 @@ to whole-program validity is **not** claimed. Scalar-leaf header/metadata
 commands are described below; calls, externs, packet operations and
 complete-program lowering remain future work.
 
-After the Lean build, run required `pytest tests/test_lean_edsl_statements.py`
+After the Lean build, run required `pytest tests/lean/test_lean_edsl_statements.py`
 for nine independently expected complete-local-state packet cases. The raw
 packet wrapper is outside the lowering proof. Differential failures are
 saved before expected-answer checks, so Python faults retain replay bundles.
@@ -189,7 +189,7 @@ actual variable declarations. Concrete witnesses and positive/negative
 nominal-reuse examples are tested. Root permissions and command integration
 are described below; whole-program initialization remains an obligation.
 
-After building, `pytest tests/test_lean_edsl_fields.py` compares seven field
+After building, `pytest tests/lean/test_lean_edsl_fields.py` compares seven field
 expressions and an independently specified complete stored-state observer.
 It evaluates the expression once **before** observing every source field and
 validity bit, including invalid-header fields. A regression demonstrates
@@ -231,7 +231,7 @@ it is not a verified router. Kernel negatives and actual `Index.build`/
 `Frame.forBlock` tests check selected initialization and permission cases,
 not a general initializer or complete-program validity theorem.
 
-After building, `pytest tests/test_lean_edsl_field_commands.py` checks ten
+After building, `pytest tests/lean/test_lean_edsl_field_commands.py` checks ten
 independently expected full-state snapshots and two retained live/restored
 write-fault regressions. The wrapper uses actual `inout` header/metadata and
 input-only route parameters, and observes fields only after the body finishes.

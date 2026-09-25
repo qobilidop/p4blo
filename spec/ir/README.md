@@ -12,7 +12,7 @@ checker `Validity.check` (`Check.lean`) with its soundness proof
 through every step: a valid program never reaches an interpreter error,
 and `drive` returns success or a declared parser error. The `p4blo-lean
 check` command in `../arch` runs the checker and is compared with the
-Python validator by `tests/test_lean_agrees_validity.py`.
+Python validator by `tests/lean/test_lean_agrees_validity.py`.
 `Json.lean` is the actual handwritten adapter. `CodecLaws.lean` proves its
 literal/type/table-key round trips over JSON values under explicit v0 uint32
 representability. This does not verify text parsing, Python/protobuf or the

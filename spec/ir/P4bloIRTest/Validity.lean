@@ -3,7 +3,7 @@ import P4bloIRTest.Check
 /-!
 Tests for `P4bloIR.Validity.check` on the forwarder fixture: it is
 accepted, and each single break is rejected with the Python validator's
-code. `tests/test_lean_agrees_validity.py` compares the checker with the
+code. `tests/lean/test_lean_agrees_validity.py` compares the checker with the
 Python validator on every corpus program and every validator test.
 -/
 

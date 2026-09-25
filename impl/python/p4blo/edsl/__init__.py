@@ -83,7 +83,7 @@ Run time only:
   binding `T` to a place type would reject a cast rvalue;
 - (*) a sub-block call's arguments, `self.call(Sub, ...)`, since a
   callable protocol cannot be expressed from the annotations. This is why
-  `tests/test_pyright.py` builds and validates every must_pass fixture
+  `tests/unit/test_pyright.py` builds and validates every must_pass fixture
   instead of only type-checking it.
 
 Two notes on what a diagnostic looks like. `assign` is overloaded over the

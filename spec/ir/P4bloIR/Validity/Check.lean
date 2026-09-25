@@ -7,7 +7,7 @@ An executable checker for `Validity.Valid`, organized as the Python
 validator is (`impl/python/p4blo/validator/`): one function per
 declaration, statement and expression kind, in the order of the schema,
 with the same diagnostic codes. It stops at the first problem, where
-Python collects them all; `tests/test_lean_agrees_validity.py` compares
+Python collects them all; `tests/lean/test_lean_agrees_validity.py` compares
 the two on accept or reject and on the first code.
 
 Wire problems the Python validator reports (a oneof with no kind, an

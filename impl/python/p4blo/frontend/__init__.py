@@ -9,7 +9,7 @@ program's architecture layer to the IR's roles and metadata contract; and
 translation can be compared with a golden written by hand.
 
 The bridge needs a P4-SpecTec checkout built by tests/oracle/build.sh. It is
-not a verified frontend: it is checked on the corpus (tests/test_frontend_spectec.py).
+not a verified frontend: it is checked on the corpus (tests/external/test_frontend_spectec.py).
 """
 
 from p4blo.frontend.spectec_il import (

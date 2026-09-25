@@ -5,7 +5,7 @@ Unit tests for the interpreter's primitives, per docs/ir-semantics.md: bits
 arithmetic, casts, slices, concatenation, comparison, header stacks, the
 parser (extract, select, errors, the revisit rule, sub-parsers), the
 deparser, tables and the extern models. The cases mirror the Python
-`tests/test_interp_*.py` and `tests/test_externs.py` where they exist.
+`tests/unit/test_interp_*.py` and `tests/unit/test_externs.py` where they exist.
 -/
 
 open P4bloIR
@@ -172,7 +172,7 @@ def errorList : List String :=
   ["NoError", "PacketTooShort", "NoMatch", "StackOutOfBounds", "HeaderTooShort", "ParserTimeout",
    "ParserInvalidArgument", "BadVersion"]
 
-/-- The test program of `tests/test_interp_parser.py`: headers `h8 { f :
+/-- The test program of `tests/unit/test_interp_parser.py`: headers `h8 { f :
 bit<8> }` and `mixed { a : bit<3>, flag : bool, b : bit<12> }`, `H { e :
 h8, hs : h8[2], w : mixed }`, `M { n : bit<8>, flag : bool }`, a parser
 `P` of the given states, a deparser `D` emitting `hdr.w`, and `extra`
@@ -397,7 +397,7 @@ def deparserTests : T Unit := do
 def metaA : Expr := .member (.var "meta") "a"
 def metaB : Expr := .member (.var "meta") "b"
 
-/-- The test program of `tests/test_interp_tables.py`, plus a body that
+/-- The test program of `tests/unit/test_interp_tables.py`, plus a body that
 applies `exact_t` and records `hit` in `meta.h`. -/
 def tableProgram : Program :=
   { (default : Program) with

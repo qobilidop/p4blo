@@ -15,7 +15,7 @@ reply the real run gives (`reply`), so that a witness is anchored to what
 actually happened. The replies come from the Python reference interpreter;
 the Lean test (`spec/arch/P4bloArchTest/Coverage.lean`) checks that Lean gives
 the same reply and the stated tags, and that the table covers the
-inventory. `tests/test_drt_coverage.py` validates every program and checks
+inventory. `tests/drt/test_drt_coverage.py` validates every program and checks
 that witnesses.json is what this module generates.
 
 Most programs share one template: header `h_t { a: bit<8> }`; struct
