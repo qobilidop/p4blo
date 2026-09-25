@@ -169,6 +169,7 @@ TEST_DATA = (
     "assurance",
     "pyright",
     "golden",
+    "drt-coverage-parts",
 )
 
 
