@@ -186,6 +186,23 @@ P4bloIR/Laws/        Theorems, FieldLaws, ScalarLaws, FrameInitialization, Plain
 P4bloIR/Coverage/    the rule tags of B1
 ```
 
+Package roots follow the Mathlib and Batteries layout, which is the
+one-line answer to "which directory does a Lean file go in": under
+`<Root>/` if a client may import it, under `<Root>Test/` if only the
+gate runs it (tests, proof audits and probes alike), and at the root
+only what Lake requires there: the root module, `lakefile.toml`,
+`lean-toolchain`, `lake-manifest.json`, `README.md` and at most one
+`Main.lean`. Test libraries are named `<Root>Test`, singular, because
+Lake module names are global across a workspace and a bare `Tests` in
+two packages collides; that is why `ArchTests` exists today. So
+`Tests/` becomes `P4bloIRTest/`, `ArchTests/` becomes `P4bloArchTest/`,
+the user package's sixteen `*Main.lean` executables become subcommands
+of one `Main.lean` as the arch package already does, and the three
+unregistered `*CodecProbe.lean` files at the IR root are deleted or
+promoted into the test library. Acronyms stay capitalized inside
+module names (`P4bloIR`, as Lean core's `Lean.Compiler.IR` and `LCNF`),
+and names read as words are written as words (`Json`, `Lsp`).
+
 Every module header keeps its "mirrors" line to the Python module and
 gains the SpecTec rules it corresponds to. Every theorem docstring opens
 with a one-sentence plain-words claim, then the premises, then what it
