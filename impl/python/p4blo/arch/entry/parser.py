@@ -8,7 +8,8 @@ metadata as they were at that moment (docs/ir-semantics.md, "Parsers").
 
 from __future__ import annotations
 
-from p4blo.interp.api import Externs, InterpError, ParseOutcome
+from p4blo.arch.entry.outcome import ParseOutcome
+from p4blo.interp.api import Externs, InterpError
 from p4blo.interp.env import Env
 from p4blo.interp.errors import ParseError
 from p4blo.interp.expr import expect_struct

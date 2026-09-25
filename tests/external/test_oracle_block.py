@@ -37,8 +37,8 @@ from unittest import mock
 
 import pytest
 
-from p4blo import arch, interp, ir, stf
-from p4blo.arch import spectec_block
+from p4blo import arch, ir, stf
+from p4blo.arch import entry, spectec_block
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.crc import CRC, crc32
@@ -545,7 +545,7 @@ def run_deparser(
     index: ir.Index, block: str, headers: Struct, externs: Externs
 ) -> tuple[bytes, int]:
     """The reference deparser's bytes and the exact number of bits it
-    emitted, which `interp.run_deparser` pads away; read from its emitter."""
+    emitted, which `entry.run_deparser` pads away; read from its emitter."""
     made: list[Emitter] = []
 
     class Counted(Emitter):
@@ -556,7 +556,7 @@ def run_deparser(
             made.append(self)
 
     with mock.patch.object(interp_deparser, "Emitter", Counted):
-        emitted = interp.run_deparser(index, block, headers, externs)
+        emitted = entry.run_deparser(index, block, headers, externs)
     (emitter,) = made
     return emitted, emitter.width
 
@@ -597,7 +597,7 @@ def _compare(runner: oracle_block.BlockRunner, vector: Path, loaded: arch.Loaded
         # The parser, on zero metadata with the ingress port.
         m = meta.zero()
         meta.write(m, "ingress_port", statement.port)
-        parsed = interp.run_parser(index, loaded.block("parser"), statement.data, m, externs)
+        parsed = entry.run_parser(index, loaded.block("parser"), statement.data, m, externs)
         spec = runner.run_block(
             index,
             "parser",
@@ -619,7 +619,7 @@ def _compare(runner: oracle_block.BlockRunner, vector: Path, loaded: arch.Loaded
         m = copy(parsed.metadata)
         assert isinstance(m, Struct)
         meta.write(m, "parser_error", parsed.error)
-        headers, m_out = interp.run_control(
+        headers, m_out = entry.run_control(
             index, loaded.block("control"), parsed.headers, m, tables, externs
         )
         spec = runner.run_block(

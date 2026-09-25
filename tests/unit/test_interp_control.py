@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 from google.protobuf import text_format
 
-from p4blo import interp
+from p4blo.arch import entry
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.interp import ExternResult, values
@@ -136,7 +136,7 @@ def run(
         metadata = values.zero(pb.Type(struct="M"), index)  # type: ignore[assignment]
     assert isinstance(headers, Struct) and isinstance(metadata, Struct)
     installed = InstalledEntries.build(index, text_format.Parse(entries, pb.Entries()))
-    h, m = interp.run_control(index, "C", headers, metadata, installed, externs or {})
+    h, m = entry.run_control(index, "C", headers, metadata, installed, externs or {})
     return Run(h, m)
 
 

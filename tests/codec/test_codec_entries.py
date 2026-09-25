@@ -14,8 +14,8 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import arch, interp
-from p4blo.arch import validator
+from p4blo import arch
+from p4blo.arch import entry, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs import Registry
 from p4blo.arch.externs.counter import Counter
@@ -444,9 +444,9 @@ def observe_rejected_host(case: HostRejection) -> None:
     frozen_wire = deepcopy(case.wire)
     frozen_valid = valid.SerializeToString(deterministic=True)
     with (
-        patch.object(interp, "run_parser", wraps=interp.run_parser) as parser_call,
-        patch.object(interp, "run_control", wraps=interp.run_control) as control_call,
-        patch.object(interp, "run_deparser", wraps=interp.run_deparser) as deparser_call,
+        patch.object(entry, "run_parser", wraps=entry.run_parser) as parser_call,
+        patch.object(entry, "run_control", wraps=entry.run_control) as control_call,
+        patch.object(entry, "run_deparser", wraps=entry.run_deparser) as deparser_call,
     ):
         expected_exception = json_format.ParseError if case.decode else InstallError
         with pytest.raises(expected_exception, match=re.escape(case.python_error)):
@@ -572,7 +572,7 @@ def test_program_startup_rejection_before_binding(kind: str) -> None:
         wire["blocks"] = False
     with (
         patch.object(Registry, "bind", side_effect=AssertionError("binding reached")) as binding,
-        patch.object(interp, "run_parser", side_effect=AssertionError("packet reached")) as packet,
+        patch.object(entry, "run_parser", side_effect=AssertionError("packet reached")) as packet,
     ):
         with pytest.raises(
             json_format.ParseError if kind == "json-type" else validator.ValidationError

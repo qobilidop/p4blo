@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, interp
-from p4blo.arch import validator
+from p4blo import arch
+from p4blo.arch import entry, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -82,7 +82,7 @@ def test_atomic_parser_boundaries(length: int) -> None:
     loaded = arch.reference.load(build())
     metadata = loaded.metadata.zero()
     loaded.metadata.write(metadata, "ingress_port", 1)
-    result = interp.run_parser(
+    result = entry.run_parser(
         loaded.index, loaded.block("parser"), FRAME[:length], metadata, loaded.externs
     )
     expected = parse_expectation(length)
