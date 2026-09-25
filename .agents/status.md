@@ -77,7 +77,7 @@ under `reviews/`; every finding is fixed.
 | A2 SpecTec rule coverage: OCaml probe, `tests/oracle/spectec-coverage.json`, hand-written exclusions, counts on the coverage page, oracle CI step | done, `94cd629` |
 | A1 generated programs on SpecTec: six deterministic families, sixty seeds in CI, 1,100-seed local campaign with no unexplained disagreement | done, `4a3504a` |
 | Copy-back resolution at copy-in (both interpreters, proofs unchanged, 17 cases confirmed on SpecTec) and parser-only `lastIndex` in the validator | done, `2192fac` |
-| Lean coverage review fixes: six defects, witness pairs for all 157 tags, six mutants caught; the copy-back classification is being pointed at the resolved lvalues | building on `work/coverage-fixes` |
+| Lean coverage review fixes: the six defects and the doubtful conditions, copy-back classified through the resolved lvalues, witness pairs for all 157 tags (135 requests, replies anchored to the reference interpreter), nine mutants caught, 33 tags still unhit | done, `495268d` |
 | C4 deviation theorems | building on `work/deviation-theorems` |
 | Phases 2 to 4 | see the plan |
 
