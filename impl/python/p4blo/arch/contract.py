@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp.values import Bits, ErrorValue, Struct, Value, zero
 from p4blo.ir import Index
@@ -46,13 +47,15 @@ class Contract:
                 return f
         raise KeyError(name)
 
-    def present(self, index: Index, metadata: str) -> set[str]:
+    def present(self, index: Index, metadata: str | None = None) -> set[str]:
         """The contract fields the program's `M` declares."""
+        metadata = _metadata_name(index, metadata)
         declared = {f.name for f in index.fields(metadata)}
         return {f.name for f in self.fields if f.name in declared}
 
-    def check(self, index: Index, metadata: str) -> None:
+    def check(self, index: Index, metadata: str | None = None) -> None:
         """Raise `ContractError` on a declared contract field of the wrong type."""
+        metadata = _metadata_name(index, metadata)
         declared = {f.name: f.type for f in index.fields(metadata)}
         for f in self.fields:
             if f.name in declared and declared[f.name] != f.type:
@@ -65,6 +68,14 @@ class Contract:
         """Check the program against the contract and return its view of `M`."""
         self.check(index, bindings.metadata)
         return Metadata(self, index, bindings.metadata)
+
+
+def _metadata_name(index: Index, metadata: str | None) -> str:
+    if metadata is not None:
+        return metadata
+    if isinstance(index, BoundIndex):
+        return index.bindings.metadata
+    raise TypeError("metadata is required for an unbound library index")
 
 
 def describe(type: pb.Type) -> str:
