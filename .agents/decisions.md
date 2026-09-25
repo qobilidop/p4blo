@@ -137,9 +137,23 @@ settles is not repeated here.
   initial entries and per-entry `const`, object initializers, abstract
   methods. Out by thesis: `range`, `optional` and `..` in entries, since
   core.p4 declares only exact, ternary and lpm. (2026-09-22)
-- **Entry priority: larger wins, everywhere in the IR.** p4c's runner
-  inverts for BMv2; const entries follow p4c's running counter, mapped as
-  `IR = N + 1 - p4c`; the printer emits descending priority. (2026-09-22)
+- **Entry priority: larger wins, everywhere in the IR, and const entries
+  take the language specification's numbering.** P4 1.2.5 §14.2.1.4 as
+  P4-SpecTec mechanizes it (`$set_priorities_of_tableEntryListIR`): with
+  the default `largest_priority_wins`, an annotated `const` entry keeps
+  its `@priority` value and an unannotated one takes the previous
+  entry's priority minus `priority_delta`, so the first listed entry
+  ranks highest unless annotated otherwise. p4c's BMv2 backend numbers
+  entries with a running counter that BMv2 then reads smaller-wins,
+  which inverts the specification's order; p4c's STF vectors for
+  `table-entries-priority-bmv2` encode that inversion, and pinned
+  SpecTec fails them on the same packets. Reason: the reference for what
+  P4 means is the specification's own mechanization, not the reference
+  compiler's backend. The `priority` corpus program is re-derived under
+  the specification's rule and BMv2's answer becomes a strict classified
+  disagreement; the printer emits descending priority so that p4c,
+  numbering by position, sees the same order. (2026-09-24, supersedes
+  the 2026-09-22 mapping `IR = N + 1 - p4c`.)
 - **Decimal strings are always emitted, including zero, and a missing
   decimal string is rejected, never read as zero.** A protobuf string
   defaults to empty, not `"0"`; Lean's decoder had hidden the defect by
@@ -274,6 +288,25 @@ these entries record why.
   every reply shape the protocol allows is recorded. A changed answer is
   refreshed only after the semantics page states the changed behavior.
   (2026-09-24)
+- **The IL bridge is the frontend from P4 source.** P4 text enters
+  p4blo through P4-SpecTec's own typing and instantiation: a patch adds
+  an `il-export` command that prints the instantiated IL structurally as
+  JSON, and `p4blo.frontend` translates it construct by construct as the
+  coverage page prescribes, refusing excluded rows by name. Choices the
+  translation makes, each recorded on the coverage page: v1model's
+  verify, ingress, egress and compute controls merge into one control
+  whose egress part runs only when the packet is not dropped;
+  `standard_metadata` fields become the contract fields and a user field
+  that collides with a contract name is renamed; `mark_to_drop` becomes
+  `drop = true` and `egress_port = 511`, so a program that reads the
+  drop port afterwards keeps its meaning; the metadata parameter is
+  named `meta`; constant folding is kept to what the IR cannot hold
+  (named constants, `int` arithmetic, division, enum members, stack
+  sizes) so a printed program reads back as printed; per-table action
+  copies are named as p4c names them. Corpus goldens are compared with
+  the bridge's output and each documented difference is written as an
+  explicit change in the test, so any new difference fails. Not a
+  verified frontend. (2026-09-24)
 - **The SpecTec coverage scope is the rules and functions of 8-dynamic
   and the functions of 3-operations, including table-defined and builtin
   ones**, measured over the corpus, the examples and a fixed greedy set of
