@@ -7,7 +7,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.interp import InterpError
 from p4blo.interp.env import Env
 from p4blo.interp.expr import evaluate, read_lvalue, write_lvalue
@@ -44,7 +45,7 @@ blocks {
 
 
 def env() -> Env:
-    index = ir.Index.build(ir.load_text(PROGRAM))
+    index = BoundIndex.build(arch_wire.load_text(PROGRAM))
     return Env.for_block(index, index.blocks["ctl"], {})
 
 

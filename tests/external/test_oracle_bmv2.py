@@ -28,10 +28,13 @@ from pathlib import Path
 
 import pytest
 
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from p4blo import ir, stf  # noqa: E402
+from p4blo import stf  # noqa: E402
 from tests.frontend import catalog  # noqa: E402
 from tests.oracle import firewall  # noqa: E402
 from tests.oracle.bmv2 import run as bmv2_run  # noqa: E402
@@ -203,7 +206,7 @@ def replay_original_priority(image: str) -> bmv2_run.Verdict:
         hashlib.sha256(data).hexdigest() == catalog.SHA256["p4c/table-entries-priority-bmv2.p4"]
     ), "p4c's priority source differs from its pin"
     compiled = bmv2_run.compile_program(image, data.decode())
-    index = ir.Index.build(ir.load_text(program_of(PRIORITY_VECTOR)))
+    index = BoundIndex.build(arch_wire.load_text(program_of(PRIORITY_VECTOR)))
     plan = bmv2_run.translate(index, stf.parse(PRIORITY_VECTOR.read_text()), compiled)
     plan.ports = sorted({*plan.ports, *PRIORITY_PORTS})
     reply = bmv2_run._driver(image, "replay", json.dumps(plan.request(compiled)))

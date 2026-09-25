@@ -1,6 +1,6 @@
 """The verify-error program, authored in the eDSL: p4c's `issue1824-bmv2.p4`.
 
-`build()` returns the same `pb.Program` that verify_error.txtpb encodes; the
+`build()` returns the same `apb.BlockAssembly` that verify_error.txtpb encodes; the
 test suite checks the two are equal. Run as a script to print the text
 format.
 """
@@ -10,6 +10,8 @@ from __future__ import annotations
 from enum import IntEnum
 
 from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     BlockLibrary,
     Control,
@@ -25,7 +27,6 @@ from p4blo.edsl import (
     bit48,
     state,
 )
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class test_header(Header):
@@ -84,7 +85,7 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.h1)
 
 
-def build() -> pb.Program:
+def build() -> apb.BlockAssembly:
     return assemble(
         BlockLibrary(MyParser, MyIngress, MyDeparser, errors=errors),
         name="verify_error",
@@ -95,6 +96,4 @@ def build() -> pb.Program:
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

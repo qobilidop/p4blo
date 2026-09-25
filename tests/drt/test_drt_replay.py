@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import __main__ as cli
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, replay, save
@@ -51,8 +53,8 @@ def test_both_clis_describe_state_only_divergences(
         assert '"0x3"' in output and '"0x2"' in output
 
 
-def register_program() -> pb.Program:
-    return ir.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
+def register_program() -> apb.BlockAssembly:
+    return arch_wire.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
 
 
 def envelope(**changes: object) -> dict[str, object]:
@@ -170,7 +172,7 @@ def test_replay_shape_checks_preserve_semantically_invalid_inputs(tmp_path: Path
     path = tmp_path / "invalid-program.json"
     path.write_text(json.dumps(data))
     program, cases, ports, seed = load(path)
-    assert program == pb.Program()
+    assert program == apb.BlockAssembly()
     assert cases == [Case(pb.Entries(), -1, b"")]
     assert (ports, seed) == (4, 0)
 

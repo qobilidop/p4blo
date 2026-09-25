@@ -7,7 +7,9 @@ from dataclasses import dataclass, field
 
 from google.protobuf import text_format
 
-from p4blo import interp, ir
+from p4blo import interp
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.interp import ExternResult, values
 from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Header, Stack, Struct, Value
@@ -127,7 +129,7 @@ def run(
     externs: dict[str, FakeReg] | None = None,
 ) -> Run:
     text = TEMPLATE.replace("@DECLS@", decls).replace("@BODY@", body).replace("@EXTRA@", extra)
-    index = ir.Index.build(ir.load_text(text))
+    index = BoundIndex.build(arch_wire.load_text(text))
     if headers is None:
         headers = values.zero(pb.Type(struct="H"), index)  # type: ignore[assignment]
     if metadata is None:

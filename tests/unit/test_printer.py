@@ -19,8 +19,11 @@ from uuid import uuid4
 import pytest
 from google.protobuf import text_format
 
-from p4blo import ir, validator
-from p4blo.arch import v1model
+from p4blo import ir
+from p4blo.arch import v1model, validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.printer import PrintError, print_expr, print_lvalue, print_stmt, print_type
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -59,8 +62,8 @@ def ir_text(template: str) -> str:
     return re.sub(r"<([A-Za-z_][\w.]*)>", path, template)
 
 
-def program(text: str) -> pb.Program:
-    return ir.load_text(ir_text(text))
+def program(text: str) -> apb.BlockAssembly:
+    return arch_wire.load_text(ir_text(text))
 
 
 def stmt(text: str) -> pb.Stmt:
@@ -829,9 +832,9 @@ GOLDENS: dict[str, str] = {
 }
 
 
-def golden_program(name: str) -> pb.Program:
+def golden_program(name: str) -> apb.BlockAssembly:
     if name == "forwarder":
-        return ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
+        return arch_wire.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
     if name == "port_parser":
         return program(PORT_PARSER % ("start", "start"))
     return program(GOLDENS[name])
@@ -1121,7 +1124,7 @@ def test_print_stmt_conditional_nests_and_indents() -> None:
 
 
 def test_standard_metadata_binding_is_by_name() -> None:
-    index = ir.Index.build(golden_program("control_features"))
+    index = BoundIndex.build(golden_program("control_features"))
     prologue, epilogue = v1model.standard_metadata_binding(index, "m")
     assert prologue == [
         "m.ingress_port = standard_metadata.ingress_port;",
@@ -1138,7 +1141,7 @@ def test_standard_metadata_binding_is_by_name() -> None:
         ["m.ingress_port = standard_metadata.ingress_port;"],
         [],
     )
-    index = ir.Index.build(golden_program("bare"))
+    index = BoundIndex.build(golden_program("bare"))
     assert v1model.standard_metadata_binding(index, "m") == ([], [])
     assert v1model.standard_metadata_binding(index, "m", "parser") == ([], [])
     with pytest.raises(PrintError, match="deparser"):

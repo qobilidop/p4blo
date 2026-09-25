@@ -19,7 +19,9 @@ from typing import Any, cast
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp import expr, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
@@ -72,8 +74,8 @@ def checked_declarations(export: dict[str, Any]) -> tuple[Index, list[pb.Param],
         ("expr", "source_route"),
         ("lvalue", "hdr"),
     ]
-    selected = json_format.ParseDict(export["program"], pb.Program())
-    return Index.build(selected), params, list(call.args)
+    selected = json_format.ParseDict(export["program"], apb.BlockAssembly())
+    return BoundIndex.build(selected), params, list(call.args)
 
 
 def new_values(ev: bool, iv: bool) -> dict[str, Value]:

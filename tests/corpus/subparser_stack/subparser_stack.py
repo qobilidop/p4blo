@@ -3,7 +3,7 @@
 p4c's `subparser-with-header-stack-bmv2.p4`: the first h2 header is
 extracted by a sub-parser into `hdr.h2.next`, the rest by the top-level
 parser, and the control records which slots ended up valid. `build()`
-returns the same `pb.Program` that subparser_stack.txtpb encodes; the test
+returns the same `apb.BlockAssembly` that subparser_stack.txtpb encodes; the test
 suite checks the two are equal. Run as a script to print the text format.
 """
 
@@ -12,6 +12,8 @@ from __future__ import annotations
 from enum import IntEnum
 
 from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     BlockLibrary,
     Control,
@@ -29,7 +31,6 @@ from p4blo.edsl import (
     bit8,
     state,
 )
-from p4blo.v0 import p4blo_pb2 as pb
 
 # `#define MAX_H2_HEADERS 5`: the loop bound below, and the stack's depth,
 # which a `Literal` width must spell as the number itself.
@@ -160,7 +161,7 @@ class DeparserI(Deparser[headers]):
         self.emit(self.hdr.h3)
 
 
-def build() -> pb.Program:
+def build() -> apb.BlockAssembly:
     return assemble(
         BlockLibrary(parserI, cIngress, DeparserI, errors=errors),
         name="subparser_stack",
@@ -171,6 +172,4 @@ def build() -> pb.Program:
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

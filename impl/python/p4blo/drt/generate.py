@@ -46,10 +46,11 @@ import random
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
 from p4blo.interp.tables import InstalledEntries, InstallError
 from p4blo.interp.widths import type_of, width_of
-from p4blo.ir import BlockScope, Index
+from p4blo.ir import BlockScope
 from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = ["Generator", "Tuning", "generate"]
@@ -78,7 +79,7 @@ class Tuning:
     max_steps: int = 64
 
 
-def generate(index: Index, seed: int, count: int, ports: int = 4) -> list[Case]:
+def generate(index: BoundIndex, seed: int, count: int, ports: int = 4) -> list[Case]:
     """`count` cases for a program, deterministic in `seed`."""
     return Generator(index, seed, ports).cases(count)
 
@@ -102,7 +103,7 @@ type Source = Slot | int
 
 class Generator:
     def __init__(
-        self, index: Index, seed: int, ports: int = 4, tuning: Tuning | None = None
+        self, index: BoundIndex, seed: int, ports: int = 4, tuning: Tuning | None = None
     ) -> None:
         self.index = index
         self.rng = random.Random(seed)

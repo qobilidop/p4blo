@@ -76,4 +76,3 @@ class BlockChecks(ParserChecks, TableChecks):
         inner = Scope(scope.block, scope.path, scope.names, action)
         for i, stmt in enumerate(action.body):
             self.check_stmt(stmt, inner, f"{path}.body[{i}]")
-

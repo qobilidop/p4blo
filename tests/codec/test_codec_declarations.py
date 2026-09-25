@@ -10,8 +10,7 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import ir
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.arch.v0 import assembly_pb2 as apb
 from tests.codec.test_codec_expr import Expression
 from tests.codec.test_codec_leaves import DeclarationKind, assert_leaf, leaves, same_json
 
@@ -300,7 +299,7 @@ def requests() -> list[tuple[dict[str, object], dict[str, object]]]:
 
 def protobuf_value(kind: DeclarationKind, wire: dict[str, object]) -> tuple[Message, object]:
     """Canonical public adapter only: no validation, Index or interpreter."""
-    program = pb.Program()
+    program = apb.BlockAssembly()
     match kind:
         case "field":
             value = program.header_types.add().fields.add()
@@ -321,7 +320,7 @@ def protobuf_value(kind: DeclarationKind, wire: dict[str, object]) -> tuple[Mess
         case "extern_instance":
             value = program.extern_instances.add()
     json_format.ParseDict(wire, value)
-    p = ir.load_json(ir.dump_json(program))
+    p = wire.load_json(wire.dump_json(program))
     match kind:
         case "field":
             recovered = p.header_types[0].fields[0]

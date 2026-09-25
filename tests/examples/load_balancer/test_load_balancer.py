@@ -4,7 +4,8 @@ from pathlib import Path
 from struct import pack
 
 from examples.load_balancer.program import build
-from p4blo import ir, stf
+from p4blo import stf
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
 from p4blo.drt.run import Outcome
 from p4blo.drt.state import Observation
@@ -72,7 +73,7 @@ def frame(
 
 
 def policy(text: str = POLICY) -> pb.Entries:
-    return stf.to_entries(ir.Index.build(build()), stf.parse(text))
+    return stf.to_entries(BoundIndex.build(build()), stf.parse(text))
 
 
 def sequence() -> tuple[list[Case], list[Outcome]]:

@@ -16,6 +16,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
 from p4blo.drt.replay import load, save
@@ -45,7 +46,7 @@ def place(*path: str) -> pb.LValue:
 
 def copy_program(
     kind: CopyKind, width: int, valid: bool, a: int, b: int, changed: int, other: int
-) -> tuple[pb.Program, bytes]:
+) -> tuple[apb.BlockAssembly, bytes]:
     program = scalar_program(bits(8, 0), 8)
     program.name = f"aggregate-copy-{kind}"
     header = program.header_types.add(name="Packet")
@@ -122,7 +123,7 @@ def copy_program(
     return program, bytes(expected)
 
 
-def check_copy(program: pb.Program, expected: bytes, lean_binary: Path) -> None:
+def check_copy(program: apb.BlockAssembly, expected: bytes, lean_binary: Path) -> None:
     case = Case(pb.Entries(), 0, b"")
     try:
         report = compare_program(program, [case], 4, [lean_binary])

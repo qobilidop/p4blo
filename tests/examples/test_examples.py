@@ -8,7 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, stf, validator
+from p4blo import arch, stf
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt import generate
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program
@@ -28,7 +31,7 @@ def test_discovery_is_nonempty_and_assets_are_complete() -> None:
 def test_source_rebuilds_valid_golden(name: str) -> None:
     program = build(name)
     assert validator.validate(program) == []
-    assert ir.dump_text(program) == (DATA / name / "program.txtpb").read_text()
+    assert arch_wire.dump_text(program) == (DATA / name / "program.txtpb").read_text()
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -55,7 +58,7 @@ def test_vectors_and_filter_fate(name: str) -> None:
 @pytest.mark.parametrize("name", NAMES)
 def test_lean_agrees_generated_application(name: str, lean_binary: Path) -> None:
     program = build(name)
-    cases = generate(ir.Index.build(program), seed=73, count=80, ports=4)
+    cases = generate(BoundIndex.build(program), seed=73, count=80, ports=4)
     artifacts = ROOT / ".artifacts/drt/examples"
     artifacts.mkdir(parents=True, exist_ok=True)
     try:

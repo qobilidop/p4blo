@@ -55,7 +55,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from p4blo import ir, validator
+from p4blo import ir
+from p4blo.arch import validator
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.frontend import il
 from p4blo.frontend.common import (
     BOOL,
@@ -108,7 +110,7 @@ __all__ = [
 class Translation:
     """A translated program and what the translation had to decide."""
 
-    program: pb.Program
+    program: apb.BlockAssembly
     notes: list[str] = field(default_factory=list)
 
 
@@ -514,14 +516,14 @@ class Translator:
         headers: str,
         metadata: str,
         exports: Sequence[tuple[str, str]],
-    ) -> pb.Program:
+    ) -> apb.BlockAssembly:
         """The program, declarations in source order."""
 
         def ordered[T](table: dict[str, T]) -> list[T]:
             return [table[k] for k in sorted(table, key=lambda k: self.order.get(k, 1 << 30))]
 
         errors = list(ir.CORE_ERRORS) + [e for e in self.errors if e not in ir.CORE_ERRORS]
-        program = pb.Program(
+        program = apb.BlockAssembly(
             name=self.name,
             errors=errors,
             header_types=ordered(self.header_types),
@@ -532,7 +534,7 @@ class Translator:
             blocks=list(blocks),
             headers=headers,
             metadata=metadata,
-            exports=[pb.Export(role=r, block=b) for r, b in exports],
+            exports=[apb.Export(role=r, block=b) for r, b in exports],
         )
         return program
 
@@ -576,7 +578,7 @@ def translate_source(
 # ---------------------------------------------------------------------------
 
 
-def finish(program: pb.Program, notes: list[str]) -> pb.Program:
+def finish(program: apb.BlockAssembly, notes: list[str]) -> apb.BlockAssembly:
     """Remove self-assignments and rename block-scope names that collide in
     the IR's scopes."""
     program = copy.deepcopy(program)

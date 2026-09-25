@@ -10,7 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, interp, ir, validator
+from p4blo import arch, interp
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import LeanRunner, ProtocolError, compare_program, run_python
@@ -119,7 +122,7 @@ def member(base: pb.Expr, name: str) -> pb.Expr:
     return pb.Expr(member=pb.Member(base=base, field=name))
 
 
-def parser_observer() -> pb.Program:
+def parser_observer() -> apb.BlockAssembly:
     """Instrument only the observer, never rewrite the parser under test."""
     program = build()
     original_parser = next(b for b in program.blocks if b.kind == pb.BLOCK_KIND_PARSER)
@@ -177,7 +180,7 @@ def observer_output(length: int) -> bytes:
 
 
 def compare_with_replay(
-    program: pb.Program, cases: Sequence[Case], lean_binary: Path, profile: str
+    program: apb.BlockAssembly, cases: Sequence[Case], lean_binary: Path, profile: str
 ) -> None:
     """Retain the entire sequence before any narrower known-answer assertion."""
     try:
@@ -218,7 +221,7 @@ def test_lean_agrees_on_parser_error_and_validity_boundaries(
     cases = [Case(pb.Entries(), 1, FRAME[:length]) for length in range(55)]
     compare_with_replay(program, cases, lean_binary, "observer-all-cuts")
     path = tmp_path / "parser-observer.json"
-    path.write_text(ir.dump_json(program))
+    path.write_text(arch_wire.dump_json(program))
     with LeanRunner([lean_binary], path, 4) as runner:
         for length in range(55):
             result = runner.run(Case(pb.Entries(), 1, FRAME[:length]))
@@ -235,7 +238,7 @@ def test_lean_agrees_on_unmodified_boundary_state(
     program = build()
     compare_with_replay(program, [item.case for item in sequence], lean_binary, f"cut-{length}")
     path = tmp_path / "firewall.json"
-    path.write_text(ir.dump_json(program))
+    path.write_text(arch_wire.dump_json(program))
     with LeanRunner([lean_binary], path, 4) as runner:
         for item in sequence:
             result = runner.run(item.case)

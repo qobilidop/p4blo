@@ -35,6 +35,9 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+
 # Runnable as a script from the repository root without installing anything:
 # the package lives under impl/python/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "impl" / "python"))
@@ -328,7 +331,7 @@ def run_vector(
 
 def run(oracle: Oracle, program: Path, vectors: list[Path]) -> list[Verdict]:
     """Print the program once and run every vector against it."""
-    index = ir.Index.build(ir.load_text(program))
+    index = BoundIndex.build(arch_wire.load_text(program))
     p4 = v1model.print_program(index.program, index=index)
     with tempfile.TemporaryDirectory(prefix="p4blo-oracle-") as tmp:
         workdir = Path(tmp)

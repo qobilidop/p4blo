@@ -17,6 +17,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean, scalar_program
@@ -66,7 +67,7 @@ def expected_packet(name: str) -> bytes:
     return bytes([171, a, 57, b, 0x12, 0x34, 204, not a, b, flag, result, answer, 165]) + PAYLOAD
 
 
-def header_read_program(name: str, body: list[pb.Stmt]) -> pb.Program:
+def header_read_program(name: str, body: list[pb.Stmt]) -> apb.BlockAssembly:
     _, suffix = name.split("-")
     a, b, _, _ = ANSWERS[suffix]
     program = scalar_program(bits(8, 0), 8)
@@ -156,11 +157,11 @@ def header_read_program(name: str, body: list[pb.Stmt]) -> pb.Program:
     return program
 
 
-def exported_programs(exporter: Path) -> dict[str, pb.Program]:
+def exported_programs(exporter: Path) -> dict[str, apb.BlockAssembly]:
     completed = subprocess.run(
         [str(exporter), "headerReads"], capture_output=True, text=True, check=True, timeout=30
     )
-    programs: dict[str, pb.Program] = {}
+    programs: dict[str, apb.BlockAssembly] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
         name = record["name"]
@@ -188,9 +189,9 @@ def exported_programs(exporter: Path) -> dict[str, pb.Program]:
     return programs
 
 
-def pre_read_observer(program: pb.Program) -> pb.Program:
+def pre_read_observer(program: apb.BlockAssembly) -> apb.BlockAssembly:
     """Deliberately weaker observer used only as an adversarial control."""
-    weak = pb.Program()
+    weak = apb.BlockAssembly()
     weak.CopyFrom(program)
     callee = weak.blocks[-1]
     statements = list(callee.body)
@@ -208,7 +209,7 @@ def test_header_read_exporter_is_a_default_target() -> None:
 
 
 @pytest.fixture(scope="module")
-def authored_header_reads(lean_binary: Path) -> dict[str, pb.Program]:
+def authored_header_reads(lean_binary: Path) -> dict[str, apb.BlockAssembly]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
@@ -218,7 +219,7 @@ def authored_header_reads(lean_binary: Path) -> dict[str, pb.Program]:
 
 @pytest.mark.parametrize("name", NAMES)
 def test_lean_agrees_on_authored_header_reads(
-    name: str, authored_header_reads: dict[str, pb.Program], lean_binary: Path
+    name: str, authored_header_reads: dict[str, apb.BlockAssembly], lean_binary: Path
 ) -> None:
     program = authored_header_reads[name]
     case = Case(pb.Entries(), 0, PAYLOAD)
@@ -242,7 +243,7 @@ def test_lean_agrees_on_authored_header_reads(
 @pytest.mark.parametrize("fault_kind", ["return", "side-effect"])
 def test_lean_agrees_after_retained_validity_read_fault(
     fault_kind: str,
-    authored_header_reads: dict[str, pb.Program],
+    authored_header_reads: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

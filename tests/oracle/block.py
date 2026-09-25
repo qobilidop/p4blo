@@ -55,6 +55,9 @@ from pathlib import Path
 from types import TracebackType
 from typing import IO, Any, Self
 
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
+
 # Importable from the repository root without installing anything, as run.py;
 # the root itself for `tests.oracle.run`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "impl" / "python"))
@@ -457,7 +460,7 @@ def _struct(value: Value) -> Struct:
 
 
 def run_block(
-    program: pb.Program, block: str, inputs: BlockInputs, oracle: BlockOracle | None = None
+    program: apb.BlockAssembly, block: str, inputs: BlockInputs, oracle: BlockOracle | None = None
 ) -> BlockOutputs:
     """One block on a fresh runner: convenient, and slow, since the spec is
     elaborated again. Keep a `BlockRunner` for more than one request, and to
@@ -467,4 +470,4 @@ def run_block(
         if oracle is None:
             raise RuntimeError("no p4spectec binary: run tests/oracle/build.sh")
     with BlockRunner(oracle) as runner:
-        return runner.run_block(ir.Index.build(program), block, inputs)
+        return runner.run_block(BoundIndex.build(program), block, inputs)

@@ -23,14 +23,14 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import validator
+from p4blo.arch import validator
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import guided
 from p4blo.drt.choice import Chooser
 from p4blo.drt.families import FAMILIES, TARGETS, Profile, Sample, sample
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program
 from p4blo.interp import stmt
-from p4blo.v0 import p4blo_pb2 as pb
 
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 MEASUREMENT = Path(__file__).resolve().parents[1] / "drt-guided-measurement.json"
@@ -102,7 +102,7 @@ def test_a_seed_names_its_sample_exactly(family: str) -> None:
     assert sample(family, 8) != first
 
 
-def spectec_parsers_are_acyclic(program: pb.Program) -> bool:
+def spectec_parsers_are_acyclic(program: apb.BlockAssembly) -> bool:
     """Every state transition goes to a later state of its block."""
     for block in program.blocks:
         order = {state.name: i for i, state in enumerate(block.states)}

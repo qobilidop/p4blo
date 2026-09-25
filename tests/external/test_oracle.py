@@ -18,6 +18,8 @@ from pathlib import Path
 import pytest
 
 from p4blo import ir, stf
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -38,7 +40,7 @@ def program_of(vector: Path) -> Path:
 
 @pytest.fixture(scope="module")
 def forwarder() -> ir.Index:
-    return ir.Index.build(ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb"))
+    return BoundIndex.build(arch_wire.load_text(CORPUS / "forwarder" / "forwarder.txtpb"))
 
 
 @pytest.fixture(scope="module")
@@ -117,7 +119,7 @@ def test_translate_refuses_what_p4blo_refuses(forwarder: ir.Index) -> None:
 def test_every_corpus_vector_translates() -> None:
     assert VECTORS, "no corpus vectors found"
     for vector in VECTORS:
-        index = ir.Index.build(ir.load_text(program_of(vector)))
+        index = BoundIndex.build(arch_wire.load_text(program_of(vector)))
         oracle_run.translate(vector.read_text(), index)
 
 

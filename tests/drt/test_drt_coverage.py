@@ -42,7 +42,10 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import ir, validator
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.coverage import RuleCoverage, rule_inventory
 from p4blo.drt.families import FAMILIES, sample
@@ -80,7 +83,7 @@ class Campaign:
         self.coverage = RuleCoverage()
         self.failures: list[str] = []
 
-    def program(self, program: pb.Program, cases: Sequence[Case]) -> None:
+    def program(self, program: apb.BlockAssembly, cases: Sequence[Case]) -> None:
         report = compare_program(program, cases, PORTS, self.lean)
         self.coverage.update(report.rule_coverage)
         if not report.passed:
@@ -104,7 +107,7 @@ class Campaign:
     def mixed(self) -> None:
         """The `MIXED` program of `tests/drt/test_drt.py`, sampled as the corpus is."""
         program = mixed()
-        self.program(program, generate(ir.Index.build(program), 42, 200, PORTS))
+        self.program(program, generate(BoundIndex.build(program), 42, 200, PORTS))
 
     def shape_family(self, family: str) -> None:
         """One family at the fixed seeds of `tests/drt/test_drt_families.py`."""
@@ -354,7 +357,7 @@ def test_lean_agrees_that_tag_citations_name_ledger_entries(lean_binary: Path) -
 def test_lean_agrees_that_every_reply_carries_coverage(lean_binary: Path) -> None:
     """A truncated packet reports the too-short extract; an install error and
     a malformed request still carry a list."""
-    program = ir.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
+    program = arch_wire.load_text(CORPUS / "forwarder" / "forwarder.txtpb")
     bad = pb.Entries()
     entry = bad.tables.add(block="MyIngress", table="ipv4_lpm").entries.add()
     entry.keys.add(lpm=pb.LpmValue(value="1", prefix_len=40))
@@ -407,7 +410,7 @@ def test_coverage_witness_programs_are_valid_and_current() -> None:
     table = json.loads(WITNESSES.with_suffix(".json").read_text(encoding="utf-8"))
     assert len(table["programs"]) > 50 and len(table["cases"]) > 100
     for program_json in table["programs"]:
-        program = ir.load_json(json.dumps(program_json))
+        program = arch_wire.load_json(json.dumps(program_json))
         assert validator.validate(program) == [], program.name
     assert WITNESSES.with_suffix(".json").read_text(encoding="utf-8") == generator.render(), (
         "witnesses.json is stale; regenerate it with its generator"

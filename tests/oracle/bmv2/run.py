@@ -41,6 +41,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+
 # Runnable as a script from the repository root without installing anything:
 # the package lives under impl/python/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "impl" / "python"))
@@ -519,7 +522,7 @@ def run_vector(
 
 def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
     """Print and compile the program once and run every vector against it."""
-    index = ir.Index.build(ir.load_text(program))
+    index = BoundIndex.build(arch_wire.load_text(program))
     if uses_flood(index):
         detail = "the program uses flood, which the v1model shim cannot express for BMv2"
         return [Verdict(vector, "skip", detail, ()) for vector in vectors]

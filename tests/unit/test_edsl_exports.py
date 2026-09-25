@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from p4blo import arch, validator
+from p4blo import arch
+from p4blo.arch import validator
 from p4blo.edsl import (
     BlockLibrary,
     Control,

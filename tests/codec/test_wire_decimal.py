@@ -16,7 +16,10 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
-from p4blo import arch, ir, validator
+from p4blo import arch
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
 from p4blo.drt.run import run_python
@@ -25,7 +28,7 @@ from p4blo.interp.tables import InstallError
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def decimal_program(kind: str) -> pb.Program:
+def decimal_program(kind: str) -> apb.BlockAssembly:
     program = scalar_program(bits(8, 0), 8)
     if kind != "literal":
         control = program.blocks[1]
@@ -63,7 +66,7 @@ def decimal_field(wire: dict[str, Any], kind: str) -> tuple[dict[str, Any], str,
 def test_lean_agrees_on_rejected_decimal_spelling(
     kind: str, spelling: str, lean_binary: Path
 ) -> None:
-    wire = json.loads(ir.dump_json(decimal_program(kind)))
+    wire = json.loads(arch_wire.dump_json(decimal_program(kind)))
     obj, field, path = decimal_field(wire, kind)
     if spelling == "missing":
         del obj[field]
@@ -73,7 +76,7 @@ def test_lean_agrees_on_rejected_decimal_spelling(
         ]
     text = json.dumps(wire)
     try:
-        parsed = ir.load_json(text)
+        parsed = arch_wire.load_json(text)
     except json_format.ParseError:
         assert spelling == "number"
     else:
@@ -95,11 +98,11 @@ def test_lean_agrees_on_rejected_decimal_spelling(
 def test_lean_agrees_on_explicit_decimal_strings(
     kind: str, spelling: str, lean_binary: Path
 ) -> None:
-    wire = json.loads(ir.dump_json(decimal_program(kind)))
+    wire = json.loads(arch_wire.dump_json(decimal_program(kind)))
     obj, field, _ = decimal_field(wire, kind)
     obj[field] = spelling
     text = json.dumps(wire)
-    assert validator.validate(ir.load_json(text)) == []
+    assert validator.validate(arch_wire.load_json(text)) == []
     result = subprocess.run(
         [str(lean_binary), "-"], input=text, capture_output=True, text=True, timeout=30
     )
@@ -151,7 +154,7 @@ def test_lean_agrees_on_decimal_request_rejection_without_state_change(
     assert encode(snapshot(loaded)) == expected_final
 
     source = tmp_path / "decimal.json"
-    source.write_text(ir.dump_json(program))
+    source.write_text(arch_wire.dump_json(program))
     requests = "".join(
         json.dumps({"entries": value, "ingress_port": 0, "packet": ""}) + "\n"
         for value in (valid, malformed, valid)

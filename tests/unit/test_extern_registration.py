@@ -8,10 +8,11 @@ from examples import custom_extern
 from p4blo import arch
 from p4blo.arch.contract import Contract
 from p4blo.arch.externs import BindError, Implementation, MethodShape, Registry, Shape
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def load(registry: Registry, program: pb.Program | None = None) -> arch.Loaded:
+def load(registry: Registry, program: apb.BlockAssembly | None = None) -> arch.Loaded:
     return arch.load(
         program if program is not None else custom_extern.build(),
         registry=registry,

@@ -8,6 +8,8 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from p4blo import interp, ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.interp import ParseOutcome, values
 from p4blo.interp.values import NO_ERROR, Bits, ErrorValue, Header, Stack
 from p4blo.v0 import p4blo_pb2 as pb
@@ -69,7 +71,7 @@ ACCEPT = "transition { direct { accept {} } }"
 
 def program(states: str, extra: str = "") -> ir.Index:
     text = TEMPLATE.replace("@STATES@", states).replace("@EXTRA@", extra)
-    return ir.Index.build(ir.load_text(text))
+    return BoundIndex.build(arch_wire.load_text(text))
 
 
 def run(states: str, packet: bytes, extra: str = "") -> ParseOutcome:

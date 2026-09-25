@@ -31,9 +31,9 @@ from types import ModuleType
 
 import pytest
 
-from p4blo import validator
+from p4blo.arch import validator
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import EdslError, bit8
-from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITE = ROOT / "tests" / "pyright"
@@ -152,7 +152,7 @@ def test_must_pass_builds_and_validates(file: Path) -> None:
     """Every must_pass file declares a `program` that builds into IR the
     validator accepts. Pyright never runs a file; this does."""
     program = import_fixture(file).program
-    assert isinstance(program, pb.Program)
+    assert isinstance(program, apb.BlockAssembly)
     assert validator.validate(program) == []
 
 

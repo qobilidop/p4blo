@@ -12,6 +12,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import binary, bits, scalar_program
 from p4blo.drt.replay import load, save
@@ -29,7 +30,7 @@ CallKind = Literal["action", "block"]
 
 def call_program(
     kind: CallKind, width: int, valid: bool, a: int, b: int, changed: int
-) -> tuple[pb.Program, bytes]:
+) -> tuple[apb.BlockAssembly, bytes]:
     program = scalar_program(bits(8, 0), 8)
     program.name = f"aggregate-call-{kind}"
     header = program.header_types.add(name="Data")
@@ -114,7 +115,7 @@ def call_program(
     return program, bytes(expected)
 
 
-def check_call(program: pb.Program, expected: bytes, lean_binary: Path) -> None:
+def check_call(program: apb.BlockAssembly, expected: bytes, lean_binary: Path) -> None:
     # Nonempty unconsumed payload must survive both kinds of call.
     case = Case(pb.Entries(), 0, b"\xde\xad")
     try:

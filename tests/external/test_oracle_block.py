@@ -39,7 +39,10 @@ import pytest
 
 from p4blo import arch, interp, ir, stf
 from p4blo.arch import spectec_block
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.crc import CRC, crc32
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.state import snapshot
 from p4blo.interp import ExternResult, Externs, stmt
 from p4blo.interp import deparser as interp_deparser
@@ -58,7 +61,7 @@ PROGRAMS = sorted({program_of(v) for v in VECTORS})
 
 
 def load(path: Path) -> arch.Loaded:
-    return arch.reference.load(ir.load_text(path.read_text()))
+    return arch.reference.load(arch_wire.load_text(path.read_text()))
 
 
 @pytest.fixture(scope="module")
@@ -94,7 +97,7 @@ def test_block_printer_has_no_shim(path: Path) -> None:
 
 def test_block_printer_supplies_missing_roles() -> None:
     loaded = load(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
-    program = pb.Program()
+    program = apb.BlockAssembly()
     program.CopyFrom(loaded.index.program)
     # Export only the control, and free the names the printer gives the
     # blocks it supplies.
@@ -111,7 +114,7 @@ def test_block_printer_supplies_missing_roles() -> None:
 
 def test_block_printer_refuses_a_declared_name() -> None:
     loaded = load(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
-    program = pb.Program()
+    program = apb.BlockAssembly()
     program.CopyFrom(loaded.index.program)
     program.struct_types[0].name = "P4blo"
     with pytest.raises(spectec_block.PrintError, match="P4blo"):
@@ -164,7 +167,7 @@ def test_from_json_refuses_a_foreign_shape() -> None:
 def _with_second_block_declaring(table: str) -> tuple[ir.Index, pb.Entries]:
     """The forwarder with an unexported control that declares a table of the
     same name as the ingress's, and one entry for the ingress's."""
-    program = pb.Program()
+    program = apb.BlockAssembly()
     program.CopyFrom(load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index.program)
     ingress = next(b for b in program.blocks if b.name == "MyIngress")
     original = next(t for t in ingress.tables if t.name == table)
@@ -172,7 +175,7 @@ def _with_second_block_declaring(table: str) -> tuple[ir.Index, pb.Entries]:
     other.params.extend(ingress.params)
     other.actions.extend(a for a in ingress.actions if a.name in original.actions)
     other.tables.add().CopyFrom(original)
-    return ir.Index.build(program), _entries_for("MyIngress", table)
+    return BoundIndex.build(program), _entries_for("MyIngress", table)
 
 
 def _entries_for(block: str, table: str) -> pb.Entries:
@@ -195,12 +198,12 @@ def test_entries_for_a_table_two_blocks_declare_are_refused() -> None:
 def test_entries_for_a_valid_key_name_are_refused() -> None:
     # V1Model's STF runner rewrites `$valid$` in a key name to `isValid()`;
     # this architecture does not, so such a key would match differently.
-    program = pb.Program()
+    program = apb.BlockAssembly()
     program.CopyFrom(load(ROOT / "tests/corpus/forwarder/forwarder.txtpb").index.program)
     ingress = next(b for b in program.blocks if b.name == "MyIngress")
     table = ingress.tables[0]
     table.keys[0].name = "hdr.ipv4.$valid$"
-    index = ir.Index.build(program)
+    index = BoundIndex.build(program)
     entries = _entries_for("MyIngress", table.name)
     with pytest.raises(oracle_block.BlockError, match=r"\$valid\$"):
         oracle_block.entries_to_stf(index, entries)

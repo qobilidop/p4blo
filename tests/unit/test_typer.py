@@ -17,8 +17,10 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import ir
 from p4blo import validator as v
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import library_of
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.families import FAMILIES, sample
 from p4blo.interp.widths import type_of
 from p4blo.v0 import p4blo_pb2 as pb
@@ -30,9 +32,9 @@ CORPUS = Path(__file__).resolve().parents[1] / "corpus"
 SEEDS = range(20)
 
 
-def programs() -> Iterator[tuple[str, pb.Program]]:
+def programs() -> Iterator[tuple[str, apb.BlockAssembly]]:
     for path in sorted(CORPUS.glob("*/*.txtpb")):
-        yield f"corpus/{path.stem}", ir.load_text(path)
+        yield f"corpus/{path.stem}", arch_wire.load_text(path)
     for name in catalog.NAMES:
         yield f"example/{name}", catalog.build(name)
     for family, profile, seed in itertools.product(FAMILIES, ("lean", "spectec"), SEEDS):
@@ -45,8 +47,8 @@ PROGRAMS = list(programs())
 class _Recorder(v._Validator):  # pyright: ignore[reportPrivateUsage]
     """The validator, keeping every expression it types and the type."""
 
-    def __init__(self, program: pb.Program) -> None:
-        super().__init__(program)
+    def __init__(self, program: apb.BlockAssembly) -> None:
+        super().__init__(library_of(program))
         self.typed: list[tuple[pb.Expr, Scope, pb.Type]] = []
 
     def type_of(self, expr: pb.Expr, scope: Scope, path: str) -> pb.Type | None:
@@ -57,7 +59,9 @@ class _Recorder(v._Validator):  # pyright: ignore[reportPrivateUsage]
 
 
 @pytest.mark.parametrize(("name", "program"), PROGRAMS, ids=[n for n, _ in PROGRAMS])
-def test_the_validator_and_the_interpreter_type_alike(name: str, program: pb.Program) -> None:
+def test_the_validator_and_the_interpreter_type_alike(
+    name: str, program: apb.BlockAssembly
+) -> None:
     recorder = _Recorder(program)
     assert recorder.run() == [], name
     assert recorder.typed, name

@@ -17,8 +17,9 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, validator
-from p4blo.arch import assemble
+from p4blo import arch
+from p4blo.arch import assemble, validator
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
@@ -119,7 +120,7 @@ class Emit(Deparser[headers]):
         self.emit(self.hdr.elems)
 
 
-def statelocal() -> pb.Program:
+def statelocal() -> apb.BlockAssembly:
     return assemble(
         BlockLibrary(StateLocalParser, PassControl, Emit),
         name="edsl_statelocal",
@@ -129,7 +130,7 @@ def statelocal() -> pb.Program:
     )
 
 
-def actlocal() -> pb.Program:
+def actlocal() -> apb.BlockAssembly:
     return assemble(
         BlockLibrary(ExtractParser, ActionLocalControl, Emit),
         name="edsl_actlocal",
@@ -142,7 +143,7 @@ def actlocal() -> pb.Program:
 # name: (program, input packet, the one output packet on port 0). The state
 # runs three times and the action twice; each entry sees `cnt`/`c` at 0 and
 # `tmp` invalid. A stale local would give `03 02` and `03 01` instead.
-CASES: dict[str, tuple[pb.Program, bytes, bytes]] = {
+CASES: dict[str, tuple[apb.BlockAssembly, bytes, bytes]] = {
     "statelocal": (statelocal(), b"\x00\x00\x01\x01\x00", b"\x01\x00\x01\x01\x00"),
     "actlocal": (actlocal(), b"\x00\x00", b"\x02\x00"),
 }

@@ -2,7 +2,8 @@
 
 `Scope` is where a statement or expression stands. The tables below it are
 the placement rules of the schema as data: which statements each block kind
-allows and which parameter directions each owner allows. `NameChecks` resolves references, reporting why
+allows and which parameter directions each owner allows. `NameChecks`
+resolves references, reporting why
 one does not resolve (REF_UNRESOLVED, REF_KIND, SCOPE_VAR, SCOPE_DECL), and
 checks the small namespaces and the error list.
 """

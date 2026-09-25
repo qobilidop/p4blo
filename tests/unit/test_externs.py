@@ -2,6 +2,8 @@ import pytest
 
 from p4blo import ir
 from p4blo.arch import externs
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.checksum import internet_checksum
 from p4blo.interp.values import Bits
 
@@ -36,8 +38,8 @@ def instance(*, extern_type: str = "register", arg_width: int = 32) -> str:
 
 
 def program(extern_types: str, instances: str) -> ir.Index:
-    return ir.Index.build(
-        ir.load_text(
+    return BoundIndex.build(
+        arch_wire.load_text(
             f"""
             errors: "NoError"
             struct_types {{ name: "H" }}

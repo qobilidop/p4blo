@@ -65,6 +65,7 @@ from dataclasses import dataclass, field
 from google.protobuf.message import Message
 
 from p4blo import ir
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.frontend import il
 from p4blo.frontend.blocks import Architecture, BlockCx
 from p4blo.frontend.common import (
@@ -535,7 +536,7 @@ def _constructor(tr: Translator, te: Node) -> tuple[Node, list[Node]]:
     return decl, e.nodes(1)
 
 
-def bind(tr: Translator) -> pb.Program:
+def bind(tr: Translator) -> apb.BlockAssembly:
     """Translate a V1Switch program into IR."""
     arch = V1Model(tr)
     tr.arch = arch

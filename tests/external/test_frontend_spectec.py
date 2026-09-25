@@ -41,6 +41,9 @@ import pytest
 
 from p4blo import arch, ir, stf
 from p4blo.arch import v1model
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.frontend import Excluded, NotTranslated, Translation, translate
 from p4blo.frontend.export import Exporter, find_exporter
 from p4blo.frontend.normalize import normalize
@@ -87,8 +90,8 @@ def _translated(exporter: Exporter, source: Path, name: str) -> Translation:
     return translate(exporter.export(source), name)
 
 
-def golden(program: str) -> pb.Program:
-    return ir.load_text(CORPUS / program / f"{program}.txtpb")
+def golden(program: str) -> apb.BlockAssembly:
+    return arch_wire.load_text(CORPUS / program / f"{program}.txtpb")
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +143,7 @@ def test_normalize_does_not_rename_a_local_into_an_action_parameter() -> None:
         body=[pb.Stmt(assign=pb.Assign(target=pb.LValue(var="x"), value=pb.Expr(var="v0")))],
     )
     block = pb.Block(name="c", locals=[pb.Var(name="x", type=bits8)], actions=[action])
-    got = normalize(pb.Program(blocks=[block])).blocks[0]
+    got = normalize(apb.BlockAssembly(blocks=[block])).blocks[0]
     (stmt,) = got.actions[0].body
     assert stmt.assign.target.var == got.locals[0].name != "v0"
     assert stmt.assign.value.var == "v0"
@@ -155,7 +158,7 @@ def _body_without(stmts: list[pb.Stmt], drop: Callable[[pb.Stmt], bool]) -> list
     return [s for s in stmts if not drop(s)]
 
 
-def _documented_acl(g: pb.Program) -> None:
+def _documented_acl(g: apb.BlockAssembly) -> None:
     """The acl README's choices the bridge does not make. Key names: the
     golden uses p4c's STF names (`data.f1`, `extra[0].h`), the bridge P4's
     control-plane names, which are the expressions' own paths
@@ -170,7 +173,7 @@ def _documented_acl(g: pb.Program) -> None:
     del setbyte.body[-1]
 
 
-def _mark_to_drop_as_v1model(g: pb.Program, block: str) -> None:
+def _mark_to_drop_as_v1model(g: apb.BlockAssembly, block: str) -> None:
     """The golden's `drop` action sets the contract's `drop`, and in the
     firewall also the port 511; v1model's `mark_to_drop` writes only the
     port 511, whose packet p4blo's switch then drops as sent to no port
@@ -187,7 +190,7 @@ def _mark_to_drop_as_v1model(g: pb.Program, block: str) -> None:
     drop.body.append(pb.Stmt(assign=pb.Assign(target=port, value=value)))
 
 
-def _documented_forwarder(g: pb.Program) -> None:
+def _documented_forwarder(g: apb.BlockAssembly) -> None:
     """The golden declares the contract's `ingress_port`, which the source
     never reads; and `mark_to_drop` is v1model's (above)."""
     meta = next(s for s in g.struct_types if s.name == g.metadata)
@@ -197,12 +200,12 @@ def _documented_forwarder(g: pb.Program) -> None:
     _mark_to_drop_as_v1model(g, "MyIngress")
 
 
-def _documented_tutorial_firewall(g: pb.Program) -> None:
+def _documented_tutorial_firewall(g: apb.BlockAssembly) -> None:
     """`mark_to_drop` is v1model's (above)."""
     _mark_to_drop_as_v1model(g, "MyIngress")
 
 
-def _documented_stateful(g: pb.Program) -> None:
+def _documented_stateful(g: apb.BlockAssembly) -> None:
     """The stateful README's "Added" section: a counter and a seed guard
     the donor does not have, and the merged control named `pipeline`."""
     kept = [t for t in g.extern_types if t.name != "counter"]
@@ -229,7 +232,7 @@ def _documented_stateful(g: pb.Program) -> None:
             e.block = "ingress"
 
 
-DOCUMENTED: dict[str, Callable[[pb.Program], None]] = {
+DOCUMENTED: dict[str, Callable[[apb.BlockAssembly], None]] = {
     "acl": _documented_acl,
     "forwarder": _documented_forwarder,
     "stateful": _documented_stateful,
@@ -251,20 +254,22 @@ def test_corpus_program_from_its_original_source(
     want = golden(entry.program)
     match entry.status:
         case "identical":
-            assert ir.dump_text(got) == ir.dump_text(want)
+            assert arch_wire.dump_text(got) == arch_wire.dump_text(want)
         case "normalized":
-            assert ir.dump_text(got) != ir.dump_text(want), "now identical: update the catalog"
-            assert ir.dump_text(normalize(got)) == ir.dump_text(normalize(want))
+            assert arch_wire.dump_text(got) != arch_wire.dump_text(want), (
+                "now identical: update the catalog"
+            )
+            assert arch_wire.dump_text(normalize(got)) == arch_wire.dump_text(normalize(want))
         case "documented":
-            assert ir.dump_text(normalize(got)) != ir.dump_text(normalize(want))
+            assert arch_wire.dump_text(normalize(got)) != arch_wire.dump_text(normalize(want))
             DOCUMENTED[entry.program](want)
-            assert ir.dump_text(normalize(got)) == ir.dump_text(normalize(want))
+            assert arch_wire.dump_text(normalize(got)) == arch_wire.dump_text(normalize(want))
         case _:
             raise AssertionError(entry.status)
 
 
 def _outputs(
-    program: pb.Program, vector: Path, entries_of: ir.Index
+    program: apb.BlockAssembly, vector: Path, entries_of: ir.Index
 ) -> list[tuple[int, list[tuple[int, bytes]]]]:
     """Every packet's outputs, entries resolved against `entries_of` (the
     golden's names, which vectors use) and installed by position."""
@@ -302,7 +307,7 @@ def test_corpus_vectors_agree_with_the_golden(
 ) -> None:
     got = _translated(exporter, entry.source, entry.program).program
     want = golden(entry.program)
-    index = ir.Index.build(want)
+    index = BoundIndex.build(want)
     ours, theirs = _outputs(got, vector, index), _outputs(want, vector, index)
     differ = [line for (line, a), (_, b) in zip(ours, theirs, strict=True) if a != b]
     key = f"{entry.program}/{vector.stem}"
@@ -352,7 +357,7 @@ ROUND_TRIP_EXCLUDED = {"priority": "tableEntriesPropertyIR without const, and a 
 def test_printed_golden_translates_back_to_itself(
     exporter: Exporter, tmp_path: Path, name: str, path: Path
 ) -> None:
-    program = ir.load_text(path)
+    program = arch_wire.load_text(path)
     source = tmp_path / f"{Path(name).name}.p4"
     source.write_text(v1model.print_program(program))
     if name in ROUND_TRIP_EXCLUDED:
@@ -361,7 +366,7 @@ def test_printed_golden_translates_back_to_itself(
         assert e.value.row == ROUND_TRIP_EXCLUDED[name]
         return
     got = translate(exporter.export(source), program.name).program
-    assert ir.dump_text(normalize(got)) == ir.dump_text(normalize(program))
+    assert arch_wire.dump_text(normalize(got)) == arch_wire.dump_text(normalize(program))
 
 
 @pytest.mark.parametrize("name", catalog.NO_SOURCE)
@@ -374,7 +379,7 @@ def test_edsl_only_program_runs_the_same_after_the_round_trip(
     source = tmp_path / f"{name}.p4"
     source.write_text(v1model.print_program(want))
     got = translate(exporter.export(source), name).program
-    index = ir.Index.build(want)
+    index = BoundIndex.build(want)
     for vector in sorted((CORPUS / name).glob("*.stf")):
         assert _outputs(got, vector, index) == _outputs(want, vector, index), vector.name
 

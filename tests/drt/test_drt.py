@@ -16,7 +16,12 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, stf, validator
+from p4blo import arch, stf
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.builder import AssemblyBuilder
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import (
     Case,
     Generator,
@@ -32,7 +37,7 @@ from p4blo.drt import (
 from p4blo.drt.coverage import parser_visits
 from p4blo.drt.run import parse_reply, python_outcome
 from p4blo.drt.state import snapshot
-from p4blo.edsl.core import Program, bit, boolean
+from p4blo.edsl.core import bit, boolean
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
@@ -161,17 +166,17 @@ exports { role: "deparser" block: "D" }
 """
 
 
-def golden(program_dir: Path) -> pb.Program:
-    return ir.load_text(program_dir / f"{program_dir.name}.txtpb")
+def golden(program_dir: Path) -> apb.BlockAssembly:
+    return arch_wire.load_text(program_dir / f"{program_dir.name}.txtpb")
 
 
-def mixed() -> pb.Program:
-    program = ir.load_text(MIXED)
+def mixed() -> apb.BlockAssembly:
+    program = arch_wire.load_text(MIXED)
     assert validator.validate(program) == []
     return program
 
 
-def all_states(program: pb.Program) -> set[tuple[str, str]]:
+def all_states(program: apb.BlockAssembly) -> set[tuple[str, str]]:
     return {(b.name, s.name) for b in program.blocks for s in b.states}
 
 
@@ -181,7 +186,7 @@ def all_states(program: pb.Program) -> set[tuple[str, str]]:
 
 
 def test_generation_is_deterministic_per_seed() -> None:
-    index = ir.Index.build(golden(CORPUS / "forwarder"))
+    index = BoundIndex.build(golden(CORPUS / "forwarder"))
     first = generate(index, 7, 50)
     assert generate(index, 7, 50) == first
     assert generate(index, 8, 50) != first
@@ -365,7 +370,7 @@ def test_a_flipped_byte_is_a_divergence_on_every_case_with_output() -> None:
 
 def test_a_dead_process_is_a_protocol_error(tmp_path: Path) -> None:
     program_json = tmp_path / "forwarder.json"
-    program_json.write_text(ir.dump_json(golden(CORPUS / "forwarder")))
+    program_json.write_text(arch_wire.dump_json(golden(CORPUS / "forwarder")))
     case = Case(pb.Entries(), 0, b"\x00")
     with LeanRunner([sys.executable, "-c", "import sys; sys.exit(3)"], program_json, 4) as runner:
         with pytest.raises(ProtocolError, match="exit 3"):
@@ -438,7 +443,7 @@ def test_case_to_stf_parses_and_replays_to_the_same_outputs(program: str) -> Non
 
 
 def test_case_to_stf_writes_the_outputs_as_comments() -> None:
-    index = ir.Index.build(golden(CORPUS / "forwarder"))
+    index = BoundIndex.build(golden(CORPUS / "forwarder"))
     case = Case(pb.Entries(), 1, b"\x01\x02")
     text = case_to_stf(index, case, comments={"python": [(2, b"\xab")], "lean": "error: boom"})
     assert text == ("packet 1 0102\n# python:\n# expect 2 ab $\n# lean:\n#   error: boom\n")
@@ -447,7 +452,7 @@ def test_case_to_stf_writes_the_outputs_as_comments() -> None:
 
 
 def test_case_to_stf_refuses_an_empty_packet() -> None:
-    index = ir.Index.build(golden(CORPUS / "forwarder"))
+    index = BoundIndex.build(golden(CORPUS / "forwarder"))
     with pytest.raises(ValueError, match="empty packet"):
         case_to_stf(index, Case(pb.Entries(), 0, b""))
 
@@ -461,7 +466,7 @@ def test_case_to_stf_refuses_an_empty_packet() -> None:
 def test_lean_agrees_with_python(program_dir: Path, lean_binary: Path) -> None:
     report = compare(program_dir, 42, 200, PORTS, [lean_binary])
     assert report.cases == 200
-    index = ir.Index.build(golden(program_dir))
+    index = BoundIndex.build(golden(program_dir))
     shown = "\n".join(
         case_to_stf(index, d.case, comments={"python": str(d.python), "lean": str(d.lean)})
         for d in report.divergences[:3]
@@ -473,12 +478,12 @@ def test_lean_agrees_with_python(program_dir: Path, lean_binary: Path) -> None:
 
 
 def lean_report(
-    program: pb.Program, cases: list[Case], lean_binary: Path, tmp_path: Path, ports: int = 4
+    program: apb.BlockAssembly, cases: list[Case], lean_binary: Path, tmp_path: Path, ports: int = 4
 ) -> tuple[Outcome, ...]:
     """Every case on Python and on Lean; the report and the Lean outcomes."""
     loaded = arch.reference.load(program)
     program_json = tmp_path / f"{program.name}.json"
-    program_json.write_text(ir.dump_json(program))
+    program_json.write_text(arch_wire.dump_json(program))
     seen: list[Outcome] = []
     with LeanRunner([lean_binary], program_json, ports) as runner:
 
@@ -508,10 +513,10 @@ def test_lean_agrees_on_error_reasons(lean_binary: Path, tmp_path: Path) -> None
     ]
 
 
-def fate_program() -> pb.Program:
+def fate_program() -> apb.BlockAssembly:
     """flood, drop and egress_port taken from the packet; the ingress port
     written back into it."""
-    p = Program("fate")
+    p = AssemblyBuilder("fate")
     h = p.header("h_t", flood=bit(8), drop=bit(8), port=bit(16))
     p.headers = p.struct("headers", h=h)
     p.metadata = p.struct(

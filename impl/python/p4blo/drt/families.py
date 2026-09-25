@@ -60,6 +60,8 @@ from dataclasses import dataclass
 from typing import Literal
 
 from p4blo import ir
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.choice import Chooser, RandomChooser
 from p4blo.drt.generate import generate
@@ -84,7 +86,7 @@ class Sample:
     made it."""
 
     family: str
-    program: pb.Program
+    program: apb.BlockAssembly
     cases: tuple[Case, ...]
     features: frozenset[str]
 
@@ -332,9 +334,9 @@ def stack_type(size: int) -> pb.Type:
     return pb.Type(stack=pb.StackType(header="h_t", size=size))
 
 
-def template(name: str, stack: int) -> pb.Program:
+def template(name: str, stack: int) -> apb.BlockAssembly:
     """The shared types, an empty parser, control and deparser, exported."""
-    program = pb.Program(name=name, headers="H", metadata="M")
+    program = apb.BlockAssembly(name=name, headers="H", metadata="M")
     program.errors.extend(ERRORS)
     program.header_types.extend(
         [
@@ -392,13 +394,13 @@ def template(name: str, stack: int) -> pb.Program:
         ]
     )
     program.exports.extend(
-        pb.Export(role=role, block=block)
+        apb.Export(role=role, block=block)
         for role, block in (("parser", "P"), ("control", "C"), ("deparser", "D"))
     )
     return program
 
 
-def _block(program: pb.Program, name: str) -> pb.Block:
+def _block(program: apb.BlockAssembly, name: str) -> pb.Block:
     return next(b for b in program.blocks if b.name == name)
 
 
@@ -427,7 +429,9 @@ class _Control:
     locals and result byte `hdr.o.r<k>`, so features do not interact
     through storage except where a feature is about `hdr` itself."""
 
-    def __init__(self, ch: Chooser, program: pb.Program, profile: Profile, stack: int) -> None:
+    def __init__(
+        self, ch: Chooser, program: apb.BlockAssembly, profile: Profile, stack: int
+    ) -> None:
         self.ch = ch
         self.program = program
         self.profile = profile
@@ -1141,7 +1145,7 @@ def parser_family(ch: Chooser, profile: Profile = "lean", cases: int = 4) -> Sam
     control = _block(program, "C")
     control.body.extend([set_valid("hdr.o"), assign("hdr.o.r0", _local_error())])
     seed = ch.integer("packets", 0, 2**32 - 1)
-    requests = generate(ir.Index.build(program), seed, cases)
+    requests = generate(BoundIndex.build(program), seed, cases)
     # The last packet is cut to its first byte, so that every program meets
     # a packet read past the end somewhere.
     last = requests[-1]

@@ -17,13 +17,14 @@ from typing import Any, cast
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp import stmt
 from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Header, Struct, Value
-from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_leaves import same_json
 from tests.lean.test_lean_edsl_field_commands import field_command_program
@@ -48,9 +49,9 @@ def entry_export(lean_binary: Path) -> dict[str, Any]:
     )
 
 
-def declarations(export: dict[str, Any]) -> tuple[pb.Program, pb.CallBlock]:
+def declarations(export: dict[str, Any]) -> tuple[apb.BlockAssembly, pb.CallBlock]:
     program = field_command_program("forward-hit", [])
-    selected = json_format.ParseDict(export["program"], pb.Program())
+    selected = json_format.ParseDict(export["program"], apb.BlockAssembly())
     actual = next(block for block in program.blocks if block.name == "RewriteBody")
     assert len(selected.blocks) == 1
     projected = pb.Block()
@@ -83,7 +84,7 @@ def test_call_entry_anchor_rejects_paired_equal_width_remapping(
 ) -> None:
     """A layout and initializer can agree on the same wrong field order."""
     corrupted = deepcopy(entry_export)
-    selected = json_format.ParseDict(corrupted["program"], pb.Program())
+    selected = json_format.ParseDict(corrupted["program"], apb.BlockAssembly())
     result = next(header for header in selected.header_types if header.name == "Result")
     assert result.fields[0].type == result.fields[1].type == pb.Type(bits=48)
     result.fields[0].name, result.fields[1].name = result.fields[1].name, result.fields[0].name
@@ -172,7 +173,7 @@ def assert_native_snapshot(
     entry_export: dict[str, Any],
     ev: bool,
     iv: bool,
-) -> tuple[pb.Program, pb.CallBlock]:
+) -> tuple[apb.BlockAssembly, pb.CallBlock]:
     program, call = declarations(entry_export)
     expected = independent_values(ev, iv)
     expected_json = {name: value_json(value) for name, value in expected.items()}
@@ -292,7 +293,7 @@ def shared_snapshot(env: Env) -> tuple[Any, ...]:
 
 
 def observe_python_entry(
-    program: pb.Program,
+    program: apb.BlockAssembly,
     call: pb.CallBlock,
     ev: bool,
     iv: bool,
@@ -313,7 +314,7 @@ def observe_python_entry(
     frozen_caller = json.dumps(
         {name: value_json(v) for name, v in caller_values.items()}, sort_keys=True
     )
-    index = Index.build(program)
+    index = BoundIndex.build(program)
     packet = Packet(bytes.fromhex("deadbeef"))
     packet.cursor = 3
     emitter = Emitter()

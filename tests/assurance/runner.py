@@ -20,12 +20,13 @@ from pathlib import Path
 
 from google.protobuf.json_format import MessageToDict
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt._json import loads
 from p4blo.drt.case import Case
 from p4blo.drt.run import ProtocolError, Report, compare_program, python_outcome, request_json
-from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
 NODES = (
@@ -119,7 +120,7 @@ def stop_owned(process: subprocess.Popen[bytes]) -> None:
 @dataclass(frozen=True)
 class Input:
     name: str
-    program: pb.Program
+    program: apb.BlockAssembly
     cases: tuple[Case, ...]
 
     def fingerprint(self) -> str:
@@ -141,10 +142,11 @@ def inputs() -> tuple[Input, ...]:
     from tests.lean.test_lean_forwarder_tables import packet_case
     from tests.programs.test_firewall import connection
 
-    forwarder = ir.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
+    forwarder = arch_wire.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
     firewall = build()
     require(
-        firewall == ir.load_text(ROOT / "tests/corpus/tutorial_firewall/tutorial_firewall.txtpb"),
+        firewall
+        == arch_wire.load_text(ROOT / "tests/corpus/tutorial_firewall/tutorial_firewall.txtpb"),
         "firewall authoring no longer matches the golden",
     )
     return (

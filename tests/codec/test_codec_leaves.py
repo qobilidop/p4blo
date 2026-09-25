@@ -13,7 +13,7 @@ from typing import Literal
 import pytest
 from google.protobuf import json_format
 
-from p4blo import ir
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -108,14 +108,14 @@ def leaves() -> list[Leaf]:
 
 def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, object], dict]:
     """The production protobuf adapter, with no semantic validator in between."""
-    program = pb.Program()
+    program = apb.BlockAssembly()
     observed: dict[str, object]
     if kind == "literal":
         value = json_format.ParseDict(wire, pb.Literal())
         program.extern_instances.add().args.add().CopyFrom(value)
-        recovered = ir.load_json(ir.dump_json(program)).extern_instances[0].args[0]
+        recovered = wire.load_json(wire.dump_json(program)).extern_instances[0].args[0]
         assert recovered == value
-        encoded = json.loads(ir.dump_json(program))["extern_instances"][0]["args"][0]
+        encoded = json.loads(wire.dump_json(program))["extern_instances"][0]["args"][0]
         match value.WhichOneof("value"):
             case "bits":
                 observed = {"tag": "bits", "width": value.bits.width, "value": value.bits.value}
@@ -134,9 +134,9 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
     elif kind == "type":
         value = json_format.ParseDict(wire, pb.Type())
         program.struct_types.add().fields.add().type.CopyFrom(value)
-        recovered = ir.load_json(ir.dump_json(program)).struct_types[0].fields[0].type
+        recovered = wire.load_json(wire.dump_json(program)).struct_types[0].fields[0].type
         assert recovered == value
-        encoded = json.loads(ir.dump_json(program))["struct_types"][0]["fields"][0]["type"]
+        encoded = json.loads(wire.dump_json(program))["struct_types"][0]["fields"][0]["type"]
         match value.WhichOneof("kind"):
             case "bits":
                 observed = {"tag": "bits", "width": value.bits}
@@ -151,9 +151,11 @@ def protobuf_value(kind: LeafKind, wire: dict[str, object]) -> tuple[dict[str, o
     else:
         value = json_format.ParseDict(wire, pb.KeyValue())
         program.blocks.add().tables.add().const_entries.add().keys.add().CopyFrom(value)
-        recovered = ir.load_json(ir.dump_json(program)).blocks[0].tables[0].const_entries[0].keys[0]
+        recovered = (
+            wire.load_json(wire.dump_json(program)).blocks[0].tables[0].const_entries[0].keys[0]
+        )
         assert recovered == value
-        encoded = json.loads(ir.dump_json(program))["blocks"][0]["tables"][0]["const_entries"][0][
+        encoded = json.loads(wire.dump_json(program))["blocks"][0]["tables"][0]["const_entries"][0][
             "keys"
         ][0]
         match value.WhichOneof("kind"):
@@ -185,8 +187,8 @@ def assert_leaf(
     # since the conformance endpoint belongs to the architecture package.
     binary = lean_binary.with_name("codec-leaves")
     if not binary.exists():
-        binary = ROOT / "spec/ir/.lake/build/bin/codec-leaves"
-    assert binary.is_file(), f"missing test endpoint: {binary} (build spec/ir/ default targets)"
+        binary = ROOT / "spec/arch/.lake/build/bin/codec-leaves"
+    assert binary.is_file(), f"missing test endpoint: {binary} (build spec/arch/ default targets)"
     request = {"kind": kind, "wire": wire}
     command = [str(binary)]
     failure: str | None = None

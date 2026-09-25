@@ -1,6 +1,6 @@
 """The csum16 program, authored in the eDSL.
 
-`build()` returns the same `pb.Program` that csum16.txtpb encodes; the
+`build()` returns the same `apb.BlockAssembly` that csum16.txtpb encodes; the
 test suite checks the two are equal. Run as a script to print the text
 format.
 """
@@ -8,7 +8,9 @@ format.
 from __future__ import annotations
 
 from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs.declarations import Checksum16
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     BlockLibrary,
     Control,
@@ -20,7 +22,6 @@ from p4blo.edsl import (
     bit16,
     state,
 )
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 class H(Header):
@@ -65,7 +66,7 @@ class DeparserI(Deparser[Parsed_packet]):
         self.emit(self.hdr.h)
 
 
-def build() -> pb.Program:
+def build() -> apb.BlockAssembly:
     return assemble(
         BlockLibrary(parserI, cIngress, DeparserI, externs=[csum]),
         name="csum16",
@@ -76,6 +77,4 @@ def build() -> pb.Program:
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

@@ -11,8 +11,7 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import ir
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.arch.v0 import assembly_pb2 as apb
 from tests.codec import test_codec_expr as expr
 from tests.codec import test_codec_stmt as statement
 from tests.codec.test_codec_expr import Expression
@@ -346,7 +345,7 @@ def requests() -> list[tuple[dict[str, object], dict[str, object]]]:
 
 
 def protobuf_value(kind: ParserKind, wire: dict[str, object]) -> tuple[Message, object]:
-    program = pb.Program()
+    program = apb.BlockAssembly()
     state_message = program.blocks.add().states.add()
     match kind:
         case "target":
@@ -361,7 +360,7 @@ def protobuf_value(kind: ParserKind, wire: dict[str, object]) -> tuple[Message, 
             value = state_message
     value.SetInParent()
     json_format.ParseDict(wire, value)
-    recovered_state = ir.load_json(ir.dump_json(program)).blocks[0].states[0]
+    recovered_state = wire.load_json(wire.dump_json(program)).blocks[0].states[0]
     match kind:
         case "target":
             recovered = recovered_state.transition.direct

@@ -33,12 +33,13 @@ from collections.abc import Iterable
 
 from google.protobuf.message import Message
 
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = ["drop_self_assignments", "normalize"]
 
 
-def normalize(program: pb.Program) -> pb.Program:
+def normalize(program: apb.BlockAssembly) -> apb.BlockAssembly:
     p = copy.deepcopy(program)
     for field_name in ("header_types", "struct_types", "enum_types", "extern_types"):
         items = sorted(getattr(p, field_name), key=lambda d: d.name)
@@ -59,7 +60,7 @@ def normalize(program: pb.Program) -> pb.Program:
 STATELESS_FAMILIES = frozenset({"checksum16", "crc16", "crc32"})
 
 
-def _rename_stateless_instances(p: pb.Program) -> None:
+def _rename_stateless_instances(p: apb.BlockAssembly) -> None:
     stateless = {
         i.name: i.extern_type
         for i in p.extern_instances

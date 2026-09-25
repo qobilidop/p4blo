@@ -10,6 +10,7 @@ from typing import Any, cast
 import pytest
 
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp import ExternResult, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Value
@@ -23,7 +24,7 @@ POSITIONS = [(0, 0), (1, 2), (3, 1), (4095, 4095), (4096, 4096), (0xFFFFFFFF, 0x
 PROFILES = list(itertools.product(range(len(ARRAYS)), POSITIONS, [False, True]))
 
 
-def insertion_body(program: pb.Program) -> list[pb.Stmt]:
+def insertion_body(program: apb.BlockAssembly) -> list[pb.Stmt]:
     ingress = next(b for b in program.blocks if b.name == "MyIngress")
     tcp = ingress.body[0].conditional.then[1].conditional
     filtering = tcp.then[2].conditional.then
@@ -53,7 +54,7 @@ def register(env: Env, name: str) -> Register:
     return value
 
 
-def initial(program: pb.Program, shape: int, p: int, q: int, overlay: bool) -> Env:
+def initial(program: apb.BlockAssembly, shape: int, p: int, q: int, overlay: bool) -> Env:
     env = invalid_env(program, True, True, False, True, 2)
     for name, cells in zip(["bloom_filter_1", "bloom_filter_2"], ARRAYS[shape], strict=True):
         register(env, name).cells[:] = [Bits(1, v) for v in cells]
@@ -107,7 +108,7 @@ def test_bloom_profile_inventory() -> None:
 
 @pytest.mark.parametrize("shape,positions,overlay", PROFILES)
 def test_lean_agrees_bloom_insertion(
-    firewall: pb.Program,
+    firewall: apb.BlockAssembly,
     monkeypatch: pytest.MonkeyPatch,
     shape: int,
     positions: tuple[int, int],
@@ -125,7 +126,7 @@ def test_lean_agrees_bloom_insertion(
     "fault", ["other-cell", "other-extern", "local", "overlay", "cursor-type", "repair"]
 )
 def test_lean_agrees_bloom_observer_rejects_effects(
-    firewall: pb.Program, monkeypatch: pytest.MonkeyPatch, fault: str
+    firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch, fault: str
 ) -> None:
     env = initial(firewall, 3, 1, 2, True)
     original = Register.call
@@ -161,7 +162,7 @@ def test_lean_agrees_bloom_observer_rejects_effects(
 
 
 def test_lean_agrees_bloom_order_survives_final_cells(
-    firewall: pb.Program, monkeypatch: pytest.MonkeyPatch
+    firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     body = insertion_body(firewall)
     env = initial(firewall, 3, 1, 2, False)
@@ -177,7 +178,7 @@ def test_lean_agrees_bloom_order_survives_final_cells(
 
 
 def test_lean_agrees_bloom_read_alias_is_not_expected(
-    firewall: pb.Program, monkeypatch: pytest.MonkeyPatch
+    firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     env = initial(firewall, 3, 1, 2, True)
     original = Env.read

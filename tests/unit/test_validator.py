@@ -11,8 +11,9 @@ from pathlib import Path
 import pytest
 from google.protobuf import text_format
 
-from p4blo import ir
-from p4blo import validator as v
+from p4blo.arch import validator as v
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 # Block indices in VALID.
@@ -319,11 +320,11 @@ exports { role: "deparser" block: "dep" }
 # -- helpers --------------------------------------------------------------------
 
 
-def valid() -> pb.Program:
-    return ir.load_text(VALID)
+def valid() -> apb.BlockAssembly:
+    return arch_wire.load_text(VALID)
 
 
-def codes(program: pb.Program) -> list[str]:
+def codes(program: apb.BlockAssembly) -> list[str]:
     return [d.code for d in v.validate(program)]
 
 
@@ -335,19 +336,19 @@ def expr(text: str) -> pb.Expr:
     return text_format.Parse(text, pb.Expr())
 
 
-def add_stmt(program: pb.Program, block: int, text: str) -> pb.Program:
+def add_stmt(program: apb.BlockAssembly, block: int, text: str) -> apb.BlockAssembly:
     """Append a statement to a control or deparser body."""
     program.blocks[block].body.add().CopyFrom(stmt(text))
     return program
 
 
-def add_parser_stmt(program: pb.Program, state: int, text: str) -> pb.Program:
+def add_parser_stmt(program: apb.BlockAssembly, state: int, text: str) -> apb.BlockAssembly:
     """Append a statement to a parser state's body."""
     program.blocks[PRS].states[state].body.add().CopyFrom(stmt(text))
     return program
 
 
-def broken(mutate: Callable[[pb.Program], object]) -> list[str]:
+def broken(mutate: Callable[[apb.BlockAssembly], object]) -> list[str]:
     program = valid()
     mutate(program)
     return codes(program)
@@ -524,7 +525,7 @@ def test_index_failure_stops_validation() -> None:
     assert codes(program) == [v.NAME_DUPLICATE]
 
 
-def swap_errors(p: pb.Program) -> None:
+def swap_errors(p: apb.BlockAssembly) -> None:
     p.errors[1], p.errors[2] = p.errors[2], p.errors[1]
 
 
@@ -704,7 +705,7 @@ def test_struct_cycle_through_another_struct() -> None:
     assert "A -> B -> A" in diag.message
 
 
-def shift_amount(p: pb.Program) -> pb.BitsLiteral:
+def shift_amount(p: apb.BlockAssembly) -> pb.BitsLiteral:
     return p.blocks[ING].body[12].assign.value.binary.right.literal.bits
 
 
@@ -799,7 +800,7 @@ def test_block_kind_stmt_in_parser(text: str) -> None:
     ],
 )
 def test_block_kind_stmt_in_action(text: str) -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         p.blocks[ING].actions[0].body.add().CopyFrom(stmt(text))
 
     assert v.BLOCK_KIND_STMT in broken(mutate)
@@ -820,7 +821,7 @@ def test_parser_only(block: int, text: str) -> None:
 
 
 def test_last_index_in_an_action_is_parser_only() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         body = p.blocks[ING].actions[0].body.add()
         body.CopyFrom(stmt(assign(IDX, VLAN_LAST_INDEX)))
 
@@ -1120,7 +1121,7 @@ def test_call_kind(mutate) -> None:
     assert v.CALL_KIND in broken(mutate)
 
 
-def with_helper(program: pb.Program, kind: int) -> pb.Program:
+def with_helper(program: apb.BlockAssembly, kind: int) -> apb.BlockAssembly:
     """Add an unexported block `fix` of `kind` taking `(in H)`."""
     helper = program.blocks.add(name="fix", kind=kind)
     helper.params.add(name="h", type=pb.Type(struct="H"), direction=pb.DIRECTION_IN)
@@ -1134,7 +1135,7 @@ def test_deparser_may_call_a_deparser() -> None:
     assert codes(program) == []
 
 
-def read_bits16(program: pb.Program) -> None:
+def read_bits16(program: apb.BlockAssembly) -> None:
     """Make Counter.read take and return bit<16>, so header fields fit."""
     program.extern_types[0].methods[1].params[0].type.bits = 16
     program.extern_types[0].methods[1].params[1].type.bits = 16
@@ -1146,7 +1147,7 @@ VLAN_TYPE_AT_0 = member(index(HDR_VLAN, lit(32, "0")), "type")
 VLAN_TYPE_AT_1 = member(index(HDR_VLAN, lit(32, "1")), "type")
 
 
-def with_two(program: pb.Program) -> pb.Program:
+def with_two(program: apb.BlockAssembly) -> apb.BlockAssembly:
     """Add an action `two(inout bit<16> a, inout bit<16> b)` to `ing`, and
     make Counter.read take bit<16>, so header fields fit both."""
     action = program.blocks[ING].actions.add(name="two")
@@ -1214,7 +1215,7 @@ def test_call_cycle_message_and_path() -> None:
 
 
 def test_action_call_cycle() -> None:
-    def recurse(p: pb.Program) -> None:
+    def recurse(p: apb.BlockAssembly) -> None:
         p.blocks[ING].actions[0].body.add().CopyFrom(stmt(call_action("drop")))
 
     assert v.CALL_CYCLE in broken(recurse)
@@ -1253,7 +1254,7 @@ def test_extern_result(text: str) -> None:
 # -- parsers -----------------------------------------------------------------------
 
 
-def start_select(p: pb.Program) -> pb.Select:
+def start_select(p: apb.BlockAssembly) -> pb.Select:
     return p.blocks[PRS].states[START].transition.select
 
 
@@ -1314,7 +1315,7 @@ def test_select_on_boolean_and_enum_keys() -> None:
 # -- tables ------------------------------------------------------------------------
 
 
-def route(p: pb.Program) -> pb.Table:
+def route(p: apb.BlockAssembly) -> pb.Table:
     return p.blocks[ING].tables[0]
 
 
@@ -1338,7 +1339,7 @@ def entry(ttl: str, mask: str, proto: str, priority: int) -> str:
     )
 
 
-def with_acl(entries: str) -> pb.Program:
+def with_acl(entries: str) -> apb.BlockAssembly:
     program = valid()
     program.blocks[ING].tables.add().CopyFrom(acl_table(entries))
     add_stmt(program, ING, 'apply { table: "acl" }')
@@ -1350,7 +1351,7 @@ def test_ternary_table_is_valid() -> None:
 
 
 def test_key_name() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         key = route(p).keys.add(match_kind=pb.MATCH_KIND_EXACT, name="dst")
         key.expr.CopyFrom(expr(TTL))
         route(p).const_entries[0].keys.add(exact="1")
@@ -1372,7 +1373,7 @@ def test_key_type(mutate) -> None:
 
 
 def test_table_lpm_count() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         route(p).keys.add().CopyFrom(route(p).keys[0])
         route(p).keys[1].name = "dst2"
 
@@ -1380,7 +1381,7 @@ def test_table_lpm_count() -> None:
 
 
 def test_table_key_mix() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         route(p).keys.add(match_kind=pb.MATCH_KIND_TERNARY).expr.CopyFrom(expr(TTL))
 
     assert v.TABLE_KEY_MIX in broken(mutate)
@@ -1399,7 +1400,7 @@ def test_table_actions(mutate) -> None:
     assert v.TABLE_ACTIONS in broken(mutate)
 
 
-def no_action(p: pb.Program) -> pb.Action:
+def no_action(p: apb.BlockAssembly) -> pb.Action:
     return p.blocks[ING].actions.add(name="NoAction")
 
 
@@ -1518,7 +1519,7 @@ def test_entry_priority_no_overlap(entries: str) -> None:
 
 
 def test_entry_duplicate() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         second = route(p).const_entries.add()
         second.CopyFrom(route(p).const_entries[0])
         second.keys[0].lpm.value = "167772160"
@@ -1528,7 +1529,7 @@ def test_entry_duplicate() -> None:
 
 
 def test_lpm_entry_must_be_canonical() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         # 10.0.0.1/8: a set bit below the prefix
         route(p).const_entries[0].keys[0].lpm.value = "167772161"
         route(p).const_entries[0].keys[0].lpm.prefix_len = 8
@@ -1541,7 +1542,7 @@ def test_ternary_entry_must_be_canonical() -> None:
 
 
 def test_lpm_entries_with_different_prefixes_are_fine() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         second = route(p).const_entries.add()
         second.CopyFrom(route(p).const_entries[0])
         second.keys[0].lpm.prefix_len = 16
@@ -1553,21 +1554,21 @@ def test_lpm_entries_with_different_prefixes_are_fine() -> None:
 def test_table_keys_are_bits_only(key: str) -> None:
     """A boolean or enum key is elaborated by the frontend into a cast."""
 
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         route(p).keys[0].expr.CopyFrom(expr(key))
 
     assert v.KEY_TYPE in broken(mutate)
 
 
 def test_apply_inside_an_action_is_rejected() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         p.blocks[ING].actions[0].body.add().CopyFrom(stmt('apply { table: "route" }'))
 
     assert v.BLOCK_KIND_STMT in broken(mutate)
 
 
 def test_derived_key_names_collide() -> None:
-    def mutate(p: pb.Program) -> None:
+    def mutate(p: apb.BlockAssembly) -> None:
         route(p).keys[0].name = ""  # both keys now derive hdr.ipv4.dst
         key = route(p).keys.add(match_kind=pb.MATCH_KIND_EXACT)
         key.expr.CopyFrom(route(p).keys[0].expr)
@@ -1600,4 +1601,4 @@ CORPUS = Path(__file__).parents[2] / "tests" / "corpus"
 
 @pytest.mark.parametrize("program", sorted(CORPUS.glob("*/*.txtpb")), ids=lambda p: p.stem)
 def test_corpus_programs_validate(program: Path) -> None:
-    assert v.validate(ir.load_text(program)) == []
+    assert v.validate(arch_wire.load_text(program)) == []

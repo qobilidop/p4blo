@@ -20,7 +20,7 @@ import re
 from collections import defaultdict
 
 from p4blo import arch, ir, stf
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.arch.v0 import assembly_pb2 as apb
 
 PORTS = 64
 
@@ -57,7 +57,7 @@ def _resolve_keys(index: ir.Index, statements: list[stf.Statement]) -> list[stf.
     return out
 
 
-def replay(program: pb.Program, text: str) -> list[str]:
+def replay(program: apb.BlockAssembly, text: str) -> list[str]:
     """Replay a p4c STF file on `program`; the problems found, if any."""
     loaded = arch.reference.load(program)
     run = arch.stf_driver(arch.Switch(ports=PORTS), loaded)

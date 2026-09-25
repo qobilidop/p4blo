@@ -15,6 +15,8 @@ import pytest
 
 from p4blo import arch, ir, stf
 from p4blo.arch import CONTRACT, Architecture, ContractError, Filter, Switch, stf_driver
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus" / "forwarder"
@@ -54,8 +56,8 @@ def program(
     locals: str = "",
     control: str = "",
     extra: str = "",
-) -> pb.Program:
-    return ir.load_text(f"""
+) -> apb.BlockAssembly:
+    return arch_wire.load_text(f"""
         name: "tiny"
         {CORE_ERRORS}
         header_types {{ name: "h_t" fields {{ name: "f" type {{ bits: {h_width} }} }} }}
@@ -104,7 +106,7 @@ PARSER_ERROR = 'fields { name: "parser_error" type { error {} } }'
 
 @pytest.fixture(scope="module")
 def forwarder() -> arch.Loaded:
-    return arch.reference.load(ir.load_text(CORPUS / "forwarder.txtpb"))
+    return arch.reference.load(arch_wire.load_text(CORPUS / "forwarder.txtpb"))
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +146,7 @@ def test_a_missing_role_is_refused_at_load() -> None:
     """The validator does not know which roles an architecture needs, so
     the loader resolves them: a program without them never reaches a packet."""
     full = program(metadata=EGRESS)
-    without = pb.Program()
+    without = apb.BlockAssembly()
     without.CopyFrom(full)
     del without.exports[:]
     with pytest.raises(arch.LoadError, match="exports no 'parser' block"):
@@ -300,7 +302,7 @@ def test_unicast_goes_to_egress_port_with_the_payload_appended() -> None:
     assert Filter().run(loaded, loaded.entries(), 2, b"\x01payload") == [(3, b"\x01payload")]
 
 
-def egress_to(port: int) -> pb.Program:
+def egress_to(port: int) -> apb.BlockAssembly:
     return program(metadata=EGRESS, control=assign(meta("egress_port"), bits(9, port)))
 
 
@@ -443,7 +445,7 @@ COUNT = (
 )
 
 
-def counting_program() -> pb.Program:
+def counting_program() -> apb.BlockAssembly:
     return program(
         metadata=EGRESS,
         extra=REGISTER,

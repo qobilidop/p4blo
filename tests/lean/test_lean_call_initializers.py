@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.interp import expr, stmt
@@ -23,7 +24,7 @@ from tests.lean.test_lean_edsl_field_commands import (
 
 
 def test_lean_agrees_after_retained_initializer_write_fault(
-    authored_field_commands: dict[str, pb.Program],
+    authored_field_commands: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

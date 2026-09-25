@@ -5,7 +5,8 @@ from pathlib import Path
 
 from examples.firewall.demo import REPLY, SYN
 from examples.firewall.program import build
-from p4blo import ir, stf
+from p4blo import stf
+from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
 from p4blo.drt.run import Outcome
 from p4blo.drt.state import Observation
@@ -63,7 +64,7 @@ def packet(
 
 
 def policy(text: str = POLICY) -> pb.Entries:
-    return stf.to_entries(ir.Index.build(build()), stf.parse(text))
+    return stf.to_entries(BoundIndex.build(build()), stf.parse(text))
 
 
 def sequence() -> tuple[list[Case], list[Outcome]]:

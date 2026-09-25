@@ -1,11 +1,14 @@
 import pytest
 
 from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 
-def tiny() -> pb.Program:
-    return ir.load_text(
+def tiny() -> apb.BlockAssembly:
+    return arch_wire.load_text(
         """
         name: "tiny"
         errors: "NoError"
@@ -28,17 +31,17 @@ def tiny() -> pb.Program:
 
 def test_text_roundtrip() -> None:
     program = tiny()
-    assert ir.load_text(ir.dump_text(program)) == program
+    assert arch_wire.load_text(arch_wire.dump_text(program)) == program
 
 
 def test_binary_and_json_roundtrip() -> None:
     program = tiny()
-    assert ir.load_binary(ir.dump_binary(program)) == program
-    assert ir.load_json(ir.dump_json(program)) == program
+    assert arch_wire.load_binary(arch_wire.dump_binary(program)) == program
+    assert arch_wire.load_json(arch_wire.dump_json(program)) == program
 
 
 def test_index() -> None:
-    index = ir.Index.build(tiny())
+    index = BoundIndex.build(tiny())
     assert index.program_names == {"h", "H", "M", "p"}
     scope = index.scopes["p"]
     assert set(scope.vars) == {"hdr", "meta"}
@@ -64,7 +67,7 @@ def test_index_rejects_name_clashes(mutate) -> None:
     program = tiny()
     mutate(program)
     with pytest.raises(ir.DuplicateName):
-        ir.Index.build(program)
+        BoundIndex.build(program)
 
 
 def test_action_params_may_shadow_nothing() -> None:
@@ -72,4 +75,4 @@ def test_action_params_may_shadow_nothing() -> None:
     action = program.blocks[0].actions.add(name="a")
     action.params.add(name="hdr", type=pb.Type(bits=1), direction=pb.DIRECTION_NONE)
     with pytest.raises(ir.DuplicateName):
-        ir.Index.build(program)
+        BoundIndex.build(program)

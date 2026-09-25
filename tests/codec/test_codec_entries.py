@@ -14,9 +14,12 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import arch, interp, ir, validator
+from p4blo import arch, interp
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs import Registry
 from p4blo.arch.externs.counter import Counter
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
@@ -254,7 +257,7 @@ def test_entries_protojson_alias_is_not_shared_wire_contract() -> None:
 
 
 # These are public-pipeline rejection checks, not runtime-error rollback tests.
-def host_program() -> pb.Program:
+def host_program() -> apb.BlockAssembly:
     program = scalar_program(bits(8, 42), 8)
     program.name = "interchange-rejection"
     control = program.blocks[1]
@@ -532,7 +535,7 @@ def test_lean_agrees_host_rejection_state(
 ) -> None:
     program = host_program()
     source = tmp_path / "host-program.json"
-    source.write_text(ir.dump_json(program))
+    source.write_text(arch_wire.dump_json(program))
     requests = [host_wire(), case.wire, host_wire()]
     stdin = "".join(
         json.dumps({"entries": value, "ingress_port": 0, "packet": "abcd"}) + "\n"
@@ -564,7 +567,7 @@ def test_program_startup_rejection_before_binding(kind: str) -> None:
         program.blocks.add().CopyFrom(program.blocks[1])
     elif kind == "empty-name":
         program.blocks[1].name = ""
-    wire = json.loads(ir.dump_json(program))
+    wire = json.loads(arch_wire.dump_json(program))
     if kind == "json-type":
         wire["blocks"] = False
     with (
@@ -574,7 +577,7 @@ def test_program_startup_rejection_before_binding(kind: str) -> None:
         with pytest.raises(
             json_format.ParseError if kind == "json-type" else validator.ValidationError
         ):
-            arch.reference.load(ir.load_json(json.dumps(wire)))
+            arch.reference.load(arch_wire.load_json(json.dumps(wire)))
         assert binding.call_count == packet.call_count == 0
 
 
@@ -594,7 +597,7 @@ def test_lean_agrees_program_startup_rejection(
         program.blocks.add().CopyFrom(program.blocks[1])
     elif kind == "empty-name":
         program.blocks[1].name = ""
-    wire = json.loads(ir.dump_json(program))
+    wire = json.loads(arch_wire.dump_json(program))
     if kind == "json-type":
         wire["blocks"] = False
     source = tmp_path / "rejected-program.json"

@@ -1,6 +1,6 @@
 """The register_bounds program, authored in the eDSL.
 
-`build()` returns the same `pb.Program` that register_bounds.txtpb encodes;
+`build()` returns the same `apb.BlockAssembly` that register_bounds.txtpb encodes;
 the test suite checks the two are equal. Run as a script to print the text
 format.
 """
@@ -8,7 +8,9 @@ format.
 from __future__ import annotations
 
 from p4blo.arch import assemble
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs.declarations import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     BlockLibrary,
     Control,
@@ -21,7 +23,6 @@ from p4blo.edsl import (
     bit32,
     state,
 )
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 # idx picks the cell, val is added to it, got reports what the cell
@@ -70,7 +71,7 @@ class D(Deparser[headers]):
         self.emit(self.hdr.h)
 
 
-def build() -> pb.Program:
+def build() -> apb.BlockAssembly:
     return assemble(
         BlockLibrary(P, C, D, externs=[r]),
         name="register_bounds",
@@ -81,6 +82,4 @@ def build() -> pb.Program:
 
 
 if __name__ == "__main__":
-    from p4blo import ir
-
-    print(ir.dump_text(build()), end="")
+    print(arch_wire.dump_text(build()), end="")

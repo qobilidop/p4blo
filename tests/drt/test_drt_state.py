@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs.counter import Counter
 from p4blo.arch.externs.register import Register
 from p4blo.drt.case import Case
@@ -68,7 +69,7 @@ def test_missing_state_cannot_make_an_old_comparator_pass() -> None:
 
 def test_state_snapshot_is_not_aliased_to_live_cells() -> None:
     loaded = arch.reference.load(
-        ir.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
+        arch_wire.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
     )
     before = snapshot(loaded)
     register = next(e for e in loaded.externs.values() if isinstance(e, Register))
@@ -79,7 +80,7 @@ def test_state_snapshot_is_not_aliased_to_live_cells() -> None:
 
 
 def test_silent_counter_mutation_is_a_divergence() -> None:
-    program = ir.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
+    program = arch_wire.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
     loaded, mutant = arch.reference.load(program), arch.reference.load(program)
 
     def corrupt(case: Case):
@@ -97,7 +98,7 @@ def test_silent_counter_mutation_is_a_divergence() -> None:
 
 
 def test_state_difference_is_visible_even_when_errors_match() -> None:
-    program = ir.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
+    program = arch_wire.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
     loaded = arch.reference.load(program)
     outcome = python_outcome(loaded, Case(pb.Entries(), 99, b""), 4)
     assert outcome.error is not None
@@ -118,7 +119,7 @@ def test_state_only_diagnostics_show_values_without_decimal_limits() -> None:
 
 
 def wide_register_roundtrip(tmp_path: Path, command: list[str | Path]) -> None:
-    program = ir.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
+    program = arch_wire.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
     for field in program.header_types[0].fields:
         field.type.bits = 16384
     program.extern_types[0].methods[0].params[0].type.bits = 16384
@@ -127,7 +128,7 @@ def wide_register_roundtrip(tmp_path: Path, command: list[str | Path]) -> None:
     loaded = arch.reference.load(program)  # Includes validation of the widened program.
     packet = bytes(2048) + b"\x80" + bytes(2047) + bytes(2048)
     program_json = tmp_path / "wide.json"
-    program_json.write_text(ir.dump_json(program))
+    program_json.write_text(arch_wire.dump_json(program))
     with LeanRunner(command, program_json, 4) as runner:
         report = compare_cases("wide", loaded, [Case(pb.Entries(), 0, packet)], 4, runner.run)
     assert report.passed, report.divergences

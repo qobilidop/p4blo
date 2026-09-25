@@ -14,16 +14,19 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, ir, stf, validator
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo import arch, stf
+from p4blo.arch import validator
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 VECTORS = sorted(v for p in PROGRAMS for v in p.glob("*.stf"))
 
 
-def golden(program_dir: Path) -> pb.Program:
-    return ir.load_text(program_dir / f"{program_dir.name}.txtpb")
+def golden(program_dir: Path) -> apb.BlockAssembly:
+    return arch_wire.load_text(program_dir / f"{program_dir.name}.txtpb")
 
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)
@@ -69,7 +72,7 @@ def test_the_filter_makes_the_same_fate_decisions(vector: Path) -> None:
         if isinstance(statement, stf.Add | stf.SetDefault):
             installed.append(statement)
         elif isinstance(statement, stf.Packet):
-            entries = stf.to_entries(ir.Index.build(program), installed)
+            entries = stf.to_entries(BoundIndex.build(program), installed)
             by_switch = switch(entries, statement.port, statement.data)
             by_filter = filter_(entries, statement.port, statement.data)
             assert [port for port, _ in by_filter] == [port for port, _ in by_switch]

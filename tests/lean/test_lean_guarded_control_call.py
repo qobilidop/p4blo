@@ -13,7 +13,9 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
+from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.interp import expr, stmt
@@ -21,7 +23,7 @@ from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Struct, Value
-from p4blo.ir import BlockScope, Index
+from p4blo.ir import BlockScope
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.codec.test_codec_leaves import same_json
 from tests.lean.test_lean_call_entry import shared_snapshot, value_json
@@ -83,7 +85,9 @@ def guarded_body(lean_binary: Path) -> list[pb.Stmt]:
     return result
 
 
-def declarations(export: dict[str, Any], guard: list[pb.Stmt]) -> tuple[pb.Program, pb.CallBlock]:
+def declarations(
+    export: dict[str, Any], guard: list[pb.Stmt]
+) -> tuple[apb.BlockAssembly, pb.CallBlock]:
     assert set(export) == {"program", "args", "snapshots"}
     wrapper = field_command_program("forward-hit", [])
     old = next(b for b in wrapper.blocks if b.name == "RewriteBody")
@@ -109,7 +113,7 @@ def declarations(export: dict[str, Any], guard: list[pb.Stmt]) -> tuple[pb.Progr
             *guard,
         ],
     )
-    selected = json_format.ParseDict(export["program"], pb.Program())
+    selected = json_format.ParseDict(export["program"], apb.BlockAssembly())
     assert list(selected.blocks) == [expected], "exact observer-free body"
     assert len(expected.body) == 3
     assert selected.name == "plain-call-entry-declarations"
@@ -130,9 +134,9 @@ def declarations(export: dict[str, Any], guard: list[pb.Stmt]) -> tuple[pb.Progr
     return selected, call
 
 
-def caller_env(program: pb.Program, name: str, prior_drop: bool) -> Env:
+def caller_env(program: apb.BlockAssembly, name: str, prior_drop: bool) -> Env:
     values = source_values(name, prior_drop)
-    index = Index.build(program)
+    index = BoundIndex.build(program)
     entries = InstalledEntries(index)
     entries.entries[("untouched", "table")] = [
         pb.Entry(action=pb.ActionCall(action="sentinelEntry"), priority=7)
@@ -186,7 +190,7 @@ def count(name: str) -> int:
 
 def check_snapshots(
     export: dict[str, Any], guard: list[pb.Stmt]
-) -> tuple[pb.Program, pb.CallBlock]:
+) -> tuple[apb.BlockAssembly, pb.CallBlock]:
     program, call = declarations(export, guard)
     snapshots = export["snapshots"]
     assert isinstance(snapshots, list) and len(snapshots) == 64, "snapshot cases"
@@ -218,13 +222,13 @@ def check_snapshots(
 @pytest.fixture(scope="module")
 def checked_call(
     call_export: dict[str, Any], guarded_body: list[pb.Stmt]
-) -> tuple[pb.Program, pb.CallBlock]:
+) -> tuple[apb.BlockAssembly, pb.CallBlock]:
     # Validate every exported profile once, not 64 × 64 repeated validations.
     return check_snapshots(call_export, guarded_body)
 
 
 def observe_call(
-    program: pb.Program,
+    program: apb.BlockAssembly,
     call: pb.CallBlock,
     name: str,
     prior_drop: bool,
@@ -312,7 +316,7 @@ def test_control_call_is_default() -> None:
 
 @pytest.mark.parametrize("name,prior_drop", CASES)
 def test_lean_agrees_on_guarded_control_call(
-    checked_call: tuple[pb.Program, pb.CallBlock],
+    checked_call: tuple[apb.BlockAssembly, pb.CallBlock],
     name: str,
     prior_drop: bool,
     monkeypatch: pytest.MonkeyPatch,
@@ -338,7 +342,9 @@ def test_lean_agrees_on_guarded_control_call(
     ],
 )
 def test_whole_call_observer_rejects_faults(
-    checked_call: tuple[pb.Program, pb.CallBlock], fault: str, monkeypatch: pytest.MonkeyPatch
+    checked_call: tuple[apb.BlockAssembly, pb.CallBlock],
+    fault: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     actual = stmt.copy_back
     hits = 0
@@ -424,7 +430,7 @@ def test_exact_syntax_rejects_paired_wrong_intent(
     call_export: dict[str, Any], guarded_body: list[pb.Stmt]
 ) -> None:
     export = deepcopy(call_export)
-    program = json_format.ParseDict(export["program"], pb.Program())
+    program = json_format.ParseDict(export["program"], apb.BlockAssembly())
     program.blocks[0].body[0].assign.value.literal.bits.value = "20"
     export["program"] = json_format.MessageToDict(program)
     for snapshot in export["snapshots"]:
@@ -435,7 +441,9 @@ def test_exact_syntax_rejects_paired_wrong_intent(
 
 @pytest.mark.parametrize("parameter", ["hdr", "meta", "route", "observer"])
 def test_normal_call_rejects_copy_in_aliases(
-    checked_call: tuple[pb.Program, pb.CallBlock], parameter: str, monkeypatch: pytest.MonkeyPatch
+    checked_call: tuple[apb.BlockAssembly, pb.CallBlock],
+    parameter: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     original = stmt.argument_value
     hits = 0
@@ -458,7 +466,7 @@ def test_normal_call_rejects_copy_in_aliases(
 
 
 def test_lean_agrees_after_whole_call_skipped_observer(
-    checked_call: tuple[pb.Program, pb.CallBlock],
+    checked_call: tuple[apb.BlockAssembly, pb.CallBlock],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

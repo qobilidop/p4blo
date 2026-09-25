@@ -9,6 +9,9 @@ from pathlib import Path
 import pytest
 
 from p4blo import ir
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus" / "forwarder"
@@ -16,16 +19,16 @@ PROGRAM = CORPUS / "forwarder.txtpb"
 
 
 @pytest.fixture(scope="module")
-def program() -> pb.Program:
-    return ir.load_text(PROGRAM)
+def program() -> apb.BlockAssembly:
+    return arch_wire.load_text(PROGRAM)
 
 
 @pytest.fixture(scope="module")
-def index(program: pb.Program) -> ir.Index:
-    return ir.Index.build(program)
+def index(program: apb.BlockAssembly) -> ir.Index:
+    return BoundIndex.build(program)
 
 
-def test_errors_are_the_core_errors(program: pb.Program) -> None:
+def test_errors_are_the_core_errors(program: apb.BlockAssembly) -> None:
     assert tuple(program.errors) == ir.CORE_ERRORS
 
 
@@ -73,5 +76,5 @@ def test_the_action_data_is_directionless(index: ir.Index) -> None:
     ]
 
 
-def test_text_roundtrip(program: pb.Program) -> None:
-    assert ir.load_text(ir.dump_text(program)) == program
+def test_text_roundtrip(program: apb.BlockAssembly) -> None:
+    assert arch_wire.load_text(arch_wire.dump_text(program)) == program

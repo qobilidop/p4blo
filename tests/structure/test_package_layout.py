@@ -72,7 +72,7 @@ def test_lean_package_dependency_is_one_way() -> None:
 # assurance log.
 LEAN_PACKAGES = {
     "spec/ir": ("P4bloIR", {"proto"}),
-    "spec/arch": ("P4bloArch", set()),
+    "spec/arch": ("P4bloArch", {"proto"}),
     "impl/lean": ("P4blo", {"ASSURANCE.md"}),
 }
 

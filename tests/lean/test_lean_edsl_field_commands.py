@@ -17,6 +17,7 @@ import pytest
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, boolean, scalar_program
@@ -86,7 +87,7 @@ def bool_byte(value: pb.Expr) -> pb.Expr:
     return pb.Expr(cast=pb.Cast(to=pb.Type(bits=1), operand=value))
 
 
-def field_command_program(name: str, body: list[pb.Stmt]) -> pb.Program:
+def field_command_program(name: str, body: list[pb.Stmt]) -> apb.BlockAssembly:
     ttl, ethernet_valid, ipv4_valid, hit = EXPECTED[name][0]
     program = scalar_program(bits(8, 0), 8)
     program.name = f"lean-field-commands-{name}"
@@ -211,7 +212,7 @@ def test_field_command_exporter_is_a_default_target() -> None:
 
 
 @pytest.fixture(scope="module")
-def authored_field_commands(lean_binary: Path) -> dict[str, pb.Program]:
+def authored_field_commands(lean_binary: Path) -> dict[str, apb.BlockAssembly]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[2]
     exporter = root / "impl/lean/.lake/build/bin/p4blo"
@@ -219,7 +220,7 @@ def authored_field_commands(lean_binary: Path) -> dict[str, pb.Program]:
     completed = subprocess.run(
         [str(exporter), "fieldCommands"], capture_output=True, text=True, check=True, timeout=30
     )
-    programs: dict[str, pb.Program] = {}
+    programs: dict[str, apb.BlockAssembly] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
         name = record["name"]
@@ -236,7 +237,7 @@ def authored_field_commands(lean_binary: Path) -> dict[str, pb.Program]:
 
 @pytest.mark.parametrize("name", EXPECTED)
 def test_lean_agrees_on_authored_field_commands(
-    name: str, authored_field_commands: dict[str, pb.Program], lean_binary: Path
+    name: str, authored_field_commands: dict[str, apb.BlockAssembly], lean_binary: Path
 ) -> None:
     program = authored_field_commands[name]
     case = Case(pb.Entries(), 0, PAYLOAD)
@@ -260,7 +261,7 @@ def test_lean_agrees_on_authored_field_commands(
 @pytest.mark.parametrize("fault_kind", ["validity", "sibling"])
 def test_lean_agrees_after_retained_authored_field_write_fault(
     fault_kind: str,
-    authored_field_commands: dict[str, pb.Program],
+    authored_field_commands: dict[str, apb.BlockAssembly],
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

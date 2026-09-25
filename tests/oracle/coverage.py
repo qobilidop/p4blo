@@ -150,6 +150,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.bindings import BoundIndex
+
 ROOT = Path(__file__).resolve().parents[2]
 REPORT = ROOT / "tests" / "oracle" / "spectec-coverage.json"
 INVENTORY = ROOT / "tests" / "oracle" / "spectec-rules.json"
@@ -311,7 +314,7 @@ def materialize_corpus(stage: Path) -> list[Program]:
     # The adapter imports the p4blo package; kept local so that `build`
     # runs with nothing but a Python interpreter.
     sys.path.insert(0, str(ROOT))
-    from p4blo import ir, stf
+    from p4blo import stf
     from p4blo.arch import v1model
     from tests.oracle import run as oracle_run
 
@@ -323,7 +326,7 @@ def materialize_corpus(stage: Path) -> list[Program]:
     for group, paths in sources:
         for txtpb in paths:
             ident = f"{group}-{txtpb.parent.name}"
-            index = ir.Index.build(ir.load_text(txtpb))
+            index = BoundIndex.build(arch_wire.load_text(txtpb))
             p4 = stage / "p4" / f"{ident}.p4"
             p4.parent.mkdir(parents=True, exist_ok=True)
             p4.write_text(v1model.print_program(index.program, index=index), encoding="utf-8")

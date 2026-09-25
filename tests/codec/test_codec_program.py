@@ -10,7 +10,6 @@ import pytest
 from google.protobuf import json_format
 from google.protobuf.message import Message
 
-from p4blo import ir
 from tests.codec import test_codec_blocks as block
 from tests.codec import test_codec_declarations as declaration
 from tests.codec import test_codec_stmt as statement
@@ -215,8 +214,8 @@ def requests() -> list[tuple[dict[str, object], dict[str, object]]]:
 
 def protobuf_value(kind: ProgramCodecKind, wire: dict[str, object]) -> tuple[Message, object]:
     wrapper = wire if kind == "program" else {"exports": [wire]}
-    parsed = ir.load_json(json.dumps(wrapper))
-    recovered = ir.load_json(ir.dump_json(parsed))
+    parsed = wire.load_json(json.dumps(wrapper))
+    recovered = wire.load_json(wire.dump_json(parsed))
     assert recovered == parsed
     message = recovered if kind == "program" else recovered.exports[0]
     return message, json_format.MessageToDict(message, preserving_proto_field_name=True)

@@ -5,16 +5,19 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from p4blo import arch, ir
+from p4blo import arch
+from p4blo.arch import wire as arch_wire
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import LeanRunner, Outcome, ProtocolError, compare_cases, python_outcome
-from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def check_python(program: pb.Program, cases: Sequence[Case], expected: Sequence[Outcome]) -> None:
+def check_python(
+    program: apb.BlockAssembly, cases: Sequence[Case], expected: Sequence[Outcome]
+) -> None:
     loaded = arch.reference.load(program)
     assert len(cases) == len(expected)
     for number, (case, answer) in enumerate(zip(cases, expected, strict=True)):
@@ -23,14 +26,14 @@ def check_python(program: pb.Program, cases: Sequence[Case], expected: Sequence[
 
 
 def check_lean(
-    program: pb.Program,
+    program: apb.BlockAssembly,
     cases: Sequence[Case],
     expected: Sequence[Outcome],
     lean_binary: Path,
     tmp_path: Path,
 ) -> None:
     source = tmp_path / "program.json"
-    source.write_text(ir.dump_json(program))
+    source.write_text(arch_wire.dump_json(program))
     artifacts = ROOT / ".artifacts/drt/examples"
     artifacts.mkdir(parents=True, exist_ok=True)
     observed: list[Outcome] = []
