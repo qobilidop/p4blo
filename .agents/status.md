@@ -86,7 +86,7 @@ under `reviews/`; every finding is fixed.
 | A5 the IL bridge: SpecTec `il-export` patch, `p4blo.frontend`, five corpus goldens byte-identical from source, 14 of 15 goldens round-trip through the printer, five new p4c programs pass their vectors from source; 103 of the 191 pinned v1model programs translate and 98 pass; the coverage page gained a "Bridge" column | built on `work/il-bridge`; merge and review pending |
 | Const-entry priority ruling: the specification's numbering replaces the p4c mapping; the `priority` corpus program, its vectors, the BMv2 classification and the ledger's entry follow | building on `work/priority-ruling` |
 | Division of labor with the SpecTec-to-Lean compiler (a separate project of the user's): A6 superseded, the oracle machinery frozen at maintenance, the bridge frozen at the corpus, `p4blo.watsup` to be published as a standalone file for the other project | recorded in the plan and the register |
-| C1 whole-program validity and progress | building on `work/validity` |
+| C1 whole-program validity and progress: `Validity/` (rules, checker, soundness, index laws), `Progress.lean` (no reachable interpreter error for a valid program; every finite run ends in success or a declared parser error; installation premise discharged), `p4blo-lean check`, 175 valid and 308 validator-test programs agreeing with Python with corresponding codes, four mutants each rejected | merged, `40846a6`; review pending |
 | Phases 2 to 4 otherwise | see the plan |
 
 The coverage page was renamed `docs/p4-spec-coverage.md` at `bc014a2`.

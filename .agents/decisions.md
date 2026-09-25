@@ -521,6 +521,20 @@ The exact theorem statements, premises and exclusions are in
   ordinary IR assembly and proves initialization and exact Bloom insertion.
   Selection hit is not a forwarding default. Further readback and ingress
   proofs are parked. (2026-09-23)
+- **Whole-program validity is defined over the index and decided by a
+  checker proved sound; completeness is not claimed.** `Valid p idx` in
+  `spec/ir/P4bloIR/Validity/` states the typing and side conditions the
+  protobuf contract lists, `Validity.check` decides it in the Python
+  validator's order with its codes, and `check_sound` is proved; a
+  program the checker rejects may still be valid, which the Python
+  correspondence test bounds empirically. Progress (`Progress.lean`)
+  takes two premises the IR cannot discharge: `ExternContract`, that the
+  architecture's bindings answer typed calls with typed values (binding
+  mismatches are load errors), and that the run fits the block kind;
+  `InstalledOk` is discharged from the real `Installed.build`. Wire-shape
+  problems Python reports as codes are `DECODE` on the Lean side, since
+  the decoder rejects them before any rule runs. Termination (C2) and
+  completeness stay open. (2026-09-24)
 - **Deviation theorems cover the run-time closed behaviors only.** The
   ledger entries that belong to installation, binding or the
   architecture (host entries are canonical, entries name their action,

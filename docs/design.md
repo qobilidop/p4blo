@@ -128,10 +128,12 @@ Parsing a protobuf message does not establish validity: variants may be
 unset, widths illegal, references unresolved. Raw abstract syntax stays
 ordinary, with validity a separate predicate and an executable validator,
 so that raw syntax remains useful for diagnostics, malformed-input
-testing and cross-language correspondence. Whole-program validity in
-Lean and complete codec proofs are obligations still in progress, as
-assurance.md records; the direction is settled, the guarantees are not
-all there.
+testing and cross-language correspondence. Whole-program validity is
+defined in Lean over the index, decided by an executable checker proved
+sound, and a valid program's machine never reaches an interpreter
+error: every finite run ends in success or a declared parser error.
+Checker completeness, termination and the complete codec proofs are the
+obligations that remain, as assurance.md records.
 
 ### The IR is post-elaboration
 
