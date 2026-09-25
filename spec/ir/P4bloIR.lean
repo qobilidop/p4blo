@@ -43,3 +43,5 @@ import P4bloIR.Validity.StmtLaws
 import P4bloIR.Validity.StepLaws
 import P4bloIR.Validity.InstallLaws
 import P4bloIR.Progress
+import P4bloIR.Validity.KindLaws
+import P4bloIR.Validity.EntryLaws
