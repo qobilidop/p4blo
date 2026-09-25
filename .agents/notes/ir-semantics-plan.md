@@ -242,8 +242,10 @@ does not establish; the audit files stay the inventory.
 **Python, `impl/python/p4blo/`.** The validator is one 1,600-line module;
 split it into a package by the categories its own code list already uses,
 keeping one public `validate`. Collapse the three expression typers (the
-validator's, `interp/widths.py`, the printer's) into one module that all
-three import, which closes an open thread. Separate the P4 printer from
+validator's, `interp/widths.py`, the printer's) into one, which closes
+an open thread. Done as `p4blo.validator.typer`: a top-level module
+would need the diagnostic codes the validator owns and create an import
+cycle. Separate the P4 printer from
 the v1model shim, since A4 needs the printer without the shim. The eDSL
 and the architectures are out of this plan's scope and stay as they are.
 

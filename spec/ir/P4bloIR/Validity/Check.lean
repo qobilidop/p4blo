@@ -4,7 +4,7 @@ import P4bloIR.Validity.Rules
 # The validity checker
 
 An executable checker for `Validity.Valid`, organized as the Python
-validator is (`impl/python/p4blo/validator.py`): one function per
+validator is (`impl/python/p4blo/validator/`): one function per
 declaration, statement and expression kind, in the order of the schema,
 with the same diagnostic codes. It stops at the first problem, where
 Python collects them all; `tests/test_lean_agrees_validity.py` compares

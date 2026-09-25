@@ -4,7 +4,7 @@ import P4bloIR.Externs
 /-!
 # Whole-program validity, declaratively
 
-The rules the Python validator enforces (`impl/python/p4blo/validator.py`),
+The rules the Python validator enforces (`impl/python/p4blo/validator/`),
 stated as relations over the program and the index `Index.build` makes of
 it. `Validity.Check` decides them; `P4bloIR.Progress` uses them.
 

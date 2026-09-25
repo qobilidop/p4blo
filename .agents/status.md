@@ -90,7 +90,7 @@ under `reviews/`; every finding is fixed.
 | Division of labor with the SpecTec-to-Lean compiler (a separate project of the user's): A6 superseded, the oracle machinery frozen at maintenance, the bridge frozen at the corpus, `p4blo.watsup` to be published as a standalone file for the other project | recorded in the plan and the register |
 | C1 whole-program validity and progress: `Validity/` (rules, checker, soundness, index laws), `Progress.lean` (no reachable interpreter error for a valid program; every finite run ends in success or a declared parser error; installation premise discharged), `p4blo-lean check`, 175 valid and 308 validator-test programs agreeing with Python with corresponding codes, four mutants each rejected; reviewed (`reviews/2026-09-24-validity.md`): no defects, the premises are real, two rules (`noAlias`, `writable`) are needed only for the Python correspondence and not for progress | merged, `40846a6`; follow-ups merged at `789ef4e`: the extern contract proved for the five reference families (`P4bloArch.Contract.bind_contract`, audited in `ArchProofAudit`), a kernel-checked non-vacuity instance on csum16 without `native_decide`, control and deparser runs proved to end in success (`KindLaws`), entry-point corollaries on the real entry functions (`EntryLaws`), the three validator tests now reaching their Lean rule |
 | D, Lean layout: `P4bloIRTest`, `P4bloArchTest`, `P4bloTest` libraries hold tests and audits, one `p4blo` executable with sixteen subcommands, the three unregistered probes deleted with their useful lemmas already in the laws, roots pinned by `tests/test_package_layout.py` | merged, `4d660be` |
-| D, Python consolidation: one validator package, one expression typer, the printer apart from the v1model shim | building on `work/python-layout` |
+| D, Python consolidation: `p4blo.validator` is a package by category, `p4blo.validator.typer` is the one expression typer (the interpreter, the printer and the STF reader call it; a fourth copy in the STF reader went too), `p4blo.printer` is the P4 printer with the architectures binding it through five hooks; goldens byte for byte, diagnostics identical on every recorded program, a seam test of 95 programs | merged, `831cd20` |
 | D, test directory regrouping and the ledger cross-reference table | next, after the Python consolidation merges |
 | Phases 2 to 4 otherwise | see the plan |
 
@@ -156,9 +156,6 @@ scope from the user.
   `<block>_inst` are not checked against the caller's scope; a case with
   both a bad entry and a bad port reports different first errors on Python
   and Lean.
-- **Three type checkers** compute expression types (the validator,
-  `interp/widths.py`, the printer's `_Typer`); they must agree and one
-  would do. The typed eDSL is a fourth at a different level.
 - **The p4c backend is deferred behind verification**; it is the experiment
   that would test claim 1 and the elaborated-but-unexercised coverage rows
   (functions, newtypes, constructor parameters, named arguments), which are

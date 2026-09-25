@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "impl/python/p4blo"
-IR_SIDE = ("ir.py", "validator.py", "stf.py", "interp", "edsl")
+IR_SIDE = ("ir.py", "validator", "printer", "stf.py", "interp", "edsl")
 
 
 def modules(*parts: str) -> list[Path]:
