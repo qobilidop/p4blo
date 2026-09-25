@@ -93,7 +93,7 @@ def test_fixture_matches_the_pinned_checkout() -> None:
     if oracle is None:
         pytest.skip("no P4-SpecTec checkout; tests/oracle/build.sh builds one")
     stamp = oracle.root / ".p4blo-built"
-    if not stamp.is_file() or stamp.read_text(encoding="utf-8").strip() != pinned_commit():
+    if not stamp.is_file() or stamp.read_text(encoding="utf-8").split()[0] != pinned_commit():
         pytest.skip(f"{oracle.root} is not built at the pinned commit")
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--check", "--oracle-dir", str(oracle.root)],

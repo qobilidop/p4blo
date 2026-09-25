@@ -200,7 +200,9 @@ def checkout_problem(root: Path) -> str | None:
     stamp = root / ".p4blo-built"
     if not (root / "p4spectec").is_file() or not stamp.is_file():
         return f"no P4-SpecTec build at {root}; tests/oracle/build.sh builds one"
-    built = stamp.read_text(encoding="utf-8").strip()
+    # The stamp is the commit and the digest of the applied patches; the
+    # probe measures the spec's rules, which no patch touches.
+    built = stamp.read_text(encoding="utf-8").split()[0]
     if built != pinned_commit():
         return f"{root} is built at {built}, not at the pinned {pinned_commit()}"
     return None

@@ -125,8 +125,10 @@ def main(argv: list[str] | None = None) -> int:
     root = args.oracle_dir or Path(os.environ.get("P4BLO_ORACLE_DIR") or DEFAULT_ORACLE_DIR)
     root = root.expanduser().resolve()
     commit = pinned_commit()
+    # The stamp is the commit followed by the digest of the patches the build
+    # applied; the inventory reads the spec, which the patches never touch.
     head = (
-        (root / ".p4blo-built").read_text(encoding="utf-8").strip()
+        (root / ".p4blo-built").read_text(encoding="utf-8").split()[0]
         if (root / ".p4blo-built").is_file()
         else ""
     )
