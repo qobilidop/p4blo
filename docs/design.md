@@ -102,7 +102,7 @@ one intended authority:
 | Concern | Intended authority | Today |
 |---|---|---|
 | Abstract syntax: expressions, statements, declarations | Lean, `spec/ir/P4bloIR/IR.lean` | in place |
-| Validity: types, scopes, widths, legal combinations | Lean | proved for closed scalar fragments; the Python validator is the tested executable counterpart, and whole-program validity in Lean is an open obligation |
+| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/` | a whole-program checker proved sound for the declarative rules, agreeing with the Python validator on every tested program, with progress proved for valid programs; checker completeness and termination are open |
 | Meaning: execution and observable behavior | Lean, `spec/ir/P4bloIR/` | in place |
 | Serialization: messages, field numbers, encoding versions | the protobuf schema, `spec/ir/proto/p4blo/v0/p4blo.proto` | in place |
 | Correspondence between wire values and abstract programs | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; Program and Export composition are open |

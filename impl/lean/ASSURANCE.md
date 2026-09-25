@@ -1206,3 +1206,77 @@ file restored and compared byte for byte with `cmp` after each run.
 
 All six are proof/build rejections of statements that are false under the
 edit, none a lint.
+
+## Whole-program validity and progress
+
+`spec/ir/P4bloIR/Validity/` states the Python validator's rules as
+relations over a program and its index (`Rules.lean`, `Valid`) and
+decides them with an executable checker in the validator's order and with
+its codes (`Check.lean`, `check`, exposed as `p4blo-lean check`).
+`Sound.lean` proves `check_sound`: an accepted program is `Valid`.
+Completeness is not proved. `IndexLaws.lean` restates `Index.build`
+publicly, equal by `rfl`, and reads its maps back into the program's
+lists (`build_ok`), since the build's helpers are private.
+
+`spec/ir/P4bloIR/Progress.lean` proves `progress`: from a well-formed
+machine (`MachineOk`) of a `Valid` program, a step finishes with success
+or with a parser error the program declares, or reaches another
+well-formed machine. `MachineOk` types the continuation stack from the
+current context on and admits only declared parser errors as the fault
+being unwound, so `Steps.machineOk` and `finishes_documented` exclude an
+`InterpError` from every reachable machine and every finite run. The
+proof is a Hoare-style triple (`Validity.Triple`) per interpreter
+function over the real monad, assembled in `dispatch_ok`.
+
+Premises, each what the machine asks of its environment:
+`ExternContract` (a call on a bound instance with typed arguments
+succeeds and returns typed values; binding errors happen at load) and
+`InstalledOk` (lookups succeed and select typed action data), which
+`build_installedOk` discharges for every successful `Installed.build`.
+`initial_ok` and `entryFrame_ok` give the well-formed start of each entry
+point. Not established: termination (the acyclic call graph with the
+revisit rule), that `P4bloArch`'s extern families obey the contract, and
+the entry points' own checks outside the machine.
+
+### Conformance
+
+`tests/test_lean_agrees_validity.py`, on 2026-09-24 at the branch
+`work/validity`: 175 accepted programs (12 corpus, 3 examples, 40 seeds of
+each DRT family under both profiles) and the 308 programs
+`tests/test_validator.py` hands to `validator.validate`, recorded by
+wrapping it, of which 285 are rejected. Both sides agree on every
+acceptance; on every rejection Lean's first code corresponds to Python's
+first by the test's code table, the identity except that 34 programs
+with wire problems (no kind set, an unspecified enum, a non-decimal
+literal) are rejected by Lean's decoder as `DECODE`. No disagreement was
+found on either side.
+
+### Adversarial experiments
+
+Each edit was applied alone in the `work/validity` worktree by a script
+that replaces an anchor asserted to occur once, the named targets built
+from `spec/ir/` with `lake build`, and the files restored and checked
+clean with `git status`.
+
+1. **A checker rule dropped** (`Check.lean`: the slice check kept only
+   `hi < w`, losing `lo <= hi`). Build exits 1 in `checkExpr_ok`, the
+   slice case: the checker no longer implies `Valid`.
+2. **The aliasing rule dropped from rules and checker alike**
+   (`noAlias` returns `true`). `Sound`, `Progress` and `ProofAudit` build
+   with exit 0: progress does not depend on the aliasing rule, which
+   exists so that copy-back order never matters. The conformance test
+   (both packages rebuilt) exits 1 with four `test_call_alias` programs
+   Lean accepts and Python rejects.
+3. **The emit rule dropped from rules and checker** (`emittable` removed
+   from `StmtTyped.emit`, its check from `checkStmt`, and the soundness
+   case adjusted). Build exits 1 in `dispatch_statement`, the emit case,
+   which has no other way to show that `emitValue` does not reach its
+   `InterpError` arm.
+4. **An interpreter fault**: `select`'s arity test inverted (`==` for
+   `!=`), so every well-typed select raises an `InterpError`. Build exits
+   1 in `select_ok`.
+
+Mutant 1 is caught by the soundness proof before the executable can be
+built, so the conformance test never sees it; mutant 2 shows the
+conformance test pinning a rule the proofs do not need. After the
+campaign `scripts/check-lean.sh` exits 0 and the conformance test passes.
