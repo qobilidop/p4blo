@@ -1,4 +1,4 @@
-import ArchTests.Check
+import P4bloArchTest.Check
 import P4bloIR.Observe
 
 open P4bloIR P4bloArch

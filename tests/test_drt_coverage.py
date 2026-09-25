@@ -62,7 +62,7 @@ from tests.test_drt_stateful_programs import (
 CORPUS = Path(__file__).resolve().parent / "corpus"
 UNHIT = Path(__file__).resolve().parent / "drt-unhit-tags.json"
 LEDGER = Path(__file__).resolve().parents[1] / "docs" / "ir-semantics.md"
-WITNESSES = Path(__file__).resolve().parents[1] / "spec/arch/ArchTests/fixtures/witnesses.py"
+WITNESSES = Path(__file__).resolve().parents[1] / "spec/arch/P4bloArchTest/fixtures/witnesses.py"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PORTS = 4

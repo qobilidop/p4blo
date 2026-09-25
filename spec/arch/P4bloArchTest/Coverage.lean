@@ -1,4 +1,4 @@
-import ArchTests.Check
+import P4bloArchTest.Check
 import P4bloArch.Coverage
 
 /-!
@@ -7,7 +7,7 @@ tags they must exercise, and every block traced by the observer ends where
 the real entry point of `P4bloIR.Interp` ends, so the tags describe the run
 the reply comes from.
 
-The witness table, `ArchTests/fixtures/witnesses.json`, pins each tag's
+The witness table, `P4bloArchTest/fixtures/witnesses.json`, pins each tag's
 condition from both sides: for every tag of a closed behavior,
 `<category>.<construct>.<case>`, a request that must report it and one that
 must not, and for every other tag a request that must report it. Each

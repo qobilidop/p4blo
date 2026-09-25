@@ -1,5 +1,5 @@
 import P4bloArch.ContractLaws
-import ArchTests.NonVacuity
+import P4bloArchTest.NonVacuity
 
 /-!
 The axioms of the reference architecture's proofs, printed and pinned as

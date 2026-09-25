@@ -1,4 +1,4 @@
-import ArchTests.Check
+import P4bloArchTest.Check
 
 /-! The reference extern families under actual control runs: binding,
 persistence across runs, out-of-range policy and the checksum arithmetic. -/

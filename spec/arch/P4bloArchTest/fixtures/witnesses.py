@@ -13,7 +13,7 @@ Each case is a small program, the host's entries and a packet, with the
 tags the Lean observer must report (`hits`) and must not (`misses`) and the
 reply the real run gives (`reply`), so that a witness is anchored to what
 actually happened. The replies come from the Python reference interpreter;
-the Lean test (`spec/arch/ArchTests/Coverage.lean`) checks that Lean gives
+the Lean test (`spec/arch/P4bloArchTest/Coverage.lean`) checks that Lean gives
 the same reply and the stated tags, and that the table covers the
 inventory. `tests/test_drt_coverage.py` validates every program and checks
 that witnesses.json is what this module generates.
@@ -24,7 +24,7 @@ Most programs share one template: header `h_t { a: bit<8> }`; struct
 that varies; a deparser that emits `hdr`. The first packet byte is `x`,
 which is `hdr.h.a` after the parse and usually decides the case.
 
-Regenerate with `uv run python spec/arch/ArchTests/fixtures/witnesses.py`.
+Regenerate with `uv run python spec/arch/P4bloArchTest/fixtures/witnesses.py`.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 import P4bloArch.ContractLaws
 import P4bloIR.Progress
-import ArchTests.Check
+import P4bloArchTest.Check
 
 /-!
 # A well-formed machine for a real program
@@ -19,7 +19,7 @@ lemmas and string literal equality. `decide` and `rfl` cannot evaluate
 them, because `String.hash` is opaque to the kernel. No `native_decide`.
 
 `program` is the corpus golden written as a Lean term. `tests` checks it
-against `ArchTests/fixtures/csum16.json`, the protobuf JSON of that golden,
+against `P4bloArchTest/fixtures/csum16.json`, the protobuf JSON of that golden,
 which `tests/test_lean_agrees_validity.py` keeps equal to the golden.
 -/
 

@@ -1,4 +1,4 @@
-import ArchTests.Check
+import P4bloArchTest.Check
 
 /-!
 End-to-end replay of the forwarder's five STF vectors under the switch

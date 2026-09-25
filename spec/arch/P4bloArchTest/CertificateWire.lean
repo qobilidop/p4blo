@@ -1,4 +1,4 @@
-import ArchTests.Check
+import P4bloArchTest.Check
 import P4bloArch.CertificateWire
 
 open P4bloIR

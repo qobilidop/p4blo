@@ -1,4 +1,4 @@
-import ArchTests.Check
+import P4bloArchTest.Check
 
 /-! Actual host installation must reject before an independently observable
 missing-parser trap. This is operational precedence, not global validity. -/

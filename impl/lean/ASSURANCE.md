@@ -1250,10 +1250,10 @@ signatures (`matchShape_ok`), `make` fixes a register's cell width to the
 declared `T` and a CRC's data width to `D` (`stateFits_of`), and the
 extern-type rule makes method names distinct. Binding can still fail for a
 valid program whose extern types no family implements; that is the load
-boundary. `spec/arch/ArchProofAudit.lean`, a default target, pins the
+boundary. `spec/arch/P4bloArchTest/ArchProofAudit.lean`, built by default, pins the
 axioms as `spec/ir/P4bloIRTest/ProofAudit.lean` does.
 
-`spec/arch/ArchTests/NonVacuity.lean` shows every premise of `progress`
+`spec/arch/P4bloArchTest/NonVacuity.lean` shows every premise of `progress`
 satisfiable together on a real program without `native_decide`.
 `ArchTests.Csum16.control_start_ok` builds a `Global` for the corpus
 program `csum16` (the smallest with an extern) with the reference

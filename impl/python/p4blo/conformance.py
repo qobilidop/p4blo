@@ -122,7 +122,7 @@ LEAN_ENDPOINT = "spec/arch/Main.lean"
 # about the definitions, not definitions the endpoint runs: no answer can
 # change when it does, so it is neither hashed nor followed.
 _PROOF_MODULE = re.compile(r"(Laws|Audit|Probe|Theorems)$")
-_TEST_TREES = ("P4bloIRTest", "ArchTests")
+_TEST_TREES = ("P4bloIRTest", "P4bloArchTest")
 _IMPORT = re.compile(r"^import\s+(\S+)\s*$")
 
 # A request is answered in milliseconds; the bound only keeps a hung
@@ -406,7 +406,7 @@ def semantics_files(root: Path = ROOT) -> list[Path]:
     The rule: start at the endpoint, `spec/arch/Main.lean`, and follow its
     `import` lines through the two specification packages. A proof module
     (a name ending in `Laws`, `Audit`, `Probe` or `Theorems`) and anything
-    under a package's `P4bloIRTest/` or `ArchTests/` is neither followed nor
+    under a package's `P4bloIRTest/` or `P4bloArchTest/` is neither followed nor
     included: it states facts about the definitions and changes no answer.
     A file of imports alone is followed but not included, since adding a
     proof module to an umbrella changes no answer either. Each package's

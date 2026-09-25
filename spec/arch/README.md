@@ -17,6 +17,12 @@ program and that the IR itself does not decide (docs/arch-supports.md):
 - `Main.lean`: the `p4blo-lean` conformance endpoint the differential
   tests drive, which loads a program under the switch with these families.
 
+Everything a client may import lives under `P4bloArch/`; `Main.lean` is
+the one executable root. Everything only the gate runs lives under
+`P4bloArchTest/`, the modules of the `P4bloArchTest` library: the tests,
+the proof audit `ArchProofAudit.lean`, whose `#guard_msgs` pins every
+default `lake build` checks, and the fixtures under `fixtures/`.
+
 `lake test` replays the forwarder's vectors under the switch and checks
 the families, the certificate and its wire adapter, reading the fixtures
 from `../ir/P4bloIRTest/`. `scripts/check-lean.sh` from the repository root
