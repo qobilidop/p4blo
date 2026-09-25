@@ -558,6 +558,33 @@ for setup.
 - **A browser playground.** Removed to keep the project to its four
   claims; pure Python and Python 3.13 are kept so that it stays cheap.
 
+## Relation to p4-spectec-lean
+
+`p4-spectec-lean` is a separate project that compiles P4-SpecTec's
+elaborated specification into Lean and verifies that compiler. p4blo
+builds no rendering or interpreter of SpecTec's rules; the mechanized
+relation between the two semantics is a joint milestone whose first
+acceptance is that the executable rendering answers every conformance
+fixture and block-level request below exactly as SpecTec's own
+simulator does, and whose theorem relates the rendered block contract
+to `P4bloIR.Exec` under the bridge's elaboration. p4blo owns four things
+that project consumes, each with a stable, documented format:
+
+| Interface | Where | Format |
+|---|---|---|
+| the block contract in SpecTec's language | `tests/oracle/p4blo.watsup` | watsup at the pinned P4-SpecTec commit |
+| the program-IL export | `tests/oracle/patches/0002-il-export.patch`, documented in `tests/oracle/README.md` | `p4spectec-il-export/1` JSON: variants as `{"t","c","a"}`, records as `{"t","s"}` |
+| the conformance corpus | `tests/conformance/` and its README | `p4blo.conformance` version 2: program, requests, Lean's replies with state and rule tags |
+| block-level requests and replies | `tests/oracle/block.py`, documented in the oracle README | JSON lines per block, value shapes as the README defines them |
+| the rule inventory at the pin | `tests/oracle/spectec-rules.json` | one item per declaration: kind and name |
+
+A change to any of these formats bumps its version. Two alignments are
+pending on that project's side: the two repositories pin different
+P4-SpecTec commits, and p4blo bumps to the other's pin once it is fixed;
+and that project's program export, upstream's own JSON of the booted
+program, replaces patch `0002` when it exists, after which the bridge
+reads the same bytes both projects use.
+
 ## Neighbors
 
 - [P4-SpecTec](https://github.com/kaist-plrg/p4-spectec): the P4 spec's
