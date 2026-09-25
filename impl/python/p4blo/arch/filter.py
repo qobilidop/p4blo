@@ -14,7 +14,7 @@ an ingress port that does not fit `bit<9>` is the caller's error, a
 
 from __future__ import annotations
 
-from p4blo import interp
+from p4blo.arch import entry
 from p4blo.arch.loader import Loaded
 from p4blo.interp.tables import InstalledEntries
 
@@ -34,7 +34,7 @@ class Filter:
 
         m = meta.zero()
         meta.write(m, "ingress_port", ingress_port)
-        parsed = interp.run_parser(index, loaded.block("parser"), packet, m, externs)
+        parsed = entry.run_parser(index, loaded.block("parser"), packet, m, externs)
         if parsed.consumed_bits % 8:
             self.diagnostics.append(
                 f"parser consumed {parsed.consumed_bits} bits, not whole bytes; packet dropped"
@@ -42,7 +42,7 @@ class Filter:
             return []
         meta.write(parsed.metadata, "parser_error", parsed.error)
 
-        _, m = interp.run_control(
+        _, m = entry.run_control(
             index, loaded.block("control"), parsed.headers, parsed.metadata, entries, externs
         )
 

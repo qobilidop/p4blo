@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Literal as L
 
-from p4blo.edsl.core.program import Program
+from p4blo.arch.builder import AssemblyBuilder as Program
 from p4blo.edsl.core.types import ExternType, TypeLike, bit, method
 from p4blo.edsl.externs import Extern
 from p4blo.edsl.values import Bits, Const, In, Out, Val, bit32

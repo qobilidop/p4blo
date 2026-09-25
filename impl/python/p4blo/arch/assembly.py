@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from p4blo.arch.bindings import assembly_of
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl._build import Build
 from p4blo.edsl.blocks import Block
 from p4blo.edsl.errors import EdslError, provenance
 from p4blo.edsl.library import BlockLibrary
 from p4blo.edsl.views import Struct
-from p4blo.v0 import p4blo_pb2 as pb
 
 
 def assemble(
@@ -24,7 +25,7 @@ def assemble(
     headers: type[Struct],
     metadata: type[Struct],
     exports: Mapping[str, type[Block]],
-) -> pb.Program:
+) -> apb.BlockAssembly:
     """Build a full IR program from an architecture's selected exports.
 
     An export must name a root class in `library` by identity. This
@@ -43,15 +44,15 @@ def assemble(
     build = Build(name)
     build.declare_errors(library.errors)
     with provenance():
-        build.core.headers = build.core.types.structs[build.struct(headers, "headers")]
-        build.core.metadata = build.core.types.structs[build.struct(metadata, "metadata")]
+        header_name = build.struct(headers, "headers")
+        metadata_name = build.struct(metadata, "metadata")
     build.declare_externs(library.externs)
     for block in library.blocks:
         build.block(block)
+    bindings = apb.BlockBindings(headers=header_name, metadata=metadata_name)
     for role, block in exports.items():
-        with provenance():
-            build.core.export(role, build.blocks[block])
-    return build.finish()
+        bindings.exports.add(role=role, block=build.blocks[block].name)
+    return assembly_of(build.finish(), bindings)
 
 
 __all__ = ["assemble"]

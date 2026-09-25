@@ -16,6 +16,7 @@ from p4blo.arch.contract import CONTRACT, Contract
 from p4blo.arch.externs import Registry, supplied_registry
 from p4blo.arch.loader import Loaded, LoadError
 from p4blo.arch.loader import load as load_explicit
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl.blocks import Control, Deparser, Parser
 from p4blo.edsl.library import BlockLibrary
 from p4blo.edsl.views import Struct
@@ -38,7 +39,7 @@ def assemble(
     parser: type[Parser[Any, Any]],
     control: type[Control[Any, Any]],
     deparser: type[Deparser[Any]],
-) -> pb.Program:
+) -> apb.BlockAssembly:
     """Assemble the supplied switch's three block roles from a library."""
     for role, cls, kind in (
         ("parser", parser, Parser),
@@ -57,7 +58,7 @@ def assemble(
 
 
 def load(
-    program: pb.Program,
+    program: apb.BlockAssembly,
     *,
     registry: Registry | None = None,
     contract: Contract = CONTRACT,

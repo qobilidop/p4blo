@@ -15,12 +15,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from p4blo import validator
+from p4blo.arch import validator
+from p4blo.arch.bindings import BoundIndex, bindings_of, exported
 from p4blo.arch.contract import Contract, Metadata
 from p4blo.arch.externs import Registry
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp import ExternBinding
 from p4blo.interp.tables import InstalledEntries
-from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
 
 
@@ -30,7 +31,8 @@ class LoadError(Exception):
 
 @dataclass(frozen=True)
 class Loaded:
-    index: Index
+    index: BoundIndex
+    bindings: apb.BlockBindings
     externs: dict[str, ExternBinding]
     metadata: Metadata
     # Role to block name, for the roles `load` was asked to resolve.
@@ -46,8 +48,9 @@ class Loaded:
 
 
 def load(
-    program: pb.Program,
+    program: apb.BlockAssembly | pb.BlockLibrary,
     *,
+    bindings: apb.BlockBindings | None = None,
     registry: Registry,
     contract: Contract,
     roles: Mapping[str, int],
@@ -59,11 +62,13 @@ def load(
     required `pb.BlockKind`. No roles, metadata fields or extern families
     are assumed by this loader.
     """
-    index = validator.check(program)
+    index = validator.check(program, bindings=bindings)
+    selected = bindings_of(program) if isinstance(program, apb.BlockAssembly) else bindings
+    assert selected is not None
     blocks: dict[str, str] = {}
     for role, kind in roles.items():
         try:
-            block = index.exported(role)
+            block = exported(index, selected, role)
         except KeyError:
             raise LoadError(f"the program exports no {role!r} block") from None
         if block.kind != kind:
@@ -71,4 +76,10 @@ def load(
             got = pb.BlockKind.Name(block.kind)
             raise LoadError(f"export {role!r} must be {want}, got {got}")
         blocks[role] = block.name
-    return Loaded(index, registry.bind(index), contract.view(index), MappingProxyType(blocks))
+    return Loaded(
+        index,
+        selected,
+        registry.bind(index),
+        contract.view(index, selected),
+        MappingProxyType(blocks),
+    )
