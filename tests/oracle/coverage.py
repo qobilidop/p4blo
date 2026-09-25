@@ -87,11 +87,10 @@ table callee's (`Callee_eval/abort`).
 A rule group is hit when one of its rules is; a relation or function when
 it was entered, wherever that happened, constant folding during typing
 included. Syntax productions have no dynamic meaning and are left out.
-Definitions the inventory does not list, 9-arch's and the builtin and
-extern declarations its pattern does not match, are reported under
-`outside_inventory`, flagged by section. Only 8-dynamic and 3-operations are in
-scope for the exclusions test; the other sections are kept and flagged,
-since typing and instantiation run on every program too.
+Definitions the inventory does not list, which are those of 9-arch, are
+reported under `outside_inventory`, flagged by section. Only 8-dynamic and
+3-operations are in scope for the exclusions test; the other sections are
+kept and flagged, since typing and instantiation run on every program too.
 
 A hit rule is exercised, not verified equivalent: the simulator ran it on
 one of p4blo's printed programs, which says nothing about whether p4blo's
@@ -723,7 +722,7 @@ def build_report(
         rows.append(row)
     rows.sort(key=_key)
 
-    # Definitions the inventory does not list (9-arch), flagged by section.
+    # Definitions the inventory does not list (9-arch's), flagged by section.
     listed = {str(i["name"]).removeprefix("$") for i in items if i["kind"] in ("relation", "dec")}
     outside: list[dict[str, Any]] = []
     for kind, name, file, line in sorted(measurement.defs, key=lambda d: (d[2], d[3], d[1])):
