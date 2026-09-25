@@ -737,6 +737,14 @@ def overlaps (params : List Param) (args : List Arg) : Bool :=
     | .lvalue _ => none
   read.any fun r => written.any fun w => r.isPrefixOf w || w.isPrefixOf r
 
+/-- The tags of resolving `lv`, as `resolveLValue` walks it: each index
+expression on its path, evaluated where the lvalue is resolved. -/
+def resolveTags (run : Run) : LValue → List Tag
+  | .var _ => []
+  | .member base _ => resolveTags run base
+  | .index base idx => resolveTags run base ++ exprTags run idx
+  | .next _ => []
+
 /-- The direction tag of a parameter. -/
 def directionTag : Direction → Tag
   | .«in» => .«call.param.in»
@@ -746,11 +754,16 @@ def directionTag : Direction → Tag
 
 /-- The tags of entering a call with `params` bound to `args`: each
 parameter's direction, the arguments evaluated for `in` and read for
-`inout`, and the copy-in overlap witness. -/
+`inout`, the indices of `out` arguments resolved, as `copyIn` resolves
+them, and the copy-in overlap witness. An `inout` argument is read through
+its resolved lvalue, which evaluates the same index expressions. -/
 def entryTags (run : Run) (params : List Param) (args : List Arg) : List Tag :=
   let perArg := (params.zip args).flatMap fun (p, a) =>
     directionTag p.direction ::
-      if p.direction == .out then []
+      if p.direction == .out then
+        match a with
+        | .lvalue lv => resolveTags run lv
+        | .expr _ => []
       else match a with
         | .expr e => exprTags run e
         | .lvalue lv => readTags run lv
@@ -765,15 +778,7 @@ It assumes the lvalues are already resolved: every index inside them is a
 literal fixed at copy-in, as P4 resolves an argument once (§6.8). Then the
 tags of one write depend only on its lvalue and the storage it lands in,
 and the writes of one call land in disjoint storage, which the validator's
-alias rule guarantees, so classifying them all against `run` is exact.
-
-Today the interpreters resolve each lvalue again when it is written
-(ledger: Copy-back target), after the earlier writes of the same call. An
-index read from a variable that an earlier write of the same call changes
-then names a different element here from the one written, and that
-lvalue's tags, `stack.index.writeOutOfRange` and
-`header.field.writeInvalid` among them, describe the wrong element. The
-classification makes no attempt to replay the earlier writes. -/
+alias rule guarantees, so classifying them all against `run` is exact. -/
 def writeBackTags (run : Run) (lvalues : List LValue) : List Tag :=
   lvalues.flatMap (writeTags run)
 
@@ -879,9 +884,16 @@ def stmtTags (run : Run) : Stmt → List Tag
       match decl? with
       | none => []
       | some decl =>
-        -- The results are written in parameter order, then the return value.
+        -- `callExtern` resolves the result target first, then the `out`
+        -- arguments at copy-in, and writes the outputs in parameter order,
+        -- then the return value, through those resolved lvalues.
         let outs := writtenArgs decl.params args
-        entryTags run decl.params args ++ writeBackTags run (outs ++ result.toList) ++
+        let resolved := peek (do
+          let target ← result.mapM resolveLValue
+          let written ← outs.mapM resolveLValue
+          pure (written ++ target.toList)) run
+        (result.map (resolveTags run)).getD [] ++ entryTags run decl.params args ++
+          (resolved.map (writeBackTags run)).getD [] ++
           (if outs.isEmpty then [] else [Tag.«call.extern.out»]) ++
           (if outs.length ≥ 2 then [Tag.«call.copyOut.order»] else []) ++
           (if result.isSome then [Tag.«call.extern.result»] else [])
@@ -1075,6 +1087,7 @@ def workTags (ctx : Context) (run : Run) (fault : Option Fault) (rest : List Wor
     | some (params, args) =>
       -- `dispatch` restores the caller's action layer before the copyback,
       -- so the argument names resolve in the caller, not in the callee.
+      -- The arguments are the ones `copyIn` resolved, as copy-back uses.
       let caller := { run.frame with action := outer.action, actionVars := outer.actionVars }
       copyBackTags { run with frame := caller } params args
     | none => []
@@ -1084,7 +1097,8 @@ def workTags (ctx : Context) (run : Run) (fault : Option Fault) (rest : List Wor
       | some b => entryTags run b.params args
       | none => []
   | .blockReturn caller params args =>
-    -- The copyback runs in the caller's activation.
+    -- The copyback runs in the caller's activation, through the arguments
+    -- `copyIn` resolved.
     copyBackTags { run with frame := caller } params args ++
       if fault.isSome then [.«call.block.faultCopyBack»] else []
   | .runBlock _ | .states _ => []

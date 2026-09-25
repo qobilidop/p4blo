@@ -804,6 +804,24 @@ def stacks() -> None:
     p = program("writeOutOfRange", control(set_idx, set_valid("hdr.s[idx]"), locals=idx))
     case(p, [2], ["stack.index.writeOutOfRange", "lvalue.index"])
     case(p, [1], ["lvalue.index"], ["stack.index.writeOutOfRange"])
+    # a(inout e) moves the index its argument `hdr.s[t]` read, from x to
+    # 5 - x. Copy-back writes the element t named at copy-in (ledger:
+    # Copy-back target), so the write is out of range when x is 5 and in
+    # range when x is 0, whatever t is when the action returns.
+    t = [local("t", bits(32))]
+    set_t = assign("t", cast(bits(32), E("hdr.h.a")))
+    moves = action(
+        "a",
+        [assign("t", op("-", lit(32, 5), "t")), set_valid("e"), assign("e.a", 119)],
+        param("e", H_T, INOUT),
+    )
+    p = program(
+        "copyBackIndexMoves",
+        control(set_t, call_action("a", arg_out("hdr.s[t]")), locals=t, actions=[moves]),
+    )
+    copied = ["call.action", "call.param.inout", "lvalue.index"]
+    case(p, [5], ["stack.index.writeOutOfRange", *copied])
+    case(p, [0], copied, ["stack.index.writeOutOfRange"])
     # The stack is empty unless x is 0, which extracts one element.
     p = program(
         "lastIndexEmpty",
@@ -1387,6 +1405,18 @@ def calls() -> None:
     case(p, [2], ["stack.index.writeOutOfRange", *out], ["header.field.writeInvalid"])
     case(p, [1], ["header.field.writeInvalid", *out], ["stack.index.writeOutOfRange"])
     case(p, [0], out, ["stack.index.writeOutOfRange", "header.field.writeInvalid"])
+    # The index of an out argument is evaluated when it is resolved, before
+    # the call, so reading the unassigned `t` there is uninitialized.
+    p = program(
+        "externReadUninitialized",
+        control(
+            set_valid("hdr.s[0]"),
+            call_extern("r", "read", arg_out("hdr.s[t].a"), arg_in(lit(32, 1))),
+            locals=t,
+            externs=True,
+        ),
+    )
+    case(p, [0x2A], ["value.uninitialized", *out], ["header.field.writeInvalid"])
 
 
 def deparsers() -> None:
