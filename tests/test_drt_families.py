@@ -12,6 +12,7 @@ it refuses fails the test, never a filter.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import sys
 from collections.abc import Callable, Sequence
@@ -32,6 +33,7 @@ from p4blo.interp import stmt
 from p4blo.v0 import p4blo_pb2 as pb
 
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
+MEASUREMENT = Path(__file__).resolve().parent / "drt-guided-measurement.json"
 PROFILES: tuple[Profile, ...] = ("lean", "spectec")
 # The seeds the Lean campaigns retain, per family; tests/test_drt_coverage.py
 # reruns the same ones for the unhit list.
@@ -170,12 +172,12 @@ def test_the_guide_prefers_options_whose_targets_are_unhit() -> None:
     guide = guided.Guide(inventory)
     unhit = guide.weight("control.feature=call")
     assert unhit > guide.weight("control.feature=eq_enum") == 1.0
-    guide.observe(frozenset({"control.feature=call"}), {"call.action", "stmt.callAction"})
-    # The targets are hit; what is left is the novelty of the first use.
-    assert 1.0 < guide.weight("control.feature=call") < unhit
-    for _ in range(30):
-        guide.observe(frozenset({"control.feature=call"}), {"call.action"})
-    assert guide.weight("control.feature=call") == pytest.approx(1.0, abs=0.01)
+    guide.observe(frozenset({"control.feature=call"}), {"call.action"})
+    # One target is still unhit.
+    assert guide.weight("control.feature=call") == unhit
+    guide.observe(frozenset({"control.feature=call"}), {"stmt.callAction"})
+    # Both targets are hit: the option is weighted like any other.
+    assert guide.weight("control.feature=call") == 1.0
 
 
 def test_the_guide_counts_tag_feature_pairs() -> None:
@@ -196,6 +198,29 @@ def test_a_guided_campaign_is_a_function_of_its_seed() -> None:
     assert runs[0].failures == [] and runs[0].requests == 16
     chooser = [guided.GuidedChooser(guided.sample_rng(3, 0), None) for _ in range(2)]
     assert FAMILIES["control"](chooser[0], "lean") == FAMILIES["control"](chooser[1], "lean")
+
+
+def test_the_recorded_measurement_is_whole_and_supports_the_claim() -> None:
+    """tests/drt-guided-measurement.json has a row per family, seed and arm,
+    its summary is what its rows give, and it shows what docs/assurance.md
+    says: guided campaigns hit the common targets in fewer programs than
+    uniform ones, on average and in most seeds, in both families, and
+    reach as many tags."""
+    document = json.loads(MEASUREMENT.read_text(encoding="utf-8"))
+    runs = document["runs"]
+    assert sorted((r["family"], r["seed"], r["arm"]) for r in runs) == sorted(
+        (f, s, a) for f in guided.MEASURED_FAMILIES for s in document["seeds"] for a in guided.ARMS
+    )
+    assert document["summary"] == guided.summarize(runs)
+    assert document["target_bonus"] == guided.TARGET_BONUS
+    for family in guided.MEASURED_FAMILIES:
+        arms = document["summary"][family]["arms"]
+        g, u = arms["guided"], arms["uniform"]
+        assert g["to_targets"]["mean"] < u["to_targets"]["mean"], family
+        pairs = zip(g["to_targets"]["per_seed"], u["to_targets"]["per_seed"], strict=True)
+        fewer = sum(a < b for a, b in pairs)
+        assert fewer > len(document["seeds"]) * 3 // 4, family
+        assert abs(g["tags"]["mean"] - u["tags"]["mean"]) < 1, family
 
 
 def test_the_command_line_runs_a_guided_campaign(capsys: pytest.CaptureFixture[str]) -> None:
@@ -276,3 +301,25 @@ def test_lean_agrees_only_with_the_stack_clamps(
         if not report.passed:
             return
     pytest.fail(f"no retained parser seed tells {name} without its clamp from Lean")
+
+
+def test_lean_agrees_with_the_recorded_guided_measurement(lean_binary: Path) -> None:
+    """The first seed's rows of tests/drt-guided-measurement.json come out
+    the same when run again, so the document is what `python -m p4blo.drt
+    guided measure` makes today; a change to the families, the guidance or
+    Lean's tags that moves them means regenerating it (and rereading the
+    claim it supports)."""
+    document = json.loads(MEASUREMENT.read_text(encoding="utf-8"))
+    seed = document["seeds"][0]
+    for family in guided.MEASURED_FAMILIES:
+        for arm in guided.ARMS:
+            recorded = next(
+                r
+                for r in document["runs"]
+                if (r["family"], r["seed"], r["arm"]) == (family, seed, arm)
+            )
+            run = guided.measured_run(family, seed, arm, document["budget"], [lean_binary])
+            assert run == recorded, (
+                f"{family} seed {seed} {arm} moved; regenerate with python -m p4blo.drt "
+                "guided measure --jobs 8 --out tests/drt-guided-measurement.json"
+            )

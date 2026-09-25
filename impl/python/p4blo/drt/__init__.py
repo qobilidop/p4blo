@@ -18,11 +18,11 @@ speaking a line protocol; there is no FFI.
 Coverage-guided generation. The families of `families.py` build programs
 from named decisions, and `python -m p4blo.drt guided <family> <budget>`
 runs one against Lean, reads the rule tags of every reply, and weights the
-next programs' decisions toward options whose target tags are unhit and
-toward options that keep reaching (tag, feature) pairs not seen before,
-the one-feature-sensitive criterion of ESMeta's JESTfs. It is deterministic
-by `--seed`; `--unguided` is the uniform baseline. `guided.py` has the
-weights and the command line.
+next programs' decisions toward options whose target tags are unhit; it
+counts the (tag, feature) pairs reached, the one-feature-sensitive
+criterion of ESMeta's JESTfs. It is deterministic by `--seed`;
+`--unguided` is the uniform baseline. `guided.py` has the weights, the
+command line and the measurement against the baseline.
 """
 
 from __future__ import annotations

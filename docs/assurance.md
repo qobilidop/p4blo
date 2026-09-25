@@ -306,11 +306,21 @@ control family and a parser family whose every choice is a labelled
 decision, reach all 157 rules, and the retained campaigns hold them at
 fixed seeds beside the corpus and the earlier families. A guided driver
 (`python -m p4blo.drt guided`) steers those choices by the tags each run
-reports, weighting options toward unhit rules and unhit pairs of a rule
-with the decision that led to it, ESMeta's one-feature-sensitive
-criterion; it is deterministic by seed and reaches the last unhit rule in
-fewer programs than uniform choice, and every program it makes is
-validated and compared like any other. Witness pairs in
+reports, weighting the options aimed at a rule while that rule is unhit.
+It also counts the pairs of a rule with each decision of the program that
+reached it, ESMeta's one-feature-sensitive criterion, but does not steer
+by them. It is deterministic by seed, and every program it makes is
+validated and compared like any other. `tests/drt-guided-measurement.json`
+records what the steering is worth, over sixteen seeds of 200 programs per
+family, guided against uniform choice. Guided campaigns hit every target
+rule that all runs reach in fewer programs: a mean of 14 against 20 in the
+control family, fewer in 14 of 16 seeds, and 35 against 74 in the parser
+family, fewer in 15 of 16. They reach the same rules, and the program that
+first hits the last new rule moves little: in the control family it comes
+earlier in only 8 of 16 seeds. An earlier weighting also rewarded options
+for new pairs. On the same seeds it hit the control family's last new rule
+later than uniform choice did, a mean of 73 programs against 57, and it
+was removed. Witness pairs in
 `spec/arch/ArchTests/fixtures/` pin each rule's condition from both
 sides, one program that must report it and one that must not, with the
 recorded reply anchoring what actually ran. An independent review of the
