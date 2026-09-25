@@ -17,7 +17,7 @@ from p4blo import ir
 from p4blo.drt._json import loads
 from p4blo.v0 import p4blo_pb2 as pb
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 LeafKind = Literal["literal", "type", "key"]
 DeclarationKind = Literal[
     "field",

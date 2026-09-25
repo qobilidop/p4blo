@@ -24,9 +24,9 @@ from p4blo.drt.run import run_python
 from p4blo.drt.state import encode, snapshot
 from p4blo.interp.tables import InstallError
 from p4blo.v0 import p4blo_pb2 as pb
-from tests import test_codec_tables as table
-from tests.test_codec_expr import Expression
-from tests.test_codec_leaves import EntriesCodecKind, assert_leaf, key_leaves, leaves, same_json
+from tests.codec import test_codec_tables as table
+from tests.codec.test_codec_expr import Expression
+from tests.codec.test_codec_leaves import EntriesCodecKind, assert_leaf, key_leaves, leaves, same_json
 from tests.test_lean_forwarder import freeze
 
 

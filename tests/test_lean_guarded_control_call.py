@@ -23,7 +23,7 @@ from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Struct, Value
 from p4blo.ir import BlockScope, Index
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_codec_leaves import same_json
+from tests.codec.test_codec_leaves import same_json
 from tests.test_lean_call_entry import shared_snapshot, value_json
 from tests.test_lean_call_return import frame_json, mutable_aggregate_ids, run_json
 from tests.test_lean_edsl_field_commands import field_command_program

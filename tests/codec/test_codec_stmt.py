@@ -9,8 +9,8 @@ from google.protobuf import json_format
 
 from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_codec_expr import Expression, expressions, node, var
-from tests.test_codec_leaves import assert_leaf, same_json
+from tests.codec.test_codec_expr import Expression, expressions, node, var
+from tests.codec.test_codec_leaves import assert_leaf, same_json
 
 
 def stmt(tag: str, **fields: Expression | list[Expression] | str | int | None) -> Expression:

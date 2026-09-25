@@ -32,7 +32,7 @@ from p4blo.interp.tables import InstalledEntries, Match, TableRef
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.oracle.bmv2 import run as bmv2_run
-from tests.test_codec_leaves import same_json
+from tests.codec.test_codec_leaves import same_json
 from tests.test_lean_edsl_fields import target
 from tests.test_lean_forwarder import assert_program_identity, freeze
 from tests.test_lean_forwarder_action import environment as action_environment

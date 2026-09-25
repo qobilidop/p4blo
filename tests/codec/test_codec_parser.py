@@ -13,10 +13,10 @@ from google.protobuf.message import Message
 
 from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
-from tests import test_codec_expr as expr
-from tests import test_codec_stmt as statement
-from tests.test_codec_expr import Expression
-from tests.test_codec_leaves import ParserKind, assert_leaf, leaves, same_json
+from tests.codec import test_codec_expr as expr
+from tests.codec import test_codec_stmt as statement
+from tests.codec.test_codec_expr import Expression
+from tests.codec.test_codec_leaves import ParserKind, assert_leaf, leaves, same_json
 
 
 @dataclass(frozen=True)

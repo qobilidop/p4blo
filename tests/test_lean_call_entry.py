@@ -25,7 +25,7 @@ from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.ir import Index
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_codec_leaves import same_json
+from tests.codec.test_codec_leaves import same_json
 from tests.test_lean_edsl_field_commands import field_command_program
 
 ROOT = Path(__file__).resolve().parents[1]

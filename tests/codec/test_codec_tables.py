@@ -12,8 +12,8 @@ from google.protobuf.message import Message
 
 from p4blo import ir
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_codec_expr import Expression, expressions, var
-from tests.test_codec_leaves import TableKind, assert_leaf, key_leaves, leaves, same_json
+from tests.codec.test_codec_expr import Expression, expressions, var
+from tests.codec.test_codec_leaves import TableKind, assert_leaf, key_leaves, leaves, same_json
 
 
 @dataclass(frozen=True)

@@ -30,7 +30,7 @@ from p4blo.interp.api import InterpError
 from p4blo.interp.tables import InstalledEntries, InstallError, Match
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.test_codec_leaves import same_json
+from tests.codec.test_codec_leaves import same_json
 from tests.test_lean_call_return import index_json
 from tests.test_lean_forwarder import assert_program_identity, freeze
 

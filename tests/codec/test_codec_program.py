@@ -11,12 +11,12 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 from p4blo import ir
-from tests import test_codec_blocks as block
-from tests import test_codec_declarations as declaration
-from tests import test_codec_stmt as statement
-from tests import test_codec_tables as table
-from tests.test_codec_expr import Expression
-from tests.test_codec_leaves import ProgramCodecKind, assert_leaf, same_json
+from tests.codec import test_codec_blocks as block
+from tests.codec import test_codec_declarations as declaration
+from tests.codec import test_codec_stmt as statement
+from tests.codec import test_codec_tables as table
+from tests.codec.test_codec_expr import Expression
+from tests.codec.test_codec_leaves import ProgramCodecKind, assert_leaf, same_json
 
 
 @dataclass(frozen=True)
