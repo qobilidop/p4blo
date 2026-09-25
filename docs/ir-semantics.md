@@ -110,7 +110,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   oracle, so no vector shifts by more than 2048.
   - P4: §8.6
   - SpecTec: `$bin_shl`, `$bin_shr`
-  - Lean: `bitsBinary`, `ScalarLaws.shl_large`, `ScalarLaws.shr_large`, `DeviationLaws.evaluate_shl_large`, `DeviationLaws.evaluate_shr_large`
+  - Lean: `bitsBinary`, `ScalarLaws.shl_large`, `ScalarLaws.shr_large`, `DeviationLaws.evaluate_shl_large`, `DeviationLaws.evaluate_shr_large`, `DeviationLaws.wrap_zero_value`
   - Python: `p4blo.interp.expr.bits_binary`
   - Test: `tests/test_interp_expr.py::test_shift_amount_width_does_not_matter`, `tests/test_interp_expr.py::test_shifts_by_the_width_or_more_give_zero`
   - Class: same. `$bin_shl` and `$bin_shr` shift the unbounded integer and reduce it to the left operand's width, which gives `0` for an amount of `N` or more whatever the amount; the simulator's builtins `$shl` and `$shr`, in `numerics.ml`, stop with "shift amount too large" above 2048, which is an oracle limitation of the simulator, not a rule disagreement.
@@ -130,7 +130,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   headers it compares the fields. This is P4's rule.
   - P4: §8.17
   - SpecTec: `$bin_eq`
-  - Lean: `Value.equal`, `DeviationLaws.header_equal_invalid`, `DeviationLaws.header_equal_valid_invalid`, `DeviationLaws.header_equal_valid`, `DeviationLaws.header_equal_valid_iff`, `DeviationLaws.evaluate_eq_invalid_headers`
+  - Lean: `Value.equal`, `DeviationLaws.header_equal_invalid`, `DeviationLaws.header_equal_valid_invalid`, `DeviationLaws.header_equal_invalid_valid`, `DeviationLaws.header_equal_valid`, `DeviationLaws.header_equal_valid_iff`, `DeviationLaws.evaluate_eq_invalid_headers`, `DeviationLaws.evaluate_eq_valid_invalid`
   - Python: `p4blo.interp.values.equal`
   - Test: `tests/test_values.py::test_header_equality_by_validity_then_fields`, `tests/test_interp_expr.py::test_equality_on_every_type`
   - Class: deviates. `$bin_eq` on two headers compares their type and stored fields and ignores the validity bit, so two invalid headers with different stored fields are unequal and a valid and an invalid header with equal fields are equal, which contradicts P4's rule.
@@ -222,7 +222,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   controls; a program that wants a check writes one.
   - P4: §8.18
   - SpecTec: `Expr_eval/headerStack`, `Lvalue_read/stack-out-of-bounds`, `Lvalue_write/stack-out-of-bounds`
-  - Lean: `elementOf`, `writeLValue`, `DeviationLaws.evaluate_index_out_of_range`, `DeviationLaws.readLValue_index_out_of_range`, `DeviationLaws.writeLValue_index_out_of_range`, `DeviationLaws.writeLValue_member_out_of_range`
+  - Lean: `elementOf`, `writeLValue`, `DeviationLaws.elementOf_out_of_range`, `DeviationLaws.evaluate_index_out_of_range`, `DeviationLaws.readLValue_index_out_of_range`, `DeviationLaws.writeLValue_index_out_of_range`, `DeviationLaws.writeLValue_member_out_of_range`
   - Python: `p4blo.interp.expr.element_of`, `p4blo.interp.expr.write_lvalue`
   - Test: `tests/test_interp_control.py::test_out_of_range_stack_read_is_a_zero_invalid_header_and_write_does_nothing`
   - Class: deviates. An out-of-range write does nothing in SpecTec too, but `Expr_eval/headerStack` reads `hs[i]` with `i >= S` as the last element, valid or not, and `Lvalue_read/stack-out-of-bounds` reads it as element `0` made invalid with its stored fields; p4blo gives one answer, an invalid zero header, in both places.
@@ -306,7 +306,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   zero fields make a later read of an invalid element deterministic.
   - P4: §8.18
   - SpecTec: `Call_eval/builtinPushFrontMethodCallee`, `Call_eval/builtinPopFrontMethodCallee`, `$invalidate_value`
-  - Lean: `pushFront`, `popFront`, `DeviationLaws.pushFront_spec`, `DeviationLaws.pushFront_clamp`, `DeviationLaws.popFront_spec`, `DeviationLaws.popFront_clamp`
+  - Lean: `pushFront`, `popFront`, `DeviationLaws.pushFront_eq`, `DeviationLaws.pushFront_spec`, `DeviationLaws.pushFront_clamp`, `DeviationLaws.popFront_eq`, `DeviationLaws.popFront_spec`, `DeviationLaws.popFront_clamp`
   - Python: `p4blo.interp.stmt.push_front`, `p4blo.interp.stmt.pop_front`
   - Test: `tests/test_interp_control.py::test_push_front_shifts_up_and_pops_the_last`, `tests/test_interp_control.py::test_pop_front_shifts_down_and_clears_the_last`, `tests/test_interp_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
   - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps stored fields: after `push_front(n)` the first `n` elements keep their own old fields, `pop_front(n)` rotates the first `n` elements to the back and invalidates them there, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
