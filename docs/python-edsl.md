@@ -1,8 +1,8 @@
-# Authoring Python programs
+# Authoring Python block libraries
 
-The Python eDSL builds architecture-free IR. A program declares headers,
-metadata, blocks and extern interfaces; an architecture chooses which blocks
-to call, supplies extern implementations and interprets the resulting metadata.
+The Python eDSL builds architecture-free IR. A library declares block bodies,
+their types and extern interfaces; an architecture chooses which blocks to
+call, supplies extern implementations and interprets the resulting metadata.
 Start with the [router](../examples/router/program.py), then the
 [firewall](../examples/firewall/program.py) or
 [load balancer](../examples/load_balancer/program.py).
@@ -49,10 +49,12 @@ blocks = p4.BlockLibrary(Parse, Route, Emit, externs=[checksum])
 compiled = blocks.compile()
 ```
 
-The compiled library contains block bodies and their dependencies. It has no
-selected global headers/metadata roots, exports, ports or packet-fate policy.
-It is a fragment, not a complete runnable program or a whole-program validity
-certificate. A library containing a single control with an explicit scalar
+`compile()` returns a protobuf `p4blo.v0.BlockLibrary` with its name, errors,
+types, extern declarations and instances, and blocks. It can be checked by the
+core validator. It has no selected global headers/metadata roots, exports,
+ports or packet-fate policy. The library may hold any number of parsers,
+controls and deparsers; it does not choose a pipeline. A library containing a
+single control with an explicit scalar
 `InOut[bit8]` parameter also compiles; conventional `hdr`/`meta` parameters are
 shorthands, not requirements of independent block compilation.
 
@@ -62,7 +64,7 @@ by the existing wire format. The supplied switch adapter is explicit:
 ```python
 from p4blo.arch import reference
 
-program = reference.assemble(
+assembly = reference.assemble(
     blocks,
     name="router",
     headers=Headers,
@@ -74,17 +76,51 @@ program = reference.assemble(
 ```
 
 An alternative adapter uses `p4blo.arch.assemble` with an explicit export
-mapping, then calls the blocks according to its own logic. The current wire
-`Program` is an assembly envelope; its exported entry points follow the
+mapping, then calls the blocks according to its own logic. The architectural
+wire `p4blo.arch.v0.BlockAssembly` carries the selected H/M roots and exports
+alongside the library declarations. Its exported entry points follow the
 existing H/M calling convention. It does not define the architecture's
 execution behavior. Arbitrary scalar block signatures remain valid inside a
-library and as sub-blocks, but are not newly promised as wire exports.
+library and as sub-blocks, but are not promised as assembly exports.
 
 Assembly compiles the library definitions together in one context, so types,
 sub-blocks and shared extern instances keep one identity. Independent
-`.compile()` is for inspection; assembly does not link separately compiled
-protobuf fragments. Whole-program validation happens at loading or through
-an explicit `validator.check`.
+`.compile()` produces a core library that can be validated and used without an
+assembly. Assembly does not link separately compiled protobuf fragments. The
+loader checks the assembly and its selected roles.
+
+An architecture may bind a compiled library directly, including several
+blocks of the same kind. For example, a host that runs two controls can name
+both roles without changing the core library:
+
+```python
+from p4blo import arch, validator
+from p4blo.arch.contract import Contract
+from p4blo.arch.externs import Registry
+from p4blo.arch.v0 import assembly_pb2 as apb
+from p4blo.v0 import p4blo_pb2 as pb
+
+library = p4.BlockLibrary(ChooseLeft, ChooseRight).compile()
+validator.check(library)
+bindings = apb.BlockBindings(
+    headers="Headers",
+    metadata="Metadata",
+    exports=[
+        apb.Export(role="left", block="ChooseLeft"),
+        apb.Export(role="right", block="ChooseRight"),
+    ],
+)
+loaded = arch.load(
+    library, bindings=bindings, registry=Registry(), contract=Contract(()),
+    roles={"left": pb.BLOCK_KIND_CONTROL, "right": pb.BLOCK_KIND_CONTROL},
+)
+```
+
+The architecture supplies `Headers` and `Metadata` only when it binds blocks
+to its H/M calling convention. The core library contains their type
+declarations because the blocks use them, with neither type selected as a
+global root. The [multiple-block witness](../tests/programs/test_block_libraries.py)
+also binds two parsers and two deparsers and calls both paths.
 
 ## Declare, register, bind
 
@@ -100,10 +136,10 @@ These are three separate steps:
    An implementation provides its family name, accepted `Shape`, and factory.
    The shape independently checks method names, directions, argument and
    result widths against the program's declaration.
-3. **Bind a loaded program.** Pass that registry to the loader. Binding
+3. **Bind a loaded assembly.** Pass that registry to the loader. Binding
    checks declarations and constructor values, then calls the factory for
    every instance. Each factory must create fresh state. Reusing a loaded
-   program preserves that state; loading again creates a new runtime.
+   assembly preserves that state; loading again creates a new runtime.
 
 Registration is local to the registry. Duplicate family registration fails;
 an unregistered family or incompatible declaration fails at binding. A
@@ -128,13 +164,13 @@ registry:
 from p4blo.arch import reference
 from p4blo.arch.externs import supplied_registry
 
-loaded = reference.load(program, registry=supplied_registry())
+loaded = reference.load(assembly, registry=supplied_registry())
 ```
 
 An architecture can select a smaller registry or register different custom
 families. The generic loader supplies no switch defaults. The
 [custom extern example](../examples/custom_extern.py) defines an extern,
-registers its Python implementation and runs a control-only program without
+registers its Python implementation and runs a control-only assembly without
 modifying p4blo:
 
 ```sh
@@ -161,5 +197,6 @@ required by the authoring or execution APIs.
   use explicit `arch.load` dependencies for a custom architecture.
 - Replace `default_registry()` with `supplied_registry()`.
 
-These changes affect authoring and runtime assembly. They do not change the
-wire schema, interpreter semantics or the supplied applications' behavior.
+These changes affect authoring and runtime assembly. The core and architecture
+message names change; the supplied applications' serialized payloads and
+behavior remain the same.

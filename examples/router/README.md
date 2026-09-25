@@ -53,7 +53,9 @@ compiled = p4.BlockLibrary(Route, externs=[checksum]).compile()
 The `blocks` library collects the three block definitions and their shared
 extern declarations. It does not select an architecture or a complete program;
 `blocks.compile()` produces declarations without global header/metadata roots
-or exported roles. Types follow the blocks' parameter and local declarations.
+or exported roles. This is a core protobuf `BlockLibrary` that can be
+validated independently. Types follow the blocks' parameter and local
+declarations.
 
 `build()` separately calls `reference.assemble` with that library to select the
 parser, control and deparser of the supplied architecture. Its metadata

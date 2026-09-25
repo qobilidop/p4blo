@@ -69,7 +69,7 @@ Productions from `2.2.1-type.watsup`.
 |---|---|---|---|---|
 | `voidTypeIR` (`VOID`) | elaborated | `Method.returns` absent | Schema: "Absent for a method that returns nothing." Actions and blocks return nothing by construction. | performed |
 | `boolTypeIR` (`BOOL`) | in | `Type.boolean` | | translated |
-| `errorTypeIR` (`ERROR`) | in | `Type.error` | Values are names from `Program.errors`. | translated |
+| `errorTypeIR` (`ERROR`) | in | `Type.error` | Values are names from `BlockLibrary.errors`. | translated |
 | `matchKindTypeIR` (`MATCH_KIND`) | elaborated | the `MatchKind` enum on `Key` | No value of this type exists in the IR. See `matchKindDeclarationIR`. | performed; a value of type `match_kind` is not attempted |
 | `stringTypeIR` (`STRING`) | excluded, by scope | none | Reaches only annotations and extern arguments such as `log_msg`. The survey recommends exclusion; nothing rules. | refused by name |
 | `intTypeIR` (`INT`) | elaborated | none | Design: no `int`. Its literals are sized by context; see `literalExpressionIR`. | performed: folded into sized literals; an `int` value that reaches the IR is refused |
@@ -243,15 +243,15 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 
 | IL construct (production) | Status | p4blo form or elaboration | Note | Bridge |
 |---|---|---|---|---|
-| `p4programIR` | in | `Program` | Plus `headers`, `metadata` and `exports`, which have no IL counterpart. | translated |
+| `p4programIR` | in | `BlockLibrary` | Its blocks and shared declarations have no selected pipeline; architecture bindings separately carry `headers`, `metadata` and `exports`, which have no IL counterpart. | translated |
 | `constantDeclarationIR` at top level | elaborated | folded into literals | Forwarder README. | performed |
 | `instantiationIR` of an extern object | in | `ExternInstance` | Constructor arguments are literals. Program-level state (schema). | translated for v1model's `register` and `counter`, hoisted to program level; other objects not attempted |
-| `instantiationIR` of a parser or control | elaborated | the block is called by name; a block that owns extern state and is instantiated more than once becomes one block per instantiation | Schema `Program`; stacks and subparser_stack READMEs. | performed |
-| `instantiationIR` of a package (`main`) | excluded, by thesis | `Export` per role | Design: the architecture binds blocks to roles. | V1Switch bound by the v1model shim in reverse; other packages refused |
+| `instantiationIR` of a parser or control | elaborated | the block is called by name; a block that owns extern state and is instantiated more than once becomes one block per instantiation | Schema `BlockLibrary`; stacks and subparser_stack READMEs. | performed |
+| `instantiationIR` of a package (`main`) | excluded, by thesis | architecture `Export` per role | Design: the architecture binds blocks to roles. | V1Switch bound by the v1model shim in reverse; other packages refused |
 | `objectInitializerIR`, `ABSTRACT` in `externMethodPrototypeIR` | excluded, by scope | none | The survey recommends exclusion. The design's "extern function objects" may be meant to cover this; the wording does not say. | refused by name |
 | `functionDeclarationIR`, `functionPrototypeIR` | elaborated | inlined at every call site (p4c `InlineFunctions`) | Core P4, absent from both the In list and the exclusions. Precedent: p4c `FunctionsInliner`. | partial: as the call rows |
 | `actionDeclarationIR` | in | `Action` inside a `Block` | Directionless parameters are action data. Top-level actions have no corpus instance; the IR keeps actions block-scoped. | translated; a top-level action a block uses becomes that block's |
-| `errorDeclarationIR` | in | `Program.errors` | core.p4's seven first, in fixed order; user errors after (stacks README). | translated |
+| `errorDeclarationIR` | in | `BlockLibrary.errors` | core.p4's seven first, in fixed order; user errors after (stacks README). | translated |
 | `matchKindDeclarationIR` | elaborated | the fixed `MatchKind` enum | core.p4's three kinds; others per `tableKeyIR`. | performed |
 | `enumTypeDeclarationIR`: plain | in | `EnumType` | | translated |
 | `enumTypeDeclarationIR`: serializable (`ENUM typeIR nameIR { namedValueIR* }`) | elaborated | bits and literals | As `serializableEnumTypeIR`. | performed |
@@ -270,7 +270,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | its `packet_out` parameter | elaborated | carried by the block's kind | Every corpus README. | performed |
 | `controlLocalDeclarationIR`: `actionDeclarationIR`, `tableDeclarationIR`, `variableDeclarationIR` | in | `Block.actions`, `Block.tables`, `Block.locals` | | translated |
 | `controlLocalDeclarationIR`: `constantDeclarationIR`, `instantiationIR` | see the rows above | | | |
-| `controlTypeDeclarationIR`, `packageTypeDeclarationIR` | excluded, by thesis | `Export` and `BlockKind` | The architecture's interface. | set aside |
+| `controlTypeDeclarationIR`, `packageTypeDeclarationIR` | excluded, by thesis | architecture `Export` and core `BlockKind` | The architecture's interface. | set aside |
 | `parameterListIR`, `parameterIR` with a direction | in | `Param` with `Direction` | `DIRECTION_NONE` is action data. | translated |
 | `standard_metadata` and other intrinsic metadata parameters (no IL production; the architecture's parameter) | excluded, by thesis | fields of the program's `M` under the metadata contract | Design, Metadata contract; forwarder README: `egress_spec` is `meta.egress_port`. | mapped: `ingress_port`, `parser_error`, `egress_spec` and `egress_port` onto the contract, `egress_spec` read in egress being 511 once `mark_to_drop` has run there; other fields refused; a user field of `M` named like a contract field is renamed, and is the contract field only where the source copies it to or from `standard_metadata` exactly as the printer's shim does |
 
@@ -285,10 +285,10 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `ctk` (`2.7-compile-time-known.watsup`) | elaborated | none | A typing fact; the validator recomputes what it needs. | performed: dropped |
 | runtime `value` (`2.1.1-value.watsup`): the header validity bit and the stack `nat` next index | in | the run-time model of ir-semantics.md | Not syntax; listed because the IL's values carry them and every closed behavior on headers and stacks refers to them. | the run-time model |
 
-p4blo constructs with no IL production, for completeness: `Export`,
-`Program.headers`, `Program.metadata` (the metadata contract),
-`BLOCK_KIND_DEPARSER`, and the host-side `Entries` and `TableEntries`.
-Each is where the architecture layer used to be.
+p4blo constructs with no IL production, for completeness: architecture
+`Export`, `BlockBindings.headers`, `BlockBindings.metadata` (the metadata
+contract), core `BLOCK_KIND_DEPARSER`, and the host-side `Entries` and
+`TableEntries`. The first three are architecture binding choices.
 
 ## Summary
 

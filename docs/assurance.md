@@ -54,10 +54,10 @@ behaviors; [p4-spec-coverage.md](p4-spec-coverage.md) walks P4 construct by cons
   and defaults, host-installed entries and default overrides,
   longest-prefix and largest-priority selection. A miss can run an action
   while `hit` remains false.
-- Program declarations: types, errors, extern signatures and instances,
-  blocks, exported roles and the headers/metadata contract. Host table
-  configuration is separate from the program; decoding it does not
-  establish validity.
+- Core library declarations: types, errors, extern signatures and instances,
+  and any number of blocks of each kind. Architecture binding separately
+  checks selected H/M roots, exports and their calling convention. Host table
+  configuration is separate; decoding it does not establish validity.
 
 The executable builtin extern profile is register, counter, checksum16,
 CRC16/ARC and CRC32/ISO-HDLC. Family suffixes do not relax signature or
@@ -110,7 +110,8 @@ examples check intent separately.
 ### Wire contract
 
 The supported interchange profile is the canonical protobuf JSON emitted
-by `p4blo.ir.dump_json` for programs, the corresponding snake-case
+by `p4blo.arch.wire.dump_json` for architecture assemblies (and
+`p4blo.ir.dump_json` for core libraries), the corresponding snake-case
 protobuf conversion for entries, and the matching Lean encoders: known
 fields, full enum names, numeric uint32 values, booleans, ordered arrays,
 explicit decimal-string bit and key values and at most one populated oneof
@@ -259,7 +260,7 @@ Python unit suites are not automatically differential tests.
 | Tables, actions, host installation | `tests/unit/test_interp_tables.py`, generated configurations in `tests/drt/test_drt.py`, `tests/lean/test_lean_forwarder_tables.py`, `tests/lean/test_lean_forwarder_action.py`, `tests/lean/test_lean_forwarder_apply.py`; strict configuration, full-state and default-hit observations | Forwarder lookup and application laws for five shapes; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family. |
 | Persistent extern state | `tests/drt/test_drt_stateful_programs.py` shrinking sequences, `tests/drt/test_drt_state.py`, `tests/unit/test_externs.py`, `tests/unit/test_extern_families.py`, `tests/unit/test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
 | Architecture outcomes and errors | `tests/drt/test_drt.py` drop, flood, ports and error reasons; `tests/drt/test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
-| Serialization and observation | `tests/codec/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `tests/codec/test_wire_decimal.py`; `tests/drt/test_drt_protocol.py`, `tests/drt/test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete Program, Export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
+| Serialization and observation | `tests/codec/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `tests/codec/test_wire_decimal.py`; `tests/drt/test_drt_protocol.py`, `tests/drt/test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete library, architecture export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
 | Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `tests/lean/test_lean_forwarder*.py`, `tests/lean/test_lean_firewall*.py`, `tests/programs/test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Complete examples execute in both languages; selected proofs do not verify raw construction or the whole pipeline. |
 
 ### Corpus programs

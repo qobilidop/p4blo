@@ -14,8 +14,10 @@ from collections.abc import Sequence
 
 from p4blo import arch, interp
 from p4blo import edsl as p4
+from p4blo.arch import entry
 from p4blo.arch.contract import Contract
 from p4blo.arch.externs import Bindings, Implementation, MethodShape, Registry, Shape
+from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.interp.values import Bits, Struct, Value, zero
 from p4blo.v0 import p4blo_pb2 as pb
 
@@ -50,7 +52,7 @@ def library() -> p4.BlockLibrary:
     return p4.BlockLibrary(Transform, externs=[sequence])
 
 
-def build() -> pb.Program:
+def build() -> apb.BlockAssembly:
     """Assemble a host program with just the block role it runs."""
     return arch.assemble(
         library(),
@@ -103,12 +105,12 @@ def demo() -> tuple[int, int]:
         contract=Contract(()),
         roles={"transform": pb.BLOCK_KIND_CONTROL},
     )
-    headers = zero(pb.Type(struct=loaded.index.program.headers), loaded.index)
+    headers = zero(pb.Type(struct="Headers"), loaded.index)
     metadata = loaded.metadata.zero()
     assert isinstance(headers, Struct)
 
     def run_once() -> int:
-        _, output = interp.run_control(
+        _, output = entry.run_control(
             loaded.index,
             loaded.block("transform"),
             headers,

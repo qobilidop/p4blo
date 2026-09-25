@@ -25,9 +25,10 @@ examples below additionally have independently authored Lean counterparts.
 | IPv4 forwarder | [forwarder.py](../tests/corpus/forwarder/forwarder.py) | [Forwarder.lean](../impl/lean/P4blo/Forwarder.lean) | [forward.stf](../tests/corpus/forwarder/forward.stf) |
 | Stateful Bloom firewall | [tutorial_firewall.py](../tests/corpus/tutorial_firewall/tutorial_firewall.py) | [TutorialFirewall.lean](../impl/lean/P4blo/TutorialFirewall.lean) | [connection.stf](../tests/corpus/tutorial_firewall/connection.stf) |
 
-These are complete independently authored programs, not wrappers that read
-the goldens. Python `build()` and Lean `program` each construct an IR Program.
-Read the declarations, parser, actions, tables and final Program assembly in
+These are complete independently authored examples, not wrappers that read
+the goldens. Python `build()` and Lean `program` each construct an architecture
+assembly from IR blocks. Read the declarations, parser, actions, tables and
+final assembly in
 those files. For example, the forwarder's `ipv4_forward` action deliberately
 assigns the **old destination** MAC to the source before changing destination.
 The table's route data comes from the STF `add` commands, not a hardcoded route.
@@ -107,12 +108,12 @@ lake +leanprover/lean4:v4.34.0 -d impl/lean build p4blo
 ```
 
 Its subcommands `leanForwarder` and `leanTutorialFirewall` each export their
-authored Program as JSON when given no further arguments.
-With `run`, each executes that **compiled in-memory Program** and accepts one
+authored assembly as JSON when given no further arguments.
+With `run`, each executes that **compiled in-memory assembly** and accepts one
 snake_case JSON request per line: `entries`, `ingress_port`, and hex `packet`.
 The servers have four ports. Returned extern state persists within one server
 process; starting a new process resets it. Requests do not accept a replacement
-Program. The following script resolves STF host entries using the exported
+assembly. The following script resolves STF host entries using the exported
 syntax, then sends the whole sequence to one server and checks the same STF
 expectations—Python does not execute the packets in this section.
 
@@ -124,6 +125,8 @@ import subprocess
 from pathlib import Path
 from google.protobuf.json_format import MessageToDict
 from p4blo import ir, stf
+from p4blo.arch import wire
+from p4blo.arch.bindings import library_of
 
 root = Path.cwd().resolve()
 for name, executable, vector in [
@@ -133,7 +136,7 @@ for name, executable, vector in [
     command = [str(root / "impl/lean/.lake/build/bin/p4blo"), executable]
     exported = subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
     assert not exported.stderr, exported.stderr
-    index = ir.Index.build(ir.load_json(exported.stdout))
+    index = ir.Index.build(library_of(wire.load_json(exported.stdout)))
     statements = stf.parse((root / "tests/corpus" / name / vector).read_text())
     installed, requests = [], []
     for statement in statements:

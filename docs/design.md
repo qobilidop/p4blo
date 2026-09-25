@@ -103,10 +103,10 @@ one intended authority:
 | Concern | Intended authority | Today |
 |---|---|---|
 | Abstract syntax: expressions, statements, declarations | Lean, `spec/ir/P4bloIR/IR.lean` | in place |
-| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/` | a whole-program checker proved sound for the declarative rules, agreeing with the Python validator on every tested program, with progress proved for valid programs; checker completeness and termination are open |
+| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/` | a core-library checker proved sound for the declarative rules, agreeing with the Python validator on tested libraries, with progress proved for valid libraries; architecture bindings are checked separately; checker completeness and termination are open |
 | Meaning: execution and observable behavior | Lean, `spec/ir/P4bloIR/` | in place |
-| Serialization: messages, field numbers, encoding versions | the protobuf schema, `spec/ir/proto/p4blo/v0/p4blo.proto` | in place |
-| Correspondence between wire values and abstract programs | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; Program and Export composition are open |
+| Serialization: messages, field numbers, encoding versions | the core and architecture protobuf schemas under `spec/ir/proto/` and `spec/arch/proto/` | in place |
+| Correspondence between wire values and abstract libraries | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; BlockLibrary and architecture-binding composition are open |
 
 The text form of the protobuf is the golden format; binary and JSON are
 transports. These are distinct contracts, and passing one does not
@@ -250,9 +250,11 @@ a misspelled field is an unknown attribute; parsers, controls and
 deparsers are classes whose states and actions are methods, so a `select`
 target is `self.parse_ipv4` and a table's action list holds the methods
 themselves; block classes can be compiled independently or collected in a
-`BlockLibrary` with their shared declarations. A library has no pipeline
-roles or global H/M roots; an architecture assembles its selected blocks
-into the wire envelope. The [authoring guide](python-edsl.md) explains
+`BlockLibrary` with their shared declarations. Its compiled core protobuf
+value can be validated with any number of blocks of each kind, with no
+pipeline roles or global H/M roots. An architecture binds its selected blocks
+in a separate `BlockAssembly` envelope or with explicit `BlockBindings`.
+The [authoring guide](python-edsl.md) explains
 this boundary. Widths are `Literal` type parameters, `Bits[L[8]]`, spelled
 through the aliases `bit1`..`bit64`; `Var[W]` is a place of that width
 and `Bits[W]` any value, so assigning to an expression is a static error.

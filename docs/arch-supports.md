@@ -26,9 +26,12 @@ The generic Python loader, `p4blo.arch.load`, requires an explicit extern
 registry, metadata contract and mapping of required roles to block kinds.
 `p4blo.arch.reference.load` selects the supplied switch/filter environment
 as a convenience; it is not a mandatory architecture. Independent P4 blocks
-are collected in a `BlockLibrary`; `reference.assemble` or a custom adapter
-selects wire exports and H/M roots. Another composition can use the same
-block definitions without the supplied pipeline defaults. See
+are collected in a core `BlockLibrary`, which may have several blocks of each
+kind and no selected pipeline. `reference.assemble` or a custom adapter
+selects wire exports and H/M roots in an architectural `BlockAssembly`.
+The generic loader can also take a compiled library and explicit
+`BlockBindings` directly. Another composition can use the same block
+definitions without the supplied pipeline defaults. See
 [Python authoring](python-edsl.md) for the public API and a custom extern.
 
 ## The metadata contract

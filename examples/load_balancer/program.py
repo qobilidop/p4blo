@@ -5,7 +5,7 @@ from __future__ import annotations
 from p4blo import edsl as p4
 from p4blo.arch import reference
 from p4blo.arch.externs.declarations import CRC16, Checksum16
-from p4blo.v0 import p4blo_pb2 as pb
+from p4blo.arch.v0 import assembly_pb2 as apb
 
 ChecksumWords = p4.Bits[p4.L[144]]
 FlowTuple = p4.Bits[p4.L[96]]
@@ -169,7 +169,7 @@ class Emit(p4.Deparser[Headers]):
 blocks = p4.BlockLibrary(Parse, Balance, Emit, externs=[checksum, flow_hash])
 
 
-def build() -> pb.Program:
+def build() -> apb.BlockAssembly:
     """Assemble the blocks for the supplied switch and its metadata contract."""
     return reference.assemble(
         blocks,
@@ -183,6 +183,6 @@ def build() -> pb.Program:
 
 
 if __name__ == "__main__":
-    from p4blo import ir
+    from p4blo.arch import wire
 
-    print(ir.dump_text(build()), end="")
+    print(wire.dump_text(build()), end="")
