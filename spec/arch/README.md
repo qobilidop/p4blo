@@ -19,5 +19,5 @@ program and that the IR itself does not decide (docs/arch-supports.md):
 
 `lake test` replays the forwarder's vectors under the switch and checks
 the families, the certificate and its wire adapter, reading the fixtures
-from `../ir/Tests/`. `scripts/check-lean.sh` from the repository root
+from `../ir/P4bloIRTest/`. `scripts/check-lean.sh` from the repository root
 builds and tests all three packages in dependency order.

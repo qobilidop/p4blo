@@ -360,12 +360,12 @@ def test_only_semantics_sources_are_digested(tmp_path: Path) -> None:
     files = {p.relative_to(root).as_posix() for p in conformance.semantics_files(root)}
     assert "spec/arch/Main.lean" in files and "spec/ir/P4bloIR/Exec.lean" in files
     assert not [f for f in files if re.search(r"(Laws|Audit|Probe|Theorems)\.lean$", f)]
-    assert not [f for f in files if "/Tests/" in f or "/ArchTests/" in f]
+    assert not [f for f in files if "/P4bloIRTest/" in f or "/ArchTests/" in f]
     for proof in (
         "spec/ir/P4bloIR/DeviationLaws.lean",
-        "spec/ir/ProofAudit.lean",
+        "spec/ir/P4bloIRTest/ProofAudit.lean",
         "spec/ir/P4bloIR/Theorems.lean",
-        "spec/ir/Tests/Main.lean",
+        "spec/ir/P4bloIRTest/Main.lean",
         "spec/arch/ArchTests/Main.lean",
     ):
         with (root / proof).open("a") as f:

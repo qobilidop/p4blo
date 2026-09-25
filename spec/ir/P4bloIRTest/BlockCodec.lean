@@ -1,4 +1,4 @@
-import Tests.ParserCodec
+import P4bloIRTest.ParserCodec
 import P4bloIR.BlockCodecLaws
 
 open Lean P4bloIR

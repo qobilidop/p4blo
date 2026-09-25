@@ -1,32 +1,31 @@
 # Authoritative IR syntax and semantics, wire adapter and scoped proofs.
 # Independent of the architecture and user-facing packages, which depend on
 # it. Lean core only; no Mathlib.
+#
+# Layout: what a client may import lives under P4bloIR/; what only the gate
+# runs (tests, proof audits, fixtures) lives under P4bloIRTest/.
 name = "p4blo-ir"
 version = "0.1.0"
-defaultTargets = ["P4bloIR", "ProofAudit", "CodecProofAudit", "codec-leaves"]
+defaultTargets = ["P4bloIR", "P4bloIRTest", "codec-leaves"]
 moreLeanArgs = ["-DwarningAsError=true"]
 testDriver = "tests"
 
 [[lean_lib]]
 name = "P4bloIR"
 
+# Every module under P4bloIRTest/, including the proof audits
+# P4bloIRTest.ProofAudit and P4bloIRTest.CodecProofAudit, whose
+# `#guard_msgs` pins are checked whenever this default target builds.
 [[lean_lib]]
-name = "ProofAudit"
-
-[[lean_lib]]
-name = "CodecProofAudit"
+name = "P4bloIRTest"
+globs = ["P4bloIRTest.+"]
 
 # Test-only access to production leaf codecs without whole-program validation.
 [[lean_exe]]
 name = "codec-leaves"
-root = "Tests.CodecLeaves"
+root = "P4bloIRTest.CodecLeaves"
 
-# The test modules under Tests/, so that the test driver can import them.
-[[lean_lib]]
-name = "Tests"
-globs = ["Tests.+"]
-
-# `lake test` runs this against Tests/forwarder.json.
+# `lake test` runs this against P4bloIRTest/forwarder.json.
 [[lean_exe]]
 name = "tests"
-root = "Tests.Main"
+root = "P4bloIRTest.Main"

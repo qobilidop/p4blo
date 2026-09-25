@@ -2,7 +2,7 @@ import P4bloIR
 import P4bloIR.ScalarStatements
 import P4bloIR.Validity.KindLaws
 import P4bloIR.Validity.EntryLaws
-import Tests.ScalarStatements
+import P4bloIRTest.ScalarStatements
 
 /-- info: 'P4bloIR.PlainCallReturn.copyBack_three' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

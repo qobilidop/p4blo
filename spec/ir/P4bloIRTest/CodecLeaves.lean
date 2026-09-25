@@ -1,10 +1,10 @@
-import Tests.CodecLaws
-import Tests.DeclarationCodec
-import Tests.TableCodec
-import Tests.ParserCodec
-import Tests.BlockCodec
-import Tests.ProgramCodec
-import Tests.EntriesCodec
+import P4bloIRTest.CodecLaws
+import P4bloIRTest.DeclarationCodec
+import P4bloIRTest.TableCodec
+import P4bloIRTest.ParserCodec
+import P4bloIRTest.BlockCodec
+import P4bloIRTest.ProgramCodec
+import P4bloIRTest.EntriesCodec
 
 open Lean
 

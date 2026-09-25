@@ -1,13 +1,13 @@
 import P4bloIR.CodecLaws
-import Tests.CodecLaws
+import P4bloIRTest.CodecLaws
 import P4bloIR.DeclarationCodecLaws
-import Tests.DeclarationCodec
+import P4bloIRTest.DeclarationCodec
 import P4bloIR.TableCodecLaws
-import Tests.TableCodec
+import P4bloIRTest.TableCodec
 import P4bloIR.ParserCodecLaws
-import Tests.ParserCodec
+import P4bloIRTest.ParserCodec
 import P4bloIR.BlockCodecLaws
-import Tests.BlockCodec
+import P4bloIRTest.BlockCodec
 
 /-! Checked trust boundary for actual JSON-value syntax codec laws. -/
 

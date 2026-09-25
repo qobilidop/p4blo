@@ -3,7 +3,7 @@ import ArchTests.NonVacuity
 
 /-!
 The axioms of the reference architecture's proofs, printed and pinned as
-`spec/ir/ProofAudit.lean` pins the IR's: each depends on Lean's three
+`spec/ir/P4bloIRTest/ProofAudit.lean` pins the IR's: each depends on Lean's three
 standard axioms and nothing else (no `sorryAx`, no `Lean.ofReduceBool`
 from `native_decide`). A new or changed dependency fails the build.
 -/

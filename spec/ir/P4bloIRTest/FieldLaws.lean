@@ -1,4 +1,4 @@
-import Tests.Check
+import P4bloIRTest.Check
 import P4bloIR.FieldLaws
 import Std.Data.HashMap.Lemmas
 

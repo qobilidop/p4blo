@@ -1,4 +1,4 @@
-import Tests.Check
+import P4bloIRTest.Check
 
 /-!
 Tests for `P4bloIR.Validity.check` on the forwarder fixture: it is

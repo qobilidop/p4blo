@@ -1,36 +1,43 @@
-import Tests.Check
-import Tests.Interp
-import Tests.ScalarTyping
-import Tests.ScalarStatements
-import Tests.FieldLaws
-import Tests.FieldTyping
-import Tests.Execution
-import Tests.CodecLaws
-import Tests.FrameInitialization
-import Tests.PlainCallEntry
-import Tests.PlainCallReturn
-import Tests.DeclarationCodec
-import Tests.TableCodec
-import Tests.ParserCodec
-import Tests.BlockCodec
-import Tests.ProgramCodec
-import Tests.EntriesCodec
-import Tests.DeviationLaws
-import Tests.Validity
+import P4bloIRTest.Check
+import P4bloIRTest.Interp
+import P4bloIRTest.ScalarTyping
+import P4bloIRTest.ScalarStatements
+import P4bloIRTest.FieldLaws
+import P4bloIRTest.FieldTyping
+import P4bloIRTest.Execution
+import P4bloIRTest.CodecLaws
+import P4bloIRTest.FrameInitialization
+import P4bloIRTest.PlainCallEntry
+import P4bloIRTest.PlainCallReturn
+import P4bloIRTest.DeclarationCodec
+import P4bloIRTest.TableCodec
+import P4bloIRTest.ParserCodec
+import P4bloIRTest.BlockCodec
+import P4bloIRTest.ProgramCodec
+import P4bloIRTest.EntriesCodec
+import P4bloIRTest.DeviationLaws
+import P4bloIRTest.Validity
 
 /-!
+The `P4bloIRTest` library holds everything in this package that only the
+gate runs: the test modules this driver imports, the proof audits
+`P4bloIRTest.ProofAudit` and `P4bloIRTest.CodecProofAudit`, the
+`codec-leaves` endpoint and the forwarder fixtures. It is a default target,
+so `lake build` elaborates every module and checks the audits' `#guard_msgs`
+pins; `lake test` then runs this driver. `scripts/check-lean.sh` does both.
+
 Tests for the decoder, the index and the interpreter, run by `lake test`
 from the `spec/ir/` directory (the fixture path may also be given as an
 argument). The vector replay under the switch is an architecture test and
-lives in `spec/arch/ArchTests/`.
+lives in `spec/arch/P4bloArchTest/`.
 
-`Tests/forwarder.json` is `p4blo.ir.dump_json` of
+`P4bloIRTest/forwarder.json` is `p4blo.ir.dump_json` of
 `tests/corpus/forwarder/forwarder.txtpb`; regenerate it from the repository root
 with
 
     uv run python -c 'from pathlib import Path; from p4blo import ir; \
       print(ir.dump_json(ir.load_text(Path("tests/corpus/forwarder/forwarder.txtpb"))))' \
-      > spec/ir/Tests/forwarder.json
+      > spec/ir/P4bloIRTest/forwarder.json
 -/
 
 open P4bloIR
@@ -187,7 +194,7 @@ def negativeTests : T Unit := do
      | .error _ => false)
 
 def main (args : List String) : IO UInt32 := do
-  let fixture := args.head?.getD "Tests/forwarder.json"
+  let fixture := args.head?.getD "P4bloIRTest/forwarder.json"
   let text ← IO.FS.readFile fixture
   let ((), failures) ← (do
     match Program.fromJsonString text with

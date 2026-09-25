@@ -23,8 +23,8 @@ specification's copies. The coverage witness table is read from
 open P4bloIR
 
 def main (args : List String) : IO UInt32 := do
-  let fixture := args.head?.getD "../ir/Tests/forwarder.json"
-  let vectors := (args.drop 1).head?.getD "../ir/Tests/forwarder_vectors.json"
+  let fixture := args.head?.getD "../ir/P4bloIRTest/forwarder.json"
+  let vectors := (args.drop 1).head?.getD "../ir/P4bloIRTest/forwarder_vectors.json"
   let text ← IO.FS.readFile fixture
   let vectorsText ← IO.FS.readFile vectors
   let ((), failures) ← (do

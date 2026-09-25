@@ -1251,7 +1251,7 @@ declared `T` and a CRC's data width to `D` (`stateFits_of`), and the
 extern-type rule makes method names distinct. Binding can still fail for a
 valid program whose extern types no family implements; that is the load
 boundary. `spec/arch/ArchProofAudit.lean`, a default target, pins the
-axioms as `spec/ir/ProofAudit.lean` does.
+axioms as `spec/ir/P4bloIRTest/ProofAudit.lean` does.
 
 `spec/arch/ArchTests/NonVacuity.lean` shows every premise of `progress`
 satisfiable together on a real program without `native_decide`.

@@ -30,8 +30,8 @@ root = "Main"
 name = "ArchTests"
 globs = ["ArchTests.+"]
 
-# `lake test` runs this against ../ir/Tests/forwarder.json and
-# ../ir/Tests/forwarder_vectors.json.
+# `lake test` runs this against ../ir/P4bloIRTest/forwarder.json and
+# ../ir/P4bloIRTest/forwarder_vectors.json.
 [[lean_exe]]
 name = "archTests"
 root = "ArchTests.Main"

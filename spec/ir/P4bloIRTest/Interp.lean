@@ -1,4 +1,4 @@
-import Tests.Check
+import P4bloIRTest.Check
 
 /-!
 Unit tests for the interpreter's primitives, per docs/ir-semantics.md: bits

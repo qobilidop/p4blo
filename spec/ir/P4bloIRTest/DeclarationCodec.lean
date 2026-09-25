@@ -1,4 +1,4 @@
-import Tests.CodecLaws
+import P4bloIRTest.CodecLaws
 import P4bloIR.DeclarationCodecLaws
 
 open Lean P4bloIR

@@ -1,4 +1,4 @@
-import Tests.Check
+import P4bloIRTest.Check
 import P4bloIR.ScalarStatements
 
 open P4bloIR

@@ -1,4 +1,4 @@
-import Tests.Check
+import P4bloIRTest.Check
 
 /-! Proof-visible execution and continuation regressions, including malformed
 inputs whose fault and frame behavior must survive the executor refactor. -/

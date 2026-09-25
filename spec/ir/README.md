@@ -18,6 +18,13 @@ literal/type/table-key round trips over JSON values under explicit v0 uint32
 representability. This does not verify text parsing, Python/protobuf or the
 recursive program codec; see the archived note `notes/codec-proof.md`.
 
+Everything a client may import lives under `P4bloIR/`. Everything only
+the gate runs lives under `P4bloIRTest/`, the modules of the
+`P4bloIRTest` library: the tests `lake test` runs, the proof audits
+`ProofAudit.lean` and `CodecProofAudit.lean`, whose `#guard_msgs` pins
+every default `lake build` checks, the `codec-leaves` endpoint and the
+forwarder fixtures.
+
 This Lake package (`p4blo-ir`) imports nothing from the architecture or
 user-facing packages; both depend on it. Nothing architectural lives here:
 no ports, no packet fate, no concrete extern family.

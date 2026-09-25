@@ -1,4 +1,4 @@
-import Tests.BlockCodec
+import P4bloIRTest.BlockCodec
 
 open Lean P4bloIR
 

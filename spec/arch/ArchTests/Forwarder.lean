@@ -32,7 +32,7 @@ with
                     runs[-1]["expects"].append({"port": s.port, "data": s.data.hex(),
                                                 "mask": s.mask.hex(), "exact": s.exact})
         vectors.append({"name": path.stem, "runs": runs})
-    Path("spec/ir/Tests/forwarder_vectors.json").write_text(json.dumps(vectors, indent=2) + "\n")
+    Path("spec/ir/P4bloIRTest/forwarder_vectors.json").write_text(json.dumps(vectors, indent=2) + "\n")
     EOF
 
 and must be regenerated whenever the STF files change.

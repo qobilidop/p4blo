@@ -1,4 +1,4 @@
-import Tests.Check
+import P4bloIRTest.Check
 
 /-! Acceptance and rejection boundaries of the proved scalar checkers. -/
 
