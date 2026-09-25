@@ -279,9 +279,28 @@ class Stmts:
         """The param or local `name`, as an expression."""
         return self.block.var(name)
 
+    zeroes_locals = False
+    """Whether a local declared here is re-zeroed where it is declared:
+    true for a parser state and an action, whose every entry starts the
+    local afresh, false for a block's own body, which runs once per
+    block entry and so already starts at the block local's zero."""
+
     def local(self, name: str, type: TypeLike) -> Expr:
-        """Declare a block local here; it is hoisted to the block."""
-        return self.block.local(name, type)
+        """Declare a block local here; it is hoisted to the block.
+
+        The IR has only block locals, which start at zero once per block
+        entry and keep their value across states and action calls. P4
+        gives a variable declared inside a parser state or an action a
+        fresh default at every entry of that state or call, so in a
+        `StateBody` or an `ActionBody` this also emits, where the
+        declaration stands, the assignments that give the local the IR's
+        zero value (`zero_stmts`).
+        """
+        local = self.block.local(name, type)
+        if self.zeroes_locals:
+            for stmt in zero_stmts(self.types, local.lval, local.type):
+                self._emit(stmt)
+        return local
 
     def _emit(self, stmt: pb.Stmt) -> None:
         self._targets[-1].append(stmt)
@@ -471,6 +490,48 @@ class Stmts:
         self._emit(pb.Stmt(pop=pb.Pop(stack=lval, count=count)))
 
 
+def zero_stmts(types: TypeTable, target: pb.LValue, t: pb.Type) -> list[pb.Stmt]:
+    """Statements that give `target` the IR's zero value of `t`
+    (docs/ir-semantics.md, "Uninitialized variables"): zero bits, `false`,
+    `NoError`, an enum's first member, a header invalid with zero fields, a
+    struct field by field, and a stack emptied by popping all of it, which
+    leaves every element invalid with zero fields and `nextIndex` at 0.
+    The same elaboration as the IL bridge's `BlockCx.zero`."""
+
+    def assign(value: pb.Literal) -> pb.Stmt:
+        return pb.Stmt(assign=pb.Assign(target=target, value=pb.Expr(literal=value)))
+
+    def member(name: str) -> pb.LValue:
+        return pb.LValue(member=pb.LMember(base=target, field=name))
+
+    match t.WhichOneof("kind"):
+        case "bits":
+            return [assign(pb.Literal(bits=pb.BitsLiteral(width=t.bits, value="0")))]
+        case "boolean":
+            return [assign(pb.Literal(boolean=False))]
+        case "error":
+            return [assign(pb.Literal(error="NoError"))]
+        case "enum_type":
+            first = types.enums[t.enum_type][0]
+            return [
+                assign(pb.Literal(enum_member=pb.EnumLiteral(enum_type=t.enum_type, member=first)))
+            ]
+        case "header":
+            out = [pb.Stmt(set_invalid=pb.SetInvalid(header=target))]
+            for f, ft in types.headers[t.header].fields.items():
+                out.extend(zero_stmts(types, member(f), ft))
+            return out
+        case "struct":
+            out: list[pb.Stmt] = []
+            for f, ft in types.structs[t.struct].fields.items():
+                out.extend(zero_stmts(types, member(f), ft))
+            return out
+        case "stack":
+            return [pb.Stmt(pop=pb.Pop(stack=target, count=t.stack.size))]
+        case kind:
+            raise EdslError(f"no zero value for a {kind}")
+
+
 class CallsActions(Stmts):
     """A statement list that may call an action of the enclosing control:
     a control's body and an action's own body alike, which is what the IR
@@ -493,7 +554,10 @@ class CallsActions(Stmts):
 
 class ActionBody(CallsActions):
     """An action's body; its params are attributes (`a.port`). It may call
-    another of the control's actions."""
+    another of the control's actions. A local declared here is re-zeroed
+    at every call (`Stmts.local`)."""
+
+    zeroes_locals = True
 
     def __init__(self, block: Control, name: str, params: Sequence[pb.Param]) -> None:
         self.name = name
@@ -547,7 +611,10 @@ class DeparserBody(Stmts):
 
 
 class StateBody(Stmts):
-    """A parser state: its body and its one transition."""
+    """A parser state: its body and its one transition. A local declared
+    here is re-zeroed at every entry of the state (`Stmts.local`)."""
+
+    zeroes_locals = True
 
     def __init__(self, block: Parser, name: str) -> None:
         if not name:

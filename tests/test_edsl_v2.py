@@ -662,7 +662,11 @@ def test_program_assembly() -> None:
     ]
     start = program.blocks[0].states[0]
     assert start.body[0].verify.error == "BadKind"
+    # The state-local is re-zeroed where it is declared, to the first member.
     assert start.body[1].assign.value.literal.enum_member == pb.EnumLiteral(
+        enum_type="Color", member="RED"
+    )
+    assert start.body[2].assign.value.literal.enum_member == pb.EnumLiteral(
         enum_type="Color", member="GREEN"
     )
     assert program.blocks[0].locals[0].type == pb.Type(enum_type="Color")
@@ -671,6 +675,66 @@ def test_program_assembly() -> None:
     with pytest.raises(EdslError, match="not declared by this program"):
         build(parser=P)
     assert CoreErrors.PacketTooShort.name == "PacketTooShort"
+
+
+def test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared() -> None:
+    """P4 gives a variable declared in a state or an action a fresh default
+    at every entry; the IR has only block locals, so the eDSL writes the
+    zero value where the declaration stands (docs/ir-semantics.md,
+    "State-local variables"). Every kind of type, compound ones recursively."""
+
+    class P(Parser[headers, metadata]):
+        @state
+        def start(self) -> Transition:
+            self.local("n", bit8)
+            self.local("b", Bool)
+            self.local("c", Color)
+            self.local("e", Error)
+            self.local("s", headers)
+            return self.accept
+
+    zero8 = 'literal { bits { width: 8 value: "0" } }'
+    zero16 = 'literal { bits { width: 16 value: "0" } }'
+    h = member('var: "s"', "h")
+    stack = member('var: "s"', "stack")
+    expected = [
+        f'assign {{ target {{ var: "n" }} value {{ {zero8} }} }}',
+        'assign { target { var: "b" } value { literal { boolean: false } } }',
+        'assign { target { var: "c" } value { literal { enum_member {'
+        ' enum_type: "Color" member: "RED" } } } }',
+        'assign { target { var: "e" } value { literal { error: "NoError" } } }',
+        f"set_invalid {{ header {{ {h} }} }}",
+        f"assign {{ target {{ {member(h, 'f')} }} value {{ {zero8} }} }}",
+        f"assign {{ target {{ {member(h, 'g')} }} value {{ {zero16} }} }}",
+        f"assign {{ target {{ {member(h, 'type')} }} value {{ {zero8} }} }}",
+        f"pop {{ stack {{ {stack} }} count: 2 }}",
+    ]
+    program = build(parser=P, errors=errors)
+    assert program.blocks[0].states[0].body[:] == [
+        text_format.Parse(t, pb.Stmt()) for t in expected
+    ]
+    assert validator.validate(program) == []
+
+    class C(Control[headers, metadata]):
+        @action
+        def a(self) -> None:
+            with self.if_(self.meta.ok):
+                n = self.local("n", bit8)  # zeroed inside the branch it is declared in
+                self.assign(self.meta.x, n)
+
+        def apply(self) -> None:
+            m = self.local("m", bit8)  # a block's own body: zero once, no write
+            self.assign(self.meta.x, m)
+            self.a()
+
+    control = control_of(C)
+    assert [v.name for v in control.locals] == ["n", "m"]
+    branch = control.actions[0].body[0].conditional.then
+    assert branch[0] == text_format.Parse(
+        f'assign {{ target {{ var: "n" }} value {{ {zero8} }} }}', pb.Stmt()
+    )
+    assert branch[1].assign.value == pb.Expr(var="n")
+    assert control.body[0].assign.value == pb.Expr(var="m")
 
 
 # -- provenance --------------------------------------------------------------------

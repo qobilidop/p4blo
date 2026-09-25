@@ -97,6 +97,12 @@ class subParserImpl(Parser):
 
 
 class parserI(Parser[headers, metadata]):
+    # The parser-scoped local, declared in the parser body as the source
+    # declares it: a block local, zero once per parse. Declared inside a
+    # state with `self.local`, it would be re-zeroed at every entry of
+    # that state instead, as a P4 state-local is.
+    my_next_hdr_type: bit8
+
     @state
     def start(self) -> Transition:
         self.extract(self.hdr.h1)
@@ -109,12 +115,9 @@ class parserI(Parser[headers, metadata]):
 
     @state
     def parse_first_h2(self) -> Transition:
-        # A parser-scoped local, live across states: declared here, where
-        # it is first used, and hoisted to the block.
-        my_next_hdr_type = self.local("my_next_hdr_type", bit8)
-        self.call(subParserImpl, self.hdr, my_next_hdr_type)
+        self.call(subParserImpl, self.hdr, self.my_next_hdr_type)
         return self.select(
-            my_next_hdr_type,
+            self.my_next_hdr_type,
             {HdrType.H2: self.parse_other_h2, HdrType.H3: self.parse_h3},
             default=self.accept,
         )

@@ -501,13 +501,13 @@ decision, not the parser's.
   locals it declares and for a function's `out` parameters. A hoisted
   local would keep its value across a revisit, so the elaboration writes
   the zero value where such a declaration stood, and where an inlined
-  function's `out` parameter is bound. The IL bridge does; the eDSL's
-  hoisting does not write it yet.
+  function's `out` parameter is bound. The IL bridge does, and so does
+  the eDSL for a local declared in a `@state` or an `@action`.
   - P4: §12.4
   - SpecTec: `ParserState_eval/cont`, `$enter_e`, `$exit_e`, `VarDecl_eval/non-initializer`
   - Lean: `Frame.forBlock`
-  - Python: `p4blo.interp.env.Env.for_block`, `p4blo.frontend.blocks.BlockCx.zero`
-  - Test: `tests/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/test_frontend_spectec.py::test_probe_agrees_with_spectec`
+  - Python: `p4blo.interp.env.Env.for_block`, `p4blo.frontend.blocks.BlockCx.zero`, `p4blo.edsl.core.blocks.Stmts.local`, `p4blo.edsl.core.blocks.zero_stmts`
+  - Test: `tests/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `tests/test_edsl_v2.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
   - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and the zero value the elaboration writes at the declaration is that default on every entry, which the bridge's `statelocal`, `actlocal` and `funclocal` probes check against SpecTec.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
