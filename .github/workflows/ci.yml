@@ -35,7 +35,7 @@ jobs:
       - name: Type check
         run: nix develop -c uv run pyright
       - name: Test
-        run: nix develop -c uv run pytest
+        run: nix develop -c uv run pytest -n auto
 
   schema:
     name: Schema
