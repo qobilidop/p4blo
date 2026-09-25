@@ -82,3 +82,36 @@ to this isolated worktree's `impl/python`, from this worktree's root:
 
 This pass does not claim final-revision approval: migration corrections,
 full integration gates and final-SHA review remain pending.
+
+## Frozen implementation review at 70b51cd
+
+Reviewed exact revision `70b51cdd28b331832fc9a6182b60218e68be38a6`,
+including its complete delta from `3bd8e03`: adapter migrations, codec wire
+alias fixes, scalar regression assertion, qualified ledger references,
+structural ledger scanner, and checkpoint/design claims.
+
+No confirmed defects or unresolved correctness findings. The previous scalar
+assertion failure is fixed. The DRT snapshot now reconstructs the assembly
+from the core library plus bindings before freezing it; oracle printing does
+the same, and metadata access explicitly uses the bound roots. The ledger
+scanner preserves architecture qualification and includes a negative
+assertion against leaking unqualified architecture names.
+
+Independent command, using this worktree's sources as before:
+
+`python -m pytest tests/unit/test_edsl_exports.py
+ tests/unit/test_block_library_wire.py tests/programs/test_block_libraries.py
+ tests/structure/test_ledger.py tests/structure/test_ledger_xref.py
+ tests/unit/test_explicit_loader.py -q`
+
+Result: 43 passed, exit 0. This covers the corrected scalar witness, core
+wire boundary, two blocks of each kind, explicit binding rejection and
+ledger symbol separation. No root-worktree changes or shared heavy builds
+were performed during the integrator's frozen assurance experiment.
+
+Review disposition: implementation approved at the exact revision above.
+The status accurately distinguishes prior checks from pending frozen-tree
+assurance, BMv2 and final remote CI. Approval is code review evidence, not
+an independent rerun of those gates; their completion and exact PR-head CI
+remain integration obligations. A later metadata-only checkpoint requires
+its delta to be reviewed before merge.

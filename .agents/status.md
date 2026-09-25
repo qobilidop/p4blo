@@ -35,19 +35,24 @@ Checked local evidence on that implementation tree, all exiting 0:
   semantics-source digest is reported explicitly, not treated as answer drift.
 - On equivalent oracle-adapter commit `f6ec9ef`: P4-SpecTec block suite
   67 passed/3 expected failures; frontend suite 98 passed; main corpus 35 passed.
-  BMv2 and final frozen-tree assurance will be checked before the final push.
+- At frozen `70b51cdd28b331832fc9a6182b60218e68be38a6`, main P4-SpecTec/BMv2
+  corpus suites passed 79 tests with two documented expected failures.
+- At that same frozen revision, `scripts/check-assurance.py` exited 0:
+  Python fault catalogue, Lean CRC fault, paired codec/observer faults,
+  independent anchors and restored baselines all checked.
 
-Independent review through `3bd8e03` found no semantic defects; see
+Independent review approved exact implementation `70b51cd` with no confirmed
+defects and 43 final focused passes; see
 [boundary review](reviews/library-boundary.md). It checked preserved theorem
 premises, scalar/six-block core acceptance, projection isolation and nine
 malformed bindings against Python and Lean. The earlier typed-compiler review
 found the local-only declaration-closure bug, fixed at `c150d31`; its report
-is [here](reviews/edsl-implementation.md). Final integrated review is pending.
+is [here](reviews/edsl-implementation.md). Final metadata review is pending.
 Library source settings remain reassignable; bypassing constructor checks by
 assignment is a nonblocking consistency observation, not a shown runtime bug.
 
-Next: freeze a committed checkpoint, run assurance and main oracle adapters,
-finish final review, update PR #2, pass CI on its exact head and merge. Then
+Next: review final evidence metadata, run the full local gate, update PR #2,
+pass CI on its exact head and merge. Then
 close the scope, finalize the [reflection](notes/edsl-reflection.md), compact
 state and remove integrated worktrees/branches. Do not resume roadmap work.
 The prior successful assurance at `58275b8` covered the pre-extension API;
