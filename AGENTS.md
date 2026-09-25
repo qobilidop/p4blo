@@ -76,12 +76,12 @@ scripts/check.sh                                   # every Python and schema che
 scripts/check-lean.sh                              # all three Lean packages, audits and tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
-tests/oracle/build.sh                                  # the P4-SpecTec oracle, once
-uv run pytest tests/test_oracle.py                 # corpus vectors on that oracle
-docker build -t p4blo-bmv2 tests/oracle/bmv2             # the BMv2 oracle image, once
-uv run pytest tests/test_oracle_bmv2.py            # corpus vectors on BMv2
-docker build -t p4blo-xdp-build tests/oracle/xdp    # compile-only XDP profile
-P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/test_xdp_build.py # offline XDP gate
+tests/oracle/build.sh                              # the P4-SpecTec oracle, once
+uv run pytest tests/external/test_oracle.py        # corpus vectors on that oracle
+docker build -t p4blo-bmv2 tests/oracle/bmv2       # the BMv2 oracle image, once
+uv run pytest tests/external/test_oracle_bmv2.py   # corpus vectors on BMv2
+docker build -t p4blo-xdp-build tests/oracle/xdp   # compile-only XDP profile
+P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py # offline XDP gate
 ```
 
 Keep `main` green on all of them; check exit codes, not output. Five
@@ -123,10 +123,10 @@ so the required CI gate discovers them without a hand-maintained file list.
   architecture or extern family owns it) and implemented in both
   interpreters second.
 - **Corpus programs** live under `tests/corpus/<name>/` with their eDSL
-  source, golden, README and STF vectors; `tests/test_corpus.py` picks
-  new ones up by itself. Sources are written in the typed eDSL
-  (`p4blo.edsl`), are type-checked by pyright in CI, and must rebuild
-  their golden byte for byte.
+  source, golden, README and STF vectors;
+  `tests/programs/test_corpus.py` picks new ones up by itself. Sources
+  are written in the typed eDSL (`p4blo.edsl`), are type-checked by
+  pyright in CI, and must rebuild their golden byte for byte.
 - **Public application examples** follow the application section of
   `docs/workflows.md`, with canonical
   Python source under `examples/` and verification assets under
@@ -230,9 +230,10 @@ the codec tests looked for their endpoint in the wrong package, and only
 `scripts/check.sh` found it. Second, when directories move, search for
 the path in every spelling, not only with a slash: `"ir"` in a
 `git ls-files` call, `-d lean` in a command, and `parents[N]` in a path
-computation all broke silently after a move, and `tests/test_package_layout.py`
-and `tests/test_boundaries.py` exist to pin the paths and the import
-graph a gate depends on. Historical records under `.agents/reviews/`
+computation all broke silently after a move, and
+`tests/structure/test_package_layout.py` and
+`tests/structure/test_boundaries.py` exist to pin the paths and the
+import graph a gate depends on. Historical records under `.agents/reviews/`
 keep the paths they were written with; exclude them from rewrites.
 
 When a milestone closes, or when the resume read (status, decisions,

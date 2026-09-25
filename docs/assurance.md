@@ -85,7 +85,7 @@ validator's order and with its diagnostic codes; it is proved sound for
 the declarative rules `Validity.Valid`, not complete, and it is not
 proved equivalent to the Python validator. The two are compared instead,
 program by program, on every corpus program, example, a sample of both
-DRT families and every program `tests/test_validator.py` validates: they
+DRT families and every program `tests/unit/test_validator.py` validates: they
 agree on acceptance and on the first diagnostic code, up to wire problems
 that Lean's decoder rejects before any rule runs. For a program the
 checker accepts, `P4bloIR.Progress` proves that the step machine never
@@ -214,7 +214,7 @@ interchangeable confidence score.
 | `DeviationLaws.zero_bits`, `zero_boolean`, `zero_error`, `zeroHeader_eq`, with `Frame.forBlock_initialized` | A fresh activation holds zero bits, `false` and `NoError`, and a declared header's zero is invalid with zero fields | Zero enums, structs and stacks beyond their header elements |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `Build.build_ok` | `Index.build`'s maps read back into the program's lists: every declaration found by name is the program's under that name, program-level names share one namespace, and each block's scope is built from that block | That every name the program declares is found (only the directions later proofs use are stated) |
-| `Validity.check_sound` | A program the Lean checker accepts satisfies `Validity.Valid`, the validator's rules as relations over the program and its index | That the checker accepts every `Valid` program; agreement with the Python validator, which `tests/test_lean_agrees_validity.py` tests on finite inputs |
+| `Validity.check_sound` | A program the Lean checker accepts satisfies `Validity.Valid`, the validator's rules as relations over the program and its index | That the checker accepts every `Valid` program; agreement with the Python validator, which `tests/lean/test_lean_agrees_validity.py` tests on finite inputs |
 | `Validity.progress`, `Steps.machineOk`, `finishes_documented`, `drive_documented` | From a well-formed machine of a `Valid` program, every step finishes with success or with a parser error the program declares, or reaches another well-formed machine; so no reachable machine and no finite run carries an `InterpError`. Premises: the extern binding obeys `ExternContract`, the entries satisfy `InstalledOk`, the initial run fits the block kind | Termination; the checks the entry points in `P4bloIR.Interp` make outside the machine |
 | `Validity.progress_outside_parser`, `Steps.machineOkNP`, `finishes_outside_parser`, `finishes_kind`, `parse_error_is_parser`, `dispatch_np` | A control or deparser machine of a `Valid` program that starts without a fault or a pending parser state steps without any fault, so a finite run ends in success; with `finishes_documented`, a parser error ends only a parser run. Premises: those of `progress` | Termination |
 | `Validity.Entry.runParser_documented`, `runControl_documented`, `runDeparser_ok` | On the actual entry functions: a parser returns an outcome accepting with `NoError` or rejecting with a declared error, a control returns the final run's headers, metadata and externs, and a deparser returns its emitted bytes, none failing inside the machine. Premises: a `Valid` program's block of the entry's kind and arity, parameter values of their types, externs satisfying the contract, entries from `Installed.build` for a control, and every run of the block finishing | Termination; that the final frame's headers and metadata variables hold structs, which `structVar` still checks |
@@ -252,15 +252,15 @@ Python unit suites are not automatically differential tests.
 
 | Family | Independent tests and generated comparisons | Scoped proof, external evidence and limits |
 |---|---|---|
-| Scalars, operators, lazy branches | `tests/test_interp_expr.py`; `tests/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Scalar typing and lowering theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
-| Aggregates, fields, validity, stacks | `tests/test_drt_aggregate_copy.py`, `test_lean_edsl_field_commands.py`, `test_lean_edsl_header_reads.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
-| Calls, initialization, normal return | `tests/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; scoped entry and return suites compare full state and pending continuations | Bounded named transitions, not all calls or parser-fault unwinding. |
-| Packet, parser, deparser | `tests/test_interp_parser.py`, `test_interp_deparser.py`, `spec/ir/P4bloIRTest/Interp.lean`; corpus DRT, masked and range select in `test_drt.py`, byte cuts and persistent sequences in `test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
-| Tables, actions, host installation | `tests/test_interp_tables.py`, generated configurations in `test_drt.py`, `test_lean_forwarder_tables.py`, `test_lean_forwarder_action.py`, `test_lean_forwarder_apply.py`; strict configuration, full-state and default-hit observations | Forwarder lookup and application laws for five shapes; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family. |
-| Persistent extern state | `tests/test_drt_stateful_programs.py` shrinking sequences, `test_drt_state.py`, `test_externs.py`, `test_extern_families.py`, `test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
-| Architecture outcomes and errors | `tests/test_drt.py` drop, flood, ports and error reasons; `test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
-| Serialization and observation | `tests/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `test_wire_decimal.py`; `test_drt_protocol.py`, `test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete Program, Export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
-| Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `test_lean_forwarder*.py`, `test_lean_firewall*.py`, `test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Complete examples execute in both languages; selected proofs do not verify raw construction or the whole pipeline. |
+| Scalars, operators, lazy branches | `tests/unit/test_interp_expr.py`; `tests/drt/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Scalar typing and lowering theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
+| Aggregates, fields, validity, stacks | `tests/drt/test_drt_aggregate_copy.py`, `tests/lean/test_lean_edsl_field_commands.py`, `tests/lean/test_lean_edsl_header_reads.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
+| Calls, initialization, normal return | `tests/drt/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; scoped entry and return suites compare full state and pending continuations | Bounded named transitions, not all calls or parser-fault unwinding. |
+| Packet, parser, deparser | `tests/unit/test_interp_parser.py`, `tests/unit/test_interp_deparser.py`, `spec/ir/P4bloIRTest/Interp.lean`; corpus DRT, masked and range select in `tests/drt/test_drt.py`, byte cuts and persistent sequences in `tests/programs/test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
+| Tables, actions, host installation | `tests/unit/test_interp_tables.py`, generated configurations in `tests/drt/test_drt.py`, `tests/lean/test_lean_forwarder_tables.py`, `tests/lean/test_lean_forwarder_action.py`, `tests/lean/test_lean_forwarder_apply.py`; strict configuration, full-state and default-hit observations | Forwarder lookup and application laws for five shapes; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family. |
+| Persistent extern state | `tests/drt/test_drt_stateful_programs.py` shrinking sequences, `tests/drt/test_drt_state.py`, `tests/unit/test_externs.py`, `tests/unit/test_extern_families.py`, `tests/unit/test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
+| Architecture outcomes and errors | `tests/drt/test_drt.py` drop, flood, ports and error reasons; `tests/drt/test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
+| Serialization and observation | `tests/codec/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `tests/codec/test_wire_decimal.py`; `tests/drt/test_drt_protocol.py`, `tests/drt/test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete Program, Export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
+| Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `tests/lean/test_lean_forwarder*.py`, `tests/lean/test_lean_firewall*.py`, `tests/programs/test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Complete examples execute in both languages; selected proofs do not verify raw construction or the whole pipeline. |
 
 ### Corpus programs
 
@@ -308,7 +308,7 @@ generated programs and not only the corpus: `tests/oracle/generated.py`
 derives programs and cases deterministically from seeds in six families
 (scalar expressions, parser conditions, stateful sequences, aggregate
 copies, sub-block calls, and corpus programs with random entries and
-packets), and `tests/test_oracle_generated.py` runs sixty of them in CI.
+packets), and `tests/external/test_oracle_generated.py` runs sixty of them in CI.
 A larger local campaign over seeds 0 to 1099, 1,100 programs and 3,851
 vectors, passed with no unexplained disagreement; every non-pass was one
 of two classified simulator defects below, the shift limit and the table
@@ -326,7 +326,7 @@ proof-visible machine and classifies each configuration before its step,
 reusing the real evaluator for operand values and never an outcome;
 `Execution.Finishes.sound` guarantees that such a trace determines the
 runner's result, and the reply itself still comes from the runner.
-`tests/test_drt_coverage.py` reruns the retained campaigns at fixed seeds
+`tests/drt/test_drt_coverage.py` reruns the retained campaigns at fixed seeds
 and compares the unhit rules with `tests/drt-unhit-tags.json`, which
 lists every rule the generators cannot reach yet with the gap behind it;
 a rule that stops being hit fails the test, and the list may only shrink.
@@ -363,7 +363,7 @@ The inputs are every corpus program and example with its STF vectors, two
 contract fixtures that record rejected installs, floods, drops and
 out-of-range ports, the
 DRT's generated entries and packets at two seeds per program, and 36
-seeds of the generated program families. `tests/test_conformance.py`
+seeds of the generated program families. `tests/drt/test_conformance.py`
 checks the Python interpreter against every fixture with no Lean process,
 comparing as the DRT compares, and in the `lean_agrees` gate answers every
 fixture again on Lean and requires identical bytes. The corpus is a test
@@ -381,9 +381,12 @@ architecture's own rules are outside this inventory.
 
 Every closed behavior of the semantics page cites the SpecTec rule that
 decides it at the pinned commit and is classed *same*, *refines
-undefined*, *deviates* or *not representable*; `tests/test_ledger.py`
-and `tests/test_spectec_rules.py` check the shape, the names and the
-classes. Separately, [p4-spec-coverage.md](p4-spec-coverage.md#rule-coverage-on-p4-spectec)
+undefined*, *deviates* or *not representable*;
+`tests/structure/test_ledger.py` and
+`tests/external/test_spectec_rules.py` check the shape, the names and the
+classes. [ledger-xref.md](ledger-xref.md) lays every entry out in one
+generated table, with its class and each cited rule linked to its line
+in the pinned SpecTec source. Separately, [p4-spec-coverage.md](p4-spec-coverage.md#rule-coverage-on-p4-spectec)
 records which of SpecTec's architecture-free rules the corpus and
 examples make the pinned simulator fire, with every unhit in-scope rule
 excluded by hand with a reason or listed as reachable and not yet
@@ -394,7 +397,7 @@ with nothing architectural in between. A patch applied at build time adds
 a `p4blo` architecture to the pinned simulator that runs one parser,
 control or deparser per request on given headers, metadata, entries and
 extern state ([tests/oracle/README.md](../tests/oracle/README.md#the-block-runner)).
-`tests/test_oracle_block.py` repeats every block run of every vector on it
+`tests/external/test_oracle_block.py` repeats every block run of every vector on it
 and compares each block's outputs with the reference interpreter's: a
 parser's headers, metadata, bits consumed, acceptance and error; a
 control's headers and metadata; a deparser's bytes and bit count; and
@@ -420,7 +423,7 @@ The IL bridge makes the corpus's elaborations code: `p4blo.frontend`
 translates the IL P4-SpecTec's own typing and instantiation produce from a
 P4 program ([tests/oracle/README.md](../tests/oracle/README.md#the-il-export)),
 and each row of [p4-spec-coverage.md](p4-spec-coverage.md) says what it
-does with the construct. `tests/test_frontend_spectec.py` establishes, at
+does with the construct. `tests/external/test_frontend_spectec.py` establishes, at
 the pin, that six corpus goldens (csum16, parser_error, priority, stacks,
 subparser_stack, verify_error) are reproduced byte for byte from their P4
 originals; that the other four differ only as the test spells out, with
@@ -594,7 +597,7 @@ and canonical hexadecimal state; the decoded AST must equal the fixed
 example. Running the checker trusts the compiler, runtime, codecs and
 observation adapter, and a JSON artifact is not a kernel proof. Tampered
 programs, initial values, results and budgets are rejected in
-`tests/test_drt_certificate.py`. Generalizing beyond the fixed fragment
+`tests/drt/test_drt_certificate.py`. Generalizing beyond the fixed fragment
 needs explicit validity and observation contracts first.
 
 ## Release evidence

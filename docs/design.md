@@ -267,7 +267,7 @@ The typed surface is a front over `p4blo.edsl.core`, the builder that
 produces the goldens; its plain constructors and string names are the
 documented dynamic API for generated programs. The core's run-time checks
 stay authoritative, and pyright is an earlier line, not a replacement.
-`tests/test_pyright.py` tests the split with must-pass and must-fail
+`tests/unit/test_pyright.py` tests the split with must-pass and must-fail
 fixtures:
 
 | Checked by pyright | Checked at run time only |
@@ -334,7 +334,7 @@ keeps its wire schema under `proto/`, and the user package its assurance
 log, `ASSURANCE.md`. `spec/arch/Main.lean` is the `p4blo-lean` endpoint;
 `impl/lean/Main.lean` is the `p4blo` executable, whose subcommands are the
 forwarder and firewall servers and the fixture exporters the
-cross-language tests call. `tests/test_package_layout.py` pins the layout.
+cross-language tests call. `tests/structure/test_package_layout.py` pins the layout.
 | Python execution to IR semantics | differential and property tests, adversarial mutations, scoped certificates |
 | authored program to intended behavior | independent expected answers, and application proofs where they exist |
 
@@ -462,6 +462,16 @@ Six layers, each answering a different question.
    and mutation campaigns that check the tests would notice a wrong
    implementation.
 
+The test suites under `tests/` are grouped by the question they answer,
+each directory with a README in these terms: `unit/` holds layers 1 and
+2, `codec/` applies layer 1 to the wire encoding, `programs/` holds
+layers 3 and 4 for the corpus and the applications, `drt/` holds layer
+5 and the fault side of layer 6, `lean/` compares the Lean semantics with
+Python and with independent answers, and `external/` replays on the two
+oracles. `structure/` sits beside the layers: it checks no semantics, but
+pins the layout, the links and the ledger that make the evidence
+findable.
+
 Every external input, from the oracle commits to the Docker image
 digests and the GitHub Actions, is pinned and listed in
 [workflows.md](workflows.md), so anyone can reproduce the checks.
@@ -471,9 +481,9 @@ digests and the GitHub Actions, is pinned and listed in
 ```
 p4blo/
   README.md, AGENTS.md              the front door; the agents' entry point
-  docs/                             design, ir-semantics, arch-supports,
-                                    coverage, assurance,
-                                    quickstart, workflows
+  docs/                             design, ir-semantics (with its generated
+                                    ledger-xref), arch-supports, coverage,
+                                    assurance, quickstart, workflows
   .agents/                          agent working state: status, decisions, roadmap
   spec/ir/                          Lake package p4blo-ir (P4bloIR): the IR
     P4bloIR/                        abstract IR, semantics, codecs, proofs
@@ -504,6 +514,9 @@ p4blo/
     drt/                            the differential loop and certificates
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs
+    unit/, codec/, programs/,       the suites, one directory per question
+    drt/, lean/, external/,         of the testing strategy above
+    structure/
     corpus/<program>/               source, golden, README, STF vectors
     examples/<application>/         application goldens, vectors, tests
     oracle/                         P4-SpecTec and BMv2 drivers, original programs

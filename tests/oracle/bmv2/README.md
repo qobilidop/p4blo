@@ -8,7 +8,7 @@ runs the same STF vectors `impl/python/p4blo/stf.py` replays on the Python
 interpreter. It is built by [`Dockerfile`](Dockerfile), driven by
 [`run.py`](run.py) with [`driver.py`](driver.py) inside the container,
 and asserted by
-[`tests/test_oracle_bmv2.py`](../../test_oracle_bmv2.py), which
+[`tests/external/test_oracle_bmv2.py`](../../external/test_oracle_bmv2.py), which
 skips without Docker or without the image and runs in its own CI job,
 [`.github/workflows/oracle-bmv2.yml`](../../../.github/workflows/oracle-bmv2.yml).
 
@@ -48,7 +48,7 @@ programmers actually run, and the two disagree in useful ways.
   correlate with; the judge compares each port's outputs, in order,
   against that run's `expect` lines (see "Judging" in `run.py`). A
   wrong output that happens to equal a later expectation on the same
-  port is therefore not caught here. `tests/test_corpus.py` and the
+  port is therefore not caught here. `tests/programs/test_corpus.py` and the
   differential sweep against Lean check whole outputs per packet.
 - **State across a vector that adds entries after a packet.** Entries
   can only be installed before a run's packets, so such a vector takes
@@ -87,7 +87,7 @@ links against.
 ```
 docker build -t p4blo-bmv2 tests/oracle/bmv2                         # a few minutes, then cached
 uv run python tests/oracle/bmv2/run.py -v tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
-uv run pytest tests/test_oracle_bmv2.py -v                     # about 30 seconds for the corpus
+uv run pytest tests/external/test_oracle_bmv2.py -v                     # about 30 seconds for the corpus
 ```
 
 `run.py` prints the program once, compiles it once in the image, and
@@ -197,7 +197,7 @@ the two bounds are the place to raise if it ever does.
 ## Results
 
 2026-09-22, at the pins above, on all fifteen corpus vectors: fourteen
-pass, one is the divergence below. The whole `tests/test_oracle_bmv2.py`
+pass, one is the divergence below. The whole `tests/external/test_oracle_bmv2.py`
 takes about thirty seconds on an M-series Mac, compilations included.
 
 ## The divergence: an out-of-range register read
@@ -239,7 +239,7 @@ choice is a closed behavior written down and implemented twice. What the
 oracle does correct is `tests/corpus/register_bounds/README.md`, which says
 the vectors assert "p4blo's, which is BMv2's": they are not BMv2's. That
 file and `docs/ir-semantics.md` are outside this directory's scope; the
-divergence is carried here and in `tests/test_oracle_bmv2.py` as a
+divergence is carried here and in `tests/external/test_oracle_bmv2.py` as a
 strict `xfail`, so the day either side changes, the test says so.
 
 ## The second divergence: p4c's const-entry numbering

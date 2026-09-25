@@ -223,11 +223,11 @@ execution error; the state/error boundary is documented separately.
 To check these exact documented snippets after building Lean:
 
 ```sh
-P4BLO_REQUIRE_LEAN=1 uv run pytest tests/test_quickstart.py -q
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests/structure/test_quickstart.py -q
 ```
 
-For broader application coverage, run `tests/test_lean_forwarder.py` and
-`tests/test_lean_firewall.py`; for release gates and optional external oracle
+For broader application coverage, run `tests/lean/test_lean_forwarder.py` and
+`tests/lean/test_lean_firewall.py`; for release gates and optional external oracle
 setup see [workflows](workflows.md). Forwarder semantics deliberately include
 TTL 0 wrapping to 255, old-destination-to-source MAC assignment, and checksum
 recalculation after a table action even if it drops. The parser supports the

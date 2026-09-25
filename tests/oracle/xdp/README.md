@@ -5,7 +5,7 @@ It does **not** execute a BPF program or validate a p4blo port. Kernel load,
 map creation, test-run, pinning and interface attachment are out of scope.
 
 Build with `docker build -t p4blo-xdp-build tests/oracle/xdp`, then run
-`P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/test_xdp_build.py`.
+`P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py`.
 Use `P4BLO_XDP_BUILD_IMAGE` for an isolated worktree's tag. Without the
 required flag a missing image is an explicit skip, not successful evidence.
 An available but failing image always fails the test.

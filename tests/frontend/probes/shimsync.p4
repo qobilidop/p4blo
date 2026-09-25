@@ -1,6 +1,6 @@
 // A user M whose contract-named fields the source copies to and from
 // standard_metadata exactly as p4blo's printer does: they are the contract
-// fields (tests/test_frontend_spectec.py checks the translation's M too).
+// fields (tests/external/test_frontend_spectec.py checks the translation's M too).
 // The vector's expectations are P4-SpecTec's output.
 #include <core.p4>
 #include <v1model.p4>

@@ -65,7 +65,7 @@ expectations. The following independently calculated indices use the
 
 Ports 749 and 13602 jointly authorize an inbound packet for 12346 without
 that flow ever sending SYN; either partial match alone rejects, in both
-orders. `tests/test_firewall.py` asserts independently expected packet
+orders. `tests/programs/test_firewall.py` asserts independently expected packet
 bytes and all 8192 register cells after every request, in Python and in
 Lean, not merely that the two agree. It also covers SYN-only insertion,
 FIN non-deletion, reverse-flow RST, non-TCP forwarding, TTL underflow, a
@@ -73,9 +73,9 @@ fixed parser shape despite IHL and data-offset 6, direction-table misses,
 a 43-byte frame with nine TCP bytes, a routing miss and an invalid
 incoming IPv4 checksum that is recomputed without verification. The
 checksum expectation uses a test-only one's-complement sum, not the
-production extern. `tests/test_firewall_boundaries.py` adds every byte
+production extern. `tests/programs/test_firewall_boundaries.py` adds every byte
 truncation of one frame and valid-malformed-valid persistence sequences;
-`tests/test_firewall_generated.py` adds generated flow and host-policy
+`tests/programs/test_firewall_generated.py` adds generated flow and host-policy
 sequences with full-cell CRC expectations from independent GF(2) and zlib
 implementations. Host changes within one sequence are Python and Lean
 evidence only. General fragment behavior and exhaustive TCP flag
@@ -97,7 +97,7 @@ discrepancies; the diagnoses and the exact known answers are in
 [assurance.md](../../../docs/assurance.md#known-disagreements-with-the-oracles).
 Packet-only agreement with an oracle cannot establish hash or state
 semantics for this program; that is why the primitive CRC probes in
-`tests/test_crc.py` and the complete register observations exist.
+`tests/unit/test_crc.py` and the complete register observations exist.
 
 ## Faults the tests catch
 
@@ -127,7 +127,7 @@ complete protobuf export equals the Python corpus program and the text
 golden byte for byte. Ordinary parser, action, table, extern and operator
 assembly remains an explicitly unverified seam. `p4blo leanTutorialFirewall run`
 prepares the same in-memory program through the public API and keeps
-extern state across requests; `tests/test_lean_firewall.py` runs both
+extern state across requests; `tests/lean/test_lean_firewall.py` runs both
 vectors, the collision profiles, all byte cuts, the persistence sequences
 and the generated campaigns against the same independent expectations,
 and separately checks a fixed-server transcript so that a server reset

@@ -184,7 +184,7 @@ settles is not repeated here.
   sub-block call arguments are run-time checked. `assign` is overloaded
   over target kinds, so pyright reports a failed assignment as
   `reportCallIssue`, and the must-fail fixtures say so. Everything else in
-  the note's table holds; `tests/test_pyright.py` guards the static rules.
+  the note's table holds; `tests/unit/test_pyright.py` guards the static rules.
   (2026-09-22)
 
 ## Semantics rulings
@@ -634,7 +634,7 @@ The exact theorem statements, premises and exclusions are in
 - **Documentation is split by subject.** `docs/` describes the artifact
   and is written for people, to be published on its own; `.agents/`
   describes the work and is the resumable state. `docs/` never links into
-  `.agents/`, which `tests/test_docs_links.py` enforces, so the split
+  `.agents/`, which `tests/structure/test_docs_links.py` enforces, so the split
   survives publication. `AGENTS.md` is the single entry point and names
   every agent file. (2026-09-24, supersedes the 2026-09-22 placement of
   status, decisions and notes under `docs/`.)
@@ -659,7 +659,7 @@ The exact theorem statements, premises and exclusions are in
   `Main.lean`), with `spec/ir/proto/` and `impl/lean/ASSURANCE.md` as the
   named exceptions. The user package's executables are subcommands of
   one `p4blo` binary. Acronyms stay capitalized (`P4bloIR`, as Lean
-  core's `Lean.Compiler.IR`). `tests/test_package_layout.py` pins the
+  core's `Lean.Compiler.IR`). `tests/structure/test_package_layout.py` pins the
   roots. Reason: three flat packages with unregistered probes and
   sixteen executable roots gave no answer to "where does this file go".
   (2026-09-24)

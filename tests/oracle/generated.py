@@ -168,7 +168,7 @@ def _random_cases(program: pb.Program, rng: random.Random) -> tuple[Case, ...]:
 
 
 def scalar_family(seed: int, rng: random.Random) -> Generated:
-    """An expression of `tests/test_drt_programs.py`'s generator whose leaves
+    """An expression of `tests/drt/test_drt_programs.py`'s generator whose leaves
     also read a parsed input, so that every case computes something else."""
     ch = RandomChooser(rng)
     width = None if ch.chance("scalar.bool") else int(ch.choice("scalar.width", SCALAR_LABELS))
@@ -204,7 +204,7 @@ def parser_condition_family(seed: int, rng: random.Random) -> Generated:
 
 
 def stateful_family(seed: int, rng: random.Random) -> Generated:
-    """A spec and a request sequence, drawn as tests/test_drt_stateful_programs.py's
+    """A spec and a request sequence, drawn as tests/drt/test_drt_stateful_programs.py's
     `campaigns` strategy draws them."""
     spec = StatefulSpec(
         width=rng.choice(STATEFUL_WIDTHS),
@@ -244,8 +244,8 @@ def stateful_family(seed: int, rng: random.Random) -> Generated:
 
 def aggregate_copy_family(seed: int, rng: random.Random) -> Generated:
     # The profile lives with its Hypothesis tests; it is a plain function.
-    from tests.test_drt_aggregate_copy import WIDTHS as COPY_WIDTHS
-    from tests.test_drt_aggregate_copy import CopyKind, copy_program
+    from tests.drt.test_drt_aggregate_copy import WIDTHS as COPY_WIDTHS
+    from tests.drt.test_drt_aggregate_copy import CopyKind, copy_program
 
     kinds: tuple[CopyKind, ...] = ("header", "struct")
     kind = rng.choice(kinds)
@@ -258,7 +258,7 @@ def aggregate_copy_family(seed: int, rng: random.Random) -> Generated:
 
 
 def call_copy_family(seed: int, rng: random.Random) -> Generated:
-    from tests.test_drt_call_copy import CallKind, call_program
+    from tests.drt.test_drt_call_copy import CallKind, call_program
 
     kinds: tuple[CallKind, ...] = ("action", "block")
     kind = rng.choice(kinds)
