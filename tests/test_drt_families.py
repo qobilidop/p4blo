@@ -1,16 +1,19 @@
-"""The shape families.
+"""The shape families and the coverage-guided driver.
 
 `p4blo.drt.families` builds programs from named decisions. Here the same
-families run from fixed seeds and from Hypothesis, whose shrinking keeps
-every decision inside its typed menu, so a failure shrinks to a smaller
-well-typed program. Every program goes through the ordinary validator; a
-program it refuses fails the test, never a filter.
+families run three ways: from fixed seeds, as tests/test_drt_coverage.py
+retains them; from Hypothesis, whose shrinking keeps every decision inside
+its typed menu, so a failure shrinks to a smaller well-typed program; and
+under `p4blo.drt.guided`, whose determinism and weighting are checked
+without Lean. Every program goes through the ordinary validator; a program
+it refuses fails the test, never a filter.
 """
 
 from __future__ import annotations
 
 import hashlib
 import os
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -19,14 +22,17 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from p4blo import validator
+from p4blo.drt import guided
 from p4blo.drt.choice import Chooser
 from p4blo.drt.families import FAMILIES, TARGETS, Profile, Sample, sample
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program
 from p4blo.v0 import p4blo_pb2 as pb
 
+FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PROFILES: tuple[Profile, ...] = ("lean", "spectec")
-# The seeds the Lean campaigns retain, per family.
+# The seeds the Lean campaigns retain, per family; tests/test_drt_coverage.py
+# reruns the same ones for the unhit list.
 SEEDS = range(200)
 
 
@@ -143,6 +149,52 @@ def test_targets_name_decisions_the_families_take() -> None:
         for family in FAMILIES:
             features |= sample(family, seed).features
     assert set(TARGETS) <= features, set(TARGETS) - features
+
+
+# ---------------------------------------------------------------------------
+# The guided driver, without Lean
+# ---------------------------------------------------------------------------
+
+
+def test_the_guide_prefers_options_whose_targets_are_unhit() -> None:
+    inventory = {"call.action": "", "stmt.callAction": "", "expr.literal": ""}
+    guide = guided.Guide(inventory)
+    unhit = guide.weight("control.feature=call")
+    assert unhit > guide.weight("control.feature=eq_enum") == 1.0
+    guide.observe(frozenset({"control.feature=call"}), {"call.action", "stmt.callAction"})
+    # The targets are hit; what is left is the novelty of the first use.
+    assert 1.0 < guide.weight("control.feature=call") < unhit
+    for _ in range(30):
+        guide.observe(frozenset({"control.feature=call"}), {"call.action"})
+    assert guide.weight("control.feature=call") == pytest.approx(1.0, abs=0.01)
+
+
+def test_the_guide_counts_tag_feature_pairs() -> None:
+    guide = guided.Guide({"a.b": "", "c.d": ""})
+    assert guide.observe(frozenset({"x=1", "y=2"}), {"a.b"}) == (1, 2)
+    assert guide.observe(frozenset({"x=1", "z=3"}), {"a.b"}) == (0, 1)
+    assert guide.observe(frozenset({"x=1"}), {"a.b", "c.d"}) == (1, 1)
+    assert guide.pairs == {("a.b", "x=1"), ("a.b", "y=2"), ("a.b", "z=3"), ("c.d", "x=1")}
+
+
+def test_a_guided_campaign_is_a_function_of_its_seed() -> None:
+    """Through the fake peer, which reports no tags: the campaign still runs
+    every sample, and the same seed makes the same programs."""
+    runs = [
+        guided.guided_campaign("parser", FAKE, seed=3, budget=4, inventory={}) for _ in range(2)
+    ]
+    assert runs[0].samples == runs[1].samples == 4
+    assert runs[0].failures == [] and runs[0].requests == 16
+    chooser = [guided.GuidedChooser(guided.sample_rng(3, 0), None) for _ in range(2)]
+    assert FAMILIES["control"](chooser[0], "lean") == FAMILIES["control"](chooser[1], "lean")
+
+
+def test_the_command_line_runs_a_guided_campaign(capsys: pytest.CaptureFixture[str]) -> None:
+    from p4blo.drt.__main__ import main
+
+    assert main(["guided", "control", "2", "--fake", "--seed", "5"]) == 0
+    out = capsys.readouterr().out
+    assert "control: seed 5, 2 programs, 8 requests, 0 disagreed" in out
 
 
 # ---------------------------------------------------------------------------

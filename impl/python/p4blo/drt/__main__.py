@@ -1,6 +1,9 @@
 """`python -m p4blo.drt <program dir> <count> [--seed N] [--ports N]
 [--lean PATH | --fake] [--show N] [--save DIR] [--coverage]`
 
+`python -m p4blo.drt guided <family> <budget> [...]` runs a coverage-guided
+campaign instead; `p4blo.drt.guided` documents it.
+
 Prints the summary and STF excerpts of the first divergences. `--save`
 writes a self-contained JSON replay of the program and full input sequence,
 plus the excerpts. Stateful failures require that JSON bundle; the single
@@ -25,6 +28,11 @@ from p4blo.drt.run import Outcome, ProtocolError, Report, compare, default_lean_
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["guided"]:
+        from p4blo.drt import guided
+
+        return guided.main(argv[1:])
     parser = argparse.ArgumentParser(prog="python -m p4blo.drt", description=__doc__)
     parser.add_argument("program_dir", type=Path, help="a corpus program directory")
     parser.add_argument("count", type=int, help="number of cases")
