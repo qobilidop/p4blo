@@ -26,10 +26,12 @@ programmers actually run, and the two disagree in useful ways.
   switch, from a `table_add ... 0x0a000200/24` the runner writes
   verbatim. This is the main reason the second oracle exists.
 - **`const entries` priorities.** `priority/table_entries_priority.stf`
-  replays entries the printer emits in descending IR priority
+  replays entries the printer emits in descending IR priority, each with
+  an explicit `priority = N` under `largest_priority_wins = true`
   (`.agents/decisions.md`, "Printed ternary entries are not const"), and
   BMv2 picks the winner by its own rule rather than by anything this
-  repository wrote.
+  repository wrote. The same vector on p4c's own source is the second
+  divergence below.
 - **Runtime ternary priorities.** `acl/ternary2.stf` installs
   overlapping ternary entries at runtime; BMv2 has the *smaller*
   priority winning, so the runner inverts (below) and the switch, not
@@ -239,3 +241,36 @@ the vectors assert "p4blo's, which is BMv2's": they are not BMv2's. That
 file and `docs/ir-semantics.md` are outside this directory's scope; the
 divergence is carried here and in `tests/test_oracle_bmv2.py` as a
 strict `xfail`, so the day either side changes, the test says so.
+
+## The second divergence: p4c's const-entry numbering
+
+`test_original_priority_program_on_bmv2` compiles p4c's own
+`table-entries-priority-bmv2.p4` (the pinned copy under
+`tests/frontend/p4c/`) instead of the printed golden and replays
+`priority/table_entries_priority.stf` on it, capturing ports 0 to 3. It
+fails, and it is a real disagreement about what the source means, not a
+translation artefact:
+
+| vector line | packet | p4blo, P4-SpecTec and the vector | BMv2 from p4c's source |
+|---|---|---|---|
+| 29 | `02 1001 00 00 b0` | port 1 | port 3 |
+| 34 | `03 1181 00 00 b0` | port 1 | port 3 |
+
+p4c's BMv2 backend (`backends/bmv2/common/control.h`,
+`convertTableEntries`) numbers const entries with a running counter,
+annotated ones taking their `@priority`, and BMv2 lets the smaller number
+win, so the third entry, `@priority(1)`, beats the first, `@priority(3)`.
+The language specification (P4 1.2.5 section 14.2.1.4, mechanized as
+P4-SpecTec's `$set_priorities_of_tableEntryListIR`) does not read the
+annotation, numbers entries without a `priority =` by position, 3, 2, 1,
+and has the larger win by default, so the first entry wins; P4-SpecTec, run on p4c's unedited
+program and unedited STF file, outputs both packets on port 1 and fails
+p4c's expectations of port 3. p4blo follows the specification
+(`.agents/decisions.md`, "Entry priority"); the derivation is in
+`tests/corpus/priority/README.md`.
+
+The printed golden passes on BMv2, because the printer states each
+priority and `largest_priority_wins = true` explicitly and p4c honours
+both. The strict `xfail` is restricted to `KnownBMv2PriorityDisagreement`,
+raised only for that vector, status `fail` and the exact four-line
+mismatch; an oracle error or any other answer fails the test.
