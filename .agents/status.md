@@ -7,6 +7,10 @@ to this compaction is in git at the archive commit
 previous one at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 
 Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
+The user extended the boundary to protobuf BlockLibrary with multiple blocks
+of each kind. PR #2 is held at `97cc1d8`; see
+[wire-boundary plan](notes/edsl-wire-boundary.md). Earlier pending/push notes
+below describe that pre-extension checkpoint, not the current integration.
 The authorized scope, acceptance criteria, isolated worktrees and next steps
 are in [edsl-ergonomics.md](notes/edsl-ergonomics.md). Integration branch:
 `work/edsl-ergonomics`, base `80eba84`. The block-library API, explicit
