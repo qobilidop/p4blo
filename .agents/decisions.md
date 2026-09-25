@@ -288,6 +288,20 @@ these entries record why.
   every reply shape the protocol allows is recorded. A changed answer is
   refreshed only after the semantics page states the changed behavior.
   (2026-09-24)
+- **SpecTec is rendered into Lean elsewhere; this repository builds the
+  IR, its meaning, the elaboration and the validation suite.** A separate
+  project compiles P4-SpecTec's elaborated spec into Lean and verifies
+  that compiler. p4blo therefore builds no Lean rendering or interpreter
+  of SpecTec's rules, no trace-localized N+1 testing, no simulator patch
+  beyond the two that exist, and no bridge census beyond the corpus. It
+  keeps and freezes the oracle machinery as the rendering's test bed
+  (conformance fixtures, block-runner requests, rule coverage), owns the
+  block contract `p4blo.watsup` that the theorem will relate to
+  `P4bloIR.Exec`, and keeps the bridge small as the elaboration side of
+  that theorem. Reason: building the rendering twice wastes the effort
+  and splits the trust; the plan's Phase 4 becomes a joint milestone
+  whose first acceptance is that the executable rendering answers every
+  fixture and block request as the OCaml simulator does. (2026-09-24)
 - **The IL bridge is the frontend from P4 source.** P4 text enters
   p4blo through P4-SpecTec's own typing and instantiation: a patch adds
   an `il-export` command that prints the instantiated IL structurally as

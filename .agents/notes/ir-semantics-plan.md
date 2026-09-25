@@ -32,6 +32,34 @@ Three consequences for the current repository:
   P4 means is SpecTec's elaborated IL; p4blo's IR is a serialized,
   architecture-free, closed refinement of it.
 
+## Division of labor with the SpecTec-to-Lean compiler
+
+Decided 2026-09-24. A separate project compiles P4-SpecTec's elaborated
+spec into Lean and verifies that compiler. This repository therefore
+owns exactly four things and builds nothing else about SpecTec:
+
+- **the IR and its meaning**: `spec/ir/`, the ledger, the deviation and
+  validity theorems, the Python reference and its differential evidence;
+- **the elaboration from SpecTec's IL to the IR**: the bridge, kept
+  small and specified, because it is the other side of the eventual
+  simulation theorem;
+- **the block contract in SpecTec's own language**: `p4blo.watsup`, the
+  definition of running one parser, control or deparser on the
+  architecture-free rules, which the compiler project renders and the
+  theorem relates to `P4bloIR.Exec`;
+- **the validation suite the rendering will be checked against**: the
+  conformance fixtures, the block-runner requests and the rule-coverage
+  measurement, all with stable documented formats.
+
+Not built here: any rendering of SpecTec's rules into Lean, any Lean
+interpreter for them, N+1 differential testing with trace localization
+(the rendering makes it a theorem instead), further simulator patches
+beyond keeping the two existing ones applying at the pin, and any
+expansion of the bridge's census beyond the corpus and the programs the
+theorem's domain needs. The oracle machinery built in Phases 1 and 2
+stays as it is, frozen at maintenance: it is the test bed for the
+rendering, not a thing to grow.
+
 ## What the state of the art looks like
 
 | Practice | Who does it | p4blo today |
@@ -106,7 +134,10 @@ is reproduced from its original P4 source through the bridge. Exit: claim
 1 has the experiment it has been waiting for, at a fraction of a p4c
 backend's cost.
 
-**A6. N+1 testing with localization (M, after A1 and A4).** Run Python,
+**A6. N+1 testing with localization: superseded.** The SpecTec-to-Lean
+compiler turns disagreement localization into a theorem about rendered
+rules; nothing is built here. The paragraph below is kept for the record.
+Run Python,
 Lean and SpecTec on the same generated inputs and classify each
 disagreement by which pair agrees. SpecTec's `-trace` output and Lean's
 explicit step trace make the disagreeing rule identifiable; record it in
@@ -236,8 +267,8 @@ the ledger entry, not the prose.
 | 0 | decisions recorded; SpecTec rule inventory fixture; ledger template and citation test | the plan is the scope |
 | 1 | A1, A2, A3, B1, C4 | coverage report and ledger published; every in-scope rule hit or excluded |
 | 2 | A4, B2, B3, D (in parallel worktrees) | block-level SpecTec comparison; conformance corpus; reorganized tree, all gates green |
-| 3 | A5, A6, C1, C2 | P4 source through SpecTec into p4blo; localized N+1 reports; validated programs have a defined result |
-| 4 | C3; a mechanized simulation against a Lean rendering of SpecTec's sections 4 and 8 | research; contact the author of the Lean port of SpecTec |
+| 3 | A5, C1, C2 (A6 superseded) | P4 source through SpecTec into p4blo; validated programs have a defined result |
+| 4 | C3; the joint milestone with the SpecTec-to-Lean compiler: its executable rendering answers every conformance fixture and block-runner request as the OCaml simulator does, then the simulation theorem between the rendered `p4blo.watsup` relations and `P4bloIR.Exec` under the bridge's elaboration | the equivalence claim becomes a theorem; the pairwise oracle testing retires |
 
 Phase 1 is the only one that changes what the repository claims without
 new infrastructure, so it goes first regardless of what follows.
