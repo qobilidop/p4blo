@@ -1,0 +1,1221 @@
+diff --git a/p4spec/bin/main.ml b/p4spec/bin/main.ml
+index 189b04d..4be966e 100644
+--- a/p4spec/bin/main.ml
++++ b/p4spec/bin/main.ml
+@@ -354,6 +354,28 @@ let sim_command =
+            | Fail (`Syntax diagnostic) -> Error diagnostic
+            | Fail (`Runtime failure) -> Error (diagnostic_of_failure failure)))
+ 
++(* Serve single-block requests for p4blo's block architecture
++   (backend-sim/p4blo/): JSON lines in on standard input, JSON lines out. *)
++let block_command =
++  Core.Command.basic
++    ~summary:"run single P4 blocks on the p4blo architecture, one JSON request per line"
++    (let open Core.Command.Let_syntax in
++     let open Core.Command.Param in
++     let%map paths_spec = anon (non_empty_sequence_as_list ("path" %: string))
++     and includes_p4 = flag "-i" (listed string) ~doc:"P4 include paths" in
++     fun () ->
++       run_with_diagnostics
++         ~action:(fun () ->
++           let* spec_sim = P4spectec.spec_of_mode SL_mode paths_spec in
++           let* _ = P4spectec.build_sim ~arch:"p4blo" spec_sim in
++           Ok spec_sim)
++         ~on_success:(fun spec_sim ->
++           Inst.Hook.register [];
++           Inst.Hook.init_spec spec_sim;
++           Backend_sim.P4blo.Pipe.serve includes_p4 stdin stdout;
++           Inst.Hook.finish ();
++           Ok ()))
++
+ let cover_run_command =
+   Core.Command.basic ~summary:"measure coverage of the spec"
+     (let open Core.Command.Let_syntax in
+@@ -668,6 +690,7 @@ let command =
+       (* Execution *)
+       ("run", run_command);
+       ("sim", sim_command);
++      ("block", block_command);
+       (* Coverage *)
+       ("cover-run", cover_run_command);
+       ("cover-sim", cover_sim_command);
+diff --git a/p4spec/lib/backend-sim/build.ml b/p4spec/lib/backend-sim/build.ml
+index d9912f0..81b719c 100644
+--- a/p4spec/lib/backend-sim/build.ml
++++ b/p4spec/lib/backend-sim/build.ml
+@@ -22,6 +22,12 @@ let gen_p4 (arch : string) : ((module Sim.SIM), Sim.error) result =
+         (module Make.Make (Interface.P4) (Psa.Pipe.Make) (Interp_al.Interp.Make)
+                   (Interp_sl.Interp.Make)
+                   (Interp_pl.Interp.Make) : Sim.SIM)
++  | "p4blo" ->
++      Ok
++        (module Make.Make (Interface.P4) (P4blo.Pipe.Make)
++                  (Interp_al.Interp.Make)
++                  (Interp_sl.Interp.Make)
++                  (Interp_pl.Interp.Make) : Sim.SIM)
+   | _ ->
+       Error
+         (Diagnostic.error
+diff --git a/p4spec/lib/backend-sim/p4blo/p4blo.watsup b/p4spec/lib/backend-sim/p4blo/p4blo.watsup
+new file mode 100644
+index 0000000..c7fd59f
+--- /dev/null
++++ b/p4spec/lib/backend-sim/p4blo/p4blo.watsup
+@@ -0,0 +1,256 @@
++;;
++;; The p4blo block architecture
++;;
++;; Not an architecture in the usual sense: it runs one parser, control or
++;; deparser of a program on the headers and metadata a caller supplies, and
++;; hands back what the block left, with nothing in between. p4blo's IR has
++;; no architecture (its blocks perform no effect beyond their parameters and
++;; externs), so these relations are the whole of what a caller needs to
++;; compare block semantics with block semantics. The package is declared in
++;; p4blo's `p4blo.p4`:
++;;
++;;   parser P4bloParser<H, M>(packet_in packet, out H hdr, inout M meta);
++;;   control P4bloControl<H, M>(inout H hdr, inout M meta);
++;;   control P4bloDeparser<H>(packet_out packet, in H hdr);
++;;   package P4blo<H, M>(P4bloParser<H, M> p, P4bloControl<H, M> c,
++;;                       P4bloDeparser<H> d);
++;;
++;; The global variables `hdr` and `meta` hold the block's arguments, as
++;; V1Model's `hdr` and `meta` do; the driver writes and reads them around
++;; each call. This file is passed to the spec explicitly by the `block`
++;; command's caller and is not part of the spec directory, so nothing about
++;; the existing architectures changes.
++;;
++
++relation P4blo_init:
++  |- p4program : evalContext arch
++  hint(input %0)
++
++rule P4blo_init:
++  |- p4program : EC ARCH
++  -- Program_init:
++      |- p4program : EC STO
++  -- if ARCH = { STATE $init_archState, STORE STO }
++
++;;
++;; Packet objects and globals
++;;
++
++relation P4blo_init_packet_in:
++  evalContext arch |- objectState : evalContext arch
++  hint(input %0 %1 %2)
++
++rule P4blo_init_packet_in:
++  EC_0 ARCH_0 |- objectState_packet_in : EC_1 ARCH_2
++  -- Extern_init: EC_0 ARCH_0 |- "packet_in" "packet_in" : ARCH_1
++  -- if EC_1 = $add_var_e(GLOBAL, EC_0, _BARE "packet_in", REF "packet_in")
++  -- if externObject_packet_in = $find_object_e(ARCH_1, [ "packet_in" ])
++  -- if EXTERN typeId `< theta `> `{ _ frame externMethodDefEnv `}
++      = externObject_packet_in
++  -- if externObject_packet_in_init
++      = EXTERN typeId `< theta `> `{ objectState_packet_in frame externMethodDefEnv `}
++  -- if ARCH_2
++      = $add_object_e(ARCH_1, [ "packet_in" ], externObject_packet_in_init)
++
++relation P4blo_init_packet_out:
++  evalContext arch |- objectState : evalContext arch
++  hint(input %0 %1 %2)
++
++rule P4blo_init_packet_out:
++  EC_0 ARCH_0 |- objectState_packet_out : EC_1 ARCH_2
++  -- Extern_init: EC_0 ARCH_0 |- "packet_out" "packet_out" : ARCH_1
++  -- if EC_1 = $add_var_e(GLOBAL, EC_0, _BARE "packet_out", REF "packet_out")
++  -- if externObject_packet_out = $find_object_e(ARCH_1, [ "packet_out" ])
++  -- if EXTERN typeId `< theta `> `{ _ frame externMethodDefEnv `}
++      = externObject_packet_out
++  -- if externObject_packet_out_init
++      = EXTERN typeId `< theta `> `{ objectState_packet_out frame externMethodDefEnv `}
++  -- if ARCH_2
++      = $add_object_e(ARCH_1, [ "packet_out" ], externObject_packet_out_init)
++
++relation P4blo_init_globals:
++  evalContext arch |- evalContext
++  hint(input %0 %1)
++
++rule P4blo_init_globals:
++  EC_0 ARCH |- EC_2
++  -- if PACKAGE `< theta `> `{ _ `}
++      = $find_object_e(ARCH, [ "main" ])
++  -- if typeIR_hdr = $find_map<typeId, typeIR>(theta, "H")
++  -- if typeIR_meta = $find_map<typeId, typeIR>(theta, "M")
++  -- Var_init: EC_0 |- typeIR_hdr "hdr" : EC_1
++  -- Var_init: EC_1 |- typeIR_meta "meta" : EC_2
++
++;;
++;; Arguments and callees
++;;
++
++dec $P4blo_packet_in_argument(evalContext) : argumentIR
++def $P4blo_packet_in_argument(EC) = argumentIR_packet_in
++  -- if typeDefIR_packet_in
++      = $find_typeDef_e(GLOBAL, EC, _BARE "packet_in")
++  -- if typeIR_packet_in
++      = $specialize_typeDefIR(typeDefIR_packet_in, eps)
++  -- if argumentIR_packet_in
++      = ('.' "packet_in") '#' `( typeIR_packet_in CTK `)
++
++dec $P4blo_packet_out_argument(evalContext) : argumentIR
++def $P4blo_packet_out_argument(EC) = argumentIR_packet_out
++  -- if typeDefIR_packet_out
++      = $find_typeDef_e(GLOBAL, EC, _BARE "packet_out")
++  -- if typeIR_packet_out
++      = $specialize_typeDefIR(typeDefIR_packet_out, eps)
++  -- if argumentIR_packet_out
++      = ('.' "packet_out") '#' `( typeIR_packet_out CTK `)
++
++dec $P4blo_hdr_argument(arch) : argumentIR
++def $P4blo_hdr_argument(ARCH) = argumentIR_hdr
++  -- if PACKAGE `< theta `> `{ _ `}
++      = $find_object_e(ARCH, [ "main" ])
++  -- if typeIR_hdr = $find_map<typeId, typeIR>(theta, "H")
++  -- if argumentIR_hdr
++      = ('.' "hdr") '#' `( typeIR_hdr DYN `)
++
++dec $P4blo_meta_argument(arch) : argumentIR
++def $P4blo_meta_argument(ARCH) = argumentIR_meta
++  -- if PACKAGE `< theta `> `{ _ `}
++      = $find_object_e(ARCH, [ "main" ])
++  -- if typeIR_meta = $find_map<typeId, typeIR>(theta, "M")
++  -- if argumentIR_meta
++      = ('.' "meta") '#' `( typeIR_meta DYN `)
++
++dec $P4blo_main_callee(evalContext, arch) : typedExpressionIR
++def $P4blo_main_callee(EC, ARCH) = typedExpressionIR_main
++  -- if typeDefIR_package
++      = $find_typeDef_e(GLOBAL, EC, _BARE "P4blo")
++  -- if PACKAGE `< theta `> `{ _ `}
++      = $find_object_e(ARCH, [ "main" ])
++  -- if typeIR_hdr = $find_map<typeId, typeIR>(theta, "H")
++  -- if typeIR_meta = $find_map<typeId, typeIR>(theta, "M")
++  -- if typeIR_package
++      = $specialize_typeDefIR(typeDefIR_package, [ typeIR_hdr, typeIR_meta ])
++  -- if typedExpressionIR_main
++      = (_BARE "main") '#' `( typeIR_package CTK `)
++
++;; The callee `main.<member>`, of the block type named `nameIR_type`
++;; specialized to the package's H, and M too when `b_meta`.
++dec $P4blo_block_callee(evalContext, arch, nameIR, nameIR, bool) : typedExpressionIR
++def $P4blo_block_callee(EC, ARCH, nameIR_type, nameIR_member, b_meta)
++  = typedExpressionIR_block
++  -- if typeDefIR_block = $find_typeDef_e(GLOBAL, EC, _BARE nameIR_type)
++  -- if PACKAGE `< theta `> `{ _ `}
++      = $find_object_e(ARCH, [ "main" ])
++  -- if typeIR_hdr = $find_map<typeId, typeIR>(theta, "H")
++  -- if typeIR_meta = $find_map<typeId, typeIR>(theta, "M")
++  -- if typeIR_block
++      = $specialize_typeDefIR(typeDefIR_block,
++          $ite<typeIR*>(b_meta, [ typeIR_hdr, typeIR_meta ], [ typeIR_hdr ]))
++  -- if typedExpressionIR_main = $P4blo_main_callee(EC, ARCH)
++  -- if typedExpressionIR_block
++      = (typedExpressionIR_main '.' nameIR_member) '#' `( typeIR_block CTK `)
++
++;;
++;; Parser invocation
++;;
++
++relation P4blo_parser:
++  evalContext arch |- evalContext arch transitionResult
++  hint(input %0 %1)
++
++rulegroup P4blo_parser {
++
++  rule P4blo_parser/accept:
++    EC_0 ARCH_0 |- EC_1 ARCH_1 ACCEPT
++    -- if argumentIR*
++        = [ $P4blo_packet_in_argument(EC_0),
++            $P4blo_hdr_argument(ARCH_0),
++            $P4blo_meta_argument(ARCH_0) ]
++    -- if typedExpressionIR_p
++        = $P4blo_block_callee(EC_0, ARCH_0, "P4bloParser", "p", true)
++    -- if callableTargetIR = typedExpressionIR_p '.' "apply"
++    -- Stmt_eval:
++        GLOBAL EC_0 ARCH_0 |- callableTargetIR `< eps `> `( argumentIR* `) ';'
++                            : EC_1 ARCH_1 _EMPTY
++
++  rule P4blo_parser/reject:
++    EC_0 ARCH_0 |- EC_1 ARCH_1 rejectTransitionResult
++    -- if argumentIR*
++        = [ $P4blo_packet_in_argument(EC_0),
++            $P4blo_hdr_argument(ARCH_0),
++            $P4blo_meta_argument(ARCH_0) ]
++    -- if typedExpressionIR_p
++        = $P4blo_block_callee(EC_0, ARCH_0, "P4bloParser", "p", true)
++    -- if callableTargetIR = typedExpressionIR_p '.' "apply"
++    -- Stmt_eval:
++        GLOBAL EC_0 ARCH_0 |- callableTargetIR `< eps `> `( argumentIR* `) ';'
++                            : EC_1 ARCH_1 rejectTransitionResult
++
++}
++
++;;
++;; Control invocation
++;;
++
++relation P4blo_control:
++  evalContext arch |- evalContext arch callResult
++  hint(input %0 %1)
++
++rulegroup P4blo_control {
++
++  rule P4blo_control/return:
++    EC_0 ARCH_0 |- EC_1 ARCH_1 (RETURN eps)
++    -- if argumentIR*
++        = [ $P4blo_hdr_argument(ARCH_0), $P4blo_meta_argument(ARCH_0) ]
++    -- if typedExpressionIR_c
++        = $P4blo_block_callee(EC_0, ARCH_0, "P4bloControl", "c", true)
++    -- if callableTargetIR = typedExpressionIR_c '.' "apply"
++    -- Stmt_eval:
++        GLOBAL EC_0 ARCH_0 |- callableTargetIR `< eps `> `( argumentIR* `) ';'
++                            : EC_1 ARCH_1 _EMPTY
++
++  rule P4blo_control/exit:
++    EC_0 ARCH_0 |- EC_1 ARCH_1 EXIT
++    -- if argumentIR*
++        = [ $P4blo_hdr_argument(ARCH_0), $P4blo_meta_argument(ARCH_0) ]
++    -- if typedExpressionIR_c
++        = $P4blo_block_callee(EC_0, ARCH_0, "P4bloControl", "c", true)
++    -- if callableTargetIR = typedExpressionIR_c '.' "apply"
++    -- Stmt_eval:
++        GLOBAL EC_0 ARCH_0 |- callableTargetIR `< eps `> `( argumentIR* `) ';'
++                            : EC_1 ARCH_1 EXIT
++
++}
++
++;;
++;; Deparser invocation
++;;
++
++relation P4blo_deparser:
++  evalContext arch |- evalContext arch callResult
++  hint(input %0 %1)
++
++rulegroup P4blo_deparser {
++
++  rule P4blo_deparser/return:
++    EC_0 ARCH_0 |- EC_1 ARCH_1 (RETURN eps)
++    -- if argumentIR*
++        = [ $P4blo_packet_out_argument(EC_0), $P4blo_hdr_argument(ARCH_0) ]
++    -- if typedExpressionIR_d
++        = $P4blo_block_callee(EC_0, ARCH_0, "P4bloDeparser", "d", false)
++    -- if callableTargetIR = typedExpressionIR_d '.' "apply"
++    -- Stmt_eval:
++        GLOBAL EC_0 ARCH_0 |- callableTargetIR `< eps `> `( argumentIR* `) ';'
++                            : EC_1 ARCH_1 _EMPTY
++
++  rule P4blo_deparser/exit:
++    EC_0 ARCH_0 |- EC_1 ARCH_1 EXIT
++    -- if argumentIR*
++        = [ $P4blo_packet_out_argument(EC_0), $P4blo_hdr_argument(ARCH_0) ]
++    -- if typedExpressionIR_d
++        = $P4blo_block_callee(EC_0, ARCH_0, "P4bloDeparser", "d", false)
++    -- if callableTargetIR = typedExpressionIR_d '.' "apply"
++    -- Stmt_eval:
++        GLOBAL EC_0 ARCH_0 |- callableTargetIR `< eps `> `( argumentIR* `) ';'
++                            : EC_1 ARCH_1 EXIT
++
++}
+diff --git a/p4spec/lib/backend-sim/p4blo/pipe.ml b/p4spec/lib/backend-sim/p4blo/pipe.ml
+new file mode 100644
+index 0000000..7401d81
+--- /dev/null
++++ b/p4spec/lib/backend-sim/p4blo/pipe.ml
+@@ -0,0 +1,895 @@
++(* The p4blo block architecture.
++
++   p4blo (https://github.com/qobilidop/p4blo) is an intermediate
++   representation of P4's architecture-free core. Its blocks compute
++   functions of their parameters and externs:
++
++     parser   : packet x M        -> H x M x consumed bits x accepted x error
++     control  : H x M x entries   -> H x M
++     deparser : H                 -> packet
++
++   and an architecture is whatever calls them. To compare those functions
++   with the spec's, this architecture calls exactly one block per request,
++   on the headers, metadata, table entries and extern state the request
++   supplies, and replies with what the block left. Nothing runs between
++   blocks and no metadata is interpreted: the caller chains blocks, or not.
++
++   The spec side is `p4blo.watsup` beside this file (the package, the
++   globals `hdr` and `meta`, and one relation per block), which the caller
++   passes to the `block` command after the spec directory. The extern
++   families are the ones p4blo's printer uses (register, counter, and the
++   `hash` function for its checksum and CRC families), implemented by the
++   V1Model simulator's own code, so that p4blo's `p4blo.p4` can declare
++   them with V1Model's signatures.
++
++   Requests and replies are JSON lines on standard input and output; see
++   `serve`. *)
++
++module Typ = Runtime.Type.Typ
++module Value = Runtime.Value
++module IO = Runtime.Sim.Io
++module Sim = Runtime.Sim.Signature
++module Run = Runtime.Dynamic_Runner.Signature
++module Mixfix = Domain.Mixfix
++module Num = Lang.Xl.Num
++open Spec.Unpack
++open Error
++open Util.Source
++
++(* The server is built inside the architecture functor, where the spec's
++   trampolines are in scope, and reached from the command line through this
++   reference; `Build.build ~arch:"p4blo"` sets it. *)
++
++let server : (string list -> in_channel -> out_channel -> unit) ref =
++  ref (fun _ _ _ -> error_no_region "the p4blo architecture was not built")
++
++let serve (includes_p4 : string list) (ic : in_channel) (oc : out_channel) :
++    unit =
++  !server includes_p4 ic oc
++
++(* Values as JSON.
++
++   Scalars take the shape of p4blo's wire-format `Literal`, as protobuf's
++   JSON mapping writes it with the proto field names:
++
++     {"bits": {"width": 8, "value": "255"}}    bit<8>, value in decimal
++     {"boolean": true}
++     {"error": "NoError"}
++     {"enum_member": {"enum_type": "E", "member": "A"}}
++
++   The wire format has no compound values, so these are this protocol's own:
++
++     {"header": {"type": "h_t", "valid": true, "fields": {"f": <value>, ...}}}
++     {"struct": {"type": "s_t", "fields": {"f": <value>, ...}}}
++     {"stack": {"next_index": 1, "elements": [<header>, ...]}}
++
++   with fields in declaration order. Reading a value the table does not
++   cover gives {"unknown": <the spec's rendering>}. Writing goes through a
++   template, the variable's current value, so that only leaves are built
++   here and every compound keeps the spec's own constructor and type. *)
++
++module Json = struct
++  type t = Yojson.Safe.t
++
++  let fail fmt = Format.kasprintf error_no_region fmt
++
++  let member (key : string) (json : t) : t =
++    match json with
++    | `Assoc fields -> (
++        match List.assoc_opt key fields with
++        | Some value -> value
++        | None ->
++            fail "missing %S in %s" key (Yojson.Safe.to_string json))
++    | _ -> fail "expected an object, got %s" (Yojson.Safe.to_string json)
++
++  let member_opt (key : string) (json : t) : t option =
++    match json with `Assoc fields -> List.assoc_opt key fields | _ -> None
++
++  let to_string (json : t) : string =
++    match json with
++    | `String s -> s
++    | _ -> fail "expected a string, got %s" (Yojson.Safe.to_string json)
++
++  let to_int (json : t) : int =
++    match json with
++    | `Int i -> i
++    | _ -> fail "expected an integer, got %s" (Yojson.Safe.to_string json)
++
++  let to_bool (json : t) : bool =
++    match json with
++    | `Bool b -> b
++    | _ -> fail "expected a boolean, got %s" (Yojson.Safe.to_string json)
++
++  let to_list (json : t) : t list =
++    match json with
++    | `List items -> items
++    | _ -> fail "expected an array, got %s" (Yojson.Safe.to_string json)
++
++  let to_assoc (json : t) : (string * t) list =
++    match json with
++    | `Assoc fields -> fields
++    | _ -> fail "expected an object, got %s" (Yojson.Safe.to_string json)
++end
++
++module Values = struct
++  let fail = Json.fail
++  let args (value : Value.t) (mixop : string) = Value.Get.(value |>>? mixop)
++  let nat (value : Value.t) = value |> Value.Get.num |> Num.to_int
++
++  (* The same constructor and type as [value], with [values] as arguments. *)
++  let rebuild (value : Value.t) (values : Value.t list) : Value.t =
++    let mixop, _ = Mixfix.split (Value.Get.case value) in
++    Value.Make.case (value.note.typ $ no_region) (Mixfix.fill mixop values)
++
++  let relist (value : Value.t) (values : Value.t list) : Value.t =
++    Value.Make.list (value.note.typ $ no_region) values
++
++  (* fieldValue = value nameIR ';' *)
++  let field (value : Value.t) : string * Value.t =
++    match args value "value nameIR ';'" with
++    | Some [ value_field; value_name ] -> (Value.Get.text value_name, value_field)
++    | _ -> fail "not a field value: %s" (Value.to_string value)
++
++  (* The first of [cases] whose constructor [value] has, applied to its
++     arguments; [default ()] when none has it. *)
++  let dispatch (value : Value.t) (cases : (string * (Value.t list -> 'a)) list)
++      (default : unit -> 'a) : 'a =
++    match
++      List.find_map
++        (fun (mixop, f) -> Option.map f (args value mixop))
++        cases
++    with
++    | Some result -> result
++    | None -> default ()
++
++  let bits = "nat W int"
++  let boolean = "_B bool"
++  let error = "ERROR '.' nameIR"
++  let enum = "typeId '.' nameIR"
++  let header = "HEADER typeId `{ bool ';' fieldValue* `}"
++  let struct_ = "STRUCT typeId `{ fieldValue* `}"
++  let stack = "HEADER_STACK `[ value* `( nat `) `]"
++  let text (value : Value.t) = `String (Value.Get.text value)
++
++  let rec to_json (value : Value.t) : Json.t =
++    let fields values_field =
++      `Assoc
++        (values_field |> Value.Get.list |> List.map field
++        |> List.map (fun (name, value) -> (name, to_json value)))
++    in
++    let one key json = `Assoc [ (key, json) ] in
++    dispatch value
++      [
++        ( bits,
++          function
++          | [ value_width; value_int ] ->
++              one "bits"
++                (`Assoc
++                  [
++                    ("width", `Int (value_width |> nat |> Bigint.to_int_exn));
++                    ("value", `String (value_int |> nat |> Bigint.to_string));
++                  ])
++          | _ -> assert false );
++        (boolean, fun values -> one "boolean" (`Bool (Value.Get.bool (List.hd values))));
++        (error, fun values -> one "error" (text (List.hd values)));
++        ( enum,
++          function
++          | [ value_type; value_member ] ->
++              one "enum_member"
++                (`Assoc [ ("enum_type", text value_type); ("member", text value_member) ])
++          | _ -> assert false );
++        ( header,
++          function
++          | [ value_type; value_valid; values_field ] ->
++              one "header"
++                (`Assoc
++                  [
++                    ("type", text value_type);
++                    ("valid", `Bool (Value.Get.bool value_valid));
++                    ("fields", fields values_field);
++                  ])
++          | _ -> assert false );
++        ( struct_,
++          function
++          | [ value_type; values_field ] ->
++              one "struct"
++                (`Assoc [ ("type", text value_type); ("fields", fields values_field) ])
++          | _ -> assert false );
++        ( stack,
++          function
++          | [ values_element; value_next ] ->
++              one "stack"
++                (`Assoc
++                  [
++                    ("next_index", `Int (value_next |> nat |> Bigint.to_int_exn));
++                    ( "elements",
++                      `List (values_element |> Value.Get.list |> List.map to_json) );
++                  ])
++          | _ -> assert false );
++      ]
++      (fun () -> one "unknown" (`String (Value.to_string value)))
++
++  let rec of_json (template : Value.t) (json : Json.t) : Value.t =
++    let fields values_field json_fields =
++      let json_fields = Json.to_assoc json_fields in
++      if List.length json_fields <> List.length (Value.Get.list values_field)
++      then
++        fail "fields %s do not match the type"
++          (Yojson.Safe.to_string (`Assoc json_fields));
++      values_field |> Value.Get.list
++      |> List.map (fun value_fieldValue ->
++             let name, value = field value_fieldValue in
++             match List.assoc_opt name json_fields with
++             | Some json_field ->
++                 rebuild value_fieldValue
++                   [ of_json value json_field; Value.Make.text name ]
++             | None -> fail "no value for field %S" name)
++      |> relist values_field
++    in
++    let body key = Json.member key json in
++    dispatch template
++      [
++        ( bits,
++          function
++          | [ value_width; _ ] ->
++              let width = Json.member "width" (body "bits") |> Json.to_int in
++              if Bigint.of_int width <> nat value_width then
++                fail "a bit<%d> value where bit<%s> is expected" width
++                  (value_width |> nat |> Bigint.to_string);
++              let number =
++                Json.member "value" (body "bits") |> Json.to_string |> Bigint.of_string
++              in
++              rebuild template [ value_width; Value.Make.int number ]
++          | _ -> assert false );
++        ( boolean,
++          fun _ -> rebuild template [ body "boolean" |> Json.to_bool |> Value.Make.bool ] );
++        ( error,
++          fun _ -> rebuild template [ body "error" |> Json.to_string |> Value.Make.text ] );
++        ( enum,
++          function
++          | [ value_type; _ ] ->
++              let json = body "enum_member" in
++              let enum_type = Json.member "enum_type" json |> Json.to_string in
++              if enum_type <> Value.Get.text value_type then
++                fail "a member of %s where %s is expected" enum_type
++                  (Value.Get.text value_type);
++              rebuild template
++                [ value_type; Json.member "member" json |> Json.to_string |> Value.Make.text ]
++          | _ -> assert false );
++        ( header,
++          function
++          | [ value_type; _; values_field ] ->
++              let json = body "header" in
++              rebuild template
++                [
++                  value_type;
++                  Json.member "valid" json |> Json.to_bool |> Value.Make.bool;
++                  fields values_field (Json.member "fields" json);
++                ]
++          | _ -> assert false );
++        ( struct_,
++          function
++          | [ value_type; values_field ] ->
++              rebuild template
++                [ value_type; fields values_field (Json.member "fields" (body "struct")) ]
++          | _ -> assert false );
++        ( stack,
++          function
++          | [ values_element; _ ] ->
++              let json = body "stack" in
++              let elements = Json.member "elements" json |> Json.to_list in
++              let templates = Value.Get.list values_element in
++              if List.length elements <> List.length templates then
++                fail "a stack of %d elements where %d are expected"
++                  (List.length elements) (List.length templates);
++              rebuild template
++                [
++                  relist values_element (List.map2 of_json templates elements);
++                  Json.member "next_index" json |> Json.to_int |> Bigint.of_int
++                  |> Value.Make.nat;
++                ]
++          | _ -> assert false );
++      ]
++      (fun () ->
++        fail "cannot write %s into %s" (Yojson.Safe.to_string json)
++          (Value.to_string template))
++end
++
++(* Table entries, from STF `add` and `setdefault` lines. The encoding is
++   the STF runner's (make.ml, `run_stf_stmt`), which is not reachable from
++   an architecture; it is repeated here unchanged so that entries mean on
++   this architecture exactly what they mean under `sim`. *)
++
++module Entries = struct
++  let typ name = Typ.Make.var (name $ no_region) []
++
++  let action ((name, args) : Stf.Ast.action) : Value.t =
++    let typ_argument = typ "tableActionArgumentInterface" in
++    let values_argument =
++      args
++      |> List.map (fun (name, number) ->
++             Value.Make.tuple typ_argument
++               [
++                 Value.Make.text name;
++                 number |> int_of_string |> Bigint.of_int |> Value.Make.int;
++               ])
++      |> Value.Make.list (Typ.Make.list typ_argument)
++    in
++    Value.Make.tuple
++      (typ "tableActionInterface")
++      [ Value.Make.text name; values_argument ]
++
++  let key ((name, value) : Stf.Ast.mtch) : Value.t =
++    let name = Stf.Print.convert_dollar_to_brackets name in
++    let digits prefix number =
++      String.sub number (String.length prefix)
++        (String.length number - String.length prefix)
++    in
++    let value =
++      match value with
++      | Num number when String.starts_with ~prefix:"0x" number ->
++          Value.Make.(
++            "_HEX text" <| [ text (digits "0x" number) ] <<| "tableKeyValueInterface")
++      | Num number when String.starts_with ~prefix:"0b" number ->
++          Value.Make.(
++            "_BIN text" <| [ text (digits "0b" number) ] <<| "tableKeyValueInterface")
++      | Num number ->
++          Value.Make.("_DEC text" <| [ text number ] <<| "tableKeyValueInterface")
++      | Slash (prefix, mask) ->
++          Value.Make.(
++            "text _SLASH nat"
++            <| [ text prefix; nat (Bigint.of_int (int_of_string mask)) ]
++            <<| "tableKeyValueInterface")
++    in
++    Value.Make.tuple (typ "tableKeyInterface") [ Value.Make.text name; value ]
++end
++
++let packet_hex (bits : Core.Object.bits) : string =
++  (* Zero-padded to a byte boundary, as p4blo's deparser pads. *)
++  let len = Array.length bits in
++  let padded = Array.append bits (Array.make ((8 - (len mod 8)) mod 8) false) in
++  Core.Object.bits_to_string padded |> String.lowercase_ascii
++
++module Make (Spec : Spec.S) : Sim.ARCH = struct
++  module Core = struct
++    module Func = Core.Func.Make (Spec.Func)
++    module Object = Core.Object.Make (Spec.Func) (Spec.Rel)
++  end
++
++  module Func = V1model.Func.Make (Spec)
++  module Object = V1model.Object.Make (Spec)
++  module Table = Table.Make (Spec.Func)
++
++  let transform_stf_stmt = Fun.id
++
++  (* No architectural state: nothing happens between blocks. *)
++
++  type arch_state = unit [@@deriving yojson]
++
++  let init_arch_state =
++    () |> arch_state_to_yojson
++    |> Value.Make.extern (Typ.Make.var ("archState" $ no_region) [])
++
++  (* Extern objects *)
++
++  type object_state =
++    | PacketIn of Core.Object.PacketIn.t
++    | PacketOut of Core.Object.PacketOut.t
++    | Counter of Object.Counter.t
++    | Register of Object.Register.t
++  [@@deriving yojson]
++
++  let typ_objectState = Typ.Make.var ("objectState" $ no_region) []
++
++  let value_of_object_state (state : object_state) : Value.t =
++    state |> object_state_to_yojson |> Value.Make.extern typ_objectState
++
++  let value_objectId (names : string list) : Value.t =
++    Value.Make.list
++      (Typ.Make.list (Typ.Make.var ("id" $ no_region) []))
++      (List.map Value.Make.text names)
++
++  let get_object_state (value_arch : Value.t) (value_objectId : Value.t) :
++      object_state =
++    Spec.Func.find_objectState_e value_arch value_objectId
++    |> Value.Get.extern |> object_state_of_yojson |> Result.get_ok
++
++  let get_packet_in (value_arch : Value.t) : Core.Object.PacketIn.t =
++    match get_object_state value_arch (value_objectId [ "packet_in" ]) with
++    | PacketIn packet_in -> packet_in
++    | _ -> error_no_region "packet_in object not found"
++
++  let get_packet_out (value_arch : Value.t) : Core.Object.PacketOut.t =
++    match get_object_state value_arch (value_objectId [ "packet_out" ]) with
++    | PacketOut packet_out -> packet_out
++    | _ -> error_no_region "packet_out object not found"
++
++  (* Extern calls: V1Model's implementations of the families p4blo prints *)
++
++  let eval_extern_init (values_input : Value.t list) : Value.t =
++    let value_name_extern, value_type_args, value_ids, value_args =
++      match values_input with
++      | [ value_name; value_type_args; value_ids; value_args ] ->
++          (value_name, value_type_args, value_ids, value_args)
++      | _ -> error_no_region "unexpected number of arguments to extern init"
++    in
++    match Value.Get.text value_name_extern with
++    | "counter" ->
++        Counter (Object.Counter.init value_type_args value_ids value_args)
++        |> value_of_object_state
++    | "register" ->
++        Register (Object.Register.init value_type_args value_ids value_args)
++        |> value_of_object_state
++    | _ -> Value.Make.extern typ_objectState `Null
++
++  let eval_extern_func_lctk_call (values_input : Value.t list) : Value.t list =
++    let value_ctx, value_name_func, value_names_param =
++      match values_input with
++      | [ value_ctx; value_name_func; value_names_param ] ->
++          (value_ctx, value_name_func, value_names_param)
++      | _ ->
++          error_no_region
++            "unexpected number of arguments to local compile-time known extern \
++             function call"
++    in
++    let name_func = Value.Get.text value_name_func in
++    let names_param =
++      value_names_param |> Value.Get.list |> List.map Value.Get.text
++    in
++    match (name_func, names_param) with
++    | "static_assert", [ "check"; "message" ] ->
++        [ Core.Func.static_assert ~message:true value_ctx ]
++    | "static_assert", [ "check" ] ->
++        [ Core.Func.static_assert ~message:false value_ctx ]
++    | _ ->
++        error_no_region
++          ("unsupported local compile-time known extern function call: "
++         ^ name_func ^ "("
++          ^ String.concat ", " names_param
++          ^ ")")
++
++  let eval_extern_func_call (values_input : Value.t list) : Value.t list =
++    let value_ctx, value_arch, value_name_func, value_names_param =
++      match values_input with
++      | [ value_ctx; value_arch; value_name_func; value_names_param ] ->
++          (value_ctx, value_arch, value_name_func, value_names_param)
++      | _ ->
++          error_no_region
++            "unexpected number of arguments to extern function call"
++    in
++    let name_func = Value.Get.text value_name_func in
++    let names_param =
++      value_names_param |> Value.Get.list |> List.map Value.Get.text
++    in
++    let value_ctx, value_arch, value_callResult =
++      match (name_func, names_param) with
++      | "verify", [ "check"; "toSignal" ] ->
++          Core.Func.verify value_ctx value_arch
++      | "hash", [ "result"; "algo"; "base"; "data"; "max" ] ->
++          Func.hash value_ctx value_arch
++      | _ ->
++          error_no_region
++            ("unsupported extern function call: " ^ name_func ^ "("
++            ^ String.concat ", " names_param
++            ^ ")")
++    in
++    [ value_ctx; value_arch; value_callResult ]
++
++  let eval_extern_method_call (values_input : Value.t list) : Value.t list =
++    let ( value_ctx,
++          value_arch,
++          value_objectId,
++          value_name_method,
++          value_names_param ) =
++      match values_input with
++      | [
++       value_ctx;
++       value_arch;
++       value_objectId;
++       value_name_method;
++       value_names_param;
++      ] ->
++          ( value_ctx,
++            value_arch,
++            value_objectId,
++            value_name_method,
++            value_names_param )
++      | _ ->
++          error_no_region "unexpected number of arguments to extern method call"
++    in
++    let obj = get_object_state value_arch value_objectId in
++    let name_method = Value.Get.text value_name_method in
++    let names_param =
++      value_names_param |> Value.Get.list |> List.map Value.Get.text
++    in
++    let obj, value_ctx, value_arch, value_callResult =
++      match (obj, name_method, names_param) with
++      | PacketIn packet_in, "extract", [ "hdr" ] ->
++          let packet_in, value_ctx, value_arch, value_callResult =
++            Core.Object.PacketIn.extract value_ctx value_arch packet_in
++          in
++          (PacketIn packet_in, value_ctx, value_arch, value_callResult)
++      | ( PacketIn packet_in,
++          "extract",
++          [ "variableSizeHeader"; "variableFieldSizeInBits" ] ) ->
++          let packet_in, value_ctx, value_arch, value_callResult =
++            Core.Object.PacketIn.extract_varsize value_ctx value_arch packet_in
++          in
++          (PacketIn packet_in, value_ctx, value_arch, value_callResult)
++      | PacketIn packet_in, "lookahead", [] ->
++          let packet_in, value_ctx, value_arch, value_callResult =
++            Core.Object.PacketIn.lookahead value_ctx value_arch packet_in
++          in
++          (PacketIn packet_in, value_ctx, value_arch, value_callResult)
++      | PacketIn packet_in, "advance", [ "sizeInBits" ] ->
++          let packet_in, value_ctx, value_arch, value_callResult =
++            Core.Object.PacketIn.advance value_ctx value_arch packet_in
++          in
++          (PacketIn packet_in, value_ctx, value_arch, value_callResult)
++      | PacketIn packet_in, "length", [] ->
++          let packet_in, value_ctx, value_arch, value_callResult =
++            Core.Object.PacketIn.length value_ctx value_arch packet_in
++          in
++          (PacketIn packet_in, value_ctx, value_arch, value_callResult)
++      | PacketOut packet_out, "emit", [ "hdr" ] ->
++          let packet_out, value_ctx, value_arch, value_callResult =
++            Core.Object.PacketOut.emit value_ctx value_arch packet_out
++          in
++          (PacketOut packet_out, value_ctx, value_arch, value_callResult)
++      | Counter counter, "count", [ "index" ] ->
++          let packet_in = get_packet_in value_arch in
++          let counter, value_ctx, value_arch, value_callResult =
++            Object.Counter.count value_ctx value_arch packet_in counter
++          in
++          (Counter counter, value_ctx, value_arch, value_callResult)
++      | Register register, "read", [ "result"; "index" ] ->
++          let register, value_ctx, value_arch, value_callResult =
++            Object.Register.read value_ctx value_arch register
++          in
++          (Register register, value_ctx, value_arch, value_callResult)
++      | Register register, "write", [ "index"; "value" ] ->
++          let register, value_ctx, value_arch, value_callResult =
++            Object.Register.write value_ctx value_arch register
++          in
++          (Register register, value_ctx, value_arch, value_callResult)
++      | _ ->
++          let oid =
++            value_objectId |> Value.Get.list |> List.map Value.Get.text
++            |> String.concat "."
++          in
++          error_no_region
++            ("unsupported extern method call: " ^ oid ^ "." ^ name_method ^ "("
++            ^ String.concat ", " names_param
++            ^ ")")
++    in
++    let value_arch =
++      Spec.Func.update_objectState_e value_arch value_objectId
++        (value_of_object_state obj)
++    in
++    [ value_ctx; value_arch; value_callResult ]
++
++  (* Nothing of the STF runner's architecture interface applies *)
++
++  let unsupported what =
++    error_no_region
++      (what ^ " is not part of the p4blo block architecture; use the block command")
++
++  let add_mirror_session _ _ _ = unsupported "add_mirror_session"
++  let add_mirror_session_mc _ _ _ = unsupported "add_mirror_session_mc"
++  let mc_mgrp_create _ _ = unsupported "mc_mgrp_create"
++  let mc_node_create _ _ _ = unsupported "mc_node_create"
++  let mc_node_associate _ _ _ = unsupported "mc_node_associate"
++  let register_read _ _ _ = unsupported "register_read"
++  let register_write _ _ _ _ = unsupported "register_write"
++  let register_reset _ _ = unsupported "register_reset"
++
++  let init_pipe (includes_p4 : string list) (filename_p4 : string) :
++      Value.t * Value.t =
++    !Spec.Pgm.call "P4blo_init" includes_p4 filename_p4
++
++  let drive_pipe _ _ _ = unsupported "drive_pipe (an STF packet)"
++
++  include Extern.Make (struct
++    let eval_extern_init = eval_extern_init
++    let eval_extern_func_lctk_call = eval_extern_func_lctk_call
++    let eval_extern_func_call = eval_extern_func_call
++    let eval_extern_method_call = eval_extern_method_call
++    let init_arch_state = init_arch_state
++  end)
++
++  (* The block server *)
++
++  let call (relation : string) (values : Value.t list) : Value.t list =
++    !Spec.Rel.call relation values
++
++  (* Every extern object of the store with a state, but the packets, by
++     object id. The store is a map, `{ (objectId ':' object)* }`, and an
++     extern object carries its state as its one extern-valued argument. *)
++  let extern_states (value_arch : Value.t) : (string list * Yojson.Safe.t) list
++      =
++    let value_store =
++      Value.Get.str value_arch
++      |> List.find_map (fun (atom, value) ->
++             if Domain.Atom.string_of_atom atom.it = "STORE" then Some value
++             else None)
++      |> Option.get
++    in
++    let values_pair =
++      Value.Get.case value_store |> Mixfix.args
++      |> List.concat_map Value.Get.list
++    in
++    values_pair
++    |> List.filter_map (fun value_pair ->
++           match Mixfix.args (Value.Get.case value_pair) with
++           | [ value_objectId; value_object ] -> (
++               let names =
++                 value_objectId |> Value.Get.list |> List.map Value.Get.text
++               in
++               match value_object.it with
++               | Lang.Il.CaseV valuecase ->
++                   Mixfix.args valuecase
++                   |> List.find_map (fun (value : Value.t) ->
++                          match value.it with
++                          | Lang.Il.ExternV `Null -> None
++                          | Lang.Il.ExternV json -> Some (names, json)
++                          | _ -> None)
++               | _ -> None)
++           | _ -> None)
++    |> List.filter (fun (names, _) ->
++           names <> [ "packet_in" ] && names <> [ "packet_out" ])
++
++  (* What the caller may want to compare, in the value shapes above. *)
++  let observe_externs (value_arch : Value.t) : Yojson.Safe.t =
++    `Assoc
++      (extern_states value_arch
++      |> List.filter_map (fun (names, json) ->
++             let name = String.concat "." names in
++             match object_state_of_yojson json with
++             | Ok (Register register) ->
++                 Some
++                   ( name,
++                     `Assoc
++                       [
++                         ("kind", `String "register");
++                         ("values", `List (List.map Values.to_json register.values));
++                       ] )
++             | Ok (Counter counter) ->
++                 let counts =
++                   match counter with
++                   | Packets counts | Bytes counts -> counts
++                   | PacketsAndBytes counts -> List.map fst counts
++                 in
++                 Some
++                   ( name,
++                     `Assoc
++                       [
++                         ("kind", `String "counter");
++                         ( "values",
++                           `List
++                             (List.map (fun n -> `String (Bigint.to_string n)) counts)
++                         );
++                       ] )
++             | _ -> None))
++
++  (* Extern state crosses the pipe as the simulator's own JSON, tagged with
++     this process: a register's cells are spec values whose identities are
++     only meaningful to the process that made them. *)
++  let session =
++    let state = Random.State.make_self_init () in
++    Printf.sprintf "%08x%08x" (Random.State.bits state) (Random.State.bits state)
++
++  let export_state (value_arch : Value.t) : Yojson.Safe.t =
++    `Assoc
++      [
++        ("session", `String session);
++        ( "objects",
++          `Assoc
++            (extern_states value_arch
++            |> List.map (fun (names, json) -> (String.concat "." names, json)))
++        );
++      ]
++
++  let import_state (value_arch : Value.t) (json : Yojson.Safe.t) : Value.t =
++    match json with
++    | `Null -> value_arch
++    | _ ->
++        let owner = Json.member "session" json |> Json.to_string in
++        if owner <> session then
++          Json.fail "extern state from session %s, not this one (%s)" owner session;
++        Json.member "objects" json |> Json.to_assoc
++        |> List.fold_left
++             (fun value_arch (name, json_state) ->
++               let value_objectId =
++                 value_objectId (String.split_on_char '.' name)
++               in
++               try
++                 Spec.Func.update_objectState_e value_arch value_objectId
++                   (Value.Make.extern typ_objectState json_state)
++               with Invalid_argument _ -> Json.fail "no extern object %s" name)
++             value_arch
++
++  let install_entries (value_ctx : Value.t) (value_arch : Value.t)
++      (text : string) : Value.t =
++    Stf.Parse.parse (Lexing.from_string text)
++    |> List.fold_left
++         (fun value_arch (stmt : Stf.Ast.stmt) ->
++           match stmt with
++           | Add (name, priority_opt, keys, action, _) ->
++               let value_priority =
++                 priority_opt
++                 |> Option.map (fun priority ->
++                        priority |> Bigint.of_int |> Value.Make.int)
++                 |> Value.Make.opt (Typ.Make.opt Typ.Make.int)
++               in
++               let value_keys =
++                 keys |> List.map Entries.key
++                 |> Value.Make.list
++                      (Typ.Make.list (Entries.typ "tableKeyInterface"))
++               in
++               Table.add_entry value_ctx value_arch
++                 (name |> String.escaped |> Value.Make.text)
++                 value_priority value_keys (Entries.action action)
++           | SetDefault (name, action) ->
++               Table.add_default_action value_ctx value_arch
++                 (Value.Make.text name) (Entries.action action)
++           | _ -> Json.fail "entries hold only add and setdefault lines")
++         value_arch
++
++  let programs : (string, Value.t * Value.t) Hashtbl.t = Hashtbl.create 8
++
++  let load (includes_p4 : string list) (path : string) : Value.t * Value.t =
++    match Hashtbl.find_opt programs path with
++    | Some loaded -> loaded
++    | None ->
++        let loaded = init_pipe includes_p4 path in
++        Hashtbl.replace programs path loaded;
++        loaded
++
++  let read_global value_ctx value_arch name =
++    Spec.Rel.lvalue_read_var_global value_ctx value_arch name
++
++  let write_global value_ctx value_arch name json =
++    let template = read_global value_ctx value_arch name in
++    let value_cursor = Value.Make.("GLOBAL" <| [] <<| "cursor") in
++    Spec.Rel.lvalue_write_var value_cursor value_ctx value_arch name
++      (Values.of_json template json)
++
++  let handle (includes_p4 : string list) (request : Yojson.Safe.t) :
++      Yojson.Safe.t =
++    let block = Json.member "block" request |> Json.to_string in
++    if not (List.mem block [ "parser"; "control"; "deparser" ]) then
++      Json.fail "unknown block %S: parser, control or deparser" block;
++    let field key = Json.member_opt key request |> Option.value ~default:`Null in
++    let value_ctx, value_arch =
++      load includes_p4 (Json.member "program" request |> Json.to_string)
++    in
++    let value_arch = import_state value_arch (field "state") in
++    let value_arch =
++      match field "entries" with
++      | `Null -> value_arch
++      | json -> install_entries value_ctx value_arch (Json.to_string json)
++    in
++    let packet =
++      match field "packet" with `Null -> "" | json -> Json.to_string json
++    in
++    let value_ctx, value_arch =
++      match
++        call "P4blo_init_packet_in"
++          [
++            value_ctx;
++            value_arch;
++            value_of_object_state (PacketIn (Core.Object.PacketIn.init packet));
++          ]
++      with
++      | [ value_ctx; value_arch ] -> (value_ctx, value_arch)
++      | _ -> assert false
++    in
++    let value_ctx, value_arch =
++      match
++        call "P4blo_init_packet_out"
++          [
++            value_ctx;
++            value_arch;
++            value_of_object_state (PacketOut (Core.Object.PacketOut.init ()));
++          ]
++      with
++      | [ value_ctx; value_arch ] -> (value_ctx, value_arch)
++      | _ -> assert false
++    in
++    let value_ctx =
++      match call "P4blo_init_globals" [ value_ctx; value_arch ] with
++      | [ value_ctx ] -> value_ctx
++      | _ -> assert false
++    in
++    let run relation value_ctx =
++      match call relation [ value_ctx; value_arch ] with
++      | [ value_ctx; value_arch; value_result ] ->
++          (value_ctx, value_arch, value_result)
++      | _ -> assert false
++    in
++    let common value_arch =
++      [ ("state", export_state value_arch); ("externs", observe_externs value_arch) ]
++    in
++    match block with
++    | "parser" ->
++        let value_ctx =
++          write_global value_ctx value_arch "meta" (Json.member "metadata" request)
++        in
++        let value_ctx, value_arch, value_result = run "P4blo_parser" value_ctx in
++        let accepted, error =
++          match Value.Get.(value_result |>>? "REJECT errorValue") with
++          | Some [ value_error ] -> (false, Values.to_json value_error)
++          | _ -> (true, `Assoc [ ("error", `String "NoError") ])
++        in
++        `Assoc
++          ([
++             ("headers", read_global value_ctx value_arch "hdr" |> Values.to_json);
++             ("metadata", read_global value_ctx value_arch "meta" |> Values.to_json);
++             ("consumed_bits", `Int (get_packet_in value_arch).idx);
++             ("accepted", `Bool accepted);
++             ("error", Json.member "error" error);
++           ]
++          @ common value_arch)
++    | "control" ->
++        let value_ctx =
++          write_global value_ctx value_arch "hdr" (Json.member "headers" request)
++        in
++        let value_ctx =
++          write_global value_ctx value_arch "meta" (Json.member "metadata" request)
++        in
++        let value_ctx, value_arch, _ = run "P4blo_control" value_ctx in
++        `Assoc
++          ([
++             ("headers", read_global value_ctx value_arch "hdr" |> Values.to_json);
++             ("metadata", read_global value_ctx value_arch "meta" |> Values.to_json);
++           ]
++          @ common value_arch)
++    | "deparser" ->
++        let value_ctx =
++          write_global value_ctx value_arch "hdr" (Json.member "headers" request)
++        in
++        let _, value_arch, _ = run "P4blo_deparser" value_ctx in
++        let packet_out = get_packet_out value_arch in
++        `Assoc
++          ([
++             ("packet", `String (packet_hex packet_out.bits));
++             ("bits", `Int (Array.length packet_out.bits));
++           ]
++          @ common value_arch)
++    | _ -> assert false
++
++  let message_of_exn (exn : exn) : string =
++    let render diagnostic =
++      Diagnostic.Render.render_report ~ansi:Diagnostic.Ansi.plain
++        (Diagnostic.Report.singleton diagnostic)
++    in
++    match exn with
++    | Run.ExternError failure -> render (Run.diagnostic_of_failure failure)
++    | Stf.Error.StfError msg -> "stf: " ^ msg
++    | P4.Error.ParseError (at, msg) ->
++        render (Diagnostic.error ~source:"p4" at msg)
++    | exn -> Printexc.to_string exn
++
++  (* One JSON request per line in, one JSON reply per line out, until the
++     end of the input. A reply is the block's outputs or {"error": message};
++     an error never ends the session. *)
++  let serve (includes_p4 : string list) (ic : in_channel) (oc : out_channel) :
++      unit =
++    let rec loop () =
++      match In_channel.input_line ic with
++      | None -> ()
++      | Some line when String.trim line = "" -> loop ()
++      | Some line ->
++          let reply =
++            try handle includes_p4 (Yojson.Safe.from_string line)
++            with exn -> `Assoc [ ("error", `String (message_of_exn exn)) ]
++          in
++          output_string oc (Yojson.Safe.to_string reply);
++          output_char oc '\n';
++          flush oc;
++          loop ()
++    in
++    loop ()
++
++  let () = server := serve
++end

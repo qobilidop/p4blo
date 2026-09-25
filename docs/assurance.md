@@ -318,6 +318,28 @@ examples make the pinned simulator fire, with every unhit in-scope rule
 excluded by hand with a reason or listed as reachable and not yet
 exercised. A hit rule is exercised, not verified equivalent.
 
+The corpus and examples are also compared with SpecTec block by block,
+with nothing architectural in between. A patch applied at build time adds
+a `p4blo` architecture to the pinned simulator that runs one parser,
+control or deparser per request on given headers, metadata, entries and
+extern state ([tests/oracle/README.md](../tests/oracle/README.md#the-block-runner)).
+`tests/test_oracle_block.py` repeats every block run of every vector on it
+and compares each block's outputs with the reference interpreter's: a
+parser's headers, metadata, bits consumed, acceptance and error; a
+control's headers and metadata; a deparser's bytes; and every register and
+counter cell after each block. Two documented differences are strict
+expected failures with narrow classifiers: odd-byte CRC32, below, which a
+model of the simulator's padding must explain entirely, on the tutorial
+firewall's Bloom filter cells that the pipeline comparison cannot see; and
+the stored fields and index a stack keeps after `push_front` and
+`pop_front`, the ledger's *deviates* entry, which no deparser emits. The
+blocks' inputs are chosen by chaining them as the switch does, so the
+comparison covers what the vectors reach, not every input a block accepts.
+Table installation is still the STF runner's encoding on both runs, and
+the extern families run on the simulator's V1Model implementations; the
+block runner compares block semantics, not an architecture or the wire
+format.
+
 ## Known disagreements with the oracles
 
 Every known disagreement is a strict expected failure restricted to a
