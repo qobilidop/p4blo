@@ -93,7 +93,7 @@ CORPUS: tuple[CorpusSource, ...] = (
     CorpusSource("stacks", HERE / "p4c/header-stack-ops-bmv2.p4", "identical"),
     CorpusSource("stateful", HERE / "p4c/issue1097-2-bmv2.p4", "documented"),
     CorpusSource("subparser_stack", HERE / "p4c/subparser-with-header-stack-bmv2.p4", "identical"),
-    CorpusSource("tutorial_firewall", ROOT / "tests/oracle/firewall.p4", "normalized"),
+    CorpusSource("tutorial_firewall", ROOT / "tests/oracle/firewall.p4", "documented"),
     CorpusSource("verify_error", HERE / "p4c/issue1824-bmv2.p4", "identical"),
 )
 

@@ -154,19 +154,36 @@ def _documented_acl(g: pb.Program) -> None:
     del setbyte.body[-1]
 
 
+def _mark_to_drop_as_v1model(g: pb.Program, block: str) -> None:
+    """The golden's `drop` action sets the contract's `drop`, and in the
+    firewall also the port 511; v1model's `mark_to_drop` writes only the
+    port 511, whose packet p4blo's switch then drops as sent to no port
+    (docs of p4blo.frontend.v1model). So the action writes the port alone
+    and `M` has no `drop`, which nothing else writes."""
+    meta = next(s for s in g.struct_types if s.name == g.metadata)
+    fields = [f for f in meta.fields if f.name != "drop"]
+    del meta.fields[:]
+    meta.fields.extend(fields)
+    drop = next(a for a in next(b for b in g.blocks if b.name == block).actions if a.name == "drop")
+    port = pb.LValue(member=pb.LMember(base=pb.LValue(var="meta"), field="egress_port"))
+    value = pb.Expr(literal=pb.Literal(bits=pb.BitsLiteral(width=9, value="511")))
+    del drop.body[:]
+    drop.body.append(pb.Stmt(assign=pb.Assign(target=port, value=value)))
+
+
 def _documented_forwarder(g: pb.Program) -> None:
     """The golden declares the contract's `ingress_port`, which the source
-    never reads; and the bridge's `mark_to_drop` also writes the drop port
-    511 to `egress_port`, as v1model's does (docs of p4blo.frontend.v1model)."""
+    never reads; and `mark_to_drop` is v1model's (above)."""
     meta = next(s for s in g.struct_types if s.name == g.metadata)
     fields = [f for f in meta.fields if f.name != "ingress_port"]
     del meta.fields[:]
     meta.fields.extend(fields)
-    ingress = next(b for b in g.blocks if b.name == "MyIngress")
-    drop = next(a for a in ingress.actions if a.name == "drop")
-    port = pb.LValue(member=pb.LMember(base=pb.LValue(var="meta"), field="egress_port"))
-    value = pb.Expr(literal=pb.Literal(bits=pb.BitsLiteral(width=9, value="511")))
-    drop.body.append(pb.Stmt(assign=pb.Assign(target=port, value=value)))
+    _mark_to_drop_as_v1model(g, "MyIngress")
+
+
+def _documented_tutorial_firewall(g: pb.Program) -> None:
+    """`mark_to_drop` is v1model's (above)."""
+    _mark_to_drop_as_v1model(g, "MyIngress")
 
 
 def _documented_priority(g: pb.Program) -> None:
@@ -212,6 +229,7 @@ DOCUMENTED: dict[str, Callable[[pb.Program], None]] = {
     "forwarder": _documented_forwarder,
     "priority": _documented_priority,
     "stateful": _documented_stateful,
+    "tutorial_firewall": _documented_tutorial_firewall,
 }
 
 # Vectors on which the translation and the golden are expected to differ,
@@ -505,3 +523,19 @@ def test_probe_agrees_with_spectec(exporter: Exporter, name: str) -> None:
     assert done.returncode == 0, f"P4-SpecTec fails the vector:\n{done.stderr[-2000:]}"
     program = _translated(exporter, source, name).program
     assert p4c_stf.replay(program, vector.read_text()) == []
+
+
+def test_fields_synchronized_as_the_printer_does_are_the_contract_fields(
+    exporter: Exporter,
+) -> None:
+    """The shimsync probe copies its M's contract-named fields to and from
+    standard_metadata exactly as the printer does, so the translation reads
+    them as the contract fields, with no copies left; collide and dropflag,
+    which do not, keep them renamed."""
+    got = _translated(exporter, PROBES / "shimsync.p4", "shimsync")
+    meta = next(s for s in got.program.struct_types if s.name == got.program.metadata)
+    assert [f.name for f in meta.fields] == ["ingress_port", "parser_error", "egress_port", "drop"]
+    assert sum("is the contract field" in n for n in got.notes) == 4
+    for name in ("collide", "dropflag"):
+        other = _translated(exporter, PROBES / f"{name}.p4", name)
+        assert any("renamed" in n and "user metadata" in n for n in other.notes)

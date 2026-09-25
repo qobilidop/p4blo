@@ -394,23 +394,26 @@ and each row of [p4-spec-coverage.md](p4-spec-coverage.md) says what it
 does with the construct. `tests/test_frontend_spectec.py` establishes, at
 the pin, that five corpus goldens (csum16, parser_error, stacks,
 subparser_stack, verify_error) are reproduced byte for byte from their P4
-originals and tutorial_firewall up to declaration order and local names;
-that the other four differ only as the test spells out, with their vectors
-agreeing packet by packet except where the difference shows; that every
+originals; that the other five differ only as the test spells out, with
+their vectors agreeing packet by packet except where the difference
+shows; that every
 corpus and example golden the v1model printer prints translates back to
 itself up to declaration order and the names of block locals and stateless
 extern instances, priority excepted since the printer writes mutable
-entries; that excluded constructs are refused by their row; and
+entries; that excluded constructs are refused by their row;
 that five p4c programs outside the corpus pass their own STF vectors on
-the Python interpreter. One difference is P4-SpecTec's and is kept: it
+the Python interpreter; and that thirteen probe programs written for what
+the corpus misses pass vectors of P4-SpecTec's exact output, on its
+simulator and translated. One difference is P4-SpecTec's and is kept: it
 reads `@priority(n)` as a priority where the larger wins, and p4c and
 BMv2 let the smaller win, so priority's translation routes two of its
 three packets as SpecTec's own simulator does, not as its p4c vector
 expects. This is evidence on these programs, not a verified frontend: the
 bridge's elaborations are not proved to preserve meaning, P4-SpecTec's
-typing is trusted as the reference for what the source means, and the
-metadata contract inherits the printer's imprecision about v1model's drop
-port.
+typing is trusted as the reference for what the source means, and
+v1model's drop is translated as v1model decides it, from `egress_spec`
+being 511 at the end of ingress, relying on 511 being no port of p4blo's
+switch wherever no egress part needs the decision written out.
 
 ## Known disagreements with the oracles
 
