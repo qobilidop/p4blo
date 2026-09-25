@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Every check CI runs, in order, stopping at the first failure.
+# The local Python/schema/workflow gate, stopping at the first failure.
 # Run with the development tools from README.md#development on PATH.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -15,7 +15,6 @@ uv run pyright
 # each, so an expensive module fixture runs once, and spreads the rest.
 if [ "${P4BLO_ALL_TESTS:-}" = "1" ]; then uv run pytest -q -n auto --dist loadgroup; else uv run pytest -q -m "not oracle" -n auto --dist loadgroup; fi
 buf lint
-buf generate
-git diff --exit-code -- impl/python/p4blo/v0
+uv run python scripts/check-generated.py
 actionlint
 echo "all checks passed"

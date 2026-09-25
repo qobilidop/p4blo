@@ -52,6 +52,4 @@ jobs:
       - name: Lint schema
         run: nix develop -c buf lint
       - name: Generated code is current
-        run: |
-          nix develop -c buf generate
-          git diff --exit-code -- impl/python/p4blo/v0
+        run: nix develop -c uv run python scripts/check-generated.py

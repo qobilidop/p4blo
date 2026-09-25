@@ -16,7 +16,11 @@ is current (`test_ledger_xref.py`), that the quickstart and the
 homepage run the program they show (`test_quickstart.py`,
 `test_website.py`), that the package imports (`test_smoke.py`), and that
 the XDP profile compiles (`test_xdp_build.py`, compile-only, never a
-kernel execution oracle).
+kernel execution oracle). Repository hygiene checks cover staged and working
+file sizes (`test_file_sizes.py`) and reject missing, stale or modified
+generated protobuf outputs (`test_generated.py`). Their negative fixtures
+use temporary Git repositories; the generation check itself also runs in
+the local and schema CI gates.
 
 ```
 uv run pytest tests/structure
