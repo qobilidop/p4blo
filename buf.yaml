@@ -1,6 +1,7 @@
 version: v2
 modules:
   - path: spec/ir/proto
+  - path: spec/arch/proto
 lint:
   use:
     - STANDARD

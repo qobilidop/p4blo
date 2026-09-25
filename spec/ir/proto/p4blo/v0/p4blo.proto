@@ -43,42 +43,25 @@ syntax = "proto3";
 package p4blo.v0;
 
 // ---------------------------------------------------------------------------
-// Program
+// Block libraries
 // ---------------------------------------------------------------------------
 
-message Program {
-  // Human-readable name; carries no meaning.
+// A reusable set of declarations and any number of blocks of each kind.
+// Architecture bindings and execution policy are deliberately separate.
+message BlockLibrary {
   string name = 1;
-  // Error values by name. The first seven are core.p4's, in the order
-  // NoError, PacketTooShort, NoMatch, StackOutOfBounds, HeaderTooShort,
-  // ParserTimeout, ParserInvalidArgument. A program may add more.
+  // The first seven are core.p4's errors, in their specified order.
   repeated string errors = 2;
   repeated HeaderType header_types = 3;
   repeated StructType struct_types = 4;
   repeated EnumType enum_types = 5;
   repeated ExternType extern_types = 6;
-  // Extern instances are program-level state. A P4 block that owns extern
-  // state and is instantiated more than once is elaborated into one block
-  // per instantiation; the IR has no block instances.
   repeated ExternInstance extern_instances = 7;
   repeated Block blocks = 8;
-  // The struct types of the headers value H and of the metadata value M.
-  string headers = 9;
-  string metadata = 10;
-  // The blocks the program offers to an architecture, by role.
-  repeated Export exports = 11;
+  // Former architecture fields belong to the architecture transport now.
+  reserved 9 to 11;
+  reserved "headers", "metadata", "exports";
   reserved 100 to 199;
-}
-
-// An architecture declares the roles it needs, each with a block kind; the
-// program supplies a block per role. The check is structural: the role name
-// is a label, and the block must have the calling convention of its kind:
-//   parser:   (out H, inout M) over the packet
-//   control:  (inout H, inout M)
-//   deparser: (in H) over the packet
-message Export {
-  string role = 1;
-  string block = 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +126,7 @@ message Literal {
     BitsLiteral bits = 1;
     bool boolean = 2;
     EnumLiteral enum_member = 3;
-    // A name from Program.errors.
+    // A name from BlockLibrary.errors.
     string error = 4;
   }
 }
