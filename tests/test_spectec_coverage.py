@@ -5,19 +5,21 @@ makes on the pinned simulator: which items of the rule inventory
 (tests/oracle/spectec-rules.json) fire when the corpus and examples run.
 tests/oracle/spectec-coverage-exclusions.json is written by hand: every
 in-scope item that does not fire, with a category and a reason. In scope are
-the rules of 8-dynamic and the functions of 3-operations.
+the rules of 8-dynamic and the functions of 3-operations and 8-dynamic.
 
 Without any OCaml toolchain this checks that both fixtures name the pinned
 commit, that the report joins the inventory, that every in-scope item is hit
 or excluded, that no exclusion is stale, and that docs/p4-spec-coverage.md states the
 same counts. With the oracle and the coverage probe built at the pin, the
-report is also regenerated and compared, which takes about fifteen seconds
-and runs in the oracle CI job; elsewhere that test skips and says why.
+report is also regenerated and compared, which runs in the oracle CI job;
+elsewhere that test skips and says why, unless P4BLO_REQUIRE_SPECTEC_COVERAGE=1
+asks for it.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -38,6 +40,14 @@ sys.path.insert(0, str(ROOT))
 from tests.oracle import coverage  # noqa: E402
 
 CATEGORIES = {"architecture", "excluded-construct", "not-representable", "unhit"}
+# In-scope rules the structuring pass merges into another rule's leaf, with
+# no leaf of their own (tests/oracle/coverage.py, on merged rules).
+MERGED = {
+    ("rule", "Callee_eval/abort", "8-dynamic/8.10.1-eval-call-callee.watsup", 255),
+    ("rule", "Callee_eval/abort", "8-dynamic/8.10.1-eval-call-callee.watsup", 303),
+}
+# How a reach text would admit that nothing reaches the item.
+UNREACHABLE = re.compile(r"\b(not reachable|unreachable|cannot be reached|never reached)\b", re.I)
 Key = tuple[str, str, str, int]
 
 
@@ -50,8 +60,12 @@ def key(item: dict[str, Any]) -> Key:
 
 
 def in_scope(item: dict[str, Any]) -> bool:
-    """The rules of 8-dynamic and the functions of 3-operations."""
-    return (item["kind"], item["section"]) in {("rule", "8-dynamic"), ("dec", "3-operations")}
+    """The rules of 8-dynamic and the functions of 3-operations and 8-dynamic."""
+    return (item["kind"], item["section"]) in {
+        ("rule", "8-dynamic"),
+        ("dec", "3-operations"),
+        ("dec", "8-dynamic"),
+    }
 
 
 def coverage_rows() -> set[str]:
@@ -120,11 +134,37 @@ def test_exclusions_are_well_formed() -> None:
             problems.append(f"{where}: unknown category {category!r}")
         if not str(entry.get("reason", "")).strip():
             problems.append(f"{where}: no reason")
-        if category == "excluded-construct" and entry.get("row") not in rows:
-            problems.append(f"{where}: row {entry.get('row')!r} is not a p4-spec-coverage.md row")
-        if category == "unhit" and not str(entry.get("reach", "")).strip():
+        if category == "excluded-construct" and "row" not in entry:
+            problems.append(f"{where}: an excluded construct names its p4-spec-coverage.md row")
+        if "row" in entry and entry["row"] not in rows:
+            problems.append(f"{where}: row {entry['row']!r} is not a p4-spec-coverage.md row")
+        reach = str(entry.get("reach", ""))
+        if category == "unhit" and not reach.strip():
             problems.append(f"{where}: an unhit item says which input would reach it")
+        if category == "unhit" and UNREACHABLE.search(reach):
+            problems.append(
+                f"{where}: an unhit item must be reachable, but its reach says it is not"
+            )
     assert not problems, "\n".join(problems)
+
+
+def test_every_in_scope_rule_has_its_own_leaf() -> None:
+    """A rule is hit through exactly one leaf of its own. An ancestor
+    attribution guesses the owner from a shared case analysis, and a
+    merged rule has no leaf; either would let a hit be credited to the
+    wrong rule, so both fail in scope except for the named merges."""
+    problems = [
+        f"{i['file']}:{i['line']}: {i['name']}: leaves {i['leaves']}"
+        + (", via an ancestor" if "via" in i else "")
+        for i in load(REPORT)["items"]
+        if i["kind"] == "rule"
+        and in_scope(i)
+        and key(i) not in MERGED
+        and (i["leaves"] != 1 or "via" in i)
+    ]
+    assert not problems, "\n".join(problems)
+    merged = {key(i): i["leaves"] for i in load(REPORT)["items"] if key(i) in MERGED}
+    assert merged == dict.fromkeys(MERGED, 0), "a named merge changed; review MERGED"
 
 
 def counts() -> dict[str, Counter[str]]:
@@ -161,9 +201,13 @@ def test_docs_state_the_report_counts() -> None:
 
 
 def test_report_matches_a_fresh_measurement() -> None:
+    """The oracle job sets P4BLO_REQUIRE_SPECTEC_COVERAGE=1, so that a
+    missing probe fails there instead of skipping."""
     root = coverage.oracle_root()
     for problem in (coverage.checkout_problem(root), coverage.probe_problem(root)):
         if problem is not None:
+            if os.environ.get("P4BLO_REQUIRE_SPECTEC_COVERAGE") == "1":
+                pytest.fail(f"required SpecTec coverage measurement is unavailable: {problem}")
             pytest.skip(problem)
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--check"],

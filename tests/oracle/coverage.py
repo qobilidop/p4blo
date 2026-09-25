@@ -45,7 +45,7 @@ rule or clause). Both coverage modes count those instructions:
 So neither output can be mapped to rule names. The structuring pass does
 keep each instruction's source region, and a rule's `Result` leaf carries
 the region of that rule's conclusion. This module therefore builds a small
-probe (`PROBE_ML` below) against the checkout's own library sources, in a
+probe (tests/oracle/coverage_probe.ml) against the checkout's own library sources, in a
 separate build directory (the checkout is not touched): it registers an
 instrumentation handler on the same hook (`Inst.Hook`, `on_instr`) that
 `-instr` uses, runs every pair through the same `run_stf_test`, and prints
@@ -56,8 +56,9 @@ which also fire for builtins that have no instructions). The probe runs
 with the simulator's result cache off, so that a later vector re-executes
 what an earlier one computed and per-vector counts are honest; the union
 over all vectors is the same either way. Every run also invokes the stock
-`cover-sim -instr` on the same inputs and requires its headline total to
-equal the probe's, so the probe cannot drift from what P4-SpecTec itself
+`cover-sim -instr` on the same inputs and requires its headline total, and
+the hit and total counts of every definition, to equal the probe's, so the
+probe cannot drift from what P4-SpecTec itself
 reports.
 
 How instructions become rule names
@@ -67,16 +68,24 @@ A rule is hit when its leaf executed: the `Result` instruction whose region
 lies in the rule's source span (from the `rule` line to the line before the
 next declaration or closing brace). Two corrections are needed:
 
-- A `Result` that directly follows a premise call in tail position is never
-  executed; the interpreter tail-calls the premise instead
-  (interp-sl/interp.ml, `eval_rule_instr`). Such a leaf counts as hit when
-  its premise instruction executed. This can over-approximate if the tail
-  premise itself fails, which ends the relation and, for p4blo's inputs,
-  the run.
+- A `Result` that is the whole block of a premise call with no iteration
+  premises is never executed; the interpreter tail-calls the premise
+  instead (interp-sl/interp.ml, `eval_rule_instr`). Such a leaf counts as
+  hit when its premise instruction executed. This over-approximates only
+  when the tail-called premise fails: the failure raises into the caller's
+  rule instruction, which backtracks to its next alternative, so the leaf
+  is credited although the rule did not hold. An independent check that
+  recorded the interpreter's real tail calls found no such credit over the
+  corpus.
 - A rule with neither outputs nor path premises gets the relation
   signature's region. Its leaf is attributed to the nearest enclosing
   instruction whose region lies in a rule span, and the report says so
-  (`"via": "ancestor"`).
+  (`"via": "ancestor"`). That enclosing instruction is often a case
+  analysis shared with a sibling rule, which then takes the credit: in
+  5-typing, `CallableType_wf/actionTypeIR` holds the leaves of two other
+  rules. No in-scope rule needs it at this pin, and
+  tests/test_spectec_coverage.py fails if one ever does, or has other
+  than one leaf outside the named merges below.
 
 Rules with identical premises and conclusions are merged into one leaf by
 the structuring pass, which keeps one rule's region; the others have no leaf
@@ -87,11 +96,13 @@ table callee's (`Callee_eval/abort`).
 A rule group is hit when one of its rules is; a relation or function when
 it was entered, wherever that happened, constant folding during typing
 included. Syntax productions have no dynamic meaning and are left out.
-Definitions the inventory does not list, 9-arch's and the builtin and
-extern declarations its pattern does not match, are reported under
-`outside_inventory`, flagged by section. Only 8-dynamic and 3-operations are in
-scope for the exclusions test; the other sections are kept and flagged,
-since typing and instantiation run on every program too.
+Definitions the inventory does not list, which are those of 9-arch, are
+reported under `outside_inventory`, flagged by section. Only 8-dynamic and
+3-operations are in scope; the exclusions test enforces their rules and
+functions. The other sections are kept, since typing and instantiation run
+on every program too, and a function of theirs that an in-scope file names
+is flagged `called_in_scope`, found statically, which says what widening
+the scope to the functions the dynamic semantics calls would cost.
 
 A hit rule is exercised, not verified equivalent: the simulator ran it on
 one of p4blo's printed programs, which says nothing about whether p4blo's
@@ -102,15 +113,23 @@ Inputs
 
 By default the inputs are every corpus program (`tests/corpus/*/*.txtpb`)
 and every example (`tests/examples/*/*.txtpb`), printed through the v1model
-shim and with their vectors translated exactly as tests/oracle/run.py does.
+shim and with their vectors translated exactly as tests/oracle/run.py does,
+and a fixed set of generated programs, `GENERATED_SEEDS` of
+tests/oracle/generated.py, materialized as its oracle test materializes
+them. The seeds were chosen greedily from a pool of 750 (seeds 0 to 399,
+and the parser and parser-condition seeds up to 2399 and 1199, the two
+families whose programs vary most): each adds the most in-scope items the
+corpus and the seeds before it had not hit, and together the 18 hit every
+item the pool hits. A change to
+the generators changes what the seeds name, so it regenerates this report.
 `--inputs DIR` (repeatable) adds directories of `.p4`/`.stf` pairs in
 P4-SpecTec's own convention above, already in the simulator's STF dialect;
 the report records them, and `--check` reuses the recorded ones.
 
 Run time on an M-series Mac: the probe build takes about ten seconds of
-wall time once per pin. A regeneration over the 21 corpus and example
-vectors runs the probe and the stock cross-check side by side, about
-fifteen seconds each, spec elaboration included.
+wall time once per pin. A regeneration over the corpus, example and
+generated vectors, 93 in all, runs the probe and the stock cross-check side
+by side, about forty seconds, spec elaboration included.
 """
 
 from __future__ import annotations
@@ -147,111 +166,11 @@ TIMEOUT_SECONDS = 1800
 # The probe
 # ---------------------------------------------------------------------------
 
-# The probe's source. It links P4-SpecTec's `p4spectec` library and uses its
-# public entry points only: `P4spectec.structure`, `P4spectec.build_sim`,
-# `Inst.Hook`, `Simulator.run_stf_test`. The instruction walk mirrors
+# The probe's source, beside this file. The instruction walk mirrors
 # p4spec/lib/coverage/instr/single.ml (`Cover.init_instr`), including not
 # descending into a debug instruction, so that the totals agree with
 # `cover-sim -instr`.
-PROBE_ML = r"""(* p4blo's coverage probe; generated by tests/oracle/coverage.py. *)
-
-open Lang
-open Sl
-open Util.Source
-module Sig = Runtime.Sim.Signature
-
-let kind_of (instr : instr) =
-  match instr.it with
-  | IfI _ -> "if" | HoldI _ -> "hold" | CaseI _ -> "case" | GroupI _ -> "group"
-  | LetI _ -> "let" | RuleI _ -> "rule" | ResultI _ -> "result"
-  | ReturnI _ -> "return" | DebugI _ -> "debug"
-
-let () =
-  match Array.to_list Sys.argv with
-  | _ :: out :: spec :: include_ :: pairs ->
-      let oc = open_out out in
-      let pr fmt = Printf.fprintf oc fmt in
-      let rec walk_block origin parent block =
-        List.iter (walk_instr origin parent) block
-      and walk_instr origin parent (instr : instr) =
-        let r = instr.at in
-        let tail = match instr.it with RuleI (_, _, _, _, [ _ ]) -> 1 | _ -> 0 in
-        pr "I\t%d\t%s\t%s\t%d\t%s\t%d\t%d\n" instr.note.iid (kind_of instr)
-          origin parent r.left.file r.left.line tail;
-        let sub = walk_block origin instr.note.iid in
-        match instr.it with
-        | IfI (_, _, b, _) -> sub b
-        | HoldI (_, _, _, BothH (b1, b2)) -> sub b1; sub b2
-        | HoldI (_, _, _, HoldH (b, _)) | HoldI (_, _, _, NotHoldH (b, _)) -> sub b
-        | CaseI (_, cases, _) -> List.iter (fun (_, b) -> sub b) cases
-        | GroupI (_, _, _, b) | LetI (_, _, _, b) | RuleI (_, _, _, _, b) -> sub b
-        | DebugI _ | ResultI _ | ReturnI _ -> ()
-      in
-      let walk_def (def : def) =
-        let d kind (id : id) =
-          pr "D\t%s\t%s\t%s\t%d\n" kind id.it def.at.left.file def.at.left.line
-        in
-        let body (id : id) block elseblock =
-          walk_block id.it (-1) block;
-          Option.iter (walk_block id.it (-1)) elseblock
-        in
-        match def.it with
-        | RelD (id, _, _, b, e, _) -> d "relation" id; body id b e
-        | FuncDecD (id, _, _, _, b, e, _) -> d "function" id; body id b e
-        | TableDecD (id, _, _, rows, _) ->
-            d "function" id;
-            List.iter (fun (_, _, b) -> walk_block id.it (-1) b) rows
-        | BuiltinDecD (id, _, _, _, _) | ExternDecD (id, _, _, _, _) ->
-            d "function" id
-        | ExternRelD (id, _, _, _) -> d "relation" id
-        | _ -> ()
-      in
-      let spec_sl =
-        match P4spectec.structure ~final:true [ spec ] with
-        | Ok s -> s
-        | Error _ -> failwith "the spec does not structure"
-      in
-      List.iter walk_def spec_sl;
-      let spec_sim = Sig.SL spec_sl in
-      let (module Simulator : Sig.SIM) =
-        match P4spectec.build_sim ~cache:false ~arch:"v1model" spec_sim with
-        | Ok s -> s
-        | Error _ -> failwith "the simulator does not build"
-      in
-      let rec run index = function
-        | p4 :: stf :: rest ->
-            let instrs = Hashtbl.create 4096 and calls = Hashtbl.create 1024 in
-            let bump tbl key =
-              Hashtbl.replace tbl key
-                (1 + Option.value ~default:0 (Hashtbl.find_opt tbl key))
-            in
-            let module H : Inst.Handler.HANDLER = struct
-              include Inst.Handler.Default
-              let on_instr (instr : instr) = bump instrs instr.note.iid
-              let on_rel_enter (id : id) _ = bump calls ("relation\t" ^ id.it)
-              let on_func_enter (id : id) _ = bump calls ("function\t" ^ id.it)
-            end in
-            Inst.Hook.register [ (module H : Inst.Handler.HANDLER) ];
-            Inst.Hook.init_spec spec_sim;
-            let result = Simulator.run_stf_test [ include_ ] p4 stf in
-            Inst.Hook.finish ();
-            let verdict =
-              match result with
-              | Pass () -> "pass"
-              | Fail (`Syntax _) -> "syntax"
-              | Fail (`Runtime _) -> "runtime"
-            in
-            pr "P\t%d\t%s\t%s\t%s\n" index p4 stf verdict;
-            Hashtbl.iter (fun iid n -> pr "H\t%d\t%d\t%d\n" index iid n) instrs;
-            Hashtbl.iter (fun key n -> pr "C\t%d\t%s\t%d\n" index key n) calls;
-            run (index + 1) rest
-        | [] -> ()
-        | _ -> failwith "programs and vectors must come in pairs"
-      in
-      run 0 pairs;
-      close_out oc
-  | _ -> failwith "usage: probe OUT SPEC INCLUDE [P4 STF]..."
-"""
+PROBE_SOURCE = Path(__file__).with_name("coverage_probe.ml")
 
 PROBE_DUNE = "(executable\n (name probe)\n (libraries p4spectec))\n"
 # A dune project of its own whose `lib` is a symlink to the checkout's library
@@ -297,7 +216,8 @@ def probe_dir(root: Path) -> Path:
 
 def probe_stamp() -> str:
     """What a built probe must match: the pin and the probe's own source."""
-    digest = hashlib.sha256((PROBE_ML + PROBE_DUNE + PROBE_PROJECT).encode()).hexdigest()
+    source = PROBE_SOURCE.read_text(encoding="utf-8")
+    digest = hashlib.sha256((source + PROBE_DUNE + PROBE_PROJECT).encode()).hexdigest()
     return f"{pinned_commit()} {digest[:16]}"
 
 
@@ -327,7 +247,7 @@ def build_probe(root: Path) -> Path:
     (target / "probe").mkdir(parents=True, exist_ok=True)
     (target / "dune-project").write_text(PROBE_PROJECT, encoding="utf-8")
     (target / "probe" / "dune").write_text(PROBE_DUNE, encoding="utf-8")
-    (target / "probe" / "probe.ml").write_text(PROBE_ML, encoding="utf-8")
+    shutil.copyfile(PROBE_SOURCE, target / "probe" / "probe.ml")
     link = target / "lib"
     if link.is_symlink() or link.exists():
         link.unlink()
@@ -347,6 +267,29 @@ def build_probe(root: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Inputs
 # ---------------------------------------------------------------------------
+
+
+# Seeds of tests/oracle/generated.py measured beside the corpus; see "Inputs".
+GENERATED_SEEDS = (
+    6,
+    21,
+    22,
+    47,
+    103,
+    151,
+    176,
+    192,
+    263,
+    457,
+    495,
+    751,
+    855,
+    1017,
+    1471,
+    1647,
+    1687,
+    2111,
+)
 
 
 @dataclass
@@ -394,6 +337,33 @@ def materialize_corpus(stage: Path) -> list[Program]:
                 program.vectors.append(out)
             if program.vectors:
                 programs.append(program)
+    return programs
+
+
+def materialize_generated(stage: Path, seeds: Iterable[int]) -> list[Program]:
+    """Materialize seeds of tests/oracle/generated.py beside the corpus: the
+    program printed as its oracle test prints it, and each vector, whose
+    `expect` lines are what Python did, translated as the corpus's are."""
+    sys.path.insert(0, str(ROOT))
+    from tests.oracle import generated
+    from tests.oracle import run as oracle_run
+
+    programs: list[Program] = []
+    for seed in seeds:
+        drawn = generated.materialize(seed)
+        ident = f"generated-{seed:05d}-{drawn.family}"
+        prepared = generated.prepare(drawn, stage / "prepared" / ident)
+        p4 = stage / "p4" / f"{ident}.p4"
+        p4.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(prepared.p4, p4)
+        program = Program(ident, f"tests/oracle/generated.py seed {seed}", p4)
+        for vector in prepared.vectors:
+            translated, _notes = oracle_run.translate(vector.read_text(), prepared.index)
+            out = stage / "stf" / ident / vector.name
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(translated, encoding="utf-8")
+            program.vectors.append(out)
+        programs.append(program)
     return programs
 
 
@@ -529,10 +499,48 @@ def run_probe(root: Path, programs: list[Program]) -> Measurement:
 
 
 STOCK_TOTAL = re.compile(r"^;; Instruction coverage: (\d+)/(\d+) ")
+STOCK_DEF = re.compile(r"^;; spec/(\S+?):(\d+)\.")
+STOCK_DEBUG = re.compile(r"^[+-] +\d+\. Debug: ")
 
 
-def run_stock(root: Path, p4_dirs: list[Path], stf_dirs: list[Path]) -> tuple[int, int]:
-    """`cover-sim -instr` on the same inputs: (hit, total) instructions."""
+@dataclass
+class Stock:
+    """What `cover-sim -instr` reports: (hit, total) instructions, overall
+    and per definition, the latter keyed by the definition's file and line."""
+
+    total: tuple[int, int]
+    per_def: dict[tuple[str, int], tuple[int, int]]
+
+
+def parse_stock(text: str) -> Stock:
+    """The headline and, per `;; spec/FILE:LINE.COL-...` section, the lines
+    marked `+` (hit) or `-` (not hit), one per instruction. A debug
+    instruction's inner instruction is printed on the next line
+    (coverage/instr/log.ml) but, as in the probe's walk, not counted."""
+    lines = text.splitlines()
+    match = STOCK_TOTAL.match(lines[0] if lines else "")
+    if match is None:
+        raise SystemExit(f"unexpected cover-sim header: {lines[:1]!r}")
+    per_def: dict[tuple[str, int], tuple[int, int]] = {}
+    current: tuple[str, int] | None = None
+    after_debug = False
+    for line in lines[1:]:
+        found = STOCK_DEF.match(line)
+        if found is not None:
+            current = (found.group(1), int(found.group(2)))
+            per_def.setdefault(current, (0, 0))
+        elif line[:2] in ("+ ", "- ") and current is not None:
+            if not after_debug:
+                hit, total = per_def[current]
+                per_def[current] = (hit + (line[0] == "+"), total + 1)
+            after_debug = STOCK_DEBUG.match(line) is not None
+            continue
+        after_debug = False
+    return Stock((int(match.group(1)), int(match.group(2))), per_def)
+
+
+def run_stock(root: Path, p4_dirs: list[Path], stf_dirs: list[Path]) -> Stock:
+    """`cover-sim -instr` on the same inputs."""
     with tempfile.TemporaryDirectory(prefix="p4blo-coverage-") as tmp:
         cov = Path(tmp) / "instr.cov"
         command = ["./p4spectec", "cover-sim", "spec", "-arch", "v1model", "-i", "p4c/p4include"]
@@ -546,12 +554,7 @@ def run_stock(root: Path, p4_dirs: list[Path], stf_dirs: list[Path]) -> tuple[in
         )
         if result.returncode != 0 or not cov.is_file():
             raise SystemExit(f"cover-sim failed ({result.returncode}):\n{result.stderr[-4000:]}")
-        with cov.open(encoding="utf-8") as f:
-            head = f.readline()
-    match = STOCK_TOTAL.match(head)
-    if match is None:
-        raise SystemExit(f"unexpected cover-sim header: {head!r}")
-    return int(match.group(1)), int(match.group(2))
+        return parse_stock(cov.read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------------------
@@ -561,6 +564,25 @@ def run_stock(root: Path, p4_dirs: list[Path], stf_dirs: list[Path]) -> tuple[in
 # A line that starts a declaration or closes a group ends the span of the
 # rule before it.
 DECLARATION = re.compile(r"^\s*(syntax|relation|rule|rulegroup|dec|def|var|})(\s|$)")
+
+
+FUNCTION_NAME = re.compile(r"\$[A-Za-z_][A-Za-z0-9_']*")
+
+
+def called_in_scope(spec: Path, items: list[dict[str, Any]]) -> set[str]:
+    """The functions the in-scope sections name, statically: every `$name`
+    written in a file of 3-operations or 8-dynamic outside the line that
+    declares it. A function of another section that the dynamic semantics
+    calls is part of what it runs, whichever section defines it."""
+    declared = {(str(i["file"]), int(i["line"])) for i in items if i["kind"] == "dec"}
+    names: set[str] = set()
+    for section in IN_SCOPE:
+        for path in sorted((spec / section).rglob("*.watsup")):
+            file = path.relative_to(spec).as_posix()
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if (file, number) not in declared:
+                    names.update(FUNCTION_NAME.findall(line))
+    return names
 
 
 def spans(spec: Path, items: list[dict[str, Any]]) -> dict[tuple[str, int], tuple[int, int]]:
@@ -639,12 +661,34 @@ def leaf_fired(measurement: Measurement, iid: int, hits: dict[int, int]) -> bool
 # ---------------------------------------------------------------------------
 
 
+def cross_check(measurement: Measurement, per_origin: dict[str, list[int]], stock: Stock) -> None:
+    """Every definition's hit and total instructions, as the probe counts
+    them, equal what `cover-sim -instr` prints for it; totals alone could
+    hide two errors that cancel."""
+    where: dict[str, tuple[str, int]] = {}
+    for _kind, name, file, line in measurement.defs:
+        if name in where and where[name] != (file, line):
+            raise SystemExit(f"two definitions are named {name!r}; the cross-check needs one")
+        where[name] = (file, line)
+    probe = {where[name]: (hit, total) for name, (hit, total) in per_origin.items()}
+    stocked = {key: value for key, value in stock.per_def.items() if value[1]}
+    if probe != stocked:
+        differ = sorted(
+            f"{file}:{line}: probe {probe.get((file, line))}, cover-sim {stocked.get((file, line))}"
+            for file, line in probe.keys() | stocked.keys()
+            if probe.get((file, line)) != stocked.get((file, line))
+        )
+        raise SystemExit(
+            "the probe and cover-sim disagree per definition:\n" + "\n".join(differ[:20])
+        )
+
+
 def build_report(
     root: Path,
     programs: list[Program],
     extra: list[str],
     measurement: Measurement,
-    stock: tuple[int, int],
+    stock: Stock,
 ) -> dict[str, Any]:
     inventory = json.loads(INVENTORY.read_text(encoding="utf-8"))
     commit = pinned_commit()
@@ -653,20 +697,23 @@ def build_report(
     items = [i for i in inventory["items"] if i["kind"] in KINDS]
     span = spans(root / "spec", items)
     leaves, stray = attribute(measurement, items, span)
+    called = called_in_scope(root / "spec", items)
     n = len(measurement.vectors)
 
     # Instruction universe per definition and per rule span.
     universe = measurement.instrs
     union = {iid for hits in measurement.hits for iid in hits if iid in universe}
-    if (len(union), len(universe)) != stock:
+    if (len(union), len(universe)) != stock.total:
         raise SystemExit(
             f"the probe counts {len(union)}/{len(universe)} instructions but cover-sim "
-            f"reports {stock[0]}/{stock[1]}; the probe no longer measures what P4-SpecTec does"
+            f"reports {stock.total[0]}/{stock.total[1]}; the probe no longer measures what "
+            "P4-SpecTec does"
         )
     per_origin: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for instr in universe.values():
         per_origin[instr.origin][1] += 1
         per_origin[instr.origin][0] += instr.iid in union
+    cross_check(measurement, per_origin, stock)
 
     def in_span(item: dict[str, Any]) -> list[int]:
         first, last = span[(item["file"], int(item["line"]))]
@@ -720,10 +767,12 @@ def build_report(
             if name in per_origin:
                 row["instructions"] = per_origin[name]
         row["in_scope"] = item["section"] in IN_SCOPE
+        if item["kind"] == "dec" and item["section"] not in IN_SCOPE:
+            row["called_in_scope"] = str(item["name"]) in called
         rows.append(row)
     rows.sort(key=_key)
 
-    # Definitions the inventory does not list (9-arch), flagged by section.
+    # Definitions the inventory does not list (9-arch's), flagged by section.
     listed = {str(i["name"]).removeprefix("$") for i in items if i["kind"] in ("relation", "dec")}
     outside: list[dict[str, Any]] = []
     for kind, name, file, line in sorted(measurement.defs, key=lambda d: (d[2], d[3], d[1])):
@@ -774,14 +823,16 @@ def build_report(
         "in_scope": list(IN_SCOPE),
         "input_description": (
             "every corpus program and example, printed through the v1model shim, "
-            "with its STF vectors translated as tests/oracle/run.py does"
+            "with its STF vectors translated as tests/oracle/run.py does, and the "
+            "generated programs of tests/oracle/generated.py at the listed seeds"
             + (", plus the pairs under the extra input directories" if extra else "")
         ),
+        "generated_seeds": list(GENERATED_SEEDS),
         "extra_input_dirs": extra,
         "totals": {
             "programs": len(programs),
             "vectors": n,
-            "instructions": {"hit": stock[0], "total": stock[1]},
+            "instructions": {"hit": stock.total[0], "total": stock.total[1]},
             "instructions_by_section": {
                 s: {"hit": h, "total": t} for s, (h, t) in sorted(by_section.items())
             },
@@ -814,7 +865,7 @@ def regenerate(root: Path, extra_dirs: Iterable[str]) -> str:
     extra = sorted(set(extra_dirs))
     with tempfile.TemporaryDirectory(prefix="p4blo-coverage-stage-") as tmp:
         stage = Path(tmp)
-        programs = materialize_corpus(stage)
+        programs = materialize_corpus(stage) + materialize_generated(stage, GENERATED_SEEDS)
         p4_dirs, stf_dirs = [stage / "p4"], [stage / "stf"]
         for directory in extra:
             path = (ROOT / directory) if not Path(directory).is_absolute() else Path(directory)
@@ -867,6 +918,16 @@ def main(argv: list[str] | None = None) -> int:
             print(problem, file=sys.stderr)
             return 2
     extra = args.inputs
+    if extra and not args.check and args.out.resolve() == REPORT:
+        # The committed report records its inputs, and --check reruns them.
+        outside = [d for d in extra if not (ROOT / d).resolve().is_relative_to(ROOT)]
+        if outside:
+            print(
+                f"--inputs outside the repository cannot go into {REPORT.name}: {outside}; "
+                "write an ad hoc report with --out",
+                file=sys.stderr,
+            )
+            return 2
     if extra is None and args.check and args.out.is_file():
         # The committed report says which extra inputs it was made from.
         recorded = json.loads(args.out.read_text(encoding="utf-8"))

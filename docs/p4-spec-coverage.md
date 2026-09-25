@@ -115,6 +115,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `memberAccessExpressionIR`: `hs.last` | elaborated | `Index(hs, LastIndex(hs))` | Parser-only in P4. Faithful when the stack is non-empty; on `nextIndex == 0` P4-SpecTec raises `StackOutOfBounds` where the elaborated form reads a zero invalid header, a listed deviation (ir-semantics.md, `hs.last` on an empty stack). Stacks and subparser_stack READMEs use it. |
 | `memberAccessExpressionIR`: `hs.next` | in | `LValue.next` | Parser only, as the target of an extract. |
 | `memberAccessExpressionIR`: `hs.size` | excluded, by elaboration | the constant `StackType.size` | Compile-time known. |
+| `callExpressionIR`: size methods (`minSizeInBits`, `minSizeInBytes`, `maxSizeInBits`, `maxSizeInBytes`) | excluded, by elaboration | the constant | Compile-time known, as `hs.size`: P4 defines them on types and header values whose sizes are fixed. |
 | `memberAccessExpressionIR`: `t.apply().hit`, `.miss`, `.action_run` | see the table section | | |
 | `indexAccessExpressionIR` (`hs[e]`) | in | `Index` | Run-time index; out of range closed in ir-semantics.md. |
 | `sliceAccessExpressionIR` with `sliceop` `:` | in | `Slice{hi, lo}` | Bounds are constants; the validator checks `lo <= hi < N`. |
@@ -187,7 +188,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `parserLocalDeclarationIR`: `instantiationIR` | see the declarations section | | |
 | `valueSetDeclarationIR` | excluded, by scope | none | Design. |
 | `parserStateIR` | in | `State` | `accept` and `reject` are `Target`s, not states. |
-| `parserBlockStatementIR` | elaborated | flattened | As `blockStatementIR`. |
+| `parserBlockStatementIR` | elaborated | flattened; its declarations hoisted to `Block.locals` | As `blockStatementIR`. The printer braces the branches of a parser `if`, so SpecTec evaluates parser blocks, but never declares a variable inside one. |
 | `parserConditionalStatementIR` | in | `If` in a state body | |
 | `parserStatementIR`: the other alternatives | see the statements section | | Assignment, calls, direct application. |
 | `transitionStatementIR` with `stateExpressionIR` `nameIR` | in | `Transition.direct` to `Target.state`, `accept` or `reject` | Explicit `reject` rejects with `NoError` (ir-semantics.md). |
@@ -328,8 +329,10 @@ account says which of P4-SpecTec's rules p4blo's inputs make the pinned
 simulator fire. [`spectec-coverage.json`](../tests/oracle/spectec-coverage.json)
 records, for every rule, rule group, relation and function of the
 [rule inventory](../tests/oracle/spectec-rules.json), whether it fired and
-in how many of the vectors, over every corpus program and example printed
-through the v1model shim. The simulator runs the spec in a structured form in
+in how many of the vectors, over every corpus program and example and a
+fixed set of 18 generated programs
+([`generated.py`](../tests/oracle/generated.py)), printed through the
+v1model shim. The simulator runs the spec in a structured form in
 which each relation's rules are merged into one instruction tree; a rule
 counts as fired when the instruction that concludes it ran, found through
 the source region the instruction keeps.
@@ -337,8 +340,9 @@ the source region the instruction keeps.
 approximations, and cross-checks its instruction totals against the
 simulator's own `cover-sim` command.
 
-In scope are the rules of `8-dynamic` and the functions of `3-operations`,
-including the `builtin` functions the OCaml runtime supplies for them.
+In scope are the rules of `8-dynamic` and the functions of `3-operations`
+and `8-dynamic`, including the `builtin` functions the OCaml runtime
+supplies for them.
 Every one of them that does not fire is listed in
 [`spectec-coverage-exclusions.json`](../tests/oracle/spectec-coverage-exclusions.json)
 with a reason written by hand, in one of four categories: `architecture`
@@ -350,26 +354,26 @@ exercised; each entry names the generated input that would reach it).
 `tests/test_spectec_coverage.py` fails when an in-scope item is neither hit
 nor excluded, when an exclusion is stale, and when the counts below drift.
 
-At the pinned commit, over 15 programs and 21 vectors:
+At the pinned commit, over 33 programs and 93 vectors:
 
-| Status | 8-dynamic rules | 3-operations functions |
+| Status | 8-dynamic rules | 3-operations and 8-dynamic functions |
 |---|---|---|
-| hit | 134 | 26 |
-| architecture | 0 | 0 |
-| excluded-construct | 149 | 22 |
-| not-representable | 27 | 8 |
-| unhit | 51 | 12 |
+| hit | 183 | 69 |
+| architecture | 0 | 1 |
+| excluded-construct | 151 | 32 |
+| not-representable | 25 | 1 |
+| unhit | 2 | 0 |
 
 A hit rule is exercised, not verified equivalent: the simulator applied it
 while running a printed program, which says nothing about whether p4blo's
 own semantics agrees with it beyond what the oracle tests compare. A
 function counts as hit wherever it was entered, including constant folding
-during typing. Most unhit rules propagate a parser rejection raised inside
-an expression, such as a `lookahead` on a short packet; the rest are
-operators and parser shapes no corpus program uses.
+during typing. The two unhit rules propagate a packet read past the end
+through an extern call's data and through a sub-parser's `inout`
+argument, shapes no generated family produces yet.
 
 The measurement needs the oracle and a small probe built against its
-library; regenerating it takes about fifteen seconds:
+library; regenerating it takes about forty seconds:
 
 ```sh
 python3 tests/oracle/coverage.py build   # once per pin, where tests/oracle/build.sh runs

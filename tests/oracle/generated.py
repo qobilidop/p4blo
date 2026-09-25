@@ -6,10 +6,17 @@ The corpus is a dozen hand-written programs; the differential tests against
 Lean change the program itself. This module takes the same program families
 to the oracle. A seed names one program and its cases exactly: the family is
 `FAMILIES[seed % len(FAMILIES)]`, and everything else comes from
-`random.Random(seed)`, through the constructors of `p4blo.drt.programs` and
-`p4blo.drt.stateful_programs` (and the copy profiles of the DRT tests) and
-through `p4blo.drt.generate` for packets. Hypothesis is not used, because its
-draws are not a stable function of a seed across versions.
+`random.Random(seed)`, through the constructors of `p4blo.drt.programs`,
+`p4blo.drt.stateful_programs` and `p4blo.drt.families` (and the copy
+profiles of the DRT tests) and through `p4blo.drt.generate` for packets.
+Hypothesis is not used, because its draws are not a stable function of a
+seed across versions; the scalar expressions come from the generator the
+Hypothesis strategy uses too (`programs.scalar_expression`), driven by a
+`RandomChooser`, with leaves that read a parsed input so that each case
+computes something else, and with shift amounts narrow enough for the
+simulator. The control and parser families run in their `spectec`
+profile, which leaves out what the ledger records as deviating from the
+simulator.
 
 For each seed the program is validated and loaded, the Python interpreter
 runs the cases in order, and its outputs become the `expect` lines of an STF
@@ -47,13 +54,18 @@ sys.path.insert(0, str(ROOT))
 from p4blo import arch, ir, stf  # noqa: E402
 from p4blo.arch import v1model  # noqa: E402
 from p4blo.drt.case import Case, case_to_stf  # noqa: E402
+from p4blo.drt.choice import RandomChooser  # noqa: E402
+from p4blo.drt.families import FAMILIES as SHAPES  # noqa: E402
 from p4blo.drt.generate import generate  # noqa: E402
+from p4blo.drt.programs import WIDTHS as PROGRAM_WIDTHS  # noqa: E402
 from p4blo.drt.programs import (  # noqa: E402
+    Leaves,
     binary,
     bits,
-    boolean,
+    has_lookahead,
+    packet_scalar_program,
     parser_condition_program,
-    scalar_program,
+    scalar_expression,
 )
 from p4blo.drt.run import Outcome, python_outcome  # noqa: E402
 from p4blo.drt.stateful_programs import (  # noqa: E402
@@ -94,27 +106,12 @@ CORPUS = sorted(
     ]
 )
 
-# The same widths, operators and shapes as the Hypothesis strategy in
-# tests/test_drt_programs.py.
-WIDTHS = (1, 7, 8, 9, 16, 31, 32, 64, 65, 127)
-ARITHMETIC = (
-    pb.BINARY_OP_ADD,
-    pb.BINARY_OP_SUB,
-    pb.BINARY_OP_MUL,
-    pb.BINARY_OP_ADD_SAT,
-    pb.BINARY_OP_SUB_SAT,
-    pb.BINARY_OP_BIT_AND,
-    pb.BINARY_OP_BIT_OR,
-    pb.BINARY_OP_BIT_XOR,
-)
-COMPARISONS = (
-    pb.BINARY_OP_EQ,
-    pb.BINARY_OP_NE,
-    pb.BINARY_OP_LT,
-    pb.BINARY_OP_LE,
-    pb.BINARY_OP_GT,
-    pb.BINARY_OP_GE,
-)
+# Shift amounts at most this wide stay under the simulator's limit of 2048
+# (`known_defect`, shift-limit), which is then never what a seed tests.
+SHIFT_WIDTHS = tuple(w for w in PROGRAM_WIDTHS if w <= 9)
+SCALAR_LABELS = tuple(str(w) for w in PROGRAM_WIDTHS)
+PACKET_LEAVES = Leaves(packet=True, shift_widths=SHIFT_WIDTHS)
+LOOKAHEAD_LEAVES = Leaves(lookahead=True, shift_widths=SHIFT_WIDTHS)
 
 
 @dataclass(frozen=True)
@@ -138,83 +135,6 @@ class Generated:
 # ---------------------------------------------------------------------------
 # Scalar expressions
 # ---------------------------------------------------------------------------
-
-
-class Scalars:
-    """Deterministic typed expressions, drawn as tests/test_drt_programs.py's
-    `scalar` strategy draws them; `lookahead` adds packet reads as leaves,
-    which only a parser may evaluate."""
-
-    def __init__(self, rng: random.Random, lookahead: bool = False) -> None:
-        self.rng = rng
-        self.lookahead = lookahead
-
-    def expr(self, width: int | None, depth: int = 3) -> pb.Expr:
-        rng = self.rng
-        kinds = ["leaf"] if depth == 0 else ["leaf", "unary", "binary", "cast", "mux"]
-        if width is not None and depth:
-            kinds += ["slice", "shift"]
-            if width > 1:
-                kinds.append("concat")
-        kind = rng.choice(kinds)
-        if kind == "leaf":
-            return self.leaf(width)
-        if kind == "unary":
-            op = (
-                pb.UNARY_OP_NOT
-                if width is None
-                else rng.choice([pb.UNARY_OP_COMPLEMENT, pb.UNARY_OP_NEGATE])
-            )
-            return pb.Expr(unary=pb.Unary(op=op, operand=self.expr(width, depth - 1)))
-        if kind == "binary":
-            if width is None:
-                op = rng.choice([*COMPARISONS, pb.BINARY_OP_AND, pb.BINARY_OP_OR])
-                operand = None if op in (pb.BINARY_OP_AND, pb.BINARY_OP_OR) else rng.choice(WIDTHS)
-            else:
-                op, operand = rng.choice(ARITHMETIC), width
-            return binary(op, self.expr(operand, depth - 1), self.expr(operand, depth - 1))
-        if kind == "cast":
-            source = 1 if width is None else rng.choice(WIDTHS)
-            target = pb.Type(boolean=pb.BoolType()) if width is None else pb.Type(bits=width)
-            return pb.Expr(cast=pb.Cast(to=target, operand=self.expr(source, depth - 1)))
-        if kind == "mux":
-            return pb.Expr(
-                mux=pb.Mux(
-                    **{
-                        "condition": self.expr(None, depth - 1),
-                        "then": self.expr(width, depth - 1),
-                        "otherwise": self.expr(width, depth - 1),
-                    }
-                )
-            )
-        assert width is not None
-        if kind == "slice":
-            lo = rng.randint(0, 16)
-            extra = rng.randint(0, 16)
-            operand = self.expr(width + lo + extra, depth - 1)
-            return pb.Expr(slice=pb.Slice(operand=operand, hi=lo + width - 1, lo=lo))
-        if kind == "shift":
-            op = rng.choice([pb.BINARY_OP_SHL, pb.BINARY_OP_SHR])
-            return binary(op, self.expr(width, depth - 1), self.expr(rng.choice(WIDTHS), depth - 1))
-        left = rng.randint(1, width - 1)
-        return binary(
-            pb.BINARY_OP_CONCAT, self.expr(left, depth - 1), self.expr(width - left, depth - 1)
-        )
-
-    def leaf(self, width: int | None) -> pb.Expr:
-        rng = self.rng
-        if self.lookahead and rng.random() < 0.3:
-            # A bool read is a cast of one bit, as the DRT's trap is.
-            read = pb.Expr(lookahead=pb.Lookahead(type=pb.Type(bits=width or 1)))
-            if width is None:
-                return pb.Expr(cast=pb.Cast(to=pb.Type(boolean=pb.BoolType()), operand=read))
-            return read
-        if width is None:
-            return boolean(rng.random() < 0.5)
-        maximum = (1 << width) - 1
-        edges = sorted({0, 1, maximum, maximum - 1, min(width, maximum)})
-        value = rng.choice(edges) if rng.random() < 0.5 else rng.randint(0, maximum)
-        return bits(width, value)
 
 
 def byte_aligned(program: pb.Program) -> pb.Program:
@@ -246,15 +166,29 @@ def _random_cases(program: pb.Program, rng: random.Random) -> tuple[Case, ...]:
 
 
 def scalar_family(seed: int, rng: random.Random) -> Generated:
-    width = rng.choice([None, *WIDTHS])
-    expression = Scalars(rng).expr(width)
-    program = byte_aligned(scalar_program(expression, width))
+    """An expression of `tests/test_drt_programs.py`'s generator whose leaves
+    also read a parsed input, so that every case computes something else."""
+    ch = RandomChooser(rng)
+    width = None if ch.chance("scalar.bool") else int(ch.choice("scalar.width", SCALAR_LABELS))
+    expression = scalar_expression(ch, width, 3, PACKET_LEAVES)
+    program = byte_aligned(packet_scalar_program(expression, width))
     kind = "bool" if width is None else f"bit<{width}>"
     return Generated(seed, "scalar", kind, program, _random_cases(program, rng))
 
 
 def parser_condition_family(seed: int, rng: random.Random) -> Generated:
-    condition = Scalars(rng, lookahead=True).expr(None)
+    """A `verify` condition holding at least one lookahead, placed on either
+    side of an `&&` or `||` when the drawn expression has none, so that a
+    short packet can fault it wherever it sits."""
+    ch = RandomChooser(rng)
+    condition = scalar_expression(ch, None, 3, LOOKAHEAD_LEAVES)
+    if not has_lookahead(condition):
+        read = scalar_expression(ch, None, 0, Leaves(lookahead=True))
+        while not has_lookahead(read):
+            read = scalar_expression(ch, None, 0, Leaves(lookahead=True))
+        op = pb.BINARY_OP_AND if ch.chance("condition.and") else pb.BINARY_OP_OR
+        pair = (condition, read) if ch.chance("condition.left") else (read, condition)
+        condition = binary(op, *pair)
     expected = rng.choice(["NoError", "NoMatch", "PacketTooShort"])
     program = byte_aligned(parser_condition_program(condition, expected))
     return Generated(
@@ -336,11 +270,24 @@ def call_copy_family(seed: int, rng: random.Random) -> Generated:
 
 def corpus_family(seed: int, rng: random.Random) -> Generated:
     """A corpus or example program with random entries and packets, as
-    `python -m p4blo.drt` sends them to Lean."""
-    path = rng.choice(CORPUS)
+    `python -m p4blo.drt` sends them to Lean. The program goes round the
+    corpus with the seed, so that consecutive seeds of this family reach
+    every program before any repeats."""
+    path = CORPUS[(seed // len(FAMILIES)) % len(CORPUS)]
     program = ir.load_text(path)
     name = str(path.parent.relative_to(ROOT))
     return Generated(seed, "corpus", name, program, _random_cases(program, rng))
+
+
+def shape_family(name: str) -> Callable[[int, random.Random], Generated]:
+    """A family of `p4blo.drt.families` in its `spectec` profile, which
+    leaves out what the ledger records as deviating from the simulator."""
+
+    def family(seed: int, rng: random.Random) -> Generated:
+        drawn = SHAPES[name](RandomChooser(rng), "spectec")
+        return Generated(seed, name, drawn.describe(), drawn.program, drawn.cases)
+
+    return family
 
 
 type Family = Callable[[int, random.Random], Generated]
@@ -352,6 +299,8 @@ FAMILIES: dict[str, Family] = {
     "aggregate_copy": aggregate_copy_family,
     "call_copy": call_copy_family,
     "corpus": corpus_family,
+    "control": shape_family("control"),
+    "parser": shape_family("parser"),
 }
 
 
@@ -419,7 +368,9 @@ SHIFT_LIMIT_RELATIONS = (
 
 
 def known_defect(verdict: oracle_run.Verdict) -> str | None:
-    """The name of a diagnosed simulator defect that explains a verdict.
+    """The name of a diagnosed simulator defect that explains a verdict by
+    its text alone. The other classified defect, `table-mask`, needs a rerun
+    under a model and is decided by `explained_by_table_mask`.
 
     `shift-limit`: the simulator's `$shl` and `$shr` builtins
     (p4spec/lib/interface/builtin/numerics.ml at the pin) refuse any shift
@@ -443,12 +394,22 @@ def known_defect(verdict: oracle_run.Verdict) -> str | None:
     return None
 
 
+@dataclass(frozen=True)
+class Prepared:
+    """What the oracle is given: an index, the printed program and the
+    vector files, all written under one directory."""
+
+    index: ir.Index
+    p4: Path
+    vectors: tuple[Path, ...]
+
+
 # Room between two written priorities for the model's tie-breaking ranks.
 RANKS = 1024
 
 
 def table_mask_model(
-    program: pb.Program, entries: pb.Entries, *, reverse: bool = False
+    program: pb.Program, entries: pb.Entries, *, reverse: bool = False, real_masks: bool = False
 ) -> tuple[pb.Program, pb.Entries]:
     """The program and host entries under which p4blo computes what the
     pinned simulator computes for the `add` lines `run.py` writes.
@@ -469,6 +430,11 @@ def table_mask_model(
     a distinct priority, its written one times `RANKS` plus its position,
     const entries first, in `reverse` order when asked; a result that does
     not depend on the tie-break is the same both ways.
+
+    `real_masks` keeps each key's own mask while doing everything else the
+    same: the control model, which must reproduce p4blo's real result, so
+    that the rewrite and the ranking are known to change nothing but the
+    masks (`explained_by_table_mask`).
     """
     index = ir.Index.build(program)
     installed = InstalledEntries(index)
@@ -503,11 +469,13 @@ def table_mask_model(
                         base = int(kv.lpm.value) & mask
                         prefix = length if prefix is None else prefix
                     case "ternary":
-                        base = int(kv.ternary.value) & int(kv.ternary.mask)
+                        mask = int(kv.ternary.mask)
+                        base = int(kv.ternary.value) & mask
                     case _:
                         continue
+                written = mask if real_masks else base
                 entry.keys[i].CopyFrom(
-                    pb.KeyValue(ternary=pb.TernaryValue(value=str(base), mask=str(base)))
+                    pb.KeyValue(ternary=pb.TernaryValue(value=str(base), mask=str(written)))
                 )
             if (te.block, te.table) in lpm_only and prefix is not None:
                 entry.priority = prefix
@@ -523,6 +491,24 @@ def table_mask_model(
     return model, host
 
 
+def table_mask_control_agrees(program: pb.Program, case: Case) -> bool:
+    """Whether the table-mask rewrite with the real masks gives Python's real
+    outputs under both tie orders."""
+    original = python_outcome(arch.load(program), case, SWITCH_PORTS)
+    try:
+        for reverse in (False, True):
+            model, entries = table_mask_model(
+                program, case.entries, reverse=reverse, real_masks=True
+            )
+            control = Case(entries, case.ingress_port, case.packet)
+            outcome = python_outcome(arch.load(model), control, SWITCH_PORTS)
+            if outcome.error is not None or outcome.outputs != original.outputs:
+                return False
+    except ValueError:
+        return False
+    return True
+
+
 def explained_by_table_mask(
     oracle: oracle_run.Oracle,
     program: pb.Program,
@@ -536,7 +522,17 @@ def explained_by_table_mask(
     failed vector, and the unchanged program and `add` lines run again. Only
     a pass explains the failure. A model whose outputs depend on how ties
     are broken, or equal the real ones, explains nothing.
+
+    The model does more than swap each mask for its base: it turns lpm keys
+    into ternary ones and ranks the entries, so Python's longest-prefix code
+    never runs on it, and a wrong longest-prefix rule in Python would look
+    like the simulator's defect. So the control model, the same rewrite and
+    ranking with the real masks, must first reproduce Python's real outputs
+    under both tie orders; if it does not, Python's own table code is in
+    question and the failure stays a failure.
     """
+    if not table_mask_control_agrees(program, case):
+        return False
     outcomes: list[Outcome] = []
     try:
         for reverse in (False, True):
@@ -623,16 +619,6 @@ def run_seed(oracle: oracle_run.Oracle, seed: int, out: Path) -> Result:
     """Materialize one seed under `out`, run it on the oracle, and write
     `verdict.txt` beside its inputs."""
     return run_generated(oracle, materialize(seed), out)
-
-
-@dataclass(frozen=True)
-class Prepared:
-    """What the oracle is given: an index, the printed program and the
-    vector files, all written under one directory."""
-
-    index: ir.Index
-    p4: Path
-    vectors: tuple[Path, ...]
 
 
 def prepare(generated: Generated, directory: Path) -> Prepared:

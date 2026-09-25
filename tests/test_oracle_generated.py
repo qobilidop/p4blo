@@ -2,11 +2,12 @@
 
 tests/oracle/generated.py turns a seed into a program from one of the DRT's
 generated families (scalar expressions, parser conditions, stateful register
-and counter sequences, aggregate copies, calls, and corpus programs with
-random entries and packets), and into vectors whose `expect` lines are what
-the Python interpreter did. Here a fixed seed range runs through it, one test
-per seed. Without a built simulator the oracle tests skip, as in
-tests/test_oracle.py; the preparation, which needs no oracle, always runs.
+and counter sequences, aggregate copies, calls, corpus programs with random
+entries and packets, and the control and parser shape families), and into
+vectors whose `expect` lines are what the Python interpreter did. Here a
+fixed seed range runs through it, one test per seed. Without a built
+simulator the oracle tests skip, as in tests/test_oracle.py; the
+preparation, which needs no oracle, always runs.
 
 A divergence and an oracle error both fail. A seed whose every non-pass is a
 diagnosed simulator defect is a strict expected failure listed in `KNOWN`,
@@ -19,12 +20,14 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
-from p4blo import ir, stf
+from p4blo import arch, ir, stf
 from p4blo.drt.case import Case
 from p4blo.drt.programs import binary, bits, scalar_program
+from p4blo.interp import tables
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,10 +36,10 @@ sys.path.insert(0, str(ROOT))
 from tests.oracle import generated  # noqa: E402
 from tests.oracle import run as oracle_run  # noqa: E402
 
-# Ten programs per family, about three minutes on an M-series Mac.
-SEEDS = range(60)
+# Ten programs per family, about four minutes on an M-series Mac.
+SEEDS = range(80)
 # Seeds in SEEDS the pinned simulator cannot judge, by diagnosed defect.
-KNOWN = {0: "shift-limit", 25: "shift-limit"}
+KNOWN = {5: "table-mask"}
 FAMILY_NAMES = list(generated.FAMILIES)
 
 
@@ -203,6 +206,41 @@ def test_table_mask_model_turns_lpm_into_ternary_with_prefix_priority() -> None:
     assert entry.priority == 24 * generated.RANKS
 
 
+def lpm_precedence() -> tuple[pb.Program, Case]:
+    """The forwarder, the two overlapping entries of lpm_precedence.stf and
+    the packet both cover, where the /24 must beat the /16."""
+    program = ir.load_text(ROOT / "tests/corpus/forwarder/forwarder.txtpb")
+    vector = stf.parse((ROOT / "tests/corpus/forwarder/lpm_precedence.stf").read_text())
+    entries = stf.to_entries(ir.Index.build(program), vector)
+    packet = next(s for s in vector if isinstance(s, stf.Packet))
+    return program, Case(entries, packet.port, packet.data)
+
+
+def shortest_prefix_wins(entry: pb.Entry, best: pb.Entry, ternary: bool) -> bool:
+    """A wrong precedence rule, as a mutant of `tables.beats`."""
+    if ternary:
+        return entry.priority > best.priority
+    return tables.prefix_length(entry) < tables.prefix_length(best)
+
+
+def test_the_table_mask_control_model_reproduces_python(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rewrite with the real masks gives Python's real outputs, so the
+    model changes nothing but the masks; with a wrong longest-prefix rule
+    in Python it does not, and the classifier refuses before it would ask
+    the oracle anything."""
+    program, case = lpm_precedence()
+    assert generated.table_mask_control_agrees(program, case)
+    right = generated.python_outcome(arch.load(program), case, generated.SWITCH_PORTS)
+    monkeypatch.setattr(tables, "beats", shortest_prefix_wins)
+    wrong = generated.python_outcome(arch.load(program), case, generated.SWITCH_PORTS)
+    assert wrong.outputs != right.outputs
+    assert not generated.table_mask_control_agrees(program, case)
+    unused = cast(Any, None)
+    assert not generated.explained_by_table_mask(unused, program, unused, case, unused)
+
+
 # ---------------------------------------------------------------------------
 # The oracle
 # ---------------------------------------------------------------------------
@@ -276,3 +314,16 @@ def test_unaligned_emission_before_a_payload(oracle: oracle_run.Oracle, tmp_path
     if v.status == "fail" and generated.brief(v.detail) == mismatch:
         raise KnownDeviation(mismatch)
     assert result.status == "pass", result.report()
+
+
+def test_a_wrong_longest_prefix_rule_is_a_failure_not_a_known_defect(
+    oracle: oracle_run.Oracle, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A Python that lets the shorter prefix win disagrees with the oracle,
+    and the table-mask classifier must not explain that away."""
+    program, case = lpm_precedence()
+    monkeypatch.setattr(tables, "beats", shortest_prefix_wins)
+    probe = generated.Generated(0, "probe", "shortest prefix wins", program, (case,))
+    result = generated.run_generated(oracle, probe, tmp_path)
+    assert result.modelled == {}
+    assert result.status == "fail", result.report()

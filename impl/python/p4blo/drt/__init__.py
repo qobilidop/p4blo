@@ -10,8 +10,19 @@ speaking a line protocol; there is no FFI.
     generate.py   random cases from a seed, shaped by the program
     run.py        run a case on Python, on Lean over the pipe, and compare
     coverage.py   Lean rule tags over a campaign; parser states reached on Python
+    families.py   program families aimed at the rules, driven by a Chooser
+    guided.py     coverage-guided campaigns over those families
     fake_lean.py  a stand-in for `p4blo-lean run`, backed by Python
     __main__.py   `python -m p4blo.drt`
+
+Coverage-guided generation. The families of `families.py` build programs
+from named decisions, and `python -m p4blo.drt guided <family> <budget>`
+runs one against Lean, reads the rule tags of every reply, and weights the
+next programs' decisions toward options whose target tags are unhit and
+toward options that keep reaching (tag, feature) pairs not seen before,
+the one-feature-sensitive criterion of ESMeta's JESTfs. It is deterministic
+by `--seed`; `--unguided` is the uniform baseline. `guided.py` has the
+weights and the command line.
 """
 
 from __future__ import annotations
