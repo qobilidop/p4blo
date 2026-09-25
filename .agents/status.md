@@ -80,7 +80,7 @@ under `reviews/`; every finding is fixed.
 | Lean coverage review fixes: the six defects and the doubtful conditions, copy-back classified through the resolved lvalues, witness pairs for all 157 tags (135 requests, replies anchored to the reference interpreter), nine mutants caught, 33 tags still unhit | done, `495268d` |
 | C4 deviation theorems: `P4bloIR.DeviationLaws`, 39 audited theorems over the production definitions for the ten run-time closed behaviors, a general longest-prefix and priority law over `Installed.lookup`, the revisit check of the parser loop bound; nine evaluator mutants each rejected at a named theorem; not proved: that a non-consuming loop always reaches the revisit check | merged, `bc4b8bc`; review pending |
 | B2 coverage-guided generation, with the two Phase 1 review fix lists (the table-mask classifier control model, the sampler gaps, the exclusion corrections, the probe cleanups) | building on `work/guided-generation` |
-| Theorem review follow-up: laws pinning `prefixLength`, `keyValueMatches` and `Value.equalList`, `!=`, the loop-bound wording | building on `work/helper-laws` |
+| Theorem review follow-up: 63 audited theorems now; laws pin `prefixLength`, `keyValueMatches` and `Value.equalList` (the review's three surviving mutants now fail), `!=` negates `==`, the cursor never moves back and a revisit without consumption times out across a sub-parser boundary; every theorem instantiated in the test module | merged, gate pending |
 | B3 exported conformance corpus | building on `work/conformance-corpus` |
 | A4 single-block SpecTec runner, as a patch in a separate oracle checkout | building on `work/single-block` |
 | Phases 2 to 4 otherwise | see the plan |
