@@ -25,16 +25,18 @@ disagrees measures nothing.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from types import ModuleType
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import ir
+from p4blo import ir, validator
 from p4blo.drt.case import Case
 from p4blo.drt.coverage import RuleCoverage, rule_inventory
 from p4blo.drt.programs import binary, bits, boolean, parser_condition_program, scalar_program
@@ -54,6 +56,7 @@ from tests.test_drt_stateful_programs import (
 CORPUS = Path(__file__).resolve().parent / "corpus"
 UNHIT = Path(__file__).resolve().parent / "drt-unhit-tags.json"
 LEDGER = Path(__file__).resolve().parents[1] / "docs" / "ir-semantics.md"
+WITNESSES = Path(__file__).resolve().parents[1] / "spec/arch/ArchTests/fixtures/witnesses.py"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 FAKE: list[str | Path] = [sys.executable, "-m", "p4blo.drt.fake_lean"]
 PORTS = 4
@@ -305,3 +308,30 @@ def test_an_older_peer_without_coverage_is_counted_not_refused() -> None:
     assert coverage.unhit(["a.b", "c.d"]) == ["c.d"]
     assert coverage.unknown(["c.d"]) == ["a.b"]
     assert "1 replies carried no coverage" in coverage.describe({"a.b": "x", "c.d": "y"})
+
+
+def witness_generator() -> ModuleType:
+    """The generator of the Lean witness table, loaded from its path."""
+    spec = importlib.util.spec_from_file_location("coverage_witnesses", WITNESSES)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    # Its dataclasses resolve their annotations through sys.modules.
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_coverage_witness_programs_are_valid_and_current() -> None:
+    """Every program of the Lean witness table passes the validator, and the
+    committed table is what its generator produces, replies included: the
+    replies are the Python reference interpreter's, and the Lean test
+    requires Lean to give the same ones."""
+    generator = witness_generator()
+    table = json.loads(WITNESSES.with_suffix(".json").read_text(encoding="utf-8"))
+    assert len(table["programs"]) > 50 and len(table["cases"]) > 100
+    for program_json in table["programs"]:
+        program = ir.load_json(json.dumps(program_json))
+        assert validator.validate(program) == [], program.name
+    assert WITNESSES.with_suffix(".json").read_text(encoding="utf-8") == generator.render(), (
+        "witnesses.json is stale; regenerate it with its generator"
+    )
