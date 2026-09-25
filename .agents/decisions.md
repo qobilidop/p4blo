@@ -418,6 +418,16 @@ The exact theorem statements, premises and exclusions are in
   ordinary IR assembly and proves initialization and exact Bloom insertion.
   Selection hit is not a forwarding default. Further readback and ingress
   proofs are parked. (2026-09-23)
+- **Deviation theorems cover the run-time closed behaviors only.** The
+  ledger entries that belong to installation, binding or the
+  architecture (host entries are canonical, entries name their action,
+  binding, and the implementation-closed choices of extern families) have
+  no theorem in `P4bloIR.DeviationLaws`: their meaning lives in
+  `Installed.build` and in the architecture package, outside the IR's
+  evaluator, and the plan's arch-free scope stops there. Reason: a
+  theorem about installation would be about the architecture's
+  contract, not the IR's meaning. Revisit when a single-block SpecTec
+  runner makes installation observable at the IR level. (2026-09-24)
 - **Codec laws are composed in baseline-first slices** and object helpers
   are extracted only at demonstrated reuse; historical baseline hashes stay
   pinned to their commits. (2026-09-23)
