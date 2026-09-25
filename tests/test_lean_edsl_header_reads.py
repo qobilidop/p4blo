@@ -158,7 +158,7 @@ def header_read_program(name: str, body: list[pb.Stmt]) -> pb.Program:
 
 def exported_programs(exporter: Path) -> dict[str, pb.Program]:
     completed = subprocess.run(
-        [str(exporter)], capture_output=True, text=True, check=True, timeout=30
+        [str(exporter), "headerReads"], capture_output=True, text=True, check=True, timeout=30
     )
     programs: dict[str, pb.Program] = {}
     for line in completed.stdout.splitlines():
@@ -204,14 +204,14 @@ def pre_read_observer(program: pb.Program) -> pb.Program:
 def test_header_read_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "headerReads"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 @pytest.fixture(scope="module")
 def authored_header_reads(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
-    exporter = root / "impl/lean/.lake/build/bin/headerReads"
+    exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
     return exported_programs(exporter)
 

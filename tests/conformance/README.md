@@ -143,7 +143,7 @@ The header's `sources` digest covers the files whose content decides an
 answer, found by a rule rather than a list: start at the endpoint,
 `spec/arch/Main.lean`, and follow its `import` lines through `spec/ir`
 and `spec/arch`. A proof module, one whose name ends in `Laws`, `Audit`,
-`Probe` or `Theorems`, and anything under `Tests/` or `ArchTests/`, is
+`Probe` or `Theorems`, and anything under `P4bloIRTest/` or `P4bloArchTest/`, is
 neither followed nor digested, since it changes no answer. A file of
 imports alone, such as the `P4bloIR.lean` umbrella, is followed but not
 digested, so adding a proof module to it is no change either. Each

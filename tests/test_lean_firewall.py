@@ -38,7 +38,7 @@ from tests.test_lean_forwarder import freeze
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "tests/corpus/tutorial_firewall"
-EXPORTER = ROOT / "impl/lean/.lake/build/bin/leanTutorialFirewall"
+EXPORTER = ROOT / "impl/lean/.lake/build/bin/p4blo"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 
@@ -53,7 +53,13 @@ def firewall(lean_binary: Path) -> pb.Program:
     assert lean_binary.is_file()
     assert EXPORTER.is_file(), "build the Lean packages before conformance"
     assert {"connection.stf", "collisions.stf"} <= {p.name for p in VECTORS}
-    result = subprocess.run([str(EXPORTER)], check=True, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(
+        [str(EXPORTER), "leanTutorialFirewall"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
     assert result.stderr == ""
     program = ir.load_json(result.stdout)
     assert_program_identity(program)
@@ -84,7 +90,7 @@ def checked_fixed_reply(line: str) -> Outcome:
 def fixed_run(cases: list[Case]) -> list[Outcome]:
     requests = "\n".join(request_json(case) for case in cases) + "\n"
     process = subprocess.run(
-        [str(EXPORTER), "run"],
+        [str(EXPORTER), "leanTutorialFirewall", "run"],
         input=requests,
         capture_output=True,
         text=True,
@@ -158,7 +164,7 @@ def check_sequence(program: pb.Program, sequence: list[Step], lean_binary: Path)
 
 def test_firewall_default_target() -> None:
     config = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert "leanTutorialFirewall" in config["defaultTargets"]
+    assert "p4blo" in config["defaultTargets"]
 
 
 def test_lean_agrees_firewall_program_identity(firewall: pb.Program) -> None:
@@ -267,7 +273,7 @@ def test_lean_agrees_firewall_fixed_reset_is_retained(
 
     def restart(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         nonlocal hits
-        assert args == [str(EXPORTER), "run"]
+        assert args == [str(EXPORTER), "leanTutorialFirewall", "run"]
         requests = kwargs.pop("input").splitlines()
         replies: list[str] = []
         for request in requests:

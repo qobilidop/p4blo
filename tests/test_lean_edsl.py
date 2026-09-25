@@ -68,7 +68,7 @@ INPUTS = {
 def test_user_proof_audit_and_exporter_are_default_targets() -> None:
     root = Path(__file__).resolve().parents[1]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "scalarExamples"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 @pytest.fixture(scope="module")
@@ -76,10 +76,10 @@ def authored_expressions(lean_binary: Path) -> dict[str, pb.Program]:
     # lean_binary enforces the shared absent-vs-broken/required gate policy.
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
-    exporter = root / "impl/lean/.lake/build/bin/scalarExamples"
+    exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"missing Lean eDSL exporter: run {root}/scripts/check-lean.sh"
     completed = subprocess.run(
-        [str(exporter)], capture_output=True, text=True, check=True, timeout=30
+        [str(exporter), "scalarExamples"], capture_output=True, text=True, check=True, timeout=30
     )
     result: dict[str, pb.Program] = {}
     for line in completed.stdout.splitlines():

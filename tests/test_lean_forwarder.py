@@ -36,12 +36,14 @@ from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "tests/corpus/forwarder"
-EXPORTER = ROOT / "impl/lean/.lake/build/bin/leanForwarder"
+EXPORTER = ROOT / "impl/lean/.lake/build/bin/p4blo"
 VECTORS = sorted(CORPUS.glob("*.stf"))
 
 
 def authored_program() -> pb.Program:
-    result = subprocess.run([str(EXPORTER)], check=True, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(
+        [str(EXPORTER), "leanForwarder"], check=True, capture_output=True, text=True, timeout=30
+    )
     return ir.load_json(result.stdout)
 
 
@@ -98,7 +100,7 @@ def fixed_run(cases: list[Case]) -> list[list[tuple[int, bytes]]]:
         for case in cases
     ]
     process = subprocess.run(
-        [str(EXPORTER), "run"],
+        [str(EXPORTER), "leanForwarder", "run"],
         input="\n".join(requests) + "\n",
         check=True,
         capture_output=True,
@@ -128,7 +130,7 @@ def compare_and_save(program: pb.Program, cases: list[Case], lean_binary: Path, 
 
 def test_forwarder_default_target() -> None:
     config = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert "leanForwarder" in config["defaultTargets"]
+    assert "p4blo" in config["defaultTargets"]
 
 
 def test_lean_agrees_forwarder_program_identity(forwarder: pb.Program) -> None:

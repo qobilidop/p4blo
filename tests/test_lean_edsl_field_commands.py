@@ -207,17 +207,17 @@ def field_command_program(name: str, body: list[pb.Stmt]) -> pb.Program:
 def test_field_command_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "fieldCommands"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 @pytest.fixture(scope="module")
 def authored_field_commands(lean_binary: Path) -> dict[str, pb.Program]:
     assert lean_binary.is_file()
     root = Path(__file__).resolve().parents[1]
-    exporter = root / "impl/lean/.lake/build/bin/fieldCommands"
+    exporter = root / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {root}/scripts/check-lean.sh first"
     completed = subprocess.run(
-        [str(exporter)], capture_output=True, text=True, check=True, timeout=30
+        [str(exporter), "fieldCommands"], capture_output=True, text=True, check=True, timeout=30
     )
     programs: dict[str, pb.Program] = {}
     for line in completed.stdout.splitlines():

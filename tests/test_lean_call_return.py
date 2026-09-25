@@ -37,18 +37,18 @@ CASES = [(False, False), (False, True), (True, False), (True, True)]
 @pytest.fixture(scope="module")
 def return_export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
-    exporter = ROOT / "impl/lean/.lake/build/bin/callReturn"
+    exporter = ROOT / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {ROOT}/scripts/check-lean.sh first"
     return json.loads(
         subprocess.run(
-            [str(exporter)], check=True, capture_output=True, text=True, timeout=30
+            [str(exporter), "callReturn"], check=True, capture_output=True, text=True, timeout=30
         ).stdout
     )
 
 
 def test_call_return_exporter_is_a_default_target() -> None:
     package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "callReturn"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 def checked_declarations(export: dict[str, Any]) -> tuple[Index, list[pb.Param], list[pb.Arg]]:

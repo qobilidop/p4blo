@@ -33,17 +33,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_call_entry_exporter_is_a_default_target() -> None:
     package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"UserProofAudit", "callEntry"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 @pytest.fixture(scope="module")
 def entry_export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
-    exporter = ROOT / "impl/lean/.lake/build/bin/callEntry"
+    exporter = ROOT / "impl/lean/.lake/build/bin/p4blo"
     assert exporter.is_file(), f"build {ROOT}/scripts/check-lean.sh first"
     return json.loads(
         subprocess.run(
-            [str(exporter)], check=True, capture_output=True, text=True, timeout=30
+            [str(exporter), "callEntry"], check=True, capture_output=True, text=True, timeout=30
         ).stdout
     )
 

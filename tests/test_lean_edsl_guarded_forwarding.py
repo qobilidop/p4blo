@@ -120,10 +120,8 @@ def guarded_program(name: str, body: list[pb.Stmt]) -> pb.Program:
     return program
 
 
-def exported_programs(exporter: Path) -> dict[str, pb.Program]:
-    completed = subprocess.run(
-        [str(exporter)], capture_output=True, text=True, check=True, timeout=30
-    )
+def exported_programs(command: list[str]) -> dict[str, pb.Program]:
+    completed = subprocess.run(command, capture_output=True, text=True, check=True, timeout=30)
     programs: dict[str, pb.Program] = {}
     for line in completed.stdout.splitlines():
         record = json.loads(line)
@@ -142,13 +140,13 @@ def exported_programs(exporter: Path) -> dict[str, pb.Program]:
 @pytest.fixture(scope="module")
 def guarded_programs(lean_binary: Path) -> dict[str, pb.Program]:
     root = Path(__file__).resolve().parents[1]
-    return exported_programs(root / "impl/lean/.lake/build/bin/guardedForward")
+    return exported_programs([str(root / "impl/lean/.lake/build/bin/p4blo"), "guardedForward"])
 
 
 def test_guarded_forward_exporter_is_a_default_target() -> None:
     root = Path(__file__).resolve().parents[1]
     package = tomllib.loads((root / "impl/lean/lakefile.toml").read_text())
-    assert "guardedForward" in package["defaultTargets"]
+    assert "p4blo" in package["defaultTargets"]
 
 
 @pytest.mark.parametrize("name", INPUTS)

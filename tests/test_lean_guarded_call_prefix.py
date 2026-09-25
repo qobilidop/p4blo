@@ -117,7 +117,7 @@ def prefix_export(lean_binary: Path) -> dict[str, Any]:
     assert lean_binary.is_file()
     return json.loads(
         subprocess.run(
-            [str(ROOT / "impl/lean/.lake/build/bin/guardedCallPrefix")],
+            [str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "guardedCallPrefix"],
             capture_output=True,
             text=True,
             check=True,
@@ -128,7 +128,7 @@ def prefix_export(lean_binary: Path) -> dict[str, Any]:
 
 def test_guarded_call_prefix_is_default() -> None:
     package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"guardedCallPrefix", "UserProofAudit"} <= set(package["defaultTargets"])
+    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
 
 
 def checked_snapshots(export: dict[str, Any]) -> dict[tuple[str, bool], dict[str, Any]]:
@@ -362,7 +362,7 @@ def test_lean_agrees_after_prefix_local_fault(
         original(place, value, env)
 
     name = "guard-false-false-true-2"
-    programs = exported_programs(ROOT / "impl/lean/.lake/build/bin/guardedForward")
+    programs = exported_programs([str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "guardedForward"])
     bundle = tmp_path / f"lean-{name}.json"
     monkeypatch.setenv("P4BLO_DRT_FAILURE_DIR", str(tmp_path))
     with monkeypatch.context() as fault:
