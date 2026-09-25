@@ -55,22 +55,20 @@ worktrees will be created from each committed integrated milestone.
 
 ## Current checkpoint
 
-Design inspection in progress. Current friction: concrete externs exported
-from the core eDSL, implicit default runtime registry/contract/roles, typed
-Program requiring three pipeline roles, repeated wide type expressions and
-checksum construction, and deeply nested application policy. Initial named-export Program API, explicit loader, concrete extern split
-and readability changes were implemented in isolated commits. During integration
+Implementation and caller migration are complete. Independent review is
+checking the local-type dependency fix at `c150d31`; status.md records local
+checks and remaining integration gates. Initial named-export Program API,
+explicit loader, concrete extern split and readability changes were implemented
+in isolated commits. During integration
 the user clarified that public `p4.Program` itself mixes core and architecture.
 The final design must start from independently authored P4 blocks, with
 composition and role assignment in architecture support; the wire Program
 container can remain an assembly detail. The named-export Program proposal
 is superseded and must not be shipped as the public authoring API.
 
-Current committed API/example changes are provisional; root also has caller
-migrations and documentation in progress. Lean gate passed locally; first
-Pyright found one stale `arch.ROLES` reference. No full integration gate or
-review has passed yet. Next: settle independent block build/assembly API,
-revise examples and custom extension, then complete migration and gates.
+That correction is implemented in the final API below. Lean and the first
+full integration gate passed; current evidence and remaining obligations are
+in status.md. No goldens, wire schema or Lean semantics changed.
 
 
 ## Final API contract after user steering

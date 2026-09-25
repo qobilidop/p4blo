@@ -19,14 +19,22 @@ blocks and their shared declarations form an optional BlockLibrary, while
 architecture logic forms a complete executable system. The wire Program
 remains an assembly envelope, not the core authoring abstraction.
 
-Local evidence so far: `scripts/check-lean.sh` passed; focused API tests
-(12), extern tests (6), and all three example demos, standalone compilation,
-exact text/binary golden comparisons and targeted Pyright passed. The first
-full gate had 5183 passes, 1 optional XDP skip, 4 expected failures and one
-stale diagnostic-line expectation after an import moved; the expected error
-was still correctly reported. Its line anchor is corrected and the full gate
-is being rerun. Next: independent review, adversarial assurance and applicable
-oracle checks, then final-revision PR CI and integration.
+Local evidence: `scripts/check-lean.sh` passed. At `fb41e27`, the full
+`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` passed: 5184 tests, one optional XDP
+image skip, four expected failures, formatting/lint/types/schema/generation
+and workflow checks green. The two main P4-SpecTec/BMv2 oracle suites passed
+79 tests with two documented expected failures. All three examples retain
+exact text and binary goldens, their demos match the READMEs, and standalone
+library compilation and targeted Pyright pass.
+
+Independent review found missing registration of a type used only by a block
+local in scalar-only compilation. Fixed at `c150d31`, with nested header,
+struct and enum regression tests; 14 focused API tests pass. The reviewer is
+rechecking it. The first assurance run completed semantic stages but its
+provenance guard rejected concurrent documentation edits; it is not a pass.
+Next: finish review and rerun full/assurance gates on the final frozen tree,
+then final-revision PR CI and integration. The reflection and workflow lessons
+are in [edsl-reflection.md](notes/edsl-reflection.md).
 
 Engineering-practice maintenance is merged on `main` at `264fd63` through
 [PR #1](https://github.com/qobilidop/p4blo/pull/1), from base `045f3de`.

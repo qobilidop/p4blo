@@ -333,6 +333,9 @@ loop:
 
 1. Specify the application story, packet profile, host assumptions and failure
    behavior. Establish independent expected outcomes before relying on replay.
+   For an authoring API change, first write representative caller examples
+   and a boundary counterexample: a block library must compile a scalar-only
+   control without inventing a packet pipeline or global H/M roots.
 2. Build the smallest complete runnable scenario through public APIs. Record
    concrete authoring, configuration, inspection and diagnostic difficulties.
 3. Challenge correctness with boundary and persistent-sequence tests,
@@ -346,6 +349,8 @@ loop:
 5. Improve the responsible layer: application, eDSL, diagnostics, runtime or
    test infrastructure. Validate a reusable change with concrete usage. Record
    speculative opportunities as backlog rather than expanding acceptance.
+   For behavior-preserving authoring changes, retain the existing IR goldens
+   and compare both their text and binary form before considering new syntax.
 6. Repeat affected checks/review, run required integration gates, and record
    the resulting revision, exact commands, skips and outstanding obligations.
 

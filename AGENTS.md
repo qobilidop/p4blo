@@ -239,6 +239,13 @@ or pipe protocol, a module many others import). The integrator combines
 reviewed commits on the PR branch in batches, runs the full gate once per
 batch before pushing, then merges the PR only after its final revision
 passes remote CI, and removes the worktrees.
+Before splitting a public API change, agree concrete caller examples and
+an acceptance case that would expose a false abstraction boundary. Record
+cross-agent API signatures and commit dependencies in the working note.
+When two slices depend on each other, hand off committed patches with
+explicit pending checks, then validate the integrated batch; do not have
+both agents wait for the other's green commit. Never amend a handed-off
+commit: corrections are follow-up commits.
 Spawn sub-agents when useful without waiting for permission; choose a
 model appropriate to the task; create the worktree before delegating and
 put its absolute path and file ownership in the brief. Sub-agents must
@@ -255,7 +262,9 @@ Worktrees do not isolate external resources: use distinct Docker image
 tags and `P4BLO_BMV2_IMAGE` per implementation worktree, and never
 rebuild the shared oracle image while another agent's tests use it.
 Coordinate other mutable caches, ports and fixtures explicitly; immutable
-pinned caches may be shared.
+pinned caches may be shared. Freeze the entire tracked tree during a
+provenance-checked assurance experiment: its inventory includes documentation,
+so even a concurrent note edit invalidates the run.
 
 Unfinished work is never left as an uncommitted worktree. Commit it to
 its branch as a work-in-progress commit whose message says what it holds
