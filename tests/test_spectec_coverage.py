@@ -40,6 +40,8 @@ sys.path.insert(0, str(ROOT))
 from tests.oracle import coverage  # noqa: E402
 
 CATEGORIES = {"architecture", "excluded-construct", "not-representable", "unhit"}
+# How a reach text would admit that nothing reaches the item.
+UNREACHABLE = re.compile(r"\b(not reachable|unreachable|cannot be reached|never reached)\b", re.I)
 Key = tuple[str, str, str, int]
 
 
@@ -122,10 +124,17 @@ def test_exclusions_are_well_formed() -> None:
             problems.append(f"{where}: unknown category {category!r}")
         if not str(entry.get("reason", "")).strip():
             problems.append(f"{where}: no reason")
-        if category == "excluded-construct" and entry.get("row") not in rows:
-            problems.append(f"{where}: row {entry.get('row')!r} is not a p4-spec-coverage.md row")
-        if category == "unhit" and not str(entry.get("reach", "")).strip():
+        if category == "excluded-construct" and "row" not in entry:
+            problems.append(f"{where}: an excluded construct names its p4-spec-coverage.md row")
+        if "row" in entry and entry["row"] not in rows:
+            problems.append(f"{where}: row {entry['row']!r} is not a p4-spec-coverage.md row")
+        reach = str(entry.get("reach", ""))
+        if category == "unhit" and not reach.strip():
             problems.append(f"{where}: an unhit item says which input would reach it")
+        if category == "unhit" and UNREACHABLE.search(reach):
+            problems.append(
+                f"{where}: an unhit item must be reachable, but its reach says it is not"
+            )
     assert not problems, "\n".join(problems)
 
 

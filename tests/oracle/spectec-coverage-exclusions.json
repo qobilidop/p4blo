@@ -12,17 +12,18 @@
    "name": "$shr_arith",
    "file": "3-operations/3-operations.watsup",
    "line": 12,
-   "category": "not-representable",
-   "reason": "Arithmetic right shift applies to signed `int<N>` operands, which are out of scope for v0 (coverage row for `int<N>`)."
+   "category": "excluded-construct",
+   "row": "fixedIntTypeIR (INT<n>)",
+   "reason": "Arithmetic right shift is called only from the signed clauses of `$bin_shr`, and `int<N>` is out of scope for v0 (the row names it)."
   },
   {
    "kind": "dec",
    "name": "$bitacc_replace",
    "file": "3-operations/3-operations.watsup",
    "line": 26,
-   "category": "unhit",
-   "reason": "The runtime's slice write, called when a slice is the target of an assignment; the IR elaborates a slice lvalue into a read-modify-write of the whole field, so the printer never emits one, but a generated slice read reaches `$bitacc` only.",
-   "reach": "Not reachable through the printer while slice lvalues are elaborated away (coverage row `sliceLvalueIR`); reclassify as excluded-construct if that elaboration is kept."
+   "category": "excluded-construct",
+   "row": "lvalueIR: typedLvalueIR [ e sliceop e ]",
+   "reason": "The runtime's slice write, called when a slice is the target of an assignment. The IR elaborates a slice lvalue into a read-modify-write of the whole field (the row names it), so the printer never emits one; a slice read reaches `$bitacc` only."
   },
   {
    "kind": "dec",
@@ -217,48 +218,54 @@
    "name": "$sizeof",
    "file": "3-operations/3-operations.watsup",
    "line": 1108,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "dec",
    "name": "$sizeof_minSizeInBits",
    "file": "3-operations/3-operations.watsup",
    "line": 1111,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "dec",
    "name": "$sizeof_minSizeInBits'",
    "file": "3-operations/3-operations.watsup",
    "line": 1113,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "dec",
    "name": "$sizeof_minSizeInBytes",
    "file": "3-operations/3-operations.watsup",
    "line": 1116,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "dec",
    "name": "$sizeof_maxSizeInBits",
    "file": "3-operations/3-operations.watsup",
    "line": 1119,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "dec",
    "name": "$sizeof_maxSizeInBytes",
    "file": "3-operations/3-operations.watsup",
    "line": 1124,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "rule",
@@ -1424,7 +1431,7 @@
    "line": 342,
    "category": "excluded-construct",
    "row": "parserBlockStatementIR",
-   "reason": "Parser blocks are flattened and their declarations hoisted to Block.locals; the printer declares locals only at block level."
+   "reason": "A variable declared inside a braced parser block. The IR flattens parser blocks and hoists their declarations to Block.locals (the row names it); the printer braces the branches of a parser `if` but never declares a variable inside them."
   },
   {
    "kind": "rule",
@@ -1433,7 +1440,7 @@
    "line": 349,
    "category": "excluded-construct",
    "row": "parserBlockStatementIR",
-   "reason": "Parser blocks are flattened and their declarations hoisted to Block.locals; the printer declares locals only at block level."
+   "reason": "A variable declared inside a braced parser block. The IR flattens parser blocks and hoists their declarations to Block.locals (the row names it); the printer braces the branches of a parser `if` but never declares a variable inside them."
   },
   {
    "kind": "rule",
@@ -1598,8 +1605,9 @@
    "name": "Callee_eval/cont",
    "file": "8-dynamic/8.10.1-eval-call-callee.watsup",
    "line": 192,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "rule",
@@ -1770,8 +1778,9 @@
    "name": "Call_eval/builtinSizeMethodCallee",
    "file": "8-dynamic/8.10.4-eval-call.watsup",
    "line": 600,
-   "category": "not-representable",
-   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. The IR has neither; P4 makes the size methods compile-time known, docs/p4-spec-coverage.md has no row for them, and varbit is excluded by scope."
+   "category": "excluded-construct",
+   "row": "callExpressionIR: size methods (minSizeInBits, minSizeInBytes, maxSizeInBits, maxSizeInBytes)",
+   "reason": "Reached only through the size methods (minSizeInBits and the rest) or the two-argument varbit extract. P4 makes the size methods compile-time known, so the frontend folds them to constants (the row names it), and varbit is excluded by scope."
   },
   {
    "kind": "rule",
