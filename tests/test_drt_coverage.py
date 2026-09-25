@@ -253,7 +253,10 @@ def test_lean_agrees_and_hits_every_rule_tag(lean_binary: Path) -> None:
         "tags listed in tests/drt-unhit-tags.json are now hit; remove them:\n"
         + "\n".join(f"  {tag}" for tag in stale)
     )
-    assert len(known) <= 0, "the unhit list grew; it may only shrink"
+    # Not implied by the two checks above: a newly unhit tag added to the
+    # file is neither a regression nor stale. The list is empty and may
+    # only stay so.
+    assert known == {}, "tests/drt-unhit-tags.json grew; it may only shrink"
 
 
 def test_the_unhit_list_names_reasons() -> None:
