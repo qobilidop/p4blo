@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-09-26. **Repository cleanup checked locally; exact-main CI pending.**
+Last updated: 2026-09-26. **No active engineering work.**
 
 The cleanup corrects stale test paths, selection guidance, the p4c gate
 command and the conformance fixture schema reference. Runtime code, schemas,
@@ -12,7 +12,13 @@ Required-Lean `scripts/check.sh` passed 5,007 tests with no skips or expected
 failures in 99.52 seconds, plus lint/type/schema/generation/workflow checks.
 The temporary audit and review worktrees were removed. Native oracle execution
 and Lean builds were not rerun locally for these prose-only changes; the
-conservative scope classifier requires full remote CI for test README edits.
+conservative scope classifier required full remote CI for test README edits.
+Exact-main `3678eaaf3025665f1ca89c9ab78a4aada93463f1` passed all four workflows:
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36259566190),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36259566332),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36259566261), and
+[BMv2/p4c](https://github.com/qobilidop/p4blo/actions/runs/36259566324).
+All specialist jobs ran. The following checkpoint changes this evidence note only.
 
 Serialization decision: retain Protobuf as the IR wire schema and its specified
 JSON profile for Lean, with generated bindings for current Python and future
@@ -161,7 +167,7 @@ correctness or a latency guarantee.
 
 ## Blocked / next action
 
-Verify all four validation workflows on the exact pushed cleanup revision
-before declaring it complete. No implementation changes remain. The three
-unique pushed parked branches remain; parked work is not an instruction to
-resume. After CI passes, wait for a new scope.
+Nothing is blocked or active. The repository documentation cleanup is complete;
+all applicable local and exact-main remote gates passed. The three unique
+pushed parked branches remain; parked work is not an instruction to resume.
+Wait for a new scope.
