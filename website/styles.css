@@ -69,7 +69,6 @@ h1 em { display: block; color: var(--mint); font-style: normal; }
 .authoring-row strong { font-size: 15px; font-weight: 500; }
 .authoring-row small { font: 10px var(--mono); color: var(--muted); }
 .node-icon { grid-row: 1 / 3; font: 19px var(--mono); color: var(--mint); border-right: 1px solid #425057; height: 30px; padding-right: 10px; }
-.lean-icon { font-size: 26px; }
 .join-lines, .split-lines { display: flex; height: 53px; width: calc(50% + 24px); margin-inline: auto; }
 .join-lines i { flex: 1; border-bottom: 1px solid #658478; position: relative; }
 .join-lines i:first-child { border-left: 1px solid #658478; border-radius: 0 0 0 10px; }
@@ -196,7 +195,6 @@ h3 { font-size: 20px; letter-spacing: -.5px; line-height: 1.35; }
   .authoring-row > div { grid-template-columns: 25px 1fr; column-gap: 7px; padding-inline: 11px; }
   .authoring-row strong { font-size: 13px; }
   .node-icon { font-size: 16px; padding-right: 5px; }
-  .lean-icon { font-size: 23px; }
   .runtime-row { gap: 10px; }
   .runtime-row > div { font-size: 8px; padding-inline: 3px; }
   .comparison { font-size: 8px; gap: 8px; }

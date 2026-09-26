@@ -65,14 +65,15 @@ pages hold the contracts; this register keeps choices, reasons and boundaries.
   syntax.** Conversion has separate proof obligations. `spec/ir/` is
   `P4bloIR`/`p4blo-ir`, schema beside it, nothing architectural;
   `spec/arch/` is `P4bloArch`/`p4blo-arch`, depending on IR and supplying
-  switch, externs, certificate example and `p4blo-lean`; `impl/lean/` is
-  `P4blo`/`p4blo`, depending on both. Python lives in `impl/python/`.
-  (ownership 2026-09-23; three-package layout 2026-09-24)
+  tested switch/extern adapters and `p4blo-lean`, without architecture-proof
+  guarantees. Python in `impl/python/` is the authoring surface. Retire the
+  separate `impl/lean/` typed-source/application package to focus limited
+  resources on the core IR. (ownership 2026-09-23; simplification 2026-09-25)
 - **Lean follows Mathlib/Batteries layout:** client imports under `<Root>/`,
   gate-only tests/audits/probes in one singular `<Root>Test` library; bare
   `Tests` collides across packages. Roots contain only Lake's required files,
-  README and at most one Main, except `spec/ir/proto/`, `spec/arch/proto/`
-  and `impl/lean/ASSURANCE.md`. One `p4blo` binary has user subcommands;
+  README and at most one Main, except `spec/ir/proto/` and `spec/arch/proto/`.
+  The `p4blo-lean` endpoint serves runtime/validation checks;
   acronyms remain capitalized. `test_package_layout.py` pins this, replacing
   flat packages with unregistered probes and sixteen executable roots.
   (2026-09-24; architecture-schema exception 2026-09-25)
@@ -148,9 +149,9 @@ pages hold the contracts; this register keeps choices, reasons and boundaries.
   It bundles blocks/shared type, error and extern declarations, without H/M
   roots, roles, ports or fate. Independently compiled core libraries validate
   without architecture programs; protobuf/Lean core also use BlockLibrary.
-  Architecture BlockBindings selects H/M/exports. Core validity/progress and
-  architecture binding/entry guarantees stay separate. Reason: the user
-  rejected `p4.Program` conflating authoring with composition; arbitrary
+  Architecture BlockBindings selects H/M/exports. Core validity/progress
+  guarantees stay separate from tested architecture binding/entry behavior.
+  Reason: the user rejected `p4.Program` conflating authoring with composition; arbitrary
   export names alone leave the wire H/M convention intact. (2026-09-25)
 - **Assembly recompiles in one shared context, without a fragment linker.**
   This preserves declaration order and type/sub-block/extern identity. Core
@@ -286,8 +287,9 @@ pages hold the contracts; this register keeps choices, reasons and boundaries.
 
 ## Verification and proof boundaries
 
-Exact theorem statements and premises remain in `impl/lean/ASSURANCE.md`
-and the audit files; these entries record choices and limits.
+Current claims and premises are in `docs/assurance.md` and the core audit
+files. Retired authoring/architecture proof history is recoverable from
+`5ee52d90f19d5d5a81bf972a115298ae167e691b`; it is not current assurance.
 
 - **Follow Cedar:** executable formal model, property proofs, typed generators,
   component differential testing; implementations share only wire syntax,
@@ -315,8 +317,11 @@ and the audit files; these entries record choices and limits.
   `<Root>Test` audits advertised theorems' transitive axioms, catching imported
   axioms/native shortcuts; intended theorem meaning still requires review.
   (2026-09-23)
-- **Certificates are bounded actual-machine reexecution**, neither a faster
-  verifier nor a proof term. (2026-09-23)
+- **Retire the fixed execution-certificate experiment.** It packaged bounded
+  reexecution of one example and added no general Python correctness claim.
+  Keep ordinary differential testing and core semantic proofs instead.
+  Revisit only for a concrete consumer needing checked execution claims.
+  (2026-09-25)
 - **Review observers adversarially; anchor every roundtrip independently.**
   Paired faults preserve laws. Independent known answers and constructor
   observations reject them.
@@ -325,30 +330,30 @@ and the audit files; these entries record choices and limits.
   duplicate. **Fixed-application evidence is separate
   from generic replay:** exact state/numeric contracts accompany packets;
   exhaust named malformed profiles before random traffic. (2026-09-23)
-- **First validity boundary is closed scalar.** Exact frames differ from
-  declaration validity; aggregate shape, nominal coherence and write permission
-  are separate; initialization uses bounded layers; call laws concern actual
-  execution. (2026-09-23)
 - **Core library validity is over the index:** `Valid p idx`, checked in Python
   validator order/codes by `Validity.check`, proved by `Validity.check_sound`;
-  no completeness claim. Architecture H/M/
-  exports use `P4bloArch.Bindings.check_sound`. Progress needs `ExternContract`
-  (five reference families via `P4bloArch.Contract.bind_contract`) and a Run
-  fitting block kind; `InstalledOk` follows real `Installed.build`; csum16
-  inhabits premises by kernel check. Wire-shape errors are Lean `DECODE`.
-  Termination/completeness remain open. (2026-09-24; library split 2026-09-25)
+  no completeness claim. Progress needs the generic `ExternContract` and a
+  Run fitting block kind; `InstalledOk` follows real `Installed.build`.
+  Architecture bindings and concrete externs keep runtime checks/tests but
+  no soundness/discharge or non-vacuity proof claims. Wire-shape errors are
+  Lean `DECODE`. Termination/completeness remain open.
+  (2026-09-24; library split and assurance simplification 2026-09-25)
 - **Deviation theorems cover runtime closed behavior only.** Installation,
   binding and architecture entries have no theorem because their meaning is
   outside the IR evaluator. (2026-09-24)
-- **Applications are named policies with asymmetric known-answer anchors**:
-  paired relabeling preserves proofs; readback/ingress proofs stay parked.
-  **One shared operator AST and one command AST; notation waits for a real
-  application. Codec proofs proceed baseline
-  first.** (2026-09-23)
-- **No new application/typed-source theorems until simulation with the
-  P4-SpecTec rendering.** Existing proofs give internal consistency; IL bridge
-  landed 2026-09-24 and the P4 claim now awaits `p4-spectec-lean`. Proof effort
-  goes to termination/codec composition. (2026-09-24; reason 2026-09-25)
+- **Keep application behavior tests with independent expected answers.**
+  Retire Lean-authored applications and their proofs, preserving Python
+  examples, state/packet anchors, useful fault tests and oracle coverage.
+  Unique historical readback/ingress drafts stay recoverable on parked
+  branches; they are retired research, not a continuation queue. (2026-09-25)
+- **Formal assurance targets architecture-free core IR only.** The user
+  explicitly prioritized limited resources: retain existing core
+  validity/progress/semantic/codec proofs and independent conformance tests;
+  remove Lean authoring, application/architecture proofs and exclusive
+  support machinery. No new proof family, architecture or importer expansion
+  is part of simplification. Python authoring and the P4 importer remain
+  tested tools. Confidence: high for this phase; revisit for a concrete
+  user need that justifies the proof cost. (2026-09-25)
 
 ## Scope and process
 

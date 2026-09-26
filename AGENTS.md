@@ -51,7 +51,8 @@ creates no git tags.
    the architecture-free IR semantics scope, are complete and frozen;
    maintenance does not reopen parked proofs. The status file names any
    active engineering work. The example-guided authoring and CI-efficiency
-   scopes are complete. Independent blocks and optional BlockLibrary bundles are
+   scopes are complete. Core-only assurance simplification is active; see
+   the status file. Independent blocks and optional BlockLibrary bundles are
    documented in `docs/python-edsl.md`; architecture assembly stays separate.
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
@@ -77,7 +78,7 @@ specific package manager. Preserve actual historical command transcripts.
 
 ```
 scripts/check.sh                                   # every Python and schema check CI runs
-scripts/check-lean.sh                              # all three Lean packages, audits and tests
+scripts/check-lean.sh                              # core proofs and executable adapter tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
 tests/oracle/build.sh                              # the P4-SpecTec oracle, once
@@ -132,23 +133,23 @@ so the required CI gate discovers them without a hand-maintained file list.
 - **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
   The IR spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`)
   and holds nothing architectural: no ports, no packet fate, no concrete
-  externs. The reference architecture spec `spec/arch/` (`p4blo-arch`,
+  externs. The executable architecture adapter `spec/arch/` (`p4blo-arch`,
   imports `P4bloArch`) depends on it and supplies the switch, the extern
-  families and the `p4blo-lean` endpoint. The `impl/lean/` user package
-  (`p4blo`, imports `P4blo`) depends on both, never the reverse. In each
-  package, what a client may import lives under `<Root>/`, what only the
-  gate runs (tests, proof audits, fixtures) under `<Root>Test/` as one
-  default-target library, and at the root only the root module, Lake's
-  files, `README.md` and at most one `Main.lean`, with the core and
-  architecture protobuf schemas under `spec/ir/proto/` and
-  `spec/arch/proto/` and `impl/lean/ASSURANCE.md` as named exceptions
-  (`docs/design.md`, "The Lean packages"). Core library validity is
-  decided by a checker proved sound and progress is proved for valid
-  libraries; `P4bloArch.Bindings.check_sound` separately covers the
-  H/M and role choices. Termination and codec composition through
-  BlockLibrary, architecture Export and BlockAssembly remain open, not
-  guarantees supplied by this organization. A closed behavior is
-  written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
+  families and the `p4blo-lean` endpoint. This adapter is tested, without
+  architecture-specific proof guarantees. Python is the authoring surface;
+  there is no separate Lean authoring/application package. In each package,
+  client imports live under `<Root>/`, gate-only tests/audits/fixtures under
+  `<Root>Test/` as one default-target library, and at the root only the root
+  module, Lake's files, `README.md` and at most one `Main.lean`, plus schemas
+  under `spec/ir/proto/` and `spec/arch/proto/` (`docs/design.md`, "The Lean
+  packages"). Core library validity is decided by a checker proved sound;
+  progress is proved under its explicit environment and machine premises.
+  The generic `ExternContract` remains an assumption, without a proof that
+  the supplied architecture discharges it. Termination and whole-library
+  codec composition remain open. Formal assurance is scoped to core IR;
+  do not revive application, architecture or typed-source proofs or the
+  retired execution-certificate experiment without a new user scope.
+  A closed behavior is written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both
   interpreters second.
 - **Corpus programs** live under `tests/corpus/<name>/` with their eDSL

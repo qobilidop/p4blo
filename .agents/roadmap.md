@@ -4,8 +4,11 @@ The research backlog beyond the completed finite scopes. Python and Lean
 only; full architecture-independent P4 is the north star, not a
 completion criterion. Nothing here is active: an item becomes work only
 when the user scopes it. Landed results are summarized in
-[assurance.md](../docs/assurance.md) and `impl/lean/ASSURANCE.md`; the
-step-by-step record is in git.
+[assurance.md](../docs/assurance.md); the step-by-step record is in git.
+Formal assurance targets only core IR. The Lean authoring/application proof
+stack and execution-certificate experiment are retired, recoverable from
+`5ee52d90f19d5d5a81bf972a115298ae167e691b`. Their unfinished extensions are
+not an active roadmap. Python examples, importer and tested adapters remain.
 
 The mechanized relation to P4-SpecTec is a joint milestone with
 `p4-spectec-lean`, the user's project that compiles SpecTec into Lean;
@@ -31,22 +34,16 @@ p4-spectec-lean"; `decisions.md`, 2026-09-24).
   revisit rule imply `Execution.drive` terminates; with progress, a valid
   program has a defined result. Landed: progress, the revisit check, the
   cursor never moving back.
-- [ ] Codec composition through core BlockLibrary and architecture Export
-  and BlockAssembly (C3). Landed: component laws through Action and Block,
-  total decoders, independent anchors.
-- [ ] Checker completeness per fragment; `ResultOk` and the entry-point
-  corollaries are landed, `structVar` on the final frame is not.
-- [ ] Typed Lean construction language beyond what landed (closed scalars,
-  fields, initialization, calls, the forwarder's selected action, the
-  firewall's initialization and Bloom insertion): complete applications
-  and their parser, checksum and architecture boundaries; the parked
-  readback and ingress drafts.
-- [ ] General assignment preservation and further extern contracts.
+- [ ] Codec composition through core BlockLibrary (C3). Landed: component
+  laws through Action and Block, total decoders, independent anchors.
+  Architecture Export/BlockAssembly codecs remain tested adapters.
+- [ ] Core checker completeness per fragment. Progress retains its explicit
+  extern and machine assumptions; architecture entry proofs are retired.
+- [ ] General core assignment preservation.
 - [ ] Generated action and sub-block calls with changing host table
   snapshots across sequences: parser-error copyback and table-invoked
   actions. Landed: bounded copy-in/out, aggregate copies, computed
   indices.
-- [ ] Generalize the execution-claim checker beyond its fixed fragment.
 
 ## Interchange
 
@@ -55,8 +52,6 @@ p4-spectec-lean"; `decisions.md`, 2026-09-24).
 
 ## Applications (frozen scopes; extend only with a new scope)
 
-- [ ] Tutorial stateful firewall: the two-read prefix (parked draft),
-  drop/no-op composition, hash bounds, control composition.
 - [ ] Revisit XDP only for a concrete p4blo application with an independent
   execution oracle; compilation alone does not justify support.
 - [ ] Conditional flowlet bridge: needs a controlled time/randomness

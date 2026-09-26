@@ -1,6 +1,15 @@
 # Status
 
-Last updated: 2026-09-25. **No implementation scope is active.** The user
+Last updated: 2026-09-25. **Active: simplify formal assurance to the core IR.**
+The user approved removing Lean authoring/application proofs, concrete
+architecture proofs and the execution-certificate experiment. Preserve the
+core IR proofs, executable architecture adapters, Python authoring/examples,
+wire formats and independent oracle/differential testing. Integration branch:
+`work/simplify-core`, based on `5ee52d90f19d5d5a81bf972a115298ae167e691b`.
+[Scope, ownership and acceptance](notes/simplify-core.md). Implementation,
+independent review, full local gates and integrated-main CI remain pending.
+
+The user
 has made PRs optional for this personal-project phase. Feature branches
 remain available when useful, and direct commits to `main` are allowed;
 PRs are used for explicit requests or repository protections. Independent
@@ -13,9 +22,9 @@ with 5,271 tests and four expected failures, no skips. Review details are in
 are recorded by GitHub Actions against the policy commit; the local result
 alone does not establish remote success.
 
-The next requested work is a read-only simplification audit: map current
-Lean verification, assess restricting formal assurance to the architecture-free
-core IR, and identify other maintenance costs. No removal scope is selected.
+The simplification audit is complete and implementation is authorized.
+The optional-PR policy at `5ee52d9` passed all four validation workflows;
+feature branches remain useful and no PR is required for this scope.
 
 XDP removal
 is complete: [PR #7](https://github.com/qobilidop/p4blo/pull/7) merged as
@@ -201,4 +210,5 @@ in the prior Codex session were not repository build failures.
 
 ## Blocked
 
-Nothing. Ask for a new scope before starting more implementation.
+Nothing. Finish the simplification scope in the working note; do not reopen
+retired application proofs or unrelated roadmap work.

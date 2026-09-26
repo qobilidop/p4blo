@@ -1,4 +1,8 @@
-# Parked application proof drafts
+# Retired application proof drafts
+
+The core-only assurance decision (2026-09-25) retires these extensions.
+Their unique committed content remains on the branches below for recovery;
+retaining history does not make these drafts a work queue.
 
 2026-09-23, converted to branches 2026-09-24. The user-approved finite
 [milestone 1](../../docs/assurance.md) does not require these additional
