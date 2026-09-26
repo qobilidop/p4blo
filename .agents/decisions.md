@@ -1,8 +1,9 @@
 # Decisions
 
 Decisions in force, with reasons and original dates. Supersede entries in place. The latest
-archive is `d2f9dbd6fefacc80da40d4f6fba294c819cd4d28`. Its topical register
-preserves the current minimal architecture and oracle judgments. Earlier registers are at
+archive is `3c3ed799dc01c0113b8dbcb0f0862d4fb0f1b6dd`. It retains the completed test
+organization evidence and all earlier decisions. Earlier registers are at
+`d2f9dbd6fefacc80da40d4f6fba294c819cd4d28`,
 `34ce204e4a8be7633133a715e10c9ac6a8b891b1`,
 `9fc6c19febf839fa56873be10788b515c4e29ae9` and `26c93485861bc5442076a1060fcc8d1743952702`;
 the chronological log is `docs/decisions.md` at `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6`.

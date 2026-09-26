@@ -2,44 +2,25 @@
 
 Last updated: 2026-09-26. **No active engineering work.**
 
-The test organization refactor is complete on main
-`b89910353f783b7fa3bb0fa09a748fab0937538c`. Package tests live beside the
-Python package; root suites have five responsibilities. Every original case
-and all fixture answers remain, and spec/ is byte-identical to 0e55340.
-[Scope/evidence](notes/test-organization.md),
-[independent review](reviews/test-organization-final.md),
-[test guide](../tests/README.md).
+Test organization is complete on main `b89910353f783b7fa3bb0fa09a748fab0937538c`.
+Python package tests live beside the package at `impl/python/tests/`; root
+suites cover conformance, oracles, programs, repository checks and support.
+All original cases and fixture answers survive; spec/ is unchanged. Independent
+Parser, Control and Deparser blocks and scoped v1model remain the architecture
+set. Formal assurance still targets architecture-free core IR. Parked proof
+and roadmap items are not instructions to resume without a new scope.
 
-Exact-main remote CI passed:
-[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36225701275),
-[Lean](https://github.com/qobilidop/p4blo/actions/runs/36225701488),
-[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36225701448),
-[BMv2/p4c](https://github.com/qobilidop/p4blo/actions/runs/36225701446).
-All specialist jobs ran. Both Python runners passed 2,840 ordinary checks;
-Lean shards passed 1,083 and 1,084 cases. Website deployment passed at d095104
-([run](https://github.com/qobilidop/p4blo/actions/runs/36225143006)); subsequent
-changes do not affect its source. Local full gate: 5,007 passes, no skips;
-native oracle totals: 307 passes/17 precise expected failures; all 28 frozen
-assurance phases and all 13 optional source-fault recipes pass. See the scope
-note for exact revision/evidence boundaries. Next: compact completed notes.
-
-Minimal architectures and the discrepancy catalogue are complete on main
-`516cbdf67519a1af360ac1d9f442e70133bf77b7`, with all applicable remote CI green.
-Only independent Parser, Control and Deparser blocks and scoped v1model remain.
-Formal assurance targets architecture-free core IR; architecture adapters,
-externs, authoring and applications are tested executable code. No parked
-proof or roadmap item is an instruction to continue without a new scope.
-
-Archive before this compaction: `d2f9dbd6fefacc80da40d4f6fba294c819cd4d28`.
-It contains the minimal-architecture plan, independent reviews, fixed findings,
-mutation checks, exact input/answer audit and closure evidence. Earlier archives:
+Archive before this compaction: `3c3ed799dc01c0113b8dbcb0f0862d4fb0f1b6dd`.
+It retains the completed plan, reviews, exact input/case audits and local/remote
+validation records, including the fixed import-cache and mutation-recipe findings.
+Earlier archives: `d2f9dbd6fefacc80da40d4f6fba294c819cd4d28`,
 `34ce204e4a8be7633133a715e10c9ac6a8b891b1`,
 `9fc6c19febf839fa56873be10788b515c4e29ae9`,
 `26c93485861bc5442076a1060fcc8d1743952702`, and
 `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6`.
 Recover with `git show <archive>:.agents/notes/<name>.md`
-(`docs/notes/` at the first archive). No tags are created.
-Local logs and build trees are conveniences, not required handoff evidence.
+(`docs/notes/` at the first archive). No tags are created. Local logs/builds
+are conveniences, never required handoff evidence.
 
 ## Completed scopes
 
@@ -53,7 +34,8 @@ Local logs and build trees are conveniences, not required handoff evidence.
 | CI speed / runner cleanup / scope efficiency | `fffbac7`, `5de0d9e`, `967e0a3`, PRs #3/#4/#5; evidence archived at `090fb68` |
 | XDP retirement / optional PR policy | `da6f620` / `5ee52d9`; experiment recoverable at `b7860a5` |
 | Core-only assurance simplification | `090fb68`; exact-main local/remote evidence archived at `d2f9dbd` |
-| Minimal architectures / oracle discrepancies | `516cbdf`; [profile](../docs/arch-supports.md), [dispositions and minimal reproducers](../docs/oracle-discrepancies.md); evidence below |
+| Minimal architectures / oracle discrepancies | `516cbdf`; [profile](../docs/arch-supports.md), [dispositions and minimal reproducers](../docs/oracle-discrepancies.md); evidence archived at `d2f9dbd` |
+| Test organization | `b899103`; [test guide](../tests/README.md); exact-main local/remote evidence below |
 
 Earlier milestones describe their own revisions, including proofs since retired.
 Retired Lean authoring/application/architecture sources remain at `5ee52d9`.
@@ -71,50 +53,50 @@ application proofs or concrete-architecture proof discharge are supplied.
 
 ## Last checked evidence
 
-Final implementation `2bcd84e9233865511d4046cbaab6c361a8fff416` received
-independent AI-agent review, not human review. Confirmed phase-index, aggregate
-metadata, unused-table-key, generator-name and retired-flood-skip findings were
-fixed before integration. The full report is
-`.agents/reviews/minimal-architecture-2026-09-25.md` at archive `d2f9dbd`.
-The checkpoint comment/report change integrated as `516cbdf` changes no behavior.
+Final implementation `b89910353f783b7fa3bb0fa09a748fab0937538c` received
+independent read-only AI-agent review, not human review. The archive above
+holds `.agents/reviews/test-organization-final.md` and the mechanical review.
+Confirmed moved-root selection, pre-deselection guard, cached Ruff import
+classification and live mutation-recipe findings were fixed and checked.
 
-Local checks used the pinned `nix develop -c` environment:
+- Collection preserves all 5,320 original case identities, modulo documented
+  paths/two path parameters/one sharding-test rename. Six printer compilations
+  are now separate cases; five boundary cases are added: 5,331 total. All 710
+  detailed semantic cases remain. Shared support imports no test modules.
+- All 89 fixed conformance fixtures retain their programs, 514 ordered requests,
+  replies and provenance; only source-location labels moved. All 310 validator
+  scenario names and deterministic protobuf hashes match the former capture.
+  Core implementations, spec/ and native P4/STF inputs are unchanged.
+- Required-Lean `scripts/check.sh` at b899103: 5,007 passed with no skips or
+  expected failures; format/lint/types/schema/generation/workflow checks passed.
+  Explicit first-party classification also passes `ruff check --no-cache`.
+  `scripts/check-lean.sh` passed both unchanged specification packages.
+- P4-SpecTec: 237 passed/15 precise expected failures, including fresh coverage
+  after rebuilding the stale local probe. BMv2/p4c: 70 passed/two precise
+  expected failures. No local oracle checks skipped. Coverage retains all
+  2,296 item identities/hits and 6,167/14,475 hit instructions; 157 Lean rule tags.
+- Frozen assurance at `74a678f` passed all 28 phases: ten Python faults, Lean
+  CRC, paired codec/observer faults, independent anchors and restored baselines.
+  Its three input hashes/six requests are unchanged. Subsequent changes are
+  import order/configuration, optional recipe repair and narrative evidence.
+  Local logs: `.artifacts/assurance/test-organization-final`.
+- All 13 optional application/VLAN source faults were detected by independent
+  Python and real-Lean expectations in an isolated d095104 worktree;
+  every baseline/restored run passed. Current recipes stay in
+  `.agents/notes/mutations/`; no application-proof claim follows.
 
-- `scripts/check-lean.sh`: both packages, audits and native tests passed on the
-  integrated Lean sources, unchanged through the final revision.
-- `P4BLO_REQUIRE_LEAN=1 scripts/check.sh` at `2bcd84e`: exit 0; 4,798 passes,
-  four expected failures, no skips; format/lint/types/schema/fresh generation
-  and workflow checks passed.
-- `P4BLO_REQUIRE_LEAN=1 uv run python scripts/check-assurance.py --output
-  <new directory>` at frozen `2bcd84e`: all 28 phases passed, including ten
-  Python faults, Lean CRC fault, paired codec/observer faults, independent
-  anchors and restored baselines. Six requests and three deliberately revised
-  program hashes remain. Local evidence `.artifacts/assurance/minimal-arch-final`.
-- Corpus oracle modules: 146 passes/five expected failures. Other generated,
-  frontend, native CRC/firewall/stage and coverage modules: 340 passes/eight
-  expected failures, then ten repaired family/coverage checks passed. Final
-  BMv2 driver module: 46 passes/two expected failures. Counts overlap.
-- Independent Verify/Ingress swap faults were killed in Python and successfully
-  compiled Lean; five emitted traces were wrong, two drops matched. Restored
-  seven-request replay agreed completely, with no execution/protocol errors.
-
-All 89 conformance fixtures retain their 514 ordered requests and every extern
-state answer. Two former flood output lists become unicast; 118 coverage and
-13 diagnostic observations plus three request-error strings change. All 710
-semantic cases across seven detailed modules remain. Collection changes from
-5,279 to 5,320: 28 retired Filter/flood-only cases, 54 renamed and 69 added.
-The schema, core IR/proofs and core Python interpreter remain unchanged.
-P4-SpecTec coverage retains 33 programs, 93 vectors, all 2,296 item identities
-and hits, and 6,167/14,475 hit instructions; only call/vector counts change.
-
-Exact integrated main `516cbdf67519a1af360ac1d9f442e70133bf77b7` passed
-[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36220833330),
-[Lean](https://github.com/qobilidop/p4blo/actions/runs/36220833562),
-[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36220833542),
-[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36220833512) and
-[website deployment](https://github.com/qobilidop/p4blo/actions/runs/36220833313).
-Specialist jobs actually ran. The longest workflow took 8m11s including setup
-and queue time; this is one observation, not a latency guarantee.
+Exact-main b899103 passed
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36225701275),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36225701488),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36225701448), and
+[BMv2/p4c](https://github.com/qobilidop/p4blo/actions/runs/36225701446).
+All specialist jobs ran. Each Python OS passed 2,840 ordinary cases; Lean's
+complete disjoint shards passed 1,083 and 1,084. The 1,058 package cases require
+no Lean, Docker or simulator. The unchanged website source deployed at d095104
+([run](https://github.com/qobilidop/p4blo/actions/runs/36225143006)).
+The following compaction changes narrative state only; its own validation is
+recorded in the compaction review. This is finite evidence, not universal
+correctness or a latency guarantee.
 
 ## Open threads (parked / backlog)
 
@@ -151,7 +133,6 @@ and queue time; this is one observation, not a latency guarantee.
 
 ## Blocked / next action
 
-Nothing is blocked or active. All implementation/recipe worktrees and integrated
-branches are removed; the read-only review worktree remains through compaction.
-The three unique parked branches remain. Compact this completed scope, validate
-that narrative checkpoint, then wait for the user's next scope.
+Nothing is blocked or active. The three unique pushed parked branches remain;
+implementation and recipe worktrees are removed. Finish the narrative compaction
+review/local gate/remote CI, remove its review worktree, then wait for a new scope.
