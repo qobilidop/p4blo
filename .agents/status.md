@@ -6,9 +6,14 @@ experiment. Its workflow, container sources, inspector and dedicated tests
 are removed, and current commands/pins/structural inventories are updated.
 The P4 interpreters, schemas, proofs and oracle inputs are unchanged.
 Historical XDP evidence is retained as historical evidence; the roadmap keeps
-one revisit condition. Next: independent review, full local gate, final-head
-remote CI and integration. The eDSL, closure and CI-efficiency scopes remain
-complete; [CI measurements](notes/ci-efficiency.md) record their limits.
+one revisit condition. Independent [review](reviews/xdp-removal-2026-09-25.md)
+approved `fe927ef` with no findings; all 154 structure tests passed. Collection
+retains all 3,045 Lean cases; the 19 removed entries belong only to XDP and its
+two structural registrations. Next: full required-Lean local gate, final-head
+remote CI and integration. No Lean/Docker rebuild or assurance mutation rerun
+is needed for unchanged semantics; remote specialist gates still apply.
+The eDSL, closure and CI-efficiency scopes remain complete;
+[CI measurements](notes/ci-efficiency.md) record their limits.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.
