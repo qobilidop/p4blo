@@ -36,14 +36,14 @@ or its deployment workflow, canonical example or renderer on `main`. It also sup
 relative paths so the site works under the `/p4blo/` project subpath.
 
 The walkthrough presents the complete tested
-[`vlan_gateway.py`](../tests/corpus/vlan_gateway/vlan_gateway.py), not a browser
+[`vlan_gateway.py`](../tests/programs/corpus/vlan_gateway/vlan_gateway.py), not a browser
 runtime. Edit that canonical source and the explanatory steps in the renderer,
 then regenerate the highlighted block and downloadable source. The final
 syntax check also needs Node.js, as listed in the development setup:
 
 ```sh
 uv run python scripts/render-website-example.py
-uv run pytest tests/structure/test_website.py tests/programs/test_vlan_gateway.py
+uv run pytest tests/repository/test_website.py tests/programs/corpus/vlan_gateway/test_vlan_gateway.py
 node --check website/main.js
 ```
 

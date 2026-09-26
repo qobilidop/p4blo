@@ -4,8 +4,8 @@ The v1model shim (`p4blo.arch.v1model`) binds a program to v1model so that
 a whole pipeline runs: the metadata contract is mapped onto
 `standard_metadata`, checksum and egress controls are added, and the
 simulator's V1Model architecture decides what happens between blocks. The
-block architecture (tests/oracle/include/p4blo.p4, and the simulator patch
-under tests/oracle/patches/) runs one block per request instead, so this
+block architecture (tests/oracles/include/p4blo.p4, and the simulator patch
+under tests/oracles/patches/) runs one block per request instead, so this
 binding leaves all of that out. Each exported block keeps the signature the
 IR gives it, with only the packet added, which is what `p4blo.printer`
 prints by itself:
@@ -33,7 +33,7 @@ __all__ = ["INCLUDE", "PACKAGE", "BlockPrinter", "PrintError", "print_program"]
 
 # The include that declares the package and the extern families, and the
 # package's names, which a program may not use; all must match
-# tests/oracle/include/p4blo.p4. The extern families take the names the IR
+# tests/oracles/include/p4blo.p4. The extern families take the names the IR
 # gives their types (`register`, `counter`), as under v1model.
 INCLUDE = "p4blo.p4"
 PACKAGE = "P4blo"

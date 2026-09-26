@@ -13,7 +13,7 @@ not an active roadmap. Python examples, importer and tested adapters remain.
 The mechanized relation to P4-SpecTec is a joint milestone with
 `p4-spectec-lean`, the user's project that compiles SpecTec into Lean;
 this repository supplies the IR, the elaboration, the block contract
-`tests/oracle/p4blo.watsup` and the validation suite, and builds no
+`tests/oracles/p4blo.watsup` and the validation suite, and builds no
 rendering of SpecTec itself (`docs/design.md`, "Relation to
 p4-spectec-lean"; `decisions.md`, 2026-09-24).
 

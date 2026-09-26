@@ -6,9 +6,9 @@ The deviation ledger in docs/ir-semantics.md cites P4-SpecTec by the names
 of its relations, rules, functions and syntax productions. Those citations
 must resolve at the pinned commit, and the test that checks them must run
 without an OCaml toolchain, so the inventory is a committed JSON file,
-tests/oracle/spectec-rules.json, regenerated from the pinned checkout by
+tests/oracles/spectec-rules.json, regenerated from the pinned checkout by
 this script. `--check` compares instead of writing and exits non-zero on
-drift, which is how tests/external/test_spectec_rules.py uses it when a checkout at
+drift, which is how tests/oracles/test_spectec_rules.py uses it when a checkout at
 the pin is available.
 
 Only the architecture-free sections are inventoried: everything under
@@ -40,8 +40,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-FIXTURE = ROOT / "tests" / "oracle" / "spectec-rules.json"
-BUILD_SCRIPT = ROOT / "tests" / "oracle" / "build.sh"
+FIXTURE = ROOT / "tests/oracles/spectec-rules.json"
+BUILD_SCRIPT = ROOT / "tests/oracles/build.sh"
 DEFAULT_ORACLE_DIR = Path.home() / ".cache" / "p4blo" / "p4-spectec"
 EXCLUDED_SECTIONS = {"9-arch"}
 
@@ -52,7 +52,7 @@ ITEM = re.compile(
 
 
 def pinned_commit() -> str:
-    """The commit tests/oracle/build.sh pins, the single source of the pin."""
+    """The commit tests/oracles/build.sh pins, the single source of the pin."""
     for line in BUILD_SCRIPT.read_text(encoding="utf-8").splitlines():
         if line.startswith("P4_SPECTEC_COMMIT="):
             return line.split("=", 1)[1].strip()

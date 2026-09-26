@@ -1,6 +1,6 @@
 """P4-SpecTec's IL as Python values, read from the `il-export` JSON.
 
-The `il-export` command (tests/oracle/patches/0002-il-export.patch) prints
+The `il-export` command (tests/oracles/patches/0002-il-export.patch) prints
 the values P4-SpecTec's own typing and instantiation relations produce,
 structurally: every variant value names its syntax type and its
 constructor. This module turns that JSON into small immutable Python

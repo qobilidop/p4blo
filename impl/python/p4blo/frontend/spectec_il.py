@@ -568,7 +568,7 @@ def translate_source(
     if exporter is None:
         exporter = find_exporter()
         if exporter is None:
-            raise ExportError("no P4-SpecTec checkout; run tests/oracle/build.sh")
+            raise ExportError("no P4-SpecTec checkout; run tests/oracles/build.sh")
     export = exporter.export(Path(source))
     return translate(export, name or Path(source).stem)
 

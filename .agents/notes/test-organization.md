@@ -35,8 +35,16 @@ never rebuild root Lean concurrently with consumers. Review each integrated
 step independently. Preserve the three unique parked proof branches.
 
 Initial inventory: 413 tracked test-tree files, 92 test modules, 16 immediate
-subdirectories, 5,320 collected cases; 2,167 names selected by the legacy
-lean_agrees selector. Unit folder includes CRC oracle calls; drt mixes runner
+subdirectories, 5,320 collected cases; 2,167 actual Lean fixture dependencies (the legacy name selector also
+selected one Python-only guard). Unit folder includes CRC oracle calls; drt mixes runner
 unit checks and actual conformance. There are 73 test-module imports in 29
 files. Source collection/logs/maps are convenience data in
 `.artifacts/test-organization/`; durable conclusions belong here and in status.
+
+Mechanical move checkpoint: all 5,320 cases preserved after mapped paths and
+exactly two source-path parameter renames. All 89 fixtures differ only in
+source-location labels; requests, programs and answers are unchanged. Full
+required-Lean Python/schema gate: 4,798 passed, four expected failures, no
+skips; lint/format/types/generated outputs/workflows passed. Independent
+review caught the Lean workflow's explicit old root omitting six moved
+cases; it now uses configured roots. Mixed suites and markers remain next.

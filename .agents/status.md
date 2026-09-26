@@ -5,8 +5,11 @@ Last updated: 2026-09-25. **Active: test organization refactor.**
 User-authorized scope at base 0e55340, branch work/test-organization:
 [ownership and acceptance](notes/test-organization.md). Keep spec/ unchanged,
 preserve test responsibilities and reorganize Python, conformance, oracle,
-program and repository checks. Initial step: capture baseline inventories and
-move paths; independent review and all affected gates remain outstanding.
+program and repository checks. Mechanical moves are complete and independently reviewed: 5,320 cases
+retained, spec/ and fixture answers unchanged, full required-Lean local gate
+passed (4,798 passes/four expected failures). Next: helper extraction, mixed
+suite separation and explicit markers; final oracle/assurance/remote gates
+remain outstanding.
 The completed implementation evidence below predates this refactor.
 
 Minimal architectures and the discrepancy catalogue are complete on main

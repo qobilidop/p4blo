@@ -3,7 +3,7 @@
 A case is what both interpreters receive: the host's entries, an ingress
 port and a packet. `case_to_stf` writes it in the vector format of
 `p4blo.stf` so that a divergence found at random becomes a file under
-`tests/corpus/` that every runner, human and oracle can be pointed at. The
+`tests/programs/corpus/` that every runner, human and oracle can be pointed at. The
 outputs each side produced go in as comments: the vector states the
 question, and whoever attributes the divergence writes the `expect` lines.
 """

@@ -167,7 +167,7 @@ exit the printer writes native `egress_spec` as 511 for a drop request, or the
 native `egress_port` otherwise. This preserves M's observable egress request
 for ComputeChecksum while keeping output selection stable on both simulators.
 The
-[original-source probe](../tests/frontend/probes/v1model_egress_spec_read.p4)
+[original-source probe](../tests/oracles/frontend/probes/v1model_egress_spec_read.p4)
 separately exposes P4-SpecTec's different initialization. Egress destination
 selection is also compared using an unchanged original-source probe, so a
 printer mapping cannot hide that discrepancy.

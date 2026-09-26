@@ -5,7 +5,7 @@
 Each mutant replaces one function of the reference interpreter in this
 process only, then runs `check-python` over the tracked fixtures and
 prints the fixtures that caught it. A mutant no fixture catches is a gap
-in the corpus. `tests/drt/test_conformance.py` requires every mutant here to be
+in the corpus. `tests/conformance/test_fixtures.py` requires every mutant here to be
 caught; the README records which fixtures catch each one, and the Lean
 mutant, which needs a rebuilt endpoint and is run by hand.
 """

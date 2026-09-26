@@ -20,7 +20,7 @@ A fixture is a JSON object with exactly these fields,
   corpus or example golden and its STF vector, whose packets became the
   requests with the entries installed before each; `drt` names a golden
   and the seed and count of `p4blo.drt.generate.generate`; `family` names
-  a seed of `tests/oracle/generated.py`'s `materialize`, its family and
+  a seed of `tests/oracles/generated.py`'s `materialize`, its family and
   description; `contract` names a program and describes hand-written
   requests for the parts of the contract the others never reach.
 - `lean`: what answered, as provenance only (see "Provenance" below):
@@ -111,7 +111,7 @@ uv run python -m p4blo.conformance refresh        # Lean answers the tracked req
 uv run python -m p4blo.conformance export         # answer inputs.py on Lean, rewrite fixtures/
 ```
 
-`tests/drt/test_conformance.py` runs the first per fixture in `scripts/check.sh`
+`tests/conformance/test_fixtures.py` runs the first per fixture in `scripts/check.sh`
 and the second in the `lean_agrees` gate, and fails when a fixture is
 missing, has no input, or has another number of steps than its input has
 requests. `check-lean`, `refresh` and `export` need the Lean executable
@@ -168,7 +168,7 @@ the per-fixture pytest checks do not repeat it.
 Deliberate faults the corpus catches. The Python ones are in `mutants.py`
 (`uv run python -m tests.conformance.mutants`), each applied in-process
 to one function of the reference interpreter, and
-`tests/drt/test_conformance.py` requires each to be caught. The current fixtures kill all four Python faults:
+`tests/conformance/test_fixtures.py` requires each to be caught. The current fixtures kill all four Python faults:
 
 | Mutant | Fault | Caught by |
 |---|---|---|

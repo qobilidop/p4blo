@@ -6,8 +6,8 @@ evaluator. The ordinary validator, architectures and interpreters execute
 each context. Hypothesis strategies live in tests, not the runtime package:
 `scalar_expression` makes its decisions through a `Chooser`
 (`p4blo.drt.choice`), so the Hypothesis strategy of
-tests/drt/test_drt_programs.py and the seeded sampler of
-tests/oracle/generated.py are one generator with two sources of choices.
+tests/conformance/execution/test_drt_programs.py and the seeded sampler of
+tests/oracles/generated.py are one generator with two sources of choices.
 """
 
 from __future__ import annotations

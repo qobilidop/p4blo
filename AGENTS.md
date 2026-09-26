@@ -85,10 +85,10 @@ scripts/check.sh                                   # every Python and schema che
 scripts/check-lean.sh                              # core proofs and executable adapter tests
 P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
 uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
-tests/oracle/build.sh                              # the P4-SpecTec oracle, once
-uv run pytest tests/external/test_oracle.py        # corpus vectors on that oracle
-docker build -t p4blo-bmv2 tests/oracle/bmv2       # the BMv2 oracle image, once
-uv run pytest tests/external/test_oracle_bmv2.py   # corpus vectors on BMv2
+tests/oracles/build.sh                              # the P4-SpecTec oracle, once
+uv run pytest tests/oracles/test_oracle.py        # corpus vectors on that oracle
+docker build -t p4blo-bmv2 tests/oracles/bmv2       # the BMv2 oracle image, once
+uv run pytest tests/oracles/test_oracle_bmv2.py   # corpus vectors on BMv2
 ```
 
 Keep `main` green on all of them; check exit codes, not output. Four
@@ -156,7 +156,7 @@ so the required CI gate discovers them without a hand-maintained file list.
   A closed behavior is written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
   architecture or extern family owns it) and implemented in both
   interpreters second.
-- **Corpus programs** live under `tests/corpus/<name>/` with their eDSL
+- **Corpus programs** live under `tests/programs/corpus/<name>/` with their eDSL
   source, golden, README and STF vectors;
   `tests/programs/test_corpus.py` picks new ones up by itself. Sources
   are written in the typed eDSL (`p4blo.edsl`), are type-checked by
@@ -164,10 +164,10 @@ so the required CI gate discovers them without a hand-maintained file list.
 - **Public application examples** follow the application section of
   `docs/workflows.md`, with canonical
   Python source under `examples/` and verification assets under
-  `tests/examples/`. Shared checks discover canonical sources and require
+  `tests/programs/examples/`. Shared checks discover canonical sources and require
   goldens, vectors and demos; both oracle catalogs include example vectors.
   Wire new checks into CI explicitly. Preserve upstream regression programs
-  in `tests/corpus/`.
+  in `tests/programs/corpus/`.
 - **Every decision the design does not settle** goes in
   `.agents/decisions.md`, under its topic, with its reason and date, and
   with a confidence and revisit trigger when uncertain. Do not restate what
@@ -308,8 +308,8 @@ the codec tests looked for their endpoint in the wrong package, and only
 the path in every spelling, not only with a slash: `"ir"` in a
 `git ls-files` call, `-d lean` in a command, and `parents[N]` in a path
 computation all broke silently after a move, and
-`tests/structure/test_package_layout.py` and
-`tests/structure/test_boundaries.py` exist to pin the paths and the
+`tests/repository/test_package_layout.py` and
+`tests/repository/test_boundaries.py` exist to pin the paths and the
 import graph a gate depends on. Historical records under `.agents/reviews/`
 keep the paths they were written with; exclude them from rewrites.
 

@@ -14,8 +14,8 @@ limits of original-source comparison:
 
 | Program | Python source | First vector |
 |---|---|---|
-| IPv4 forwarder | [forwarder.py](../tests/corpus/forwarder/forwarder.py) | [forward.stf](../tests/corpus/forwarder/forward.stf) |
-| Stateful Bloom firewall | [tutorial_firewall.py](../tests/corpus/tutorial_firewall/tutorial_firewall.py) | [connection.stf](../tests/corpus/tutorial_firewall/connection.stf) |
+| IPv4 forwarder | [forwarder.py](../tests/programs/corpus/forwarder/forwarder.py) | [forward.stf](../tests/programs/corpus/forwarder/forward.stf) |
+| Stateful Bloom firewall | [tutorial_firewall.py](../tests/programs/corpus/tutorial_firewall/tutorial_firewall.py) | [connection.stf](../tests/programs/corpus/tutorial_firewall/connection.stf) |
 
 Their `build()` functions construct architecture assemblies from IR blocks.
 Read the declarations, parser, actions, tables and final assembly together.
@@ -40,8 +40,8 @@ uv run python - <<'PY'
 from pathlib import Path
 from p4blo import arch, stf
 from p4blo.arch import v1model
-from tests.corpus.forwarder.forwarder import build as forwarder
-from tests.corpus.tutorial_firewall.tutorial_firewall import build as firewall
+from tests.programs.corpus.forwarder.forwarder import build as forwarder
+from tests.programs.corpus.tutorial_firewall.tutorial_firewall import build as firewall
 
 root = Path.cwd().resolve()
 for name, build, vector in [
@@ -56,7 +56,7 @@ for name, build, vector in [
         output = driver(entries, port, packet)
         ports.append([p for p, _ in output])
         return output
-    path = root / "tests/corpus" / name / vector
+    path = root / "tests/programs/corpus" / name / vector
     stf.assert_replay(loaded.index, stf.parse(path.read_text()), run)
     assert not pipeline.diagnostics, pipeline.diagnostics
     print(f"{name}: output ports {ports}")
@@ -102,8 +102,8 @@ from tempfile import TemporaryDirectory
 from p4blo import arch, stf
 from p4blo.arch import v1model, wire
 from p4blo.drt import Case, LeanRunner
-from tests.corpus.forwarder.forwarder import build as forwarder
-from tests.corpus.tutorial_firewall.tutorial_firewall import build as firewall
+from tests.programs.corpus.forwarder.forwarder import build as forwarder
+from tests.programs.corpus.tutorial_firewall.tutorial_firewall import build as firewall
 
 root = Path.cwd().resolve()
 for name, build, vector in [
@@ -112,7 +112,7 @@ for name, build, vector in [
 ]:
     program = build()
     loaded = v1model.load(program)
-    statements = stf.parse((root / "tests/corpus" / name / vector).read_text())
+    statements = stf.parse((root / "tests/programs/corpus" / name / vector).read_text())
     ports = []
     with TemporaryDirectory() as directory:
         path = Path(directory) / "program.json"
@@ -159,10 +159,10 @@ execution error; the state/error boundary is documented separately.
 To check these exact documented snippets after building Lean:
 
 ```sh
-P4BLO_REQUIRE_LEAN=1 uv run pytest tests/structure/test_quickstart.py -q
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests/repository/test_quickstart.py -q
 ```
 
-For broader application coverage, run `uv run pytest tests/examples`; for
+For broader application coverage, run `uv run pytest tests/programs/examples`; for
 release gates and optional external oracle setup see [workflows](workflows.md).
 Forwarder semantics deliberately include TTL 0 wrapping to 255, old-destination-to-source MAC assignment, and checksum
 recalculation after a table action even if it drops. The parser supports the

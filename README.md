@@ -21,10 +21,10 @@ in this repository and runs in CI.
 
 | Claim | Experiment | Where |
 |---|---|---|
-| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto), [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md), [`tests/corpus/`](tests/corpus/) |
-| The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/assurance.md`](docs/assurance.md#known-disagreements-with-the-oracles) |
-| A block is a function; an architecture is ordinary code | independent blocks and one explicit six-stage v1model adapter; core meaning does not depend on pipeline roles | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch/) |
-| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`spec/ir/`](spec/ir/), `impl/python/p4blo/drt/` |
+| The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto), [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md), [`tests/programs/corpus/`](tests/programs/corpus) |
+| The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracles/`](tests/oracles), [`docs/assurance.md`](docs/assurance.md#known-disagreements-with-the-oracles) |
+| A block is a function; an architecture is ordinary code | independent blocks and one explicit six-stage v1model adapter; core meaning does not depend on pipeline roles | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch) |
+| The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`spec/ir/`](spec/ir), `impl/python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
 [`.agents/status.md`](.agents/status.md). The P4 frontend covers the pinned
@@ -47,13 +47,13 @@ Start with the [public Python applications](examples/README.md), beginning
 with the [IPv4 router](examples/router/README.md). Each has a complete eDSL
 program, a runnable host-side demo and independent verification assets.
 
-The [VLAN access gateway](tests/corpus/vlan_gateway/README.md) is the compact
+The [VLAN access gateway](tests/programs/corpus/vlan_gateway/README.md) is the compact
 Python example behind the [homepage walkthrough](https://qobilidop.github.io/p4blo/#examples):
 parse a tag, apply a host policy, remove the tag and count the admission.
 Its runnable three-packet demo and independent packet/state tests make the
 whole path inspectable.
 
-The [tutorial firewall](tests/corpus/tutorial_firewall/README.md) preserves
+The [tutorial firewall](tests/programs/corpus/tutorial_firewall/README.md) preserves
 Bloom-filter false positives and compares all 8,192 register cells against
 unchanged original P4 on BMv2. Stronger probes exposed pinned SpecTec CRC32
 padding and table-mask defects that simpler packet sequences missed. They
@@ -70,13 +70,13 @@ to manufacture agreement.
    [`docs/ir-semantics.md`](docs/ir-semantics.md), the closed behaviors, and
    [`docs/arch-supports.md`](docs/arch-supports.md), what the supplied
    architectures and extern families decide.
-3. [`examples/router/`](examples/router/): a complete typed Python application
+3. [`examples/router/`](examples/router): a complete typed Python application
    with a runnable demonstration and explicit packet profile. The faithful
    upstream ports and focused semantic fixtures remain in
-   [`tests/corpus/`](tests/corpus/), each with its own provenance and contract.
-4. [`impl/python/p4blo/interp/`](impl/python/p4blo/interp/): the reference
+   [`tests/programs/corpus/`](tests/programs/corpus), each with its own provenance and contract.
+4. [`impl/python/p4blo/interp/`](impl/python/p4blo/interp): the reference
    interpreter, written to be read as an explanation of P4's core.
-5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR/): the independent executable Lean
+5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR): the independent executable Lean
    semantics, checked against P4-SpecTec. Core properties are proved here;
    `spec/arch/` supplies the tested v1model and extern models needed to run
    programs through the `p4blo-lean` endpoint.
@@ -98,7 +98,7 @@ from the repository root:
 ```sh
 uv sync --locked
 uv run python -m examples.router.demo
-uv run pytest tests/examples -k 'not lean'
+uv run pytest tests/programs/examples -k 'not lean'
 ```
 
 The `.python-version` file selects Python 3.13; uv can download it if needed.
@@ -122,7 +122,7 @@ package manager.
 | Python examples and application tests | None beyond the uv environment above |
 | Full Python/schema/workflow gate | Node.js, `buf`, `protoc`, `actionlint` |
 | Lean packages and real differential tests | `elan`/`lake`; the checked-in `lean-toolchain` files select the compiler |
-| P4-SpecTec oracle | Git, Make, opam, a C toolchain, pkg-config, GMP and zstd development files; [builder details](tests/oracle/README.md) |
+| P4-SpecTec oracle | Git, Make, opam, a C toolchain, pkg-config, GMP and zstd development files; [builder details](tests/oracles/README.md) |
 | BMv2 and P4 printer typechecks | Docker and the corresponding pinned images; [workflow details](docs/workflows.md) |
 
 Optional: [Nix](https://nixos.org/download/) provides pinned development tools
@@ -139,8 +139,8 @@ scripts/check.sh              # every Python and schema check CI runs
 scripts/check-lean.sh         # both Lean packages, core proof audits and tests
 ```
 
-The oracle needs P4-SpecTec: `tests/oracle/build.sh` builds its pinned source; see
-[`tests/oracle/README.md`](tests/oracle/README.md). The printer's goldens are
+The oracle needs P4-SpecTec: `tests/oracles/build.sh` builds its pinned source; see
+[`tests/oracles/README.md`](tests/oracles/README.md). The printer's goldens are
 typechecked with p4c through Docker when it is available.
 
 ## Layout
@@ -150,10 +150,10 @@ typechecked with p4c through Docker when it is available.
 | `spec/ir/` | the IR specification: Lean syntax, semantics, codecs and scoped proofs, with the wire schema |
 | `spec/arch/` | tested executable adapters: architecture bindings, v1model, extern families and the `p4blo-lean` endpoint |
 | `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, v1model, STF runner, differential loop |
-| `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
+| `tests/programs/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
-| `tests/examples/` | application goldens, packet vectors and independent behavior checks |
-| `tests/oracle/` | the two oracles: P4-SpecTec's simulator and BMv2 |
+| `tests/programs/examples/` | application goldens, packet vectors and independent behavior checks |
+| `tests/oracles/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, IR semantics, architecture support, coverage, assurance, quickstart, workflows |
 | `.agents/` | agent state: current status, decisions register, roadmap, live notes and skills; `AGENTS.md` is the entry point |
 | `tests/` | everything that runs: the suites grouped by question (`unit/`, `codec/`, `programs/`, `drt/`, `lean/`, `external/`, `structure/`, each with a README) and `pyright/`, the eDSL's static-check fixtures |

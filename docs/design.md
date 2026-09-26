@@ -264,7 +264,7 @@ The typed surface is a front over `p4blo.edsl.core`, the builder that
 produces the goldens; its plain constructors and string names are the
 documented dynamic API for generated programs. The core's run-time checks
 stay authoritative, and pyright is an earlier line, not a replacement.
-`tests/unit/test_pyright.py` tests the split with must-pass and must-fail
+`impl/python/tests/edsl/test_typing.py` tests the split with must-pass and must-fail
 fixtures:
 
 | Checked by pyright | Checked at run time only |
@@ -320,7 +320,7 @@ Each package puts client modules under `<Root>/` and gate-only modules under
 most one `Main.lean`, with wire schemas under `proto/`. The default test
 libraries are `P4bloIRTest` and `P4bloArchTest`; `lake build` checks the core
 audits and `lake test` runs each driver. `spec/arch/Main.lean` is the only
-application endpoint. `tests/structure/test_package_layout.py` pins the layout.
+application endpoint. `tests/repository/test_package_layout.py` pins the layout.
 
 Application tests check intent separately from core properties. External
 oracles and known answers stay because a theorem can establish the wrong
@@ -400,7 +400,7 @@ emit; declared externs.
 
 ### Corpus and applications
 
-Corpus programs live under `tests/corpus/`, chosen to hit the hard
+Corpus programs live under `tests/programs/corpus/`, chosen to hit the hard
 semantics. Where a program can be sourced from p4c's own test suite with
 an STF file beside it, it is, because those expected outputs were
 produced by BMv2 and reviewed by the p4c maintainers, which gives
@@ -410,7 +410,7 @@ and independently computed vectors. Each program is authored in the eDSL,
 printed back to P4, typechecked by p4c, and replayed on both interpreters
 and both oracles. The public applications under `examples/` are complete
 Python programs with runnable demos, written for readers who know
-networking; their verification assets live under `tests/examples/`.
+networking; their verification assets live under `tests/programs/examples/`.
 
 ## Testing strategy
 
@@ -540,11 +540,11 @@ project consumes, each with a stable, documented format:
 
 | Interface | Where | Format |
 |---|---|---|
-| the block contract in SpecTec's language | `tests/oracle/p4blo.watsup` | watsup at the pinned P4-SpecTec commit |
-| the program-IL export | `tests/oracle/patches/0002-il-export.patch`, documented in `tests/oracle/README.md` | `p4spectec-il-export/1` JSON: variants as `{"t","c","a"}`, records as `{"t","s"}` |
+| the block contract in SpecTec's language | `tests/oracles/p4blo.watsup` | watsup at the pinned P4-SpecTec commit |
+| the program-IL export | `tests/oracles/patches/0002-il-export.patch`, documented in `tests/oracles/README.md` | `p4spectec-il-export/1` JSON: variants as `{"t","c","a"}`, records as `{"t","s"}` |
 | the conformance corpus | `tests/conformance/` and its README | `p4blo.conformance` version 2: program, requests, Lean's replies with state and rule tags |
-| block-level requests and replies | `tests/oracle/block.py`, documented in the oracle README | JSON lines per block, value shapes as the README defines them |
-| the rule inventory at the pin | `tests/oracle/spectec-rules.json` | one item per declaration: kind and name |
+| block-level requests and replies | `tests/oracles/block.py`, documented in the oracle README | JSON lines per block, value shapes as the README defines them |
+| the rule inventory at the pin | `tests/oracles/spectec-rules.json` | one item per declaration: kind and name |
 
 A change to any of these formats bumps its version. The two simulator
 patches are candidates to move to that project, which forks SpecTec

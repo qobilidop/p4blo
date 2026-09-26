@@ -27,7 +27,9 @@ build-backend = "uv_build"
 module-root = "impl/python"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["impl/python/tests", "tests"]
+addopts = ["--import-mode=importlib"]
+pythonpath = ["."]
 markers = [
     "oracle: drives the P4-SpecTec simulator or BMv2; the oracle workflows run these, the local gate deselects them",
 ]
@@ -39,7 +41,7 @@ extend-exclude = [
     "impl/python/p4blo/arch/v0",  # generated architecture bindings
     ".claude",  # worktrees
     ".agents",  # agent notes and campaign recipes
-    "tests/pyright",  # pyright fixtures, some of which must fail
+    "impl/python/tests/edsl/typing",  # pyright fixtures, some of which must fail
 ]
 
 [tool.ruff.lint]
@@ -50,6 +52,6 @@ known-first-party = ["p4blo"]
 
 [tool.pyright]
 include = ["impl/python", "tests", "examples", "spec/arch/P4bloArchTest/fixtures/witnesses.py"]
-exclude = ["impl/python/p4blo/v0", "impl/python/p4blo/arch/v0", "tests/pyright"]  # tests/unit/test_pyright.py runs the fixtures itself
+exclude = ["impl/python/p4blo/v0", "impl/python/p4blo/arch/v0", "impl/python/tests/edsl/typing"]  # impl/python/tests/edsl/test_typing.py runs the fixtures itself
 pythonVersion = "3.13"
 typeCheckingMode = "standard"

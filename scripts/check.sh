@@ -7,7 +7,7 @@ uv sync --locked --quiet
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright
-# The oracle-driven suites (marker `oracle`, see tests/conftest.py) take a
+# The oracle-driven suites (marker `oracle`, see conftest.py) take a
 # quarter of an hour on a built local oracle and have their own workflows.
 # The rest run in parallel: about two minutes on eight cores against nine
 # in series, with the same result (2026-09-25).

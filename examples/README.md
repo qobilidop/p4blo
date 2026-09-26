@@ -25,7 +25,7 @@ Python builds IR; the interpreter executes that IR for each packet. Table
 entries are host inputs. The v1model architecture turns metadata into packet
 delivery or drop decisions.
 
-Verification lives under [`tests/examples/`](../tests/examples/). Existing
+Verification lives under [`tests/programs/examples/`](../tests/programs/examples). Existing
 upstream ports and focused semantic fixtures remain under
-[`tests/corpus/`](../tests/corpus/). How a new application is organized,
+[`tests/programs/corpus/`](../tests/programs/corpus). How a new application is organized,
 checked and reviewed is in [`docs/workflows.md`](../docs/workflows.md#application-development).

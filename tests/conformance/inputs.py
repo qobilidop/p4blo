@@ -9,7 +9,7 @@ fixture's `source` header:
   with the entries installed before each, as the vector replays them.
 - `drt`: every corpus program and example with the DRT's generated host
   entries and packets, `p4blo.drt.generate.generate` at fixed seeds.
-- `family`: the generated program families of `tests/oracle/generated.py`
+- `family`: the generated program families of `tests/oracles/generated.py`
   at fixed seeds, through its `materialize`, with the switch it uses there.
 - `contract`: hand-written requests for the parts of the reply contract
   the other kinds never reach: installs the host rejects, an ingress port
@@ -50,8 +50,8 @@ FAMILY_SEEDS = range(36)
 
 def programs() -> list[tuple[str, Path]]:
     """Every corpus program and public example, as (label, golden)."""
-    corpus = sorted((ROOT / "tests/corpus").glob("*/*.txtpb"))
-    examples = sorted((ROOT / "tests/examples").glob("*/program.txtpb"))
+    corpus = sorted((ROOT / "tests/programs/corpus").glob("*/*.txtpb"))
+    examples = sorted((ROOT / "tests/programs/examples").glob("*/program.txtpb"))
     return [(f"corpus-{p.parent.name}", p) for p in corpus if p.stem == p.parent.name] + [
         (f"example-{p.parent.name}", p) for p in examples
     ]
@@ -104,14 +104,14 @@ def drt_inputs() -> list[Input]:
 
 
 def family_inputs() -> list[Input]:
-    from tests.oracle import generated
+    from tests.oracles import generated
 
     found: list[Input] = []
     for seed in FAMILY_SEEDS:
         g = generated.materialize(seed)
         source = {
             "kind": "family",
-            "generator": "tests/oracle/generated.py materialize",
+            "generator": "tests/oracles/generated.py materialize",
             "seed": seed,
             "family": g.family,
             "description": g.description,
@@ -180,7 +180,7 @@ def fate_program() -> apb.BlockAssembly:
 
 
 def contract_inputs() -> list[Input]:
-    golden = ROOT / "tests/corpus/forwarder/forwarder.txtpb"
+    golden = ROOT / "tests/programs/corpus/forwarder/forwarder.txtpb"
     rejected = [
         _forwarder_entries(prefix_len=8),  # value bits outside the prefix
         _forwarder_entries(keys=2),  # a key too many

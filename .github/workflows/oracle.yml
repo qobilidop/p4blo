@@ -4,8 +4,8 @@ name: Oracle
 # P4-SpecTec's simulator. Separate from CI because the OCaml toolchain is
 # heavy and only this job needs it (docs/design.md, "Testing strategy"). A
 # red run here means either a divergence between the reference interpreter
-# and the oracle, or an oracle that could not judge; tests/external/test_oracle.py
-# and tests/external/test_oracle_generated.py label which.
+# and the oracle, or an oracle that could not judge; tests/oracles/test_oracle.py
+# and tests/oracles/test_oracle_generated.py label which.
 
 on:
   push:
@@ -33,10 +33,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Read the pinned P4-SpecTec commit
         id: pin
-        run: echo "commit=$(sed -n 's/^P4_SPECTEC_COMMIT=//p' tests/oracle/build.sh)" >> "$GITHUB_OUTPUT"
+        run: echo "commit=$(sed -n 's/^P4_SPECTEC_COMMIT=//p' tests/oracles/build.sh)" >> "$GITHUB_OUTPUT"
       # The checkout with its build tree and the opam root, keyed by the
       # pin, by the build script, since the script also fixes the package
-      # set, and by the patches it applies. On a hit tests/oracle/build.sh
+      # set, and by the patches it applies. On a hit tests/oracles/build.sh
       # sees its stamp and returns at once.
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
@@ -44,7 +44,7 @@ jobs:
             ~/.cache/p4blo/p4-spectec
             ~/.cache/p4blo/spectec-coverage-probe
             ~/.opam
-          key: oracle-${{ runner.os }}-${{ steps.pin.outputs.commit }}-${{ hashFiles('tests/oracle/build.sh', 'tests/oracle/patches/**') }}
+          key: oracle-${{ runner.os }}-${{ steps.pin.outputs.commit }}-${{ hashFiles('tests/oracles/build.sh', 'tests/oracles/patches/**') }}
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
       - uses: nix-community/cache-nix-action@135667ec418502fa5a3598af6fb9eb733888ce6a # v6
         with:
@@ -52,31 +52,31 @@ jobs:
           restore-prefixes-first-match: nix-${{ runner.os }}-
           gc-max-store-size-linux: 2G
       - name: Build the oracle in the pinned OCaml environment
-        run: nix develop .#oracle -c tests/oracle/build.sh
+        run: nix develop .#oracle -c tests/oracles/build.sh
       - name: Sync Python environment
         run: nix develop -c uv sync --locked
       - name: Characterize pinned oracle discrepancies
-        run: nix develop -c uv run pytest tests/external/test_oracle_discrepancies.py -k pinned_spectec -v
+        run: nix develop -c uv run pytest tests/oracles/test_oracle_discrepancies.py -k pinned_spectec -v
       - name: Check v1model stage and drop boundaries
         run: nix develop -c uv run pytest tests/programs/test_v1model.py -k spectec -v
       - name: Replay the corpus on the oracle
-        run: nix develop -c uv run pytest tests/external/test_oracle.py -v
+        run: nix develop -c uv run pytest tests/oracles/test_oracle.py -v
       - name: Compare every block on the block architecture
-        run: nix develop -c uv run pytest tests/external/test_oracle_block.py -v
+        run: nix develop -c uv run pytest tests/oracles/test_oracle_block.py -v
       - name: Check CRC known answers and precise discrepancies
-        run: nix develop -c uv run pytest tests/unit/test_crc.py -k spectec -v
+        run: nix develop -c uv run pytest impl/python/tests/arch/test_crc.py -k spectec -v
       - name: Check original firewall sequences and mask discrepancy
-        run: nix develop -c uv run pytest tests/programs/test_firewall.py -k spectec -v
+        run: nix develop -c uv run pytest tests/programs/corpus/tutorial_firewall/test_firewall.py -k spectec -v
       - name: Run generated programs and cases on the oracle
         # Each case owns its tmp_path; the shared oracle checkout is read-only.
-        run: nix develop -c uv run pytest tests/external/test_oracle_generated.py -n 4 --dist load --durations=20 -v
+        run: nix develop -c uv run pytest tests/oracles/test_oracle_generated.py -n 4 --dist load --durations=20 -v
       - name: Translate P4 source into IR through the IL bridge
-        run: nix develop -c uv run pytest tests/external/test_frontend_spectec.py -v
+        run: nix develop -c uv run pytest tests/oracles/test_frontend_spectec.py -v
         env:
           P4BLO_REQUIRE_IL_EXPORT: "1"
       - name: Build the SpecTec coverage probe
-        run: nix develop .#oracle -c python3 tests/oracle/coverage.py build
+        run: nix develop .#oracle -c python3 tests/oracles/coverage.py build
       - name: Check SpecTec rule coverage against the pinned simulator
-        run: nix develop -c uv run pytest tests/external/test_spectec_coverage.py -v
+        run: nix develop -c uv run pytest tests/oracles/test_spectec_coverage.py -v
         env:
           P4BLO_REQUIRE_SPECTEC_COVERAGE: "1"

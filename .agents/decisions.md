@@ -76,7 +76,7 @@ Design and semantics pages hold contracts; this register keeps choices and bound
 - **Tests group by question** in `tests/`: unit, codec, programs, drt, lean, external and
   structure, with READMEs and pinned layout; data/drivers separate. Module stem or `bmv2` in
   the name assigns the `oracle` marker. Shared verification belongs in `tests/`; public
-  applications in `examples/`, their checks in `tests/examples/`. (assets 2026-09-23;
+  applications in `examples/`, their checks in `tests/programs/examples/`. (assets 2026-09-23;
   examples 2026-09-24; test grouping 2026-09-25)
 - **Public APIs may change for demonstrated usability gains.** Preserve semantic
   contracts/readability, separate authoring from meaning changes, and migrate callers with
@@ -144,14 +144,14 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   literals type as places (literal targets fail at runtime); Bool/Enum/Error have no static
   place split; extern `in` accepts values with runtime width checks; sub-block arguments are
   runtime-checked. Overloaded `assign` failures are `reportCallIssue`; must-fail fixtures
-  and `tests/unit/test_pyright.py` pin static rules. (2026-09-22)
+  and `impl/python/tests/edsl/test_typing.py` pin static rules. (2026-09-22)
 
 ## Semantics rulings
 
 - **`docs/ir-semantics.md` is the deviation ledger** for equivalence up to elaboration/known
   deviation; architecture choices go in `docs/arch-supports.md`. Each entry has P4 section,
   pinned P4-SpecTec rule, Lean definitions/theorems, Python function and tests, classified
-  same, refines undefined, deviates or not representable. `tests/ledger-classes.json` pins
+  same, refines undefined, deviates or not representable. `tests/repository/data/ledger-classes.json` pins
   classes; `docs/ledger-xref.md` is generated. Unlisted differences are bugs, not rulings
   invented during fixes: the deviation list must be checkable. **Lean is executable and
   proved, checked against P4-SpecTec, never normative**: that would claim authority the
@@ -194,7 +194,7 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   shifts above its builtin limit of 2048). Reason: P4-SpecTec mechanizes P4. Compare printed
   P4 through v1model, blocks through patched simulation, and IL through the bridge.
   (2026-09-24)
-- **Block simulation uses the minimal `p4blo` architecture** in `tests/oracle/p4blo.watsup`
+- **Block simulation uses the minimal `p4blo` architecture** in `tests/oracles/p4blo.watsup`
   and OCaml patch `0001`, on given headers, metadata, entries and extern state. Build
   stamp/cache key include patch digest. Families use v1model implementations; refuse entries
   needing its STF name maps (no corpus need yet). Accept differences only via checked models
@@ -223,10 +223,10 @@ Design and semantics pages hold contracts; this register keeps choices and bound
 - **P4-SpecTec coverage:** 8-dynamic rules/functions and 3-operations functions, builtins
   included; corpus, examples and fixed greedy seeds. Outside calls report `called_in_scope`
   without enforcement, avoiding eight exclusions for unions, compound assignment and
-  overload helpers. Regenerate the inventory `tests/oracle/spectec-rules.json` at each pin
+  overload helpers. Regenerate the inventory `tests/oracles/spectec-rules.json` at each pin
   bump. (2026-09-24)
 - **STF vectors** use the dialect in `impl/python/p4blo/stf.py`. The simulator lacks
-  longest-prefix selection, so `tests/oracle/run.py` supplies prefix priorities; BMv2 judges
+  longest-prefix selection, so `tests/oracles/run.py` supplies prefix priorities; BMv2 judges
   real lpm/const/runtime ternary priority. Printed ternary entries are non-const because p4c
   1.2.5 refuses const priorities. Known gap: printed const lpm entries lack priorities;
   overlaps fail on P4-SpecTec until the printer adds them. (2026-09-22)
@@ -256,8 +256,8 @@ authoring/architecture proof history is recoverable from
   differential testing; implementations share only wire syntax, with no universal
   Python/Lean equivalence claim. (2026-09-23)
 - **Adequacy means rule coverage, not counts.** Lean witness pairs pin rule conditions;
-  retained `tests/drt-coverage-parts/` union covers inventory except shrinking-only
-  `tests/drt-unhit-tags.json`. Every unhit in-scope P4-SpecTec rule needs a reason. Keep
+  retained `tests/conformance/coverage/parts/` union covers inventory except shrinking-only
+  `tests/conformance/coverage/unhit-tags.json`. Every unhit in-scope P4-SpecTec rule needs a reason. Keep
   guidance only when measured useful; the pair-reward term was measured and removed.
   (2026-09-24, 2026-09-25)
 - **Replay complete experiments:** versioned program/request sequences from fresh state;

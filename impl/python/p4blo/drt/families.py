@@ -5,7 +5,7 @@ or a register update inside a fixed context. The families here vary the
 program's shape: which statements a control runs and in what context, and
 what a parser's states extract, look ahead at, verify and select on. They
 exist because the rule tags of the Lean semantics (`P4bloIR.Coverage`) that
-the fixed families never reached, listed in `tests/drt-unhit-tags.json`,
+the fixed families never reached, listed in `tests/conformance/coverage/unhit-tags.json`,
 are all about shape: direct and nested action calls, equality on headers,
 structs, stacks and enums, whole-header assignment, stack indices taken
 from the packet, `advance`, `lookahead` of `bool` and headers, selects with

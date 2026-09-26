@@ -1,7 +1,7 @@
 """Run P4-SpecTec's `il-export` on a P4 source file.
 
 The command exists only in a P4-SpecTec checkout built by
-tests/oracle/build.sh, which applies tests/oracle/patches/0002-il-export.patch.
+tests/oracles/build.sh, which applies tests/oracles/patches/0002-il-export.patch.
 It parses the program, runs the spec's typing relation `Program_ok` and its
 instantiation relation `Program_inst`, and prints both results as JSON
 (`p4blo.frontend.il`). The checkout is found as the oracle tests find it:
@@ -53,12 +53,12 @@ class Exporter:
         if not self.spec.is_dir():
             return f"{self.spec} is not a directory; is {self.root} a P4-SpecTec checkout?"
         if not (self.include / "core.p4").is_file():
-            return f"{self.include} has no core.p4; tests/oracle/build.sh fetches it"
+            return f"{self.include} has no core.p4; tests/oracles/build.sh fetches it"
         help_text = subprocess.run(
             [str(self.binary), "help"], capture_output=True, text=True, check=False
         )
         if "il-export" not in help_text.stdout + help_text.stderr:
-            return f"{self.binary} has no il-export command; rebuild with tests/oracle/build.sh"
+            return f"{self.binary} has no il-export command; rebuild with tests/oracles/build.sh"
         return None
 
     def export_text(self, source: Path, includes: Sequence[Path] = ()) -> str:

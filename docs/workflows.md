@@ -33,12 +33,12 @@ Check exit codes, not output.
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
 | Lean | `scripts/check-lean.sh` | both packages build in dependency order, core audits and both test drivers pass, exit 0 |
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
-| Oracle | `uv run pytest tests/external/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
-| BMv2 oracle | `uv run pytest tests/external/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
+| Oracle | `uv run pytest tests/oracles/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
+| BMv2 oracle | `uv run pytest tests/oracles/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracles/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs tests with `-n auto`; dedicated oracle jobs bound their worker count and keep coverage measurement serial) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
-| Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
-| Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py tests/programs/test_firewall_boundaries.py tests/programs/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
-| Forwarding application BMv2 profile | `uv run pytest tests/programs/test_forwarder_apply_semantics.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
+| Original-source SpecTec probes | `uv run pytest impl/python/tests/arch/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
+| Original-source BMv2 probes | `uv run pytest impl/python/tests/arch/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py tests/programs/corpus/tutorial_firewall/test_firewall_boundaries.py tests/programs/corpus/tutorial_firewall/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
+| Forwarding application BMv2 profile | `uv run pytest tests/programs/corpus/forwarder/test_forwarder_apply_semantics.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 | Repository file sizes | `uv run python scripts/check-file-sizes.py`, also in the structure tests | every indexed blob and tracked working file is at most 5 MiB; stage new deliverables first |
@@ -47,7 +47,7 @@ Check exit codes, not output.
 A larger differential sweep, for a change to either interpreter:
 
 ```
-uv run python -m p4blo.drt tests/corpus/<program> 2000 --seed <n> --lean spec/arch/.lake/build/bin/p4blo-lean
+uv run python -m p4blo.drt tests/programs/corpus/<program> 2000 --seed <n> --lean spec/arch/.lake/build/bin/p4blo-lean
 ```
 
 Use `--save <directory>` to retain a failed experiment. Its JSON bundle
@@ -128,7 +128,7 @@ and independent detector are in [assurance.md](assurance.md#adversarial-checks).
 This supplements the ordinary gates; it is not a universal equivalence proof
 or a requirement to rerun every historical mutation experiment.
 
-`tests/drt/test_drt_programs.py` changes expressions inside validated programs,
+`tests/conformance/execution/test_drt_programs.py` changes expressions inside validated programs,
 not just packets for a fixed corpus. It includes systematic operator/width
 boundaries and 200 deterministic, shrinking Hypothesis examples. Failures
 write concrete program/input bundles under `.artifacts/drt/` (override with
@@ -136,7 +136,7 @@ write concrete program/input bundles under `.artifacts/drt/` (override with
 source-fault campaign recipes for the applications are kept in
 `.agents/notes/mutations/`; campaign reports are archived in git after
 each compaction.
-`tests/drt/test_drt_stateful_programs.py` varies widths, independent register and
+`tests/conformance/execution/test_drt_stateful_programs.py` varies widths, independent register and
 counter capacities, arithmetic, conditional effects and write ordering. It
 compares complete packet sequences, including every extern cell after each
 request, with 100 shrinking campaigns and deterministic boundary cases.
@@ -164,12 +164,12 @@ and maintenance boundaries are in `website/README.md`.
 | Optional pinned development tools | [`flake.lock`](../flake.lock) | see [development setup](../README.md#development); review lock updates |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
 | Lean toolchain | `spec/ir/lean-toolchain` and `spec/arch/lean-toolchain` (must match) | edit both; architecture package depends on local `../ir`, manifests committed |
-| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracle/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/external/test_spectec_rules.py`) |
-| opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
-| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/unit/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
+| P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracles/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracles/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/oracles/test_spectec_rules.py`) |
+| opam package universe | `OPAM_REPO_COMMIT` in `tests/oracles/build.sh` | edit together with the commit above |
+| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `impl/python/tests/printer/test_program.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
-| p4c test-suite sources | copies under `tests/corpus/*/` with SPDX headers | not updated; they are the vectors |
-| Original tutorial firewall | `tests/oracle/firewall.py` commit/path/SHA-256; vendored `firewall.p4` | review source/profile and update pin together; both oracle jobs run it directly |
+| p4c test-suite sources | copies under `tests/programs/corpus/*/` with SPDX headers | not updated; they are the vectors |
+| Original tutorial firewall | `tests/oracles/firewall.py` commit/path/SHA-256; vendored `firewall.p4` | review source/profile and update pin together; both oracle jobs run it directly |
 
 `uv.lock` fixes the Python dependency versions. The interpreter selection
 and optional pinned external-tool setup are documented in
@@ -180,13 +180,13 @@ satisfy those requirements.
 ## The oracle locally
 
 ```
-tests/oracle/build.sh                              # needs opam/GMP; prints the binary path
-P4BLO_ORACLE_DIR=~/.cache/p4blo/p4-spectec uv run pytest tests/external/test_oracle.py -v
-uv run python tests/oracle/run.py -v tests/corpus/forwarder/forwarder.txtpb tests/corpus/forwarder/*.stf
+tests/oracles/build.sh                              # needs opam/GMP; prints the binary path
+P4BLO_ORACLE_DIR=~/.cache/p4blo/p4-spectec uv run pytest tests/oracles/test_oracle.py -v
+uv run python tests/oracles/run.py -v tests/programs/corpus/forwarder/forwarder.txtpb tests/programs/corpus/forwarder/*.stf
 ```
 
-[The oracle README](../tests/oracle/README.md) lists its C/OCaml build
-prerequisites, what the simulator can check, and how `tests/oracle/run.py`
+[The oracle README](../tests/oracles/README.md) lists its C/OCaml build
+prerequisites, what the simulator can check, and how `tests/oracles/run.py`
 translates the STF dialect. The build script creates the pinned OCaml switch;
 `uv` manages only the Python replay driver and tests.
 
@@ -248,13 +248,13 @@ test on each side, and run the Lean-versus-Python gate. A divergence
 between the two interpreters that turns out to be an unlisted open
 behavior is resolved by adding it to the doc, not by patching one side.
 A change that alters one of Lean's recorded answers fails
-`tests/drt/test_conformance.py`; once the doc states the new behavior,
+`tests/conformance/test_fixtures.py`; once the doc states the new behavior,
 refresh the fixtures with `uv run python -m p4blo.conformance refresh`
 from committed Lean sources and review their diff, in which every changed
 step line is a changed answer (`tests/conformance/README.md`).
 After editing a ledger entry, regenerate its cross-reference table with
 `uv run python scripts/ledger-xref.py`;
-`tests/structure/test_ledger_xref.py` fails until it is current.
+`tests/repository/test_ledger_xref.py` fails until it is current.
 
 **The core schema.** Edit `spec/ir/proto/p4blo/v0/p4blo.proto`, run `buf lint` and
 `buf generate` (the generated files are committed), mirror the change in
@@ -264,8 +264,8 @@ expression kind is typed in `validator/typer.py`, which the interpreter,
 the printer and the STF reader also use), the printer
 (`impl/python/p4blo/printer/`) and
 `docs/p4-spec-coverage.md`, then regenerate every corpus golden from its eDSL
-source (`uv run python tests/corpus/<name>/<name>.py > tests/corpus/<name>/<name>.txtpb`)
-and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest tests/unit/test_printer.py`).
+source (`uv run python tests/programs/corpus/<name>/<name>.py > tests/programs/corpus/<name>/<name>.txtpb`)
+and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest impl/python/tests/printer/test_program.py`).
 Record the decision in `.agents/decisions.md`.
 
 Architecture binding syntax lives separately in
@@ -274,16 +274,16 @@ Architecture binding syntax lives separately in
 and adapters, then run the same schema and affected compatibility gates.
 Keep architecture choices outside the core schema and validity rules.
 
-**A corpus program.** Create `tests/corpus/<name>/` with `<name>.py` (the
-source, in the typed eDSL `p4blo.edsl`; `tests/corpus/forwarder/forwarder.py`
+**A corpus program.** Create `tests/programs/corpus/<name>/` with `<name>.py` (the
+source, in the typed eDSL `p4blo.edsl`; `tests/programs/corpus/forwarder/forwarder.py`
 is the model), `<name>.txtpb` (its output), `README.md` (source, what
 was elaborated away, what is deferred, in the style of the others), and
 `*.stf` vectors in the dialect `impl/python/p4blo/stf.py` documents.
-Type-check the source with `uv run pyright tests/corpus/<name>/<name>.py`: a
+Type-check the source with `uv run pyright tests/programs/corpus/<name>/<name>.py`: a
 misspelled field, state, action or table, an unequal width, or a
 `concat` used without `as_` is an error there before the build runs.
-`tests/unit/test_pyright.py` guards those static rules, with a file under
-`tests/pyright/must_fail/` per mistake and its expected diagnostic.
+`impl/python/tests/edsl/test_typing.py` guards those static rules, with a file under
+`impl/python/tests/edsl/typing/must_fail/` per mistake and its expected diagnostic.
 `tests/programs/test_corpus.py` picks the directory up by itself: it
 validates, rebuilds the golden from the source, replays every vector
 under v1model. Then run the oracle and
@@ -315,11 +315,11 @@ program whose vectors observe the extern.
 question it answers (`unit/`, `codec/`, `programs/`, `drt/`, `lean/`,
 `external/` or `structure/`; `docs/design.md` maps them to the six
 layers), never at the top of `tests/`, which
-`tests/structure/test_package_layout.py` keeps free of test modules. A
+`tests/repository/test_package_layout.py` keeps free of test modules. A
 test that compares with real Lean takes the `lean_binary` fixture and a
 name starting with `test_lean_agrees`, so the required gate finds it in
 any directory. A module that drives an external oracle is listed by its
-file stem in `tests/conftest.py`'s `ORACLE_MODULES`, which marks it
+file stem in `conftest.py`'s `ORACLE_MODULES`, which marks it
 `oracle`; since the marker is keyed by stem, a new module must not reuse
 the stem of an oracle module in another directory.
 
@@ -337,7 +337,7 @@ must fail explicitly rather than silently becoming no-ops.
 For an oracle disagreement, retain unchanged source and inputs, identify the
 language or target contract, and record the selected behavior in
 [the discrepancy catalog](oracle-discrepancies.md). Run its reduced paired
-probes with `uv run pytest tests/external/test_oracle_discrepancies.py -q`;
+probes with `uv run pytest tests/oracles/test_oracle_discrepancies.py -q`;
 a missing oracle is a skip, not a successful comparison. Characterization
 checks require exact recorded answers and fail when an oracle changes.
 
@@ -348,11 +348,11 @@ complete typed eDSL; `build()` returns the IR), `demo.py` (host
 configuration, packet sequence, results) and a README that states the
 problem, the supported packet profile, the command, the expected results
 and the limitations. Their verification lives under
-`tests/examples/<name>/`: independent expectations, the generated golden
-and STF vectors. `tests/examples/test_examples.py` discovers every
+`tests/programs/examples/<name>/`: independent expectations, the generated golden
+and STF vectors. `tests/programs/examples/test_examples.py` discovers every
 `examples/*/program.py` and requires the golden, exact vectors, the demo
 output and generated real-Lean cases; pyright includes `examples`, and
-both oracle catalogs pick up `tests/examples/*/*.stf`. Each program keeps
+both oracle catalogs pick up `tests/programs/examples/*/*.stf`. Each program keeps
 headers, parser, actions, tables, control and deparser together; extract
 shared abstractions only when concrete usage shows a readability benefit.
 

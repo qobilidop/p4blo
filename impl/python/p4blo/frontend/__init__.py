@@ -8,8 +8,8 @@ program's architecture layer to the IR's roles and metadata contract; and
 `p4blo.frontend.normalize` puts two programs in a canonical form so that a
 translation can be compared with a golden written by hand.
 
-The bridge needs a P4-SpecTec checkout built by tests/oracle/build.sh. It is
-not a verified frontend: it is checked on the corpus (tests/external/test_frontend_spectec.py).
+The bridge needs a P4-SpecTec checkout built by tests/oracles/build.sh. It is
+not a verified frontend: it is checked on the corpus (tests/oracles/test_frontend_spectec.py).
 """
 
 from p4blo.frontend.spectec_il import (

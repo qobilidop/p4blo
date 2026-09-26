@@ -6,7 +6,7 @@ on:
     paths:
       - 'website/**'
       - 'scripts/render-website-example.py'
-      - 'tests/corpus/vlan_gateway/vlan_gateway.py'
+      - 'tests/programs/corpus/vlan_gateway/vlan_gateway.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 

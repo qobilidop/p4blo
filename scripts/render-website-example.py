@@ -11,7 +11,7 @@ import tokenize
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "tests/corpus/vlan_gateway/vlan_gateway.py"
+SOURCE = ROOT / "tests/programs/corpus/vlan_gateway/vlan_gateway.py"
 PAGE = ROOT / "website/index.html"
 DOWNLOAD = ROOT / "website/vlan_gateway.py"
 START = "<!-- BEGIN GENERATED GATEWAY -->"

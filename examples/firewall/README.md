@@ -117,7 +117,7 @@ so the cell written by the outbound SYN remains available to the reply.
 
 ## Evidence and boundaries
 
-Verification assets live in [`tests/examples/firewall/`](../../tests/examples/firewall/).
+Verification assets live in [`tests/programs/examples/firewall/`](../../tests/programs/examples/firewall).
 The packet sequence constructs wire bytes with standard-library packing and
 an independent Internet checksum, computes CRC with a bitwise reference
 anchored to the `123456789` known answer, and checks exact output bytes, fate,
@@ -140,8 +140,8 @@ After building Lean with the repository's standard workflow, run the focused
 checks from the repository root:
 
 ```sh
-P4BLO_REQUIRE_LEAN=1 uv run pytest tests/examples/firewall tests/examples/test_examples.py
+P4BLO_REQUIRE_LEAN=1 uv run pytest tests/programs/examples/firewall tests/programs/examples/test_examples.py
 ```
 
-The existing upstream-derived `tests/corpus/tutorial_firewall` remains a
+The existing upstream-derived `tests/programs/corpus/tutorial_firewall` remains a
 separate Bloom-filter regression fixture with its own contract.

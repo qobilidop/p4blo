@@ -90,7 +90,7 @@ build time, while `self.assign` records packet-time writes.
 
 ## Evidence
 
-[`tests/examples/router/`](../../tests/examples/router/) contains the generated
+[`tests/programs/examples/router/`](../../tests/programs/examples/router) contains the generated
 IR golden, exact-length STF answers and independent Python wire expectations.
 The tests cover overlapping routes in both installation orders, misses, deny
 overrides, checksum/TTL/profile boundaries, every short-header truncation,

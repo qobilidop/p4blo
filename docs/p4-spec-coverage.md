@@ -59,7 +59,7 @@ rewrite of a row that was *excluded, by elaboration*, the row is now
 *elaborated*, since the rewrite has been performed; fourteen rows moved on
 2026-09-24 for that reason alone, and their notes are unchanged. The
 bridge's claims are checked on the corpus by
-`tests/external/test_frontend_spectec.py`; it is not a verified frontend.
+`tests/oracles/test_frontend_spectec.py`; it is not a verified frontend.
 
 ## Types
 
@@ -321,18 +321,18 @@ does not show that a vector executes a branch; use the current
 
 | Corpus program | Principal exercised boundary |
 |---|---|
-| [forwarder](../tests/corpus/forwarder/README.md) | IPv4 parsing, LPM actions/defaults, TTL rewrite, checksum and deparse; Python-authored IR executed on Python and Lean |
-| [stacks](../tests/corpus/stacks/README.md) | Header stacks, next/last/index, validity, push/pop, slice elaboration and inout block calls |
-| [subparser_stack](../tests/corpus/subparser_stack/README.md) | Parser-scoped locals and next extraction through sub-parser inout arguments |
-| [stateful](../tests/corpus/stateful/README.md) | Persistent register/counter instances, extern results and arithmetic |
-| [csum16](../tests/corpus/csum16/README.md) | Checksum16 field input and 0xffff/0x0000 boundary |
-| [acl](../tests/corpus/acl/README.md) | Ternary host priorities, masked parser select, stack loop and action-run elaboration |
-| [priority](../tests/corpus/priority/README.md) | Overlapping const ternary entries and priority-convention elaboration |
-| [parser_error](../tests/corpus/parser_error/README.md) | Atomic short extraction and controls after parser rejection |
-| [verify_error](../tests/corpus/verify_error/README.md) | User errors, verify failure and parser-error observation |
-| [register_bounds](../tests/corpus/register_bounds/README.md) | Persistent read/write, wrapping and explicit out-of-bounds policy |
-| [tutorial_firewall](../tests/corpus/tutorial_firewall/README.md) | Direction/default policies, action calls, CRC16/32 and two persistent Bloom arrays; Python-authored IR executed on Python and Lean |
-| [vlan_gateway](../tests/corpus/vlan_gateway/README.md) | Single-tag VLAN parsing, exact match/action policy, header invalidation, a counter extern and deparsing; complete Python source with an independent packet/state sequence |
+| [forwarder](../tests/programs/corpus/forwarder/README.md) | IPv4 parsing, LPM actions/defaults, TTL rewrite, checksum and deparse; Python-authored IR executed on Python and Lean |
+| [stacks](../tests/programs/corpus/stacks/README.md) | Header stacks, next/last/index, validity, push/pop, slice elaboration and inout block calls |
+| [subparser_stack](../tests/programs/corpus/subparser_stack/README.md) | Parser-scoped locals and next extraction through sub-parser inout arguments |
+| [stateful](../tests/programs/corpus/stateful/README.md) | Persistent register/counter instances, extern results and arithmetic |
+| [csum16](../tests/programs/corpus/csum16/README.md) | Checksum16 field input and 0xffff/0x0000 boundary |
+| [acl](../tests/programs/corpus/acl/README.md) | Ternary host priorities, masked parser select, stack loop and action-run elaboration |
+| [priority](../tests/programs/corpus/priority/README.md) | Overlapping const ternary entries and priority-convention elaboration |
+| [parser_error](../tests/programs/corpus/parser_error/README.md) | Atomic short extraction and controls after parser rejection |
+| [verify_error](../tests/programs/corpus/verify_error/README.md) | User errors, verify failure and parser-error observation |
+| [register_bounds](../tests/programs/corpus/register_bounds/README.md) | Persistent read/write, wrapping and explicit out-of-bounds policy |
+| [tutorial_firewall](../tests/programs/corpus/tutorial_firewall/README.md) | Direction/default policies, action calls, CRC16/32 and two persistent Bloom arrays; Python-authored IR executed on Python and Lean |
+| [vlan_gateway](../tests/programs/corpus/vlan_gateway/README.md) | Single-tag VLAN parsing, exact match/action policy, header invalidation, a counter extern and deparsing; complete Python source with an independent packet/state sequence |
 
 Operators and execution paths not exercised by these fixed vectors have
 focused native/Python known answers and generated differential suites where
@@ -345,17 +345,17 @@ every P4 feature is implemented, from the aggregate test or row counts.
 
 The table above says which IL constructs p4blo has. A second, measured
 account says which of P4-SpecTec's rules p4blo's inputs make the pinned
-simulator fire. [`spectec-coverage.json`](../tests/oracle/spectec-coverage.json)
+simulator fire. [`spectec-coverage.json`](../tests/oracles/spectec-coverage.json)
 records, for every rule, rule group, relation and function of the
-[rule inventory](../tests/oracle/spectec-rules.json), whether it fired and
+[rule inventory](../tests/oracles/spectec-rules.json), whether it fired and
 in how many of the vectors, over every corpus program and example and a
 fixed set of 18 generated programs
-([`generated.py`](../tests/oracle/generated.py)), printed through the
+([`generated.py`](../tests/oracles/generated.py)), printed through the
 v1model adapter. The simulator runs the spec in a structured form in
 which each relation's rules are merged into one instruction tree; a rule
 counts as fired when the instruction that concludes it ran, found through
 the source region the instruction keeps.
-[`coverage.py`](../tests/oracle/coverage.py) explains the method and its two
+[`coverage.py`](../tests/oracles/coverage.py) explains the method and its two
 approximations, and cross-checks its instruction totals against the
 simulator's own `cover-sim` command.
 
@@ -363,14 +363,14 @@ In scope are the rules of `8-dynamic` and the functions of `3-operations`
 and `8-dynamic`, including the `builtin` functions the OCaml runtime
 supplies for them.
 Every one of them that does not fire is listed in
-[`spectec-coverage-exclusions.json`](../tests/oracle/spectec-coverage-exclusions.json)
+[`spectec-coverage-exclusions.json`](../tests/oracles/spectec-coverage-exclusions.json)
 with a reason written by hand, in one of four categories: `architecture`
 (fires only through the architecture layer), `excluded-construct` (the
 construct is excluded or elaborated away by a row above, which the entry
 names), `not-representable` (the construct is in, but the printer cannot
 produce input that reaches the rule), and `unhit` (reachable, not yet
 exercised; each entry names the generated input that would reach it).
-`tests/external/test_spectec_coverage.py` fails when an in-scope item is neither hit
+`tests/oracles/test_spectec_coverage.py` fails when an in-scope item is neither hit
 nor excluded, when an exclusion is stale, and when the counts below drift.
 
 At the pinned commit, over 33 programs and 93 vectors:
@@ -395,6 +395,6 @@ The measurement needs the oracle and a small probe built against its
 library; regenerating it takes about forty seconds:
 
 ```sh
-python3 tests/oracle/coverage.py build   # once per pin, where tests/oracle/build.sh runs
-uv run python tests/oracle/coverage.py   # rewrite the report; --check compares instead
+python3 tests/oracles/coverage.py build   # once per pin, where tests/oracles/build.sh runs
+uv run python tests/oracles/coverage.py   # rewrite the report; --check compares instead
 ```

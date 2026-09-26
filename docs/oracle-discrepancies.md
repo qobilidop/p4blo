@@ -7,8 +7,8 @@ classified only after checking the same source and inputs on both sides.
 
 The observations below target P4-SpecTec
 `2730cfd9e74048bb5439da0f8afcef124079a064`, p4c **1.2.5.15** and BMv2
-**1.15.4** `simple_switch`. The [build script](../tests/oracle/build.sh) pins
-P4-SpecTec and our driver patches; the [Dockerfile](../tests/oracle/bmv2/Dockerfile)
+**1.15.4** `simple_switch`. The [build script](../tests/oracles/build.sh) pins
+P4-SpecTec and our driver patches; the [Dockerfile](../tests/oracles/bmv2/Dockerfile)
 pins p4c and BMv2 by immutable image digests. These are claims about those
 inputs, not every release of either project. Broader guarantees and remaining
 single-oracle limitations are in [assurance](assurance.md).
@@ -16,7 +16,7 @@ single-oracle limitations are in [assurance](assurance.md).
 ## Reproducing the differences
 
 Four reduced, standalone P4 programs live in
-[tests/oracle/discrepancies](../tests/oracle/discrepancies/). Each has a
+[tests/oracles/discrepancies](../tests/oracles/discrepancies). Each has a
 `.bmv2.stf` and `.spectec.stf`: source, setup and input packets are identical;
 only expected answers differ. Their tests check that invariant and require
 the complete recorded answer from each executable. These characterization
@@ -27,9 +27,9 @@ exception that accepts arbitrary failures.
 After the [development setup](../README.md#development):
 
 ```sh
-tests/oracle/build.sh
-docker build -t p4blo-bmv2 tests/oracle/bmv2
-uv run pytest tests/external/test_oracle_discrepancies.py -q
+tests/oracles/build.sh
+docker build -t p4blo-bmv2 tests/oracles/bmv2
+uv run pytest tests/oracles/test_oracle_discrepancies.py -q
 ```
 
 Use `-k pinned_spectec` or `-k pinned_bmv2` to run one oracle, and append a
@@ -43,9 +43,9 @@ no p4blo interpreter or printer decides its result.
 
 ## CRC32 of an odd number of bytes
 
-[Source](../tests/oracle/discrepancies/crc32_odd.p4),
-[BMv2 vector](../tests/oracle/discrepancies/crc32_odd.bmv2.stf),
-[P4-SpecTec vector](../tests/oracle/discrepancies/crc32_odd.spectec.stf).
+[Source](../tests/oracles/discrepancies/crc32_odd.p4),
+[BMv2 vector](../tests/oracles/discrepancies/crc32_odd.bmv2.stf),
+[P4-SpecTec vector](../tests/oracles/discrepancies/crc32_odd.spectec.stf).
 
 The probe hashes the one-byte constant `01`, emits the 32-bit result, then
 preserves input payload `00`:
@@ -66,13 +66,13 @@ adds the extra zero byte through `pad_right_to_16` before choosing the
 algorithm. That changes the CRC input; it is not CRC32 of the requested byte
 string. p4blo therefore preserves the exact input length. Broader CRC16,
 even-byte and explicit-leading-zero controls remain in
-[test_crc.py](../tests/unit/test_crc.py).
+[test_crc.py](../impl/python/tests/arch/test_crc.py).
 
 ## Out-of-range register reads
 
-[Source](../tests/oracle/discrepancies/register_bounds.p4),
-[BMv2 vector](../tests/oracle/discrepancies/register_bounds.bmv2.stf),
-[P4-SpecTec vector](../tests/oracle/discrepancies/register_bounds.spectec.stf).
+[Source](../tests/oracles/discrepancies/register_bounds.p4),
+[BMv2 vector](../tests/oracles/discrepancies/register_bounds.bmv2.stf),
+[P4-SpecTec vector](../tests/oracles/discrepancies/register_bounds.spectec.stf).
 
 A one-cell register is read into the packet's second byte. Packet `01ff`
 requests index 1, outside `[0, 1)`; `00ff` is the in-range control.
@@ -88,14 +88,14 @@ says the result is unspecified outside the register's range and should be
 ignored by its caller. BMv2 preserves the destination; P4-SpecTec returns zero.
 **p4blo chooses zero as its deterministic policy**, without claiming BMv2 is
 incorrect. Applications requiring portability must check bounds. The
-[existing bounds corpus](../tests/corpus/register_bounds/README.md) also checks
+[existing bounds corpus](../tests/programs/corpus/register_bounds/README.md) also checks
 ignored out-of-range writes and persistent in-range state.
 
 ## Control-plane table masks
 
-[Source](../tests/oracle/discrepancies/table_mask.p4),
-[BMv2 vector](../tests/oracle/discrepancies/table_mask.bmv2.stf),
-[P4-SpecTec vector](../tests/oracle/discrepancies/table_mask.spectec.stf).
+[Source](../tests/oracles/discrepancies/table_mask.p4),
+[BMv2 vector](../tests/oracles/discrepancies/table_mask.bmv2.stf),
+[P4-SpecTec vector](../tests/oracles/discrepancies/table_mask.spectec.stf).
 
 Install one ternary entry with key `0a` and full mask `ff`. Its action selects
 port 1; the default selects port 2. `0a` is a hit on both. `0b` is a miss on
@@ -114,12 +114,12 @@ manifestation, where `10.0.0.3` incorrectly matches `10.0.0.2/32`.
 
 ## Const-entry priority annotations
 
-[Source](../tests/oracle/discrepancies/const_priority.p4),
-[BMv2 vector](../tests/oracle/discrepancies/const_priority.bmv2.stf),
-[P4-SpecTec vector](../tests/oracle/discrepancies/const_priority.spectec.stf).
+[Source](../tests/oracles/discrepancies/const_priority.p4),
+[BMv2 vector](../tests/oracles/discrepancies/const_priority.bmv2.stf),
+[P4-SpecTec vector](../tests/oracles/discrepancies/const_priority.spectec.stf).
 
 Three overlapping ternary rows are reduced from the
-[upstream p4c regression](../tests/frontend/p4c/table-entries-priority-bmv2.p4).
+[upstream p4c regression](../tests/oracles/frontend/p4c/table-entries-priority-bmv2.p4).
 Inputs `1001` and `1181` both leave unchanged on port 3 under BMv2, or port 1
 under P4-SpecTec.
 
@@ -132,12 +132,12 @@ sources are not portable: BMv2 implements that extension, while P4-SpecTec
 uses standard entry ordering. The discrepancy alone is not a blanket claim
 that BMv2 violates P4. p4blo retains standard ordering and its printer makes
 priorities explicit using supported language properties. The
-[corpus derivation](../tests/corpus/priority/README.md) records each row.
+[corpus derivation](../tests/programs/corpus/priority/README.md) records each row.
 
 ## Egress destination and egress_spec initialization
 
-The [egress redirection probe](../tests/frontend/probes/v1model_egress_redirect.p4)
-and its [vector](../tests/frontend/probes/v1model_egress_redirect.stf) select
+The [egress redirection probe](../tests/oracles/frontend/probes/v1model_egress_redirect.p4)
+and its [vector](../tests/oracles/frontend/probes/v1model_egress_redirect.stf) select
 port 2 in ingress, then set `egress_spec` to 3 in egress. The packet reports
 `egress_port = 2` as bytes `0002` on both oracles, but BMv2 emits on port 2
 and P4-SpecTec emits on port 3.
@@ -149,8 +149,8 @@ drop decision but cannot choose a new output destination. p4blo models that
 architecture rule, matching BMv2. The independent source remains unchanged
 when testing the P4-SpecTec discrepancy.
 
-The [egress metadata probe](../tests/frontend/probes/v1model_egress_spec_read.p4)
-and [vector](../tests/frontend/probes/v1model_egress_spec_read.stf) separately
+The [egress metadata probe](../tests/oracles/frontend/probes/v1model_egress_spec_read.p4)
+and [vector](../tests/oracles/frontend/probes/v1model_egress_spec_read.stf) separately
 observe initialization: after ingress selects 2, egress sees `egress_spec = 0`
 on BMv2 and `2` on P4-SpecTec. Both see `egress_port = 2`; their output bytes
 are `0002` and `0202`, respectively, on port 2.

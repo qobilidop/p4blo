@@ -14,12 +14,12 @@ from p4blo.drt.case import Case
 from p4blo.drt.run import compare_program
 from p4blo.drt.state import encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.oracle import run as spectec
-from tests.oracle.bmv2 import run as bmv2
-from tests.oracle.v1model_disagreements import ACTUAL, KnownV1ModelDisagreement, known
-from tests.programs.v1model_fixtures import stages
+from tests.oracles import run as spectec
+from tests.oracles.bmv2 import run as bmv2
+from tests.oracles.v1model_disagreements import ACTUAL, KnownV1ModelDisagreement, known
+from tests.support.v1model import stages
 
-PROBES = Path(__file__).resolve().parents[1] / "frontend" / "probes"
+PROBES = Path(__file__).resolve().parents[1] / "oracles/frontend/probes"
 NATIVE = ("v1model_stages", "v1model_portable", "dropgate", "undrop", "egressspec", "readspec")
 
 
@@ -149,7 +149,7 @@ def test_disagreement_classifier_rejects_unrelated_failures(name: str) -> None:
 
 @pytest.mark.parametrize("role", ["egress", "compute_checksum"])
 def test_egress_spec_is_reset_before_egress(role: str) -> None:
-    from tests.unit.test_v1model import assign, block, path, program, read, run
+    from impl.python.tests.arch.test_v1model import assign, block, path, program, read, run
 
     model = program()
     if role == "compute_checksum":

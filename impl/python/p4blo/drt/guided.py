@@ -27,7 +27,7 @@ replies, which are deterministic, so a seed names a campaign exactly.
 `--unguided` draws the same way with uniform weights, as the baseline the
 guidance is measured against.
 
-What it is worth. `tests/drt-guided-measurement.json` records, for both
+What it is worth. `tests/conformance/coverage/guided-measurement.json` records, for both
 families over sixteen seeds of 200 programs, guided against uniform: the
 programs until every target tag that all runs reach is hit, the program
 of the last first-hit of any tag, and the tags and pairs reached. Its
@@ -268,7 +268,7 @@ def measure(
     jobs: int = 1,
 ) -> dict[str, Any]:
     """Guided and uniform campaigns of every family and seed, as the
-    document `tests/drt-guided-measurement.json` holds."""
+    document `tests/conformance/coverage/guided-measurement.json` holds."""
     work = [(f, s, arm, budget, lean) for f in families for s in seeds for arm in ARMS]
     if jobs > 1:
         with ProcessPoolExecutor(jobs) as pool:
@@ -292,7 +292,10 @@ def render(document: Mapping[str, Any]) -> str:
 def measure_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m p4blo.drt guided measure",
-        description="guided against uniform campaigns, as tests/drt-guided-measurement.json",
+        description=(
+            "guided against uniform campaigns, as "
+            "tests/conformance/coverage/guided-measurement.json"
+        ),
     )
     parser.add_argument("--seeds", default="1:17", help="`A:B`, half-open")
     parser.add_argument("--budget", type=int, default=200)

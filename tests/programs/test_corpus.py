@@ -1,7 +1,7 @@
 """Every corpus program: it validates, its eDSL source rebuilds its golden,
 and its vectors replay under the v1model architecture.
 
-A corpus program lives in `tests/corpus/<name>/` as `<name>.py` (the eDSL
+A corpus program lives in `tests/programs/corpus/<name>/` as `<name>.py` (the eDSL
 source), `<name>.txtpb` (the IR golden), a README, and `*.stf` vectors.
 Each vector file replays on a freshly loaded program, so extern state does
 not leak between files; within a file it persists, as the vectors intend.
@@ -19,7 +19,7 @@ from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 
-CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
+CORPUS = Path(__file__).resolve().parents[2] / "tests/programs/corpus"
 PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
 VECTORS = sorted(v for p in PROGRAMS for v in p.glob("*.stf"))
 

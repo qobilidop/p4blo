@@ -124,7 +124,7 @@ fail closed; this bounded profile is not a full packet validator.
 This is an original educational p4blo application. Its direct-server-return
 request contract is deliberately independent of the existing corpus fixtures.
 
-[`tests/examples/load_balancer/`](../../tests/examples/load_balancer/) contains
+[`tests/programs/examples/load_balancer/`](../../tests/programs/examples/load_balancer) contains
 an IR golden, exact-length STF packet expectations, and independent wire
 answers for every hash bucket, service/group isolation, configuration changes,
 payload affinity, validation boundaries and adapter diagnostics. The checksum

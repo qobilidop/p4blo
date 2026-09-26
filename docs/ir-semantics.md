@@ -57,10 +57,10 @@ its reason in prose, then six lines in this order:
     for the reason the prose gives.
   - *not representable*: the situation cannot arise in SpecTec's IL.
 
-`tests/structure/test_ledger.py` checks the shape of every entry, that
+`tests/repository/test_ledger.py` checks the shape of every entry, that
 every Lean and Python name exists where it is cited, that every test
 reference names a test, the counts below, and each entry's class against
-`tests/ledger-classes.json`; `tests/external/test_spectec_rules.py`
+`tests/repository/data/ledger-classes.json`; `tests/oracles/test_spectec_rules.py`
 checks that every SpecTec name exists at the pinned commit.
 
 | Class | Entries |
@@ -94,7 +94,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$bin_plus`, `$bin_minus`, `$bin_mul`, `$bin_satplus`, `$bin_satminus`, `$bin_div`, `$bin_mod`
   - Lean: `bitsBinary`, `Bits.wrap`
   - Python: `p4blo.interp.expr.bits_binary`, `p4blo.interp.values.Bits.wrap`
-  - Test: `tests/unit/test_interp_expr.py::test_bits_arithmetic`, `tests/unit/test_interp_expr.py::test_wrapping_arithmetic_agrees_with_modular`, `tests/unit/test_interp_expr.py::test_saturating_operators_clamp`
+  - Test: `impl/python/tests/interp/test_expr.py::test_bits_arithmetic`, `impl/python/tests/interp/test_expr.py::test_wrapping_arithmetic_agrees_with_modular`, `impl/python/tests/interp/test_expr.py::test_saturating_operators_clamp`
   - Class: same. For `bit<N>` operands `$bin_plus`, `$bin_minus` and `$bin_mul` reduce modulo `2^N`, `$bin_satplus` and `$bin_satminus` clamp at `2^N - 1` and `0`, and `$bin_div` and `$bin_mod` reach p4blo only as folded constants.
 - **Unary and bitwise operators.** On `bit<N>`, `~x` is `2^N - 1 - x`
   and `-x` is `2^N - x` reduced modulo `2^N`; `&`, `|` and `^` act on
@@ -103,7 +103,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$un_bnot`, `$un_minus`, `$un_lnot`, `$bin_band`, `$bin_bor`, `$bin_bxor`
   - Lean: `evaluate`, `bitsBinary`
   - Python: `p4blo.interp.expr.unary`, `p4blo.interp.expr.bits_binary`
-  - Test: `tests/unit/test_interp_expr.py::test_unary_operators`, `tests/unit/test_interp_expr.py::test_bits_arithmetic`
+  - Test: `impl/python/tests/interp/test_expr.py::test_unary_operators`, `impl/python/tests/interp/test_expr.py::test_bits_arithmetic`
   - Class: same. `$un_bnot` and `$un_minus` compute the same residues for `bit<N>`, `$un_lnot` negates a boolean, and `$bin_band`, `$bin_bor` and `$bin_bxor` act bitwise at the operands' width.
 - **Shifts.** `<<` and `>>` on `bit<N>` by an amount `k`: if `k >= N`
   the result is `0`; otherwise the usual logical shift, with the left
@@ -116,7 +116,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$bin_shl`, `$bin_shr`
   - Lean: `bitsBinary`, `ScalarLaws.shl_large`, `ScalarLaws.shr_large`, `DeviationLaws.evaluate_shl_large`, `DeviationLaws.evaluate_shr_large`, `DeviationLaws.wrap_zero_value`
   - Python: `p4blo.interp.expr.bits_binary`
-  - Test: `tests/unit/test_interp_expr.py::test_shift_amount_width_does_not_matter`, `tests/unit/test_interp_expr.py::test_shifts_by_the_width_or_more_give_zero`
+  - Test: `impl/python/tests/interp/test_expr.py::test_shift_amount_width_does_not_matter`, `impl/python/tests/interp/test_expr.py::test_shifts_by_the_width_or_more_give_zero`
   - Class: same. `$bin_shl` and `$bin_shr` shift the unbounded integer and reduce it to the left operand's width, which gives `0` for an amount of `N` or more whatever the amount; the simulator's builtins `$shl` and `$shr`, in `numerics.ml`, stop with "shift amount too large" above 2048, which is an oracle limitation of the simulator, not a rule disagreement.
 - **Comparison.** `<`, `<=`, `>`, `>=` compare as unsigned integers.
   `==` and `!=` are defined on every type: on `bit<N>` and `bool` by
@@ -127,7 +127,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$bin_lt`, `$bin_le`, `$bin_gt`, `$bin_ge`, `$bin_eq`, `$bin_ne`
   - Lean: `bitsBinary`, `Value.equal`, `Value.equalList`, `DeviationLaws.equal_bits_iff`, `DeviationLaws.equal_bool_iff`, `DeviationLaws.equalList_cons`, `DeviationLaws.equalList_scalar_iff`, `DeviationLaws.evaluate_eq`, `DeviationLaws.evaluate_ne`, `DeviationLaws.evaluate_ne_eq`, `DeviationLaws.evaluate_ne_eq_error`
   - Python: `p4blo.interp.expr.bits_binary`, `p4blo.interp.values.equal`
-  - Test: `tests/unit/test_interp_expr.py::test_comparisons_are_unsigned`, `tests/unit/test_interp_expr.py::test_equality_on_every_type`, `tests/unit/test_values.py::test_struct_and_stack_equality_are_elementwise`, `tests/unit/test_values.py::test_stack_equality_ignores_next_index`
+  - Test: `impl/python/tests/interp/test_expr.py::test_comparisons_are_unsigned`, `impl/python/tests/interp/test_expr.py::test_equality_on_every_type`, `impl/python/tests/interp/test_values.py::test_struct_and_stack_equality_are_elementwise`, `impl/python/tests/interp/test_values.py::test_stack_equality_ignores_next_index`
   - Class: same. `$bin_lt` and its siblings compare `bit<N>` values as unsigned integers, and `$bin_eq` compares bits, booleans, enums, errors and structs the same way and stacks elementwise ignoring the next index; wherever a header is compared, including inside a stack, the next entry applies.
 - **Header equality** on two invalid headers is `true` regardless of
   fields; on one valid and one invalid is `false` (§8.17). On two valid
@@ -136,7 +136,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$bin_eq`
   - Lean: `Value.equal`, `DeviationLaws.header_equal_invalid`, `DeviationLaws.header_equal_valid_invalid`, `DeviationLaws.header_equal_invalid_valid`, `DeviationLaws.header_equal_valid`, `DeviationLaws.header_equal_valid_iff`, `DeviationLaws.evaluate_eq_invalid_headers`, `DeviationLaws.evaluate_eq_valid_invalid`
   - Python: `p4blo.interp.values.equal`
-  - Test: `tests/unit/test_values.py::test_header_equality_by_validity_then_fields`, `tests/unit/test_interp_expr.py::test_equality_on_every_type`
+  - Test: `impl/python/tests/interp/test_values.py::test_header_equality_by_validity_then_fields`, `impl/python/tests/interp/test_expr.py::test_equality_on_every_type`
   - Class: deviates. `$bin_eq` on two headers compares their type and stored fields and ignores the validity bit, so two invalid headers with different stored fields are unequal and a valid and an invalid header with equal fields are equal, which contradicts P4's rule.
 - **Casts.** `bit<N>` to `bit<M>` truncates to the low `M` bits when
   `M < N` and zero-extends when `M > N`. `bool` to `bit<1>` maps
@@ -147,7 +147,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$cast_op`, `$cast_int`, `$cast_bool`
   - Lean: `castValue`
   - Python: `p4blo.interp.expr.cast`
-  - Test: `tests/unit/test_interp_expr.py::test_casts`, `tests/unit/test_interp_expr.py::test_cast_truncates_or_zero_extends`, `tests/unit/test_validator.py::test_bit1_and_boolean_casts_are_fine`
+  - Test: `impl/python/tests/interp/test_expr.py::test_casts`, `impl/python/tests/interp/test_expr.py::test_cast_truncates_or_zero_extends`, `impl/python/tests/validator/test_validator.py::test_bit1_and_boolean_casts_are_fine`
   - Class: same. `$cast_int` reduces a `bit<N>` value modulo `2^M` for `bit<M>` and maps a nonzero `bit<1>` to `true`, and `$cast_bool` maps `false` and `true` to `0` and `1`.
 - **Slices.** `e[hi:lo]` has width `hi - lo + 1` and the validator
   requires `hi < N` and `lo <= hi`, so no slice is ever out of range at
@@ -156,7 +156,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$bitacc_range_op`
   - Lean: `evaluate`
   - Python: `p4blo.interp.expr.slice_bits`
-  - Test: `tests/unit/test_interp_expr.py::test_slice`, `tests/unit/test_interp_expr.py::test_concat_then_slice_roundtrips`, `tests/unit/test_validator.py::test_slice_range`
+  - Test: `impl/python/tests/interp/test_expr.py::test_slice`, `impl/python/tests/interp/test_expr.py::test_concat_then_slice_roundtrips`, `impl/python/tests/validator/test_validator.py::test_slice_range`
   - Class: same. `$bitacc_range_op` takes bits `hi` down to `lo` as a value of width `hi - lo + 1`.
 - **Concatenation.** `a ++ b` has width `N + M` with `a` in the high
   bits.
@@ -164,7 +164,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$bin_concat`
   - Lean: `bitsBinary`
   - Python: `p4blo.interp.expr.bits_binary`
-  - Test: `tests/unit/test_interp_expr.py::test_concat_puts_left_in_the_high_bits`, `tests/unit/test_interp_expr.py::test_concat_then_slice_roundtrips`
+  - Test: `impl/python/tests/interp/test_expr.py::test_concat_puts_left_in_the_high_bits`, `impl/python/tests/interp/test_expr.py::test_concat_then_slice_roundtrips`
   - Class: same. `$bin_concat` shifts the left operand up by the right operand's width and adds the right operand, at width `N + M`.
 - **Uninitialized variables.** A block-local variable or an `out`
   parameter that is read before it is written has the value `0` for
@@ -178,7 +178,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `$default`, `VarDecl_eval/non-initializer`, `Copy_in_arg/out`
   - Lean: `Value.zero`, `Frame.forBlock`, `argumentValue`, `DeviationLaws.zero_bits`, `DeviationLaws.zero_boolean`, `DeviationLaws.zero_error`, `DeviationLaws.zeroHeader_eq`
   - Python: `p4blo.interp.values.zero`, `p4blo.interp.env.Env.for_block`, `p4blo.interp.stmt.argument_value`
-  - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/unit/test_values.py::test_zero_is_recursive_with_invalid_headers_and_first_members`, `tests/unit/test_interp_control.py::test_an_out_parameter_starts_at_zero`
+  - Test: `impl/python/tests/interp/test_expr.py::test_variables_start_at_zero`, `impl/python/tests/interp/test_values.py::test_zero_is_recursive_with_invalid_headers_and_first_members`, `impl/python/tests/interp/test_control.py::test_an_out_parameter_starts_at_zero`
   - Class: same. SpecTec initializes a declared variable and an `out` parameter with `$default`, which gives zero bits, `false`, the first enum member, `NoError`, invalid headers with default fields and stacks with next index `0`; its source marks the choice as a placeholder for a target-specific one.
 
 ## Expressions
@@ -197,7 +197,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Expr_eval/land-false`, `Expr_eval/lor-true`, `Expr_eval/cond-true`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
   - Lean: `evaluate`, `Execution.dispatch`
   - Python: `p4blo.interp.expr.binary`, `p4blo.interp.expr.mux`, `p4blo.interp.stmt.assign`
-  - Test: `tests/unit/test_interp_expr.py::test_logical_operators_short_circuit`, `tests/unit/test_interp_expr.py::test_mux_evaluates_only_the_chosen_branch`
+  - Test: `impl/python/tests/interp/test_expr.py::test_logical_operators_short_circuit`, `impl/python/tests/interp/test_expr.py::test_mux_evaluates_only_the_chosen_branch`
   - Class: same. SpecTec short-circuits the same operators and resolves an assignment's target before its right-hand side, which gives the same result for an assignment of an expression because no IR expression has an effect; the timing of target resolution is observable through calls, and the copy-back entry records where p4blo differs.
 - **Reading a field of an invalid header.** Returns the field's
   current stored value. A header's fields are initialized to zero and
@@ -210,14 +210,14 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Expr_eval/header`, `Lvalue_read/header`
   - Lean: `fieldOf`
   - Python: `p4blo.interp.expr.field_of`
-  - Test: `tests/unit/test_interp_expr.py::test_is_valid_and_member_of_invalid_header_reads_stored_fields`
+  - Test: `impl/python/tests/interp/test_expr.py::test_is_valid_and_member_of_invalid_header_reads_stored_fields`
   - Class: same. `Expr_eval/header` returns the stored field whatever the validity bit.
 - **`isValid`** is the validity bit.
   - P4: §8.17
   - SpecTec: `Call_eval/builtinIsValidMethodCallee-header`
   - Lean: `evaluate`
   - Python: `p4blo.interp.expr.evaluate`
-  - Test: `tests/unit/test_interp_expr.py::test_is_valid_and_member_of_invalid_header_reads_stored_fields`
+  - Test: `impl/python/tests/interp/test_expr.py::test_is_valid_and_member_of_invalid_header_reads_stored_fields`
   - Class: same. `Call_eval/builtinIsValidMethodCallee-header` returns the header's validity bit.
 - **Index out of range.** Reading `hs[i]` with `i >= S` returns an
   invalid header whose fields are zero. Writing `hs[i]` with `i >= S`
@@ -228,7 +228,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Expr_eval/headerStack`, `Lvalue_read/stack-out-of-bounds`, `Lvalue_write/stack-out-of-bounds`
   - Lean: `elementOf`, `writeLValue`, `DeviationLaws.elementOf_out_of_range`, `DeviationLaws.evaluate_index_out_of_range`, `DeviationLaws.readLValue_index_out_of_range`, `DeviationLaws.writeLValue_index_out_of_range`, `DeviationLaws.writeLValue_member_out_of_range`
   - Python: `p4blo.interp.expr.element_of`, `p4blo.interp.expr.write_lvalue`
-  - Test: `tests/unit/test_interp_control.py::test_out_of_range_stack_read_is_a_zero_invalid_header_and_write_does_nothing`
+  - Test: `impl/python/tests/interp/test_control.py::test_out_of_range_stack_read_is_a_zero_invalid_header_and_write_does_nothing`
   - Class: deviates. An out-of-range write does nothing in SpecTec too, but `Expr_eval/headerStack` reads `hs[i]` with `i >= S` as the last element, valid or not, and `Lvalue_read/stack-out-of-bounds` reads it as element `0` made invalid with its stored fields; p4blo gives one answer, an invalid zero header, in both places.
 - **`hs.lastIndex`** is `nextIndex - 1` as a `bit<32>`; when
   `nextIndex == 0` its value is `2^32 - 1`, the wrapped result. P4
@@ -239,7 +239,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Expr_eval/stack-lastIndex`, `Expr_ok/headerStack-lastIndex`
   - Lean: `evaluate`, `DeviationLaws.evaluate_lastIndex`, `DeviationLaws.lastIndex_empty`, `DeviationLaws.lastIndex_nonempty`
   - Python: `p4blo.interp.expr.last_index`, `p4blo.validator.typer.Typer.type_of`
-  - Test: `tests/unit/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/unit/test_interp_expr.py::test_stack_index_and_last_index`, `tests/unit/test_validator.py::test_parser_only`, `tests/unit/test_validator.py::test_last_index_in_a_parser_is_fine`
+  - Test: `impl/python/tests/interp/test_parser.py::test_last_index_wraps_at_next_index_zero`, `impl/python/tests/interp/test_expr.py::test_stack_index_and_last_index`, `impl/python/tests/validator/test_validator.py::test_parser_only`, `impl/python/tests/validator/test_validator.py::test_last_index_in_a_parser_is_fine`
   - Class: deviates. `Expr_eval/stack-lastIndex` computes `max(nextIndex, 1) - 1`, which is `0` when `nextIndex == 0`, and p4blo keeps the 32-bit arithmetic of `nextIndex - 1`; `Expr_ok/headerStack-lastIndex` types it only in a parser, as the validator does.
 - **`hs.last` on an empty stack.** The IR has no `last`; `hs.last` is
   elaborated to `hs[hs.lastIndex]`. With `nextIndex == 0` that indexes
@@ -252,7 +252,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Expr_eval/stack-last-out-of-bounds`, `Lvalue_eval/stack-last-out-of-bounds`, `Expr_eval/stack-last-in-bounds`
   - Lean: `evaluate`, `elementOf`, `DeviationLaws.evaluate_last_empty`, `DeviationLaws.evaluate_last_nonempty`
   - Python: `p4blo.edsl.views.Stack.last`, `p4blo.interp.expr.last_index`, `p4blo.interp.expr.element_of`
-  - Test: `tests/unit/test_edsl.py::test_stack_last_is_the_element_at_last_index`, `tests/unit/test_interp_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/corpus/stacks`
+  - Test: `impl/python/tests/edsl/test_core.py::test_stack_last_is_the_element_at_last_index`, `impl/python/tests/interp/test_parser.py::test_last_index_wraps_at_next_index_zero`, `tests/programs/corpus/stacks`
   - Class: deviates. `Expr_eval/stack-last-out-of-bounds` and `Lvalue_eval/stack-last-out-of-bounds` reject with `StackOutOfBounds` when `nextIndex` is `0` or above the size, and `Expr_eval/stack-last-in-bounds` reads element `nextIndex - 1` otherwise, which the elaboration matches only for `nextIndex >= 1`.
 
 ## Lvalues and assignment
@@ -263,7 +263,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Lvalue_write/header`
   - Lean: `setField`, `writeLValue`
   - Python: `p4blo.interp.expr.write_lvalue`
-  - Test: `tests/unit/test_interp_control.py::test_writing_a_field_of_an_invalid_header_stores_it_and_keeps_it_invalid`
+  - Test: `impl/python/tests/interp/test_control.py::test_writing_a_field_of_an_invalid_header_stores_it_and_keeps_it_invalid`
   - Class: same. `Lvalue_write/header` replaces the field and keeps the header's validity bit.
 - **Assigning a header** copies validity and all fields. Assigning an
   invalid header makes the target invalid and copies the fields
@@ -272,7 +272,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`, `Lvalue_write/referenceExpressionIR`, `Lvalue_write/memberAccess`
   - Lean: `writeLValue`
   - Python: `p4blo.interp.expr.write_lvalue`
-  - Test: `tests/unit/test_interp_control.py::test_assigning_a_header_copies_validity_and_fields`
+  - Test: `impl/python/tests/interp/test_control.py::test_assigning_a_header_copies_validity_and_fields`
   - Class: same. An assignment writes the whole header value, validity bit and stored fields, to the target.
 - **`hs.next`** appears only as the target of an extract; the validator
   rejects it anywhere else, so no assignment, `setValid`, field write
@@ -287,7 +287,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Lvalue_eval/stack-next-out-of-bounds`, `Lvalue_write/stack-next`, `Lvalue_write/stack-out-of-bounds`
   - Lean: `extract`, `readLValue`
   - Python: `p4blo.interp.stmt.extract`, `p4blo.validator.statements.StatementChecks.check_extract`
-  - Test: `tests/unit/test_interp_parser.py::test_extract_into_a_full_stack_is_stack_out_of_bounds`, `tests/unit/test_interp_parser.py::test_a_full_stack_is_reported_before_a_short_packet`, `tests/unit/test_interp_expr.py::test_next_is_not_an_lvalue_outside_extract`, `tests/unit/test_validator.py::test_next_only_extract_in_a_parser`, `tests/corpus/stacks`
+  - Test: `impl/python/tests/interp/test_parser.py::test_extract_into_a_full_stack_is_stack_out_of_bounds`, `impl/python/tests/interp/test_parser.py::test_a_full_stack_is_reported_before_a_short_packet`, `impl/python/tests/interp/test_expr.py::test_next_is_not_an_lvalue_outside_extract`, `impl/python/tests/validator/test_validator.py::test_next_only_extract_in_a_parser`, `tests/programs/corpus/stacks`
   - Class: same. SpecTec resolves the `out` argument `hs.next` while copying in, so a full stack rejects with `StackOutOfBounds` before the packet is read, and the copy-out through `Lvalue_write/stack-next` fills the element and increments the index; SpecTec also accepts `hs.next` elsewhere, which the IR excludes.
 
 ## Statements and calls
@@ -298,7 +298,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Call_eval/builtinSetValidMethodCallee`, `Call_eval/builtinSetInvalidMethodCallee`
   - Lean: `setValidity`
   - Python: `p4blo.interp.stmt.set_validity`
-  - Test: `tests/unit/test_interp_control.py::test_set_valid_and_set_invalid_touch_only_validity`
+  - Test: `impl/python/tests/interp/test_control.py::test_set_valid_and_set_invalid_touch_only_validity`
   - Class: same. Both rules rewrite the validity bit and keep the stored fields.
 - **`push_front(n)`** shifts elements toward higher indices by `n`,
   discards the last `n`, makes the first `n` invalid with zero fields,
@@ -312,7 +312,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Call_eval/builtinPushFrontMethodCallee`, `Call_eval/builtinPopFrontMethodCallee`, `$invalidate_value`
   - Lean: `pushFront`, `popFront`, `DeviationLaws.pushFront_eq`, `DeviationLaws.pushFront_spec`, `DeviationLaws.pushFront_clamp`, `DeviationLaws.popFront_eq`, `DeviationLaws.popFront_spec`, `DeviationLaws.popFront_clamp`
   - Python: `p4blo.interp.stmt.push_front`, `p4blo.interp.stmt.pop_front`
-  - Test: `tests/unit/test_interp_control.py::test_push_front_shifts_up_and_pops_the_last`, `tests/unit/test_interp_control.py::test_pop_front_shifts_down_and_clears_the_last`, `tests/unit/test_interp_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
+  - Test: `impl/python/tests/interp/test_control.py::test_push_front_shifts_up_and_pops_the_last`, `impl/python/tests/interp/test_control.py::test_pop_front_shifts_down_and_clears_the_last`, `impl/python/tests/interp/test_control.py::test_push_and_pop_of_more_than_the_size_clip_to_the_size`
   - Class: deviates. SpecTec shifts the same way but invalidates the vacated elements with `$invalidate_value`, which keeps stored fields: after `push_front(n)` the first `n` elements keep their own old fields, `pop_front(n)` rotates the first `n` elements to the back and invalidates them there, and `pop_front(n)` with `n < S` sets `nextIndex` to `S - n` instead of `nextIndex - n`.
 - **Block calls.** A sub-block call copies `in` arguments in, resolves
   `out` and `inout` ones, runs the block, and copies `out` and `inout`
@@ -324,7 +324,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Call_eval/controlApplyMethodCallee`, `Call_eval/parserApplyMethodCallee`, `Copy_in`, `Copy_out`
   - Lean: `argumentValue`, `copyIn`, `copyBack`, `Execution.dispatch`
   - Python: `p4blo.interp.stmt.call_block`, `p4blo.interp.stmt.argument_value`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.validator.calls.CallChecks.check_args`
-  - Test: `tests/unit/test_interp_control.py::test_sub_control_call_copies_in_and_out`, `tests/unit/test_interp_control.py::test_an_in_argument_overlapping_an_inout_one_is_copied_in_first`, `tests/unit/test_validator.py::test_call_alias`, `tests/unit/test_validator.py::test_no_alias`
+  - Test: `impl/python/tests/interp/test_control.py::test_sub_control_call_copies_in_and_out`, `impl/python/tests/interp/test_control.py::test_an_in_argument_overlapping_an_inout_one_is_copied_in_first`, `impl/python/tests/validator/test_validator.py::test_call_alias`, `impl/python/tests/validator/test_validator.py::test_no_alias`
   - Class: same. `Copy_in` evaluates every argument into the callee's frame before the body runs and `Copy_out` writes `out` and `inout` parameters back in parameter order; where a copy-back lands is the next entry.
 - **Copy-back target.** An `out` or `inout` argument is resolved once,
   at copy-in: every index expression inside it is evaluated then, in
@@ -339,7 +339,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Copy_in_arg/inout`, `Copy_in_arg/out`, `Copy_out_argument/non-dontcare`, `Stmt_eval/typedLvalueIR-cont-eq-typedExpressionIR-cont`
   - Lean: `resolveLValue`, `resolveArg`, `copyIn`, `copyBack`, `callExtern`, `Execution.dispatch`
   - Python: `p4blo.interp.expr.resolve_lvalue`, `p4blo.interp.stmt.resolve_arg`, `p4blo.interp.stmt.copy_in`, `p4blo.interp.stmt.copy_back`, `p4blo.interp.stmt.call_extern`
-  - Test: `tests/lean/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/lean/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/lean/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
+  - Test: `tests/conformance/semantics/test_lean_call_copyback.py::test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in`, `tests/conformance/semantics/test_lean_call_copyback.py::test_lean_agrees_copyback_with_an_overlapping_in_argument`, `tests/conformance/semantics/test_lean_call_copyback.py::test_lean_agrees_extern_out_and_result_through_computed_indices`
   - Class: same. `Copy_in_arg/inout` and `Copy_in_arg/out` keep the argument's storage reference with its index evaluated at copy-in, `Copy_out_argument/non-dontcare` writes through that reference, and an assignment of an extern call's result resolves its target before the call.
 - **Actions read and write their block's variables.** An action runs in
   its block's activation with its parameters layered on top, so it
@@ -351,7 +351,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Call_eval/actionCallee`, `$inherit_e`, `Copy_out`, `$copy_e`
   - Lean: `Execution.dispatch`, `Execution.Work`, `copyBack`
   - Python: `p4blo.interp.stmt.call_action`, `p4blo.interp.env.Env.enter_action`, `p4blo.interp.stmt.copy_back`
-  - Test: `tests/unit/test_interp_control.py::test_an_action_sees_the_blocks_variables`, `tests/unit/test_interp_control.py::test_direct_action_call_passes_directional_arguments`
+  - Test: `impl/python/tests/interp/test_control.py::test_an_action_sees_the_blocks_variables`, `impl/python/tests/interp/test_control.py::test_direct_action_call_passes_directional_arguments`
   - Class: same. `Call_eval/actionCallee` builds the callee's context with `$inherit_e`, which keeps the block layer and adds a fresh local one, and `Copy_out` first takes the block layer back with `$copy_e` and then writes each argument, the same order as p4blo's.
 - **Action calls** from a control body pass arguments in the same
   way. Actions invoked by a table receive their action data as
@@ -360,7 +360,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: `Call_eval/actionCallee`, `Copy_in_arg/directionless-in`
   - Lean: `Execution.dispatch`, `argumentValue`, `copyBack`
   - Python: `p4blo.interp.stmt.call_action`, `p4blo.interp.stmt.run_action_call`
-  - Test: `tests/unit/test_interp_control.py::test_direct_action_call_passes_directional_arguments`, `tests/unit/test_interp_control.py::test_apply_runs_the_matching_action_and_records_hit`
+  - Test: `impl/python/tests/interp/test_control.py::test_direct_action_call_passes_directional_arguments`, `impl/python/tests/interp/test_control.py::test_apply_runs_the_matching_action_and_records_hit`
   - Class: same. `Call_eval/actionCallee` copies arguments in and out as a block call does and binds directionless parameters like `in` ones.
 - **Recursion** between blocks is a validator error. Actions may call
   actions; the call graph of actions and blocks together is acyclic,
@@ -373,7 +373,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   - SpecTec: none
   - Lean: none; the Lean definitions assume the validator's check and do not repeat it.
   - Python: `p4blo.validator.calls.CallChecks.check_call_graph`
-  - Test: `tests/unit/test_validator.py::test_call_cycle`, `tests/unit/test_validator.py::test_action_call_cycle`, `tests/unit/test_validator.py::test_actions_may_call_actions_without_a_cycle`
+  - Test: `impl/python/tests/validator/test_validator.py::test_call_cycle`, `impl/python/tests/validator/test_validator.py::test_action_call_cycle`, `impl/python/tests/validator/test_validator.py::test_actions_may_call_actions_without_a_cycle`
   - Class: not representable. P4 has no recursive calls, so no IL program SpecTec evaluates contains one: its typing rejects an action that calls itself, declaration before use rules out mutual recursion between actions, and instantiation rules it out between blocks.
 
 ## Parsers
@@ -397,7 +397,7 @@ decision, not the parser's.
   - SpecTec: `Call_eval/copyin-cont-parserLocalDeclarationListIR-cont-transition-reject`, `ParserState_trans/reject`
   - Lean: `Execution.step`, `P4bloArch.runParser`
   - Python: `p4blo.arch.entry.parser.run_parser`, `p4blo.interp.stmt.call_block`
-  - Test: `tests/unit/test_interp_parser.py::test_an_error_keeps_the_partial_headers_and_metadata`, `tests/unit/test_interp_parser.py::test_sub_parser_error_copies_back_before_propagating`, `tests/corpus/parser_error`, `tests/corpus/subparser_stack`
+  - Test: `impl/python/tests/interp/test_parser.py::test_an_error_keeps_the_partial_headers_and_metadata`, `impl/python/tests/interp/test_parser.py::test_sub_parser_error_copies_back_before_propagating`, `tests/programs/corpus/parser_error`, `tests/programs/corpus/subparser_stack`
   - Class: same. A rejection propagates from the rule that raised it with the state as it stands, and a sub-parser's rejecting apply still runs `Copy_out`.
 - **Extraction past the packet end.** If fewer bits remain than the
   header's width, the extract raises `PacketTooShort`, consumes
@@ -406,7 +406,7 @@ decision, not the parser's.
   - SpecTec: `Call_eval/copyin-cont-non-abstract-reject`
   - Lean: `extract`, `packetRead`
   - Python: `p4blo.interp.stmt.extract`, `p4blo.interp.packet.Packet.read`
-  - Test: `tests/unit/test_interp_parser.py::test_extract_past_the_end_is_packet_too_short_and_consumes_nothing`
+  - Test: `impl/python/tests/interp/test_parser.py::test_extract_past_the_end_is_packet_too_short_and_consumes_nothing`
   - Class: same. SpecTec's `packet_in.extract`, in its simulator's `core/object.ml`, rejects with `PacketTooShort` without moving the cursor, and `Call_eval/copyin-cont-non-abstract-reject` skips the copy-out, so the target keeps its value.
 - **Extract sets the target valid** and fills every field from the
   packet, most significant bit first. A header type with no fields has
@@ -417,7 +417,7 @@ decision, not the parser's.
   - SpecTec: `$write_value_from_bits`
   - Lean: `headerFromBits`, `unpackFields`
   - Python: `p4blo.interp.expr.header_from_bits`
-  - Test: `tests/unit/test_interp_parser.py::test_extract_fills_the_fields_and_sets_valid`, `tests/unit/test_interp_parser.py::test_extract_takes_fields_most_significant_first`, `tests/unit/test_interp_parser.py::test_extract_of_a_zero_width_header_sets_valid_and_consumes_nothing`
+  - Test: `impl/python/tests/interp/test_parser.py::test_extract_fills_the_fields_and_sets_valid`, `impl/python/tests/interp/test_parser.py::test_extract_takes_fields_most_significant_first`, `impl/python/tests/interp/test_parser.py::test_extract_of_a_zero_width_header_sets_valid_and_consumes_nothing`
   - Class: same. `$write_value_from_bits` fills the fields from the leading bits in order and sets the validity bit, and the simulator's length check passes for a zero-width header at the end of the packet.
 - **Boolean header fields take one bit.** A `bool` field of a header
   is one bit on the wire: extract reads `1` as `true` and `0` as
@@ -426,7 +426,7 @@ decision, not the parser's.
   - SpecTec: `$write_value_from_bits'`, `$write_bits_from_value`
   - Lean: `fieldFromBits`, `fieldBits`
   - Python: `p4blo.interp.expr.header_from_bits`, `p4blo.interp.expr.header_to_bits`
-  - Test: `tests/unit/test_interp_parser.py::test_emit_then_extract_roundtrips_a_header`
+  - Test: `impl/python/tests/interp/test_parser.py::test_emit_then_extract_roundtrips_a_header`
   - Class: same. `$write_value_from_bits'` takes one bit for a boolean field, and `$write_bits_from_value` writes a boolean as that one bit.
 - **`lookahead<T>`** reads `width(T)` bits without moving the cursor;
   past the end it raises `PacketTooShort`. `T` is `bit<N>`, `bool`
@@ -436,7 +436,7 @@ decision, not the parser's.
   - SpecTec: `$default`, `$write_value_from_bits`
   - Lean: `lookaheadValue`, `valueFromBits`
   - Python: `p4blo.interp.expr.lookahead`, `p4blo.interp.expr.value_from_bits`
-  - Test: `tests/unit/test_interp_parser.py::test_lookahead_reads_without_consuming_and_a_header_result_is_valid`, `tests/unit/test_interp_parser.py::test_lookahead_past_the_end_is_packet_too_short`, `tests/unit/test_validator.py::test_lookahead_of_bits_boolean_and_header_is_fine`
+  - Test: `impl/python/tests/interp/test_parser.py::test_lookahead_reads_without_consuming_and_a_header_result_is_valid`, `impl/python/tests/interp/test_parser.py::test_lookahead_past_the_end_is_packet_too_short`, `impl/python/tests/validator/test_validator.py::test_lookahead_of_bits_boolean_and_header_is_fine`
   - Class: same. The simulator's `packet_in.lookahead` fills `$default` of `T` with `$write_value_from_bits` without moving the cursor, which makes a header valid, and rejects with `PacketTooShort` past the end.
 - **`advance(n)`** moves the cursor by `n` bits; past the end it
   raises `PacketTooShort` and the cursor does not move. `n` is a
@@ -446,7 +446,7 @@ decision, not the parser's.
   - SpecTec: `Call_eval/externMethodCallee`
   - Lean: `advance`, `Packet.advance?`
   - Python: `p4blo.interp.stmt.advance`, `p4blo.interp.packet.Packet.advance`
-  - Test: `tests/unit/test_interp_parser.py::test_advance_skips_bits`, `tests/unit/test_interp_parser.py::test_advance_past_the_end_is_packet_too_short_and_the_cursor_stays`
+  - Test: `impl/python/tests/interp/test_parser.py::test_advance_skips_bits`, `impl/python/tests/interp/test_parser.py::test_advance_past_the_end_is_packet_too_short_and_the_cursor_stays`
   - Class: same. The simulator's `packet_in.advance`, called through `Call_eval/externMethodCallee`, moves the cursor by its `bit<32>` argument or rejects with `PacketTooShort` and leaves it.
 - **`verify(cond, err)`** raises `err` when `cond` is `false`. `err`
   may be `NoError`, and then the outcome is the same as an explicit
@@ -455,7 +455,7 @@ decision, not the parser's.
   - SpecTec: `Call_eval/externFunctionCallee-copyin-cont-call-reject`
   - Lean: `verify`
   - Python: `p4blo.interp.stmt.verify`
-  - Test: `tests/unit/test_interp_parser.py::test_verify_raises_its_error_when_the_condition_is_false`, `tests/unit/test_interp_parser.py::test_verify_with_no_error_is_an_explicit_reject`, `tests/corpus/verify_error`
+  - Test: `impl/python/tests/interp/test_parser.py::test_verify_raises_its_error_when_the_condition_is_false`, `impl/python/tests/interp/test_parser.py::test_verify_with_no_error_is_an_explicit_reject`, `tests/programs/corpus/verify_error`
   - Class: same. The simulator's `verify`, in `core/func.ml`, rejects with its error argument, `NoError` included, and the rejection propagates like any other.
 - **`select`** evaluates the key expressions once, then tries the
   cases in order and takes the first that matches. A key set entry is
@@ -467,7 +467,7 @@ decision, not the parser's.
   - SpecTec: `ParserSelect_eval/match`, `ParserSelect_eval/no-match`, `SelectCases_match`, `$match_keysets`, `$match_keyset`
   - Lean: `select`, `keySetMatches`
   - Python: `p4blo.interp.stmt.select`, `p4blo.interp.stmt.key_set_matches`
-  - Test: `tests/unit/test_interp_parser.py::test_select_tries_the_cases_in_order`, `tests/unit/test_interp_parser.py::test_select_with_no_matching_case_rejects_with_no_match`, `tests/unit/test_interp_parser.py::test_select_on_several_keys_needs_every_set_to_match`, `tests/unit/test_validator.py::test_select_on_boolean_and_enum_keys`
+  - Test: `impl/python/tests/interp/test_parser.py::test_select_tries_the_cases_in_order`, `impl/python/tests/interp/test_parser.py::test_select_with_no_matching_case_rejects_with_no_match`, `impl/python/tests/interp/test_parser.py::test_select_on_several_keys_needs_every_set_to_match`, `impl/python/tests/validator/test_validator.py::test_select_on_boolean_and_enum_keys`
   - Class: same. `ParserSelect_eval` evaluates the keys once, `SelectCases_match` takes the first case whose sets all match by `$match_keyset`, and `ParserSelect_eval/no-match` rejects with `NoMatch`.
 - **`reject`** is a transition like any other. Reached explicitly, it
   rejects with `NoError`; reached because an extract, lookahead,
@@ -478,7 +478,7 @@ decision, not the parser's.
   - SpecTec: `ParserTransition_eval/nameIR-reject`
   - Lean: `Execution.dispatch`
   - Python: `p4blo.interp.stmt.run_states`
-  - Test: `tests/unit/test_interp_parser.py::test_explicit_reject_is_not_accepted_and_has_no_error`, `tests/unit/test_interp_parser.py::test_verify_raises_its_error_when_the_condition_is_false`
+  - Test: `impl/python/tests/interp/test_parser.py::test_explicit_reject_is_not_accepted_and_has_no_error`, `impl/python/tests/interp/test_parser.py::test_verify_raises_its_error_when_the_condition_is_false`
   - Class: same. `ParserTransition_eval/nameIR-reject` rejects with `NoError`, and a raised error arrives as a rejection carrying its own error.
 - **Parser loop bound.** A state may be entered any number of times
   as long as the cursor advanced since the last time it was entered.
@@ -494,7 +494,7 @@ decision, not the parser's.
   - SpecTec: `ParserState_trans/state`
   - Lean: `enterState`, `DeviationLaws.enterState_revisit`, `DeviationLaws.enterState_first`, `DeviationLaws.enterState_again`, `DeviationLaws.step_state_revisit`, `DeviationLaws.reaches_cursor_le`, `DeviationLaws.reaches_recorded`, `DeviationLaws.enterState_advanced`, `DeviationLaws.enterState_no_consumption`, `DeviationLaws.reaches_state_revisit`
   - Python: `p4blo.interp.stmt.enter_state`
-  - Test: `tests/unit/test_interp_parser.py::test_revisiting_a_state_without_consuming_is_parser_timeout`, `tests/unit/test_interp_parser.py::test_the_revisit_rule_sees_a_cycle_through_another_state`, `tests/unit/test_interp_parser.py::test_revisiting_after_consuming_is_allowed`, `tests/unit/test_interp_parser.py::test_sub_parser_states_count_for_the_revisit_rule`
+  - Test: `impl/python/tests/interp/test_parser.py::test_revisiting_a_state_without_consuming_is_parser_timeout`, `impl/python/tests/interp/test_parser.py::test_the_revisit_rule_sees_a_cycle_through_another_state`, `impl/python/tests/interp/test_parser.py::test_revisiting_after_consuming_is_allowed`, `impl/python/tests/interp/test_parser.py::test_sub_parser_states_count_for_the_revisit_rule`
   - Class: refines undefined. `ParserState_trans/state` recurses into the next state with no bound, so a loop that consumes nothing has no finite derivation and SpecTec gives no outcome.
 - **State-local variables.** The IR has no state-local variables: a
   variable a parser declares is a local of the block, zero when the
@@ -511,7 +511,7 @@ decision, not the parser's.
   - SpecTec: `ParserState_eval/cont`, `$enter_e`, `$exit_e`, `VarDecl_eval/non-initializer`
   - Lean: `Frame.forBlock`
   - Python: `p4blo.interp.env.Env.for_block`, `p4blo.frontend.blocks.BlockCx.zero`, `p4blo.edsl.core.blocks.Stmts.local`, `p4blo.edsl.core.blocks.zero_stmts`
-  - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/corpus/subparser_stack`, `tests/external/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `tests/unit/test_edsl_v2.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/lean/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
+  - Test: `impl/python/tests/interp/test_expr.py::test_variables_start_at_zero`, `tests/programs/corpus/subparser_stack`, `tests/oracles/test_frontend_spectec.py::test_probe_agrees_with_spectec`, `impl/python/tests/edsl/test_authoring.py::test_a_local_declared_in_a_state_or_action_is_zeroed_where_declared`, `tests/conformance/semantics/test_lean_edsl_locals.py::test_lean_agrees_on_edsl_locals_at_every_entry`
   - Class: same. On block locals, SpecTec's `VarDecl_eval/non-initializer` gives the default once per block run, as p4blo does; for a state-local, `ParserState_eval/cont` wraps each entry in `$enter_e` and `$exit_e`, and the zero value the elaboration writes at the declaration is that default on every entry, which the bridge's `statelocal`, `actlocal` and `funclocal` probes check against SpecTec.
 - **Errors.** The IR's error set begins with core.p4's, in this order:
   `NoError`, `PacketTooShort`, `NoMatch`, `StackOutOfBounds`,
@@ -525,7 +525,7 @@ decision, not the parser's.
   - SpecTec: `errorValue`
   - Lean: `BlockLibrary`
   - Python: `p4blo.ir.CORE_ERRORS`
-  - Test: `tests/unit/test_validator.py::test_error_list`
+  - Test: `impl/python/tests/validator/test_validator.py::test_error_list`
   - Class: not representable. In the architecture-free rules a SpecTec `errorValue` is a name with no position, so the order has nothing to correspond to there; SpecTec's control-plane interface in `9-arch` does index errors by position, casting an integer `n` to the `n`th error of the global frame.
 
 ## Tables
@@ -538,7 +538,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `TableMatch_eval/match`, `$match_keyset`
   - Lean: `Installed.keyValueMatches`, `Installed.lookup`, `DeviationLaws.keyValueMatches_exact`
   - Python: `p4blo.interp.tables.key_value_matches`, `p4blo.interp.tables.InstalledEntries.lookup`
-  - Test: `tests/unit/test_interp_tables.py::test_exact_hit_and_miss_without_a_default`
+  - Test: `impl/python/tests/interp/test_tables.py::test_exact_hit_and_miss_without_a_default`
   - Class: same. `$match_keyset` matches a single-value set by `$bin_eq`.
 - **LPM.** A table has at most one `lpm` key. Among the entries whose
   other keys match exactly and whose prefix covers the key value, the
@@ -552,7 +552,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `TableMatches_eval`, `$select_action`
   - Lean: `Installed.beats`, `Installed.prefixLength`, `Installed.sameKeys`, `DeviationLaws.keyValueMatches_lpm`, `DeviationLaws.prefixLength_eq`, `DeviationLaws.prefixLength_single`, `DeviationLaws.rank_lpm`, `DeviationLaws.lookup_longest_prefix`, `DeviationLaws.lookup_longest_lpm`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.prefix_length`, `p4blo.interp.tables.same_keys`
-  - Test: `tests/unit/test_interp_tables.py::test_lpm_longest_prefix_wins_and_the_default_runs_on_a_miss`, `tests/unit/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`, `tests/unit/test_validator.py::test_table_lpm_count`, `tests/corpus/forwarder`
+  - Test: `impl/python/tests/interp/test_tables.py::test_lpm_longest_prefix_wins_and_the_default_runs_on_a_miss`, `impl/python/tests/interp/test_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`, `impl/python/tests/validator/test_validator.py::test_table_lpm_count`, `tests/programs/corpus/forwarder`
   - Class: refines undefined. SpecTec's table interface turns an LPM entry into a masked value with no priority, and `$select_action` chooses among several matches only by priority, so two matching LPM entries without priorities have no rule; the oracle adapter supplies the prefix length as the priority, and the interface's mask construction has the known defect recorded in assurance.md.
 - **Ternary.** Every entry of a table with a `ternary` key has a
   priority, and `0` is an ordinary one. Among the entries that match,
@@ -578,7 +578,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `$select_action`, `$largest_priority_wins`, `$set_priorities_of_tableEntryListIR`, `$set_priorities_of_tableEntryListIR'`, `TableProperty_ok/largest-priority-wins`, `TableProperty_ok/priority-delta`
   - Lean: `Installed.beats`, `Installed.overlaps`, `Installed.install`, `DeviationLaws.keyValueMatches_ternary`, `DeviationLaws.lookup_hit`
   - Python: `p4blo.interp.tables.beats`, `p4blo.interp.tables.overlaps`, `p4blo.interp.tables.InstalledEntries.install`
-  - Test: `tests/unit/test_interp_tables.py::test_ternary_largest_priority_wins`, `tests/unit/test_interp_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `tests/unit/test_validator.py::test_entry_priority_overlap`, `tests/external/test_frontend_spectec.py::test_priority_translation_numbers_entries_as_the_specification`, `tests/corpus/priority`
+  - Test: `impl/python/tests/interp/test_tables.py::test_ternary_largest_priority_wins`, `impl/python/tests/interp/test_tables.py::test_install_rejects_overlapping_ternary_entries_of_equal_priority`, `impl/python/tests/validator/test_validator.py::test_entry_priority_overlap`, `tests/oracles/test_frontend_spectec.py::test_priority_translation_numbers_entries_as_the_specification`, `tests/programs/corpus/priority`
   - Class: same. `$select_action` sorts the matches by priority and takes the largest unless the table sets `largest_priority_wins` to false, which no p4blo table does, and p4blo's installation rule leaves no equal-priority tie to break; a program's const-entry priorities are the ones `$set_priorities_of_tableEntryListIR` computes with the default properties, which the IR stores rather than recomputes and which the IL bridge reproduces from P4-SpecTec's typed IL; the rule is the same, and the interface's mask-from-base defect in `9-arch` is an oracle defect, not a rule disagreement.
 - **Priority outside ternary tables.** An entry of a table without a
   `ternary` key has priority `0`; the installer and the validator
@@ -598,7 +598,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `$get_tableEntryPriority`, `$select_action`, `$set_priorities_of_tableEntryListIR`
   - Lean: `Installed.install`, `Installed.sameKeys`
   - Python: `p4blo.interp.tables.InstalledEntries.install`, `p4blo.validator.tables.TableChecks.check_keys`
-  - Test: `tests/unit/test_validator.py::test_entry_priority_on_non_ternary_table`, `tests/unit/test_validator.py::test_table_key_mix`, `tests/unit/test_interp_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`
+  - Test: `impl/python/tests/validator/test_validator.py::test_entry_priority_on_non_ternary_table`, `impl/python/tests/validator/test_validator.py::test_table_key_mix`, `impl/python/tests/interp/test_tables.py::test_install_rejects_duplicate_exact_and_lpm_entries`
   - Class: same. On the entries p4blo accepts, an exact table matches at most one entry, and `$select_action` with a single match returns that entry's action whatever its priority; SpecTec also accepts a priority on these tables, and p4blo's refusal of one is a restriction of its input, not a disagreement.
 - **Table miss.** The default action runs. A table always has a
   default action; when the program declares none, it is `NoAction`,
@@ -611,7 +611,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `$select_action`
   - Lean: `Installed.lookup`, `Table`, `DeviationLaws.lookup_miss`
   - Python: `p4blo.interp.tables.InstalledEntries.lookup`, `p4blo.validator.blocks.BlockChecks.check_action`
-  - Test: `tests/unit/test_interp_tables.py::test_a_table_without_a_default_falls_back_to_no_action`, `tests/unit/test_interp_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`, `tests/unit/test_validator.py::test_noaction_reserved`
+  - Test: `impl/python/tests/interp/test_tables.py::test_a_table_without_a_default_falls_back_to_no_action`, `impl/python/tests/interp/test_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`, `impl/python/tests/validator/test_validator.py::test_noaction_reserved`
   - Class: same. `$select_action` with no match returns the table's default action; a missing default being `NoAction` is P4's rule, settled before SpecTec's dynamic rules run.
 - **`hit`** is `true` when an entry matched and `false` on a miss,
   including a miss that ran the default action. It is written after
@@ -621,7 +621,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `Table_eval/keys-cont-matches-cont-action-cont`, `Expr_eval/tableMetadataStructValue-hit`
   - Lean: `Execution.dispatch`
   - Python: `p4blo.interp.stmt.apply`
-  - Test: `tests/unit/test_interp_control.py::test_hit_is_written_after_the_action_runs`, `tests/unit/test_interp_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`
+  - Test: `impl/python/tests/interp/test_control.py::test_hit_is_written_after_the_action_runs`, `impl/python/tests/interp/test_control.py::test_apply_on_a_miss_runs_the_default_and_hit_is_false`
   - Class: same. `Table_eval` runs the selected action and then returns an apply result whose `hit` is whether any entry matched.
 - **Key expressions** are evaluated once, before matching. The
   program's `const entries` must be canonical: an LPM value with a set
@@ -634,7 +634,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `TableKeys_eval`, `TableMatches_eval`, `$match_keyset`
   - Lean: `Execution.dispatch`, `Installed.build`, `Installed.checkKeyValue`
   - Python: `p4blo.interp.stmt.apply`, `p4blo.validator.tables.TableChecks.check_entry`
-  - Test: `tests/unit/test_interp_tables.py::test_exact_hit_and_miss_without_a_default`, `tests/unit/test_validator.py::test_lpm_entry_must_be_canonical`, `tests/unit/test_validator.py::test_ternary_entry_must_be_canonical`
+  - Test: `impl/python/tests/interp/test_tables.py::test_exact_hit_and_miss_without_a_default`, `impl/python/tests/validator/test_validator.py::test_lpm_entry_must_be_canonical`, `impl/python/tests/validator/test_validator.py::test_ternary_entry_must_be_canonical`
   - Class: same. `TableKeys_eval` evaluates each key once before `TableMatches_eval`, as p4blo does, and on the canonical `const entries` p4blo accepts, `$match_keyset` masking both sides gives the same matches; rejecting a non-canonical one is a restriction of p4blo's input, not a disagreement.
 - **Host entries are canonical.** An entry value wider than the key is
   rejected at installation, as is an LPM value with a set bit outside
@@ -646,7 +646,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: none
   - Lean: `Installed.checkKeyValue`, `Installed.install`
   - Python: `p4blo.interp.tables.check_key_value`, `p4blo.interp.tables.InstalledEntries.install`
-  - Test: `tests/unit/test_interp_tables.py::test_install_rejects_an_entry_that_does_not_fit`, `tests/unit/test_stf.py::test_a_non_canonical_lpm_value_is_reported_with_its_line`
+  - Test: `impl/python/tests/interp/test_tables.py::test_install_rejects_an_entry_that_does_not_fit`, `impl/python/tests/test_stf.py::test_a_non_canonical_lpm_value_is_reported_with_its_line`
   - Class: refines undefined. The architecture-free rules take the installed entries as given, and what a host may install is decided by SpecTec's table interface in `9-arch`, which belongs to the architecture.
 - **Host default action.** A host may replace a non-const default
   action; it cannot remove one. Absent means the program's own.
@@ -654,7 +654,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `$select_action`
   - Lean: `Installed.setDefault`
   - Python: `p4blo.interp.tables.InstalledEntries.set_default`
-  - Test: `tests/unit/test_interp_tables.py::test_host_default_replaces_a_non_const_default_and_none_restores_the_programs`, `tests/unit/test_interp_tables.py::test_host_default_cannot_replace_a_const_default`
+  - Test: `impl/python/tests/interp/test_tables.py::test_host_default_replaces_a_non_const_default_and_none_restores_the_programs`, `impl/python/tests/interp/test_tables.py::test_host_default_cannot_replace_a_const_default`
   - Class: same. `$select_action` runs whatever default the table holds, and SpecTec's table interface likewise replaces a default only when it is not const and has no way to remove one.
 - **Entries name their action** and carry action data as constants of
   the declared parameter widths; a mismatch is rejected at
@@ -663,7 +663,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `Table_eval/keys-cont-matches-cont-action-cont`
   - Lean: `Installed.checkAction`
   - Python: `p4blo.interp.tables.InstalledEntries.check_action`
-  - Test: `tests/unit/test_interp_tables.py::test_install_rejects_action_data_that_is_not_a_constant_of_the_param`, `tests/unit/test_interp_tables.py::test_install_rejects_an_entry_that_does_not_fit`
+  - Test: `impl/python/tests/interp/test_tables.py::test_install_rejects_action_data_that_is_not_a_constant_of_the_param`, `impl/python/tests/interp/test_tables.py::test_install_rejects_an_entry_that_does_not_fit`
   - Class: refines undefined. `Table_eval` calls whatever action the chosen entry names with its arguments; action data is decided by SpecTec's table interface in `9-arch`, outside the architecture-free rules, which fills a missing argument with zero and truncates a too-wide one by a cast where p4blo rejects both.
 - **Keys are bits.** A table key expression has type `bit<N>`. The
   frontend casts a boolean key to `bit<1>` and represents a plain enum
@@ -673,7 +673,7 @@ A table match is evaluated over the installed entries; the program's
   - SpecTec: `TableMatch_eval/match`, `$match_keyset`
   - Lean: `Installed.keyWidths`
   - Python: `p4blo.validator.tables.TableChecks.check_keys`
-  - Test: `tests/unit/test_validator.py::test_table_keys_are_bits_only`, `tests/unit/test_validator.py::test_key_type`
+  - Test: `impl/python/tests/validator/test_validator.py::test_table_keys_are_bits_only`, `impl/python/tests/validator/test_validator.py::test_key_type`
   - Class: same. `$match_keyset` compares keys of any type with `$bin_eq`, and casting a `bool` key to `bit<1>` or an enum key to its member index preserves which entries match, so the difference is elaboration.
 
 ## Deparsers
@@ -688,14 +688,14 @@ consume is the caller's decision.
   - SpecTec: `Call_eval/controlApplyMethodCallee`
   - Lean: `P4bloArch.runDeparser`
   - Python: `p4blo.arch.entry.deparser.run_deparser`, `p4blo.validator.calls.CallChecks.check_call_block`
-  - Test: `tests/unit/test_validator.py::test_deparser_may_call_a_deparser`, `tests/unit/test_validator.py::test_call_kind`
+  - Test: `impl/python/tests/validator/test_validator.py::test_deparser_may_call_a_deparser`, `impl/python/tests/validator/test_validator.py::test_call_kind`
   - Class: same. SpecTec runs a deparser as a control through `Call_eval/controlApplyMethodCallee` and allows it anything a control may do; on the deparsers the IR accepts it computes the same thing.
 - **`emit` of an invalid header** writes nothing (§15.1).
   - P4: §15.1
   - SpecTec: `$write_bits_from_value`
   - Lean: `emitValue`
   - Python: `p4blo.interp.stmt.emit_value`
-  - Test: `tests/unit/test_interp_deparser.py::test_valid_header_emits_its_fields_and_invalid_emits_nothing`, `tests/unit/test_interp_deparser.py::test_the_zero_headers_emit_nothing`
+  - Test: `impl/python/tests/interp/test_deparser.py::test_valid_header_emits_its_fields_and_invalid_emits_nothing`, `impl/python/tests/interp/test_deparser.py::test_the_zero_headers_emit_nothing`
   - Class: same. The simulator's `packet_out.emit` appends `$write_bits_from_value` of its argument, which is empty for an invalid header.
 - **`emit` of a struct** emits its fields in declaration order; the
   fields are headers, stacks or such structs, recursively, which the
@@ -706,7 +706,7 @@ consume is the caller's decision.
   - SpecTec: `$write_bits_from_value`
   - Lean: `emitValue`, `emitList`
   - Python: `p4blo.interp.stmt.emit_value`
-  - Test: `tests/unit/test_interp_deparser.py::test_struct_emits_its_fields_in_declaration_order`, `tests/unit/test_interp_deparser.py::test_stack_emits_elements_in_order_skipping_invalid_ones`
+  - Test: `impl/python/tests/interp/test_deparser.py::test_struct_emits_its_fields_in_declaration_order`, `impl/python/tests/interp/test_deparser.py::test_stack_emits_elements_in_order_skipping_invalid_ones`
   - Class: same. `$write_bits_from_value` concatenates a struct's fields in order and a stack's elements from index `0`, each invalid header contributing nothing.
 - **Bit alignment.** Emitted headers are concatenated at the bit
   level; a total that is not a multiple of eight is padded with zero
@@ -719,7 +719,7 @@ consume is the caller's decision.
   - SpecTec: `$write_bits_from_value`
   - Lean: `Emitter.toBytes`, `Emitter.write`, `DeviationLaws.toBytes_padded`, `DeviationLaws.write_fits`
   - Python: `p4blo.interp.packet.Emitter.to_bytes`
-  - Test: `tests/unit/test_interp_deparser.py::test_bits_are_concatenated_and_padded_to_a_byte_at_the_end`
+  - Test: `impl/python/tests/interp/test_deparser.py::test_bits_are_concatenated_and_padded_to_a_byte_at_the_end`
   - Class: refines undefined. SpecTec's emit appends bits with no padding, and what becomes of a partial byte is decided by its simulator's architecture code and packet printer, outside the rules: the payload is appended at the bit level and the printer pads the last group of bits to a nibble rather than a byte. The generated-program oracle test pins the exact mismatch as a strict expected failure.
 
 ## Externs
@@ -740,7 +740,7 @@ that supplies them; the families this repository provides are in
   - SpecTec: none
   - Lean: `matchShape`, `Externs.bind`
   - Python: `p4blo.arch.externs.match_shape`, `p4blo.arch.externs.Registry.bind`
-  - Test: `tests/unit/test_externs.py::test_extra_method_refuses_to_bind`, `tests/unit/test_externs.py::test_inconsistent_width_variable_refuses_to_bind`, `tests/unit/test_externs.py::test_constructor_arg_must_fit`
+  - Test: `impl/python/tests/arch/test_externs.py::test_extra_method_refuses_to_bind`, `impl/python/tests/arch/test_externs.py::test_inconsistent_width_variable_refuses_to_bind`, `impl/python/tests/arch/test_externs.py::test_constructor_arg_must_fit`
   - Class: refines undefined. SpecTec has no binding step: extern objects come from its instantiation and their methods from its simulator's architecture code.
 - **Method call order** is program order; an extern may keep state
   between calls and between packets, and that state is part of the
@@ -749,7 +749,7 @@ that supplies them; the families this repository provides are in
   - SpecTec: `BlockElementStmtList_eval`, `Stmt_eval/callStatementIR`
   - Lean: `Externs.call`, `callExtern`
   - Python: `p4blo.interp.stmt.call_extern`
-  - Test: `tests/unit/test_arch.py::test_a_register_counts_across_packets`, `tests/corpus/stateful`
+  - Test: `impl/python/tests/arch/test_arch.py::test_a_register_counts_across_packets`, `tests/programs/corpus/stateful`
   - Class: same. SpecTec evaluates a block's statements in order and threads the architecture state, which holds extern objects, through every call.
 - **Extern calls.** `in` and `inout` arguments are copied in, `out`
   arguments arrive as zero, results are written back in parameter
@@ -759,7 +759,7 @@ that supplies them; the families this repository provides are in
   - SpecTec: `Call_eval/externMethodCallee`, `Copy_in_arg/out`, `Copy_out`
   - Lean: `callExtern`, `argumentValue`
   - Python: `p4blo.interp.stmt.call_extern`
-  - Test: `tests/unit/test_interp_control.py::test_extern_call_with_an_out_argument_and_a_return_value`, `tests/unit/test_interp_control.py::test_extern_out_argument_arrives_as_zero_whatever_its_lvalue_holds`
+  - Test: `impl/python/tests/interp/test_control.py::test_extern_call_with_an_out_argument_and_a_return_value`, `impl/python/tests/interp/test_control.py::test_extern_out_argument_arrives_as_zero_whatever_its_lvalue_holds`
   - Class: same. `Call_eval/externMethodCallee` copies arguments in with `out` ones at `$default`, runs the method, and copies `out` and `inout` parameters back in parameter order before the call's value is used.
 - **Where an implementation closes something P4 leaves open**, that
   choice is a closed behavior of the implementation, recorded with it,
@@ -768,7 +768,7 @@ that supplies them; the families this repository provides are in
   - SpecTec: none
   - Lean: `ExternModel`
   - Python: `p4blo.interp.api.ExternBinding`
-  - Test: `tests/unit/test_extern_families.py::test_python_dispatches_existing_families`
+  - Test: `impl/python/tests/arch/test_extern_families.py::test_python_dispatches_existing_families`
   - Class: refines undefined. SpecTec leaves every extern method but the parser's built-in ones to its simulator's architecture code, outside the rules.
 
 ## Decimal values at the JSON boundary
