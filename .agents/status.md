@@ -7,6 +7,11 @@ optimization and delegated the prose-only policy choice. See
 [the working note](notes/ci-efficiency.md) for measurements, ownership and gates.
 No semantic scope or parked proof is reopened; XDP removal remains a separate
 proposal, not an implemented change.
+Implementation is independently reviewed, including a corrected failed-scope
+guard and regression. The initial full required-Lean gate passed 5,284/1/4
+(pass/optional XDP skip/expected failure); repeat with the five added guard
+checks, then push and measure final-head remote CI. Review and measurement
+records are linked from the working note.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.

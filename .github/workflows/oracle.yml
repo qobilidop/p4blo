@@ -25,7 +25,7 @@ jobs:
     uses: ./.github/workflows/ci-scope.yml
   oracle:
     needs: scope
-    if: ${{ always() && !cancelled() && needs.scope.outputs.full != 'false' }}
+    if: ${{ always() && !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.full != 'false') }}
     name: P4-SpecTec
     runs-on: ubuntu-latest
     timeout-minutes: 90

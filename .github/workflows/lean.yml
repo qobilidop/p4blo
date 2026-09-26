@@ -18,7 +18,7 @@ jobs:
     uses: ./.github/workflows/ci-scope.yml
   lean:
     needs: scope
-    if: ${{ always() && !cancelled() && needs.scope.outputs.full != 'false' }}
+    if: ${{ always() && !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.full != 'false') }}
     name: Lean (${{ matrix.shard }}/2)
     strategy:
       fail-fast: false

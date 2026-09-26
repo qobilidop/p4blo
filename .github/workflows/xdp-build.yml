@@ -18,7 +18,7 @@ jobs:
     uses: ./.github/workflows/ci-scope.yml
   compile:
     needs: scope
-    if: ${{ always() && !cancelled() && needs.scope.outputs.full != 'false' }}
+    if: ${{ always() && !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.full != 'false') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

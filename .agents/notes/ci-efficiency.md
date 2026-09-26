@@ -71,6 +71,11 @@ disjoint sample inventory. Oracle author commit `391d577` passed actionlint,
 Ruff and Pyright; all 15 local benchmark runs retained identical cases/statuses.
 Integrated classifier/shard/boundary checks: 96 passed.
 
-Pending: independent integrated review, full required-Lean local gate, all
-applicable remote checks and timing comparison. No new CI result or fast-path
-run is claimed yet.
+Independent [review](../reviews/ci-efficiency-2026-09-25.md) approved the
+classifier, shards and integration after one guard correction: a failed scope
+job cannot authorize a skip even if it already emitted `full=false`. Five
+workflow-boundary tests cover the corrected guard and reject the unsafe form.
+The first full required-Lean gate passed 5,284 tests, one optional local XDP
+skip and four expected failures; a final full run including the guard regression
+is required before push. All applicable remote checks and timing comparison
+remain pending. No new CI result or fast-path run is claimed yet.
