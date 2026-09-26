@@ -201,6 +201,7 @@ def _check_block(
         result: dict[str, tuple[str, ...]] = {}
         for param, arg in zip(params, args, strict=True):
             if arg.WhichOneof("kind") == "lvalue":
+                reads(arg.lvalue, scope)
                 path = alias(arg.lvalue, scope)
             else:
                 path = alias(arg.expr, scope)
@@ -243,7 +244,9 @@ def _check_block(
                 call = stmt.call_extern
                 instance = index.extern_instances[call.instance]
                 decl = index.extern_types[instance.extern_type]
-                method = next(m for m in decl.methods if m.name == call.method)
+                method = next((m for m in decl.methods if m.name == call.method), None)
+                if method is None:
+                    raise LoadError(f"extern {call.instance!r} has no method {call.method!r}")
                 mapped = arguments(method.params, call.args, scope)
                 for param in method.params:
                     if param.direction in (pb.DIRECTION_OUT, pb.DIRECTION_INOUT):

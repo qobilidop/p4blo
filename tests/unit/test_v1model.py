@@ -294,3 +294,29 @@ def test_one_block_cannot_supply_multiple_native_stage_interfaces() -> None:
     ).name
     with pytest.raises(LoadError, match="distinct block"):
         v1model.load(p)
+
+
+@pytest.mark.parametrize("kind", ["block", "action"])
+def test_call_argument_index_cannot_read_unavailable_metadata(kind: str) -> None:
+    p = program()
+    p.struct_types[0].fields.add(
+        name="stack", type=pb.Type(stack=pb.StackType(header="Byte", size=2))
+    )
+    param = pb.Param(name="h", type=pb.Type(header="Byte"), direction=pb.DIRECTION_INOUT)
+    body = [assign(path("h", "value"), bits(8, 9))]
+    arg = pb.Arg(
+        lvalue=pb.LValue(
+            index=pb.LIndex(base=path("hdr", "stack"), index=read("meta", "egress_port"))
+        )
+    )
+    ingress = block(p, "ingress")
+    if kind == "block":
+        p.blocks.add(name="Child", kind=pb.BLOCK_KIND_CONTROL, params=[param], body=body)
+        call = ingress.body.add(call_block=pb.CallBlock(block="Child", args=[arg])).call_block
+    else:
+        ingress.actions.add(name="child", params=[param], body=body)
+        call = ingress.body.add(call_action=pb.CallAction(action="child", args=[arg])).call_action
+    with pytest.raises(LoadError, match="unavailable"):
+        v1model.load(p)
+    call.args[0].lvalue.index.index.CopyFrom(read("meta", "ingress_port"))
+    assert run(p) == [(1, b"\x01payload")]
