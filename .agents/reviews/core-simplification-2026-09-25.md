@@ -19,7 +19,7 @@ AssertionError. The reviewer approved the repair. No unresolved findings.
 Integration sweep also removed a stale certificate comment and a retired
 `Frame.forBlock_initialized` citation, regenerated the ledger cross-reference,
 and reduced the gate-library inventory to the two surviving packages.
-These final metadata cleanups await the integrated review below.
+The final integrated review below approved these metadata cleanups.
 
 ## Lean and behavior preservation
 
@@ -67,5 +67,31 @@ proof evidence is revision-qualified.
 
 ## Integrated evidence
 
-Full repository gate, frozen adversarial runner, final integrated review and
-exact-main remote CI remain pending. Author checks are not those gates.
+Final independent code/claim review approved
+`f9cb19ee1b9afbb1b512a584eb147a01be331e03`, with no unresolved findings.
+The reviewer checked final cleanup, report accuracy, active guarantee/path
+searches and preservation diffs; it did not repeat the earlier executable
+comparison or builds. At that unchanged tracked revision, integrator gates:
+
+- `nix develop -c scripts/check-lean.sh`: exit0, both packages and test drivers.
+- `P4BLO_REQUIRE_LEAN=1 nix develop -c scripts/check.sh`: exit0,
+  4,785 passed, four expected failures, no skips; lint/format/types/schema/
+  workflow/fresh generation checks passed.
+- `P4BLO_REQUIRE_LEAN=1 nix develop -c uv run python scripts/check-assurance.py
+  --output <new directory>`: exit0, status passed, all28 phases. Ten Python
+  fault cases, the Lean CRC mutant, paired codec/observer faults, independent
+  anchors and restored baseline replay passed on the original three input
+  hashes/six requests. The tracked tree remained frozen for the whole run.
+- `nix develop -c uv run pytest
+  tests/programs/test_forwarder_apply_semantics.py::test_apply_packets_bmv2 -q`:
+  exit0, one test executing the five forwarding profiles passed.
+
+Git comparison preserves 280 runtime/input/wire files byte for byte; the only
+additional retained Python package difference is a provenance docstring.
+Lean source shrank from163files/33,694physical lines to81files/21,432lines
+(counted via git tracked `.lean` files, including tests/comments/blank lines).
+These are maintenance-size counts, not timing or assurance estimates.
+
+Exact-main remote CI remains pending. Local logs are conveniences under
+`.artifacts/assurance/simplify-f9cb19e` and `/private/tmp`; the revision,
+commands and original pinned inputs above define the reproducible checks.

@@ -6,8 +6,12 @@ architecture proofs and the execution-certificate experiment. Preserve the
 core IR proofs, executable architecture adapters, Python authoring/examples,
 wire formats and independent oracle/differential testing. Integration branch:
 `work/simplify-core`, based on `5ee52d90f19d5d5a81bf972a115298ae167e691b`.
-[Scope, ownership and acceptance](notes/simplify-core.md). Implementation,
-independent review, full local gates and integrated-main CI remain pending.
+[Scope, ownership and acceptance](notes/simplify-core.md). Implementation
+and final independent review are complete at `f9cb19e`. Both Lean packages
+passed; the full required-Lean gate passed 4,785 tests with four expected
+failures and no skips. Frozen adversarial replay passed all 28 phases;
+the retained BMv2 forwarding profile passed. Integrated-main CI remains
+pending before closing this scope. [Review](reviews/core-simplification-2026-09-25.md).
 
 The user
 has made PRs optional for this personal-project phase. Feature branches

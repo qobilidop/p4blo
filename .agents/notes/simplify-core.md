@@ -66,5 +66,10 @@ Python `e3fab89` -> `57f81b9`, guard fix `d94ddf18` -> `d848cf3`,
 docs `d6c3856` -> `4dfa1c1`; root scope `583ebf0`. Independent slice review
 approved, one restored firewall vector guard. Both Lean packages passed
 locally. Runtime equivalence: 89 fixtures/514 requests/363 CLI pairs unchanged.
-Full repository gate, frozen assurance replay and final integrated review/CI
-remain pending. See [review](../reviews/core-simplification-2026-09-25.md).
+Integrated code `f9cb19ee1b9afbb1b512a584eb147a01be331e03` passed final
+independent review. Full required-Lean gate: 4,785 passed, four expected
+failures, no skips; all other checks passed. Frozen assurance runner: exit0,
+status passed, all28 phases, original three input hashes/six requests and
+ten selected Python tests. The moved BMv2 forwarding profile passed locally.
+Integrated-main CI remains pending. See
+[review](../reviews/core-simplification-2026-09-25.md).
