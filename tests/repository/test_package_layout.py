@@ -6,8 +6,7 @@ from pathlib import Path
 
 from p4blo.drt.run import default_lean_binary
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.oracles import test_oracle, test_oracle_bmv2
-from tests.programs import test_corpus
+from tests.support import catalog
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -126,13 +125,11 @@ def test_shared_corpus_discovery_is_not_empty() -> None:
     assert len(programs) >= 10
     assert len(vectors) >= 15
     assert all(p.with_suffix(".py").is_file() for p in programs)
-    assert test_corpus.PROGRAMS == sorted(p.parent for p in programs)
-    assert test_corpus.VECTORS == vectors
+    assert catalog.PROGRAMS == sorted(p.parent for p in programs)
+    assert catalog.VECTORS == vectors
     example_vectors = sorted((ROOT / "tests/programs/examples").glob("*/*.stf"))
     assert example_vectors, "public application vectors must reach both oracles"
-    assert test_oracle.VECTORS == sorted(vectors + example_vectors)
-    assert test_oracle_bmv2.VECTORS == sorted(vectors + example_vectors)
-    assert "register_bounds/bounds.stf" in test_oracle_bmv2.KNOWN_DIVERGENCES
+    assert catalog.ORACLE_VECTORS == sorted(vectors + example_vectors)
     assert not (ROOT / "corpus").exists()
     assert not (ROOT / "oracle").exists()
 

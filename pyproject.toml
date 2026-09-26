@@ -28,10 +28,14 @@ module-root = "impl/python"
 
 [tool.pytest.ini_options]
 testpaths = ["impl/python/tests", "tests"]
-addopts = ["--import-mode=importlib"]
+addopts = ["--import-mode=importlib", "--strict-markers"]
 pythonpath = ["."]
 markers = [
-    "oracle: drives the P4-SpecTec simulator or BMv2; the oracle workflows run these, the local gate deselects them",
+    "lean: requires the built Lean executable through lean_binary",
+    "spectec: requires the pinned P4-SpecTec checkout, simulator or export/coverage tools",
+    "bmv2: requires Docker and the pinned BMv2 image",
+    "p4c: compiles printed P4 with the pinned p4c Docker image",
+    "oracle: union of spectec, bmv2 and p4c dependencies; derived by conftest.py",
 ]
 
 [tool.ruff]

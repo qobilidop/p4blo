@@ -29,8 +29,8 @@ def test_same_inputs_distinct_recorded_answers(name: str) -> None:
     assert any(line.startswith("packet ") for line in inputs[0])
 
 
-@pytest.mark.oracle
 @pytest.mark.parametrize("name", NAMES)
+@pytest.mark.spectec
 def test_pinned_spectec_answer(name: str) -> None:
     oracle = spectec.find_oracle()
     if oracle is None:
@@ -59,8 +59,8 @@ def test_pinned_spectec_answer(name: str) -> None:
     assert result.stdout.splitlines()[-1:] == ["passed"], result.stdout + result.stderr
 
 
-@pytest.mark.oracle
 @pytest.mark.parametrize("name", NAMES)
+@pytest.mark.bmv2
 def test_pinned_bmv2_answer(name: str) -> None:
     image = bmv2.default_image()
     if reason := bmv2.unavailable(image):

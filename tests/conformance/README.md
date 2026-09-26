@@ -1,4 +1,13 @@
-# Conformance corpus
+# Conformance tests
+
+Cross-implementation checks live here: `codec/` for wire agreement,
+`execution/` for differential campaigns, `semantics/` for detailed semantic
+boundaries, and `assurance/` for finite adversarial acceptance. `coverage/`
+keeps recorded rule evidence. Real Lean checks declare the `lean` marker.
+Python-only checks of these harnesses need no Lean binary. See
+[the test guide](../README.md) for other responsibilities.
+
+## Fixed conformance corpus
 
 The Lean semantics' answers on a fixed set of programs and requests, kept
 as data. Each file under `fixtures/` is one fixture: a program, an ordered
@@ -112,7 +121,7 @@ uv run python -m p4blo.conformance export         # answer inputs.py on Lean, re
 ```
 
 `tests/conformance/test_fixtures.py` runs the first per fixture in `scripts/check.sh`
-and the second in the `lean_agrees` gate, and fails when a fixture is
+and the second in the `lean` marker gate, and fails when a fixture is
 missing, has no input, or has another number of steps than its input has
 requests. `check-lean`, `refresh` and `export` need the Lean executable
 that `scripts/check-lean.sh` builds.

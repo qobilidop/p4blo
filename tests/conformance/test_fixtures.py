@@ -41,6 +41,7 @@ def test_python_agrees_with_fixture(path: Path) -> None:
 
 
 @pytest.mark.parametrize("path", PATHS, ids=lambda p: p.stem)
+@pytest.mark.lean
 def test_lean_agrees_with_fixture(path: Path, lean_binary: Path) -> None:
     assert conformance.check_lean_fixture(path, [lean_binary]) == []
 
@@ -156,6 +157,7 @@ def test_python_check_rejects_a_hand_formatted_fixture(tmp_path: Path) -> None:
     assert problems == ["stf-corpus-forwarder-forward: the file is not in canonical form"]
 
 
+@pytest.mark.lean
 def test_lean_agrees_check_catches_a_changed_answer(tmp_path: Path, lean_binary: Path) -> None:
     path, number = corrupted(tmp_path, "stf-corpus-forwarder-forward", flip_output_byte)
     assert conformance.check_lean_fixture(path, [lean_binary]) == [
@@ -288,6 +290,7 @@ def test_refresh_rewrites_answers_and_never_inputs(tmp_path: Path) -> None:
     assert conformance.refresh(FAKE_LEAN, tmp_path) == []
 
 
+@pytest.mark.lean
 def test_lean_agrees_refresh_restores_a_changed_answer(tmp_path: Path, lean_binary: Path) -> None:
     path, _ = corrupted(tmp_path, "stf-corpus-forwarder-forward", flip_output_byte)
     assert conformance.refresh([lean_binary], tmp_path) == [path]
@@ -377,6 +380,7 @@ def test_only_semantics_sources_are_digested(tmp_path: Path) -> None:
     assert conformance.lean_provenance(root)["sources"] != before
 
 
+@pytest.mark.lean
 def test_lean_agrees_that_the_built_endpoint_is_current(lean_binary: Path) -> None:
     """With Lake on PATH the guard asks Lake, which tracks content, not times:
     a touched or comment-edited source is not a stale binary."""

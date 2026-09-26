@@ -21,56 +21,40 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from tests.support.catalog import CORPUS, program_of
+from tests.support.catalog import ORACLE_VECTORS as VECTORS
 
+from p4blo import stf  # noqa: E402
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.v0 import p4blo_pb2 as pb
-
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-
-from p4blo import stf  # noqa: E402
 from tests.oracles import firewall  # noqa: E402
 from tests.oracles.bmv2 import run as bmv2_run  # noqa: E402
-from tests.oracles.frontend import catalog  # noqa: E402
-
-CORPUS = ROOT / "tests/programs/corpus"
-VECTORS = sorted([*CORPUS.glob("*/*.stf"), *(ROOT / "tests/programs/examples").glob("*/*.stf")])
+from tests.oracles.frontend import catalog
+from tests.support.bmv2_cases import (  # noqa: E402
+    PRIORITY_DETAIL,
+    PRIORITY_PORTS,
+    PRIORITY_SOURCE,
+    PRIORITY_VECTOR,
+    REGISTER_BOUNDS_DETAIL,
+    ROOT,
+    KnownBMv2PriorityDisagreement,
+    KnownBMv2RegisterBoundsDisagreement,
+    check_vector,
+    known_priority_disagreement,
+    known_register_bounds_disagreement,
+    marks,
+    vector_id,
+)
 
 # A vector p4blo and BMv2 genuinely disagree about, with the reason. Strict,
 # so that a vector that starts passing fails here and the entry is removed
 # rather than left to rot.
-KNOWN_DIVERGENCES = {
-    "register_bounds/bounds.stf": (
-        "an out-of-range register read yields zero in p4blo (docs/arch-supports.md, "
-        '"Externs") and leaves the destination field untouched in BMv2 '
-        "(targets/simple_switch/primitives.cpp, `register_read`); see "
-        "tests/oracles/bmv2/README.md"
-    ),
-}
-
-REGISTER_BOUNDS_DETAIL = (
-    "line 46: expected 040700 $ on port 0, got 0407ff\n"
-    "line 52: expected ff0100 $ on port 0, got ff01ff"
-)
-
-
-class KnownBMv2RegisterBoundsDisagreement(Exception):
-    """Only the two documented unchanged-destination outputs, not oracle errors."""
-
-
-def known_register_bounds_disagreement(verdict: bmv2_run.Verdict) -> bool:
-    return (
-        verdict.vector == CORPUS / "register_bounds/bounds.stf"
-        and verdict.status == "fail"
-        and verdict.detail == REGISTER_BOUNDS_DETAIL
-    )
 
 
 # p4c's original of the priority corpus program, pinned by
@@ -78,52 +62,10 @@ def known_register_bounds_disagreement(verdict: bmv2_run.Verdict) -> bool:
 # when p4c compiles that source instead of the printed golden: the second
 # and third packets leave on port 3 where the specification's numbering,
 # P4-SpecTec and the vector send them to port 1.
-PRIORITY_SOURCE = ROOT / "tests/oracles/frontend/p4c/table-entries-priority-bmv2.p4"
-PRIORITY_VECTOR = CORPUS / "priority" / "table_entries_priority.stf"
+
+
 # The ports the replay captures: the vector's, plus the one p4c's entries
 # send the two disagreeing packets to, so that the mismatch names them.
-PRIORITY_PORTS = [0, 1, 2, 3]
-PRIORITY_DETAIL = (
-    "line 30: no output packet on port 1\n"
-    "line 34: unexpected output on port 3: 0210010000b0\n"
-    "line 34: unexpected output on port 3: 0311810000b0\n"
-    "line 35: no output packet on port 1"
-)
-
-
-class KnownBMv2PriorityDisagreement(Exception):
-    """Only p4c's inverted const-entry order on the two documented packets."""
-
-
-def known_priority_disagreement(verdict: bmv2_run.Verdict) -> bool:
-    return (
-        verdict.vector == PRIORITY_VECTOR
-        and verdict.status == "fail"
-        and verdict.detail == PRIORITY_DETAIL
-    )
-
-
-def program_of(vector: Path) -> Path:
-    """The one IR text file beside a vector."""
-    programs = sorted(vector.parent.glob("*.txtpb"))
-    assert len(programs) == 1, f"{vector.parent} should hold exactly one .txtpb"
-    return programs[0]
-
-
-def vector_id(vector: Path) -> str:
-    return f"{vector.parent.name}/{vector.name}"
-
-
-def marks(vector: Path) -> list[pytest.MarkDecorator]:
-    """`xfail`, strictly, when the vector is a known divergence; nothing else."""
-    known = KNOWN_DIVERGENCES.get(vector_id(vector))
-    return (
-        []
-        if known is None
-        else [
-            pytest.mark.xfail(reason=known, strict=True, raises=KnownBMv2RegisterBoundsDisagreement)
-        ]
-    )
 
 
 PARAMETERS = [pytest.param(v, marks=marks(v), id=vector_id(v)) for v in VECTORS]
@@ -206,6 +148,7 @@ def test_every_corpus_vector_parses_and_has_one_program() -> None:
         assert program_of(vector).is_file()
 
 
+@pytest.mark.bmv2
 def test_original_firewall_on_bmv2(image: str) -> None:
     compiled = bmv2_run.compile_program(image, firewall.source())
     plan = firewall.plan()
@@ -255,6 +198,7 @@ def replay_original_priority(image: str) -> bmv2_run.Verdict:
     strict=True,
     raises=KnownBMv2PriorityDisagreement,
 )
+@pytest.mark.bmv2
 def test_original_priority_program_on_bmv2(image: str) -> None:
     verdict = replay_original_priority(image)
     if known_priority_disagreement(verdict):
@@ -286,16 +230,9 @@ def test_known_priority_marker_matches_only_the_documented_mismatch(
 
 
 @pytest.mark.parametrize("vector", PARAMETERS)
+@pytest.mark.bmv2
 def test_vector_passes_on_bmv2(image: str, vector: Path) -> None:
-    (verdict,) = bmv2_run.run(image, program_of(vector), [vector])
-    where = f"{vector.relative_to(ROOT)}\ncommand: {shlex.join(verdict.command)}"
-    if known_register_bounds_disagreement(verdict):
-        raise KnownBMv2RegisterBoundsDisagreement(f"{where}\n{verdict.detail}")
-    if verdict.status == "fail":
-        pytest.fail(f"DIVERGENCE: BMv2 disagrees on {where}\n{verdict.detail}")
-    if verdict.status == "error":
-        pytest.fail(f"ORACLE ERROR (not a divergence): could not judge {where}\n{verdict.detail}")
-    assert verdict.status == "pass", verdict
+    check_vector(image, vector)
 
 
 @pytest.mark.parametrize("status", ["error", "pass", "known", "changed"])
@@ -303,9 +240,9 @@ def test_known_bmv2_marker_does_not_hide_errors_or_corrections(tmp_path: Path, s
     """Exercise pytest's actual marker, not just metadata or the predicate."""
     source = tmp_path / "test_marker.py"
     source.write_text(
-        "from tests.oracles.test_oracle_bmv2 import "
+        "from tests.support.bmv2_cases import "
         "CORPUS, marks, bmv2_run, REGISTER_BOUNDS_DETAIL\n"
-        "from tests.oracles.test_oracle_bmv2 import test_vector_passes_on_bmv2 as check_vector\n"
+        "from tests.support.bmv2_cases import check_vector\n"
         "vector = CORPUS / 'register_bounds/bounds.stf'\n"
         "def test_probe(monkeypatch):\n"
         f"    status = {status!r}\n"

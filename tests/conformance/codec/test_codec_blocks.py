@@ -35,6 +35,7 @@ def test_block_protobuf_known_answers(case: BlockCase) -> None:
 
 
 @pytest.mark.parametrize("case", cases())
+@pytest.mark.lean
 def test_lean_agrees_block_known_answers(lean_binary: Path, case: BlockCase) -> None:
     actual = assert_leaf(
         lean_binary, case.kind, case.wire, {"value": case.value, "encoded": case.wire}
@@ -47,6 +48,7 @@ def test_lean_agrees_block_known_answers(lean_binary: Path, case: BlockCase) -> 
 
 
 @pytest.mark.parametrize("kind,wire,error", malformed())
+@pytest.mark.lean
 def test_lean_agrees_block_exact_errors(
     lean_binary: Path, kind: BlockCodecKind, wire: object, error: str
 ) -> None:
@@ -54,6 +56,7 @@ def test_lean_agrees_block_exact_errors(
 
 
 @pytest.mark.parametrize("kind,wire,case", normalized())
+@pytest.mark.lean
 def test_lean_agrees_block_normalization(
     lean_binary: Path, kind: BlockCodecKind, wire: object, case: BlockCase
 ) -> None:

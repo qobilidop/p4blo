@@ -48,3 +48,26 @@ required-Lean Python/schema gate: 4,798 passed, four expected failures, no
 skips; lint/format/types/generated outputs/workflows passed. Independent
 review caught the Lean workflow's explicit old root omitting six moved
 cases; it now uses configured roots. Mixed suites and markers remain next.
+
+Integrated ownership/selection checkpoint at 43fb881 plus the following marker
+commit: retain every original 5,320 collected case, with moved paths and the
+sharding selector test renamed from keyword to marker. Add six separately
+collected printer compilation cases and five negative/discovery boundary cases:
+5,331 total. Markers: 2,167 Lean, 252 P4-SpecTec, 66 BMv2, six p4c; 324 oracle
+union, 2,840 ordinary Python CI cases, 1,058 package cases with no native tools.
+The two implementation handoffs are e3387d4 and 43fb881. They retain all test
+assertions, and the validator scenario catalog preserves all 310 names and
+serialized input hashes. Independent review reproduced that comparison.
+
+The first selection guard ran after marker filtering and could miss an orphan
+oracle marker. Independent review reproduced the hole; validation now runs in
+the collection hook before filtering, with negative regressions for orphan
+oracle, extra Lean and missing Lean markers. No filename inference remains.
+
+Local integrated required-Lean scripts/check.sh: 5,007 passed, no skips or
+expected failures; formatting, lint, types, schema, generation and actionlint
+passed. scripts/check-lean.sh passed both unchanged specification packages.
+Initial P4-SpecTec run: 236 passed/15 expected failures; the fresh coverage
+check required rebuilding its stale probe after the path move. That rebuild,
+coverage rerun and all BMv2/p4c comparisons are in progress. Frozen assurance,
+final independent review, exact-main remote CI and closure remain pending.

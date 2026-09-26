@@ -38,6 +38,7 @@ from tests.support.forwarder import (
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
+@pytest.mark.lean
 def test_lean_agrees_forwarder_stf(
     forwarder: apb.BlockAssembly, lean_binary: Path, vector: Path
 ) -> None:
@@ -59,6 +60,7 @@ def test_lean_agrees_forwarder_stf(
 
 
 @pytest.mark.parametrize("ttl", [0, 1])
+@pytest.mark.lean
 def test_lean_agrees_forwarder_wrapping_ttl(
     forwarder: apb.BlockAssembly, lean_binary: Path, ttl: int
 ) -> None:
@@ -67,6 +69,7 @@ def test_lean_agrees_forwarder_wrapping_ttl(
     assert run_python(v1model.load(forwarder), case, 4) == expected
 
 
+@pytest.mark.lean
 def test_lean_agrees_forwarder_detects_saturating_python_subtraction(
     forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -103,6 +106,7 @@ def test_lean_agrees_forwarder_detects_saturating_python_subtraction(
     assert restored.passed and restored.agreed == 1 and restored.both_errored == 0
 
 
+@pytest.mark.lean
 def test_lean_agrees_forwarder_checksum_after_drop(
     forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -143,6 +147,7 @@ def test_python_forwarder_invalid_python_state(
 
 
 @pytest.mark.parametrize("fault", ["ingress", "cursor-type", "entries", "index", "scope", "extern"])
+@pytest.mark.lean
 def test_lean_agrees_forwarder_invalid_observer_kills_hidden_effect(
     forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, fault: str
 ) -> None:
@@ -195,6 +200,7 @@ def test_lean_agrees_forwarder_invalid_observer_kills_hidden_effect(
         assert hits == prior + 1
 
 
+@pytest.mark.lean
 def test_lean_agrees_forwarder_protocol_error_retains_inputs(
     forwarder: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

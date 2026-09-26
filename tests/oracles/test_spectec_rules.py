@@ -88,6 +88,7 @@ def test_ledger_citations_resolve() -> None:
     )
 
 
+@pytest.mark.spectec
 def test_fixture_matches_the_pinned_checkout() -> None:
     oracle = oracle_run.find_oracle()
     if oracle is None:

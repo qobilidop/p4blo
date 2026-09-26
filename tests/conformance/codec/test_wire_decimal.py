@@ -62,6 +62,7 @@ def decimal_field(wire: dict[str, Any], kind: str) -> tuple[dict[str, Any], str,
 
 @pytest.mark.parametrize("kind", ["literal", "lpm", "ternary-value", "ternary-mask"])
 @pytest.mark.parametrize("spelling", ["missing", "null", "empty", "negative", "hex", "number"])
+@pytest.mark.lean
 def test_lean_agrees_on_rejected_decimal_spelling(
     kind: str, spelling: str, lean_binary: Path
 ) -> None:
@@ -94,6 +95,7 @@ def test_lean_agrees_on_rejected_decimal_spelling(
 
 @pytest.mark.parametrize("kind", ["literal", "lpm", "ternary-value", "ternary-mask"])
 @pytest.mark.parametrize("spelling", ["0", "000", "7"])
+@pytest.mark.lean
 def test_lean_agrees_on_explicit_decimal_strings(
     kind: str, spelling: str, lean_binary: Path
 ) -> None:
@@ -112,6 +114,7 @@ def test_lean_agrees_on_explicit_decimal_strings(
 
 @pytest.mark.parametrize("kind", ["lpm", "ternary-value", "ternary-mask"])
 @pytest.mark.parametrize("spelling", ["missing", "null"])
+@pytest.mark.lean
 def test_lean_agrees_on_decimal_request_rejection_without_state_change(
     kind: str, spelling: str, lean_binary: Path, tmp_path: Path
 ) -> None:

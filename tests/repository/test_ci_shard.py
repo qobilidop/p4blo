@@ -17,7 +17,10 @@ CONFTEST = Path(__file__).resolve().parents[2] / "conftest.py"
 @pytest.fixture
 def suite(tmp_path: Path) -> Path:
     """Use the production hooks with cheap parametrized and oracle-marked items."""
-    (tmp_path / "pytest.ini").write_text("[pytest]\nmarkers = oracle: external oracle\n")
+    (tmp_path / "pytest.ini").write_text(
+        "[pytest]\nmarkers =\n    oracle: external oracle\n    lean: Lean\n"
+        "    spectec: P4-SpecTec\n    bmv2: BMv2\n"
+    )
     observer = """
 import json
 
@@ -43,11 +46,15 @@ def pytest_collection_finish(session):
     (tmp_path / "test_cases.py").write_text(
         "import pytest\n\n"
         "@pytest.mark.parametrize('value', range(40))\n"
-        "def test_lean_agrees_case(value):\n    pass\n\n"
+        "@pytest.mark.lean\n"
+        "def test_lean_agrees_case(value, lean_binary):\n    pass\n\n"
         "def test_python_case():\n    pass\n\n"
+        "@pytest.mark.bmv2\n"
         "def test_bmv2_case():\n    pass\n"
     )
-    (tmp_path / "test_oracle.py").write_text("def test_spectec_case():\n    pass\n")
+    (tmp_path / "test_oracle.py").write_text(
+        "import pytest\n@pytest.mark.spectec\ndef test_spectec_case():\n    pass\n"
+    )
     return tmp_path
 
 
@@ -95,13 +102,13 @@ def test_default_inventory_is_disjoint_union_of_stable_shards(suite: Path) -> No
     assert nodeids(collect(suite, "--ci-shard", "1/1")) == nodeids(whole)
 
 
-def test_keyword_selection_commutes_with_sharding(suite: Path) -> None:
-    matching = nodeids(collect(suite, "-k", "lean_agrees"))
+def test_marker_selection_commutes_with_sharding(suite: Path) -> None:
+    matching = nodeids(collect(suite, "-m", "lean"))
     assert len(matching) == 40
     selected: list[set[str]] = []
     for shard in ("1/2", "2/2"):
         unfiltered = nodeids(collect(suite, "--ci-shard", shard))
-        filtered = collect(suite, "--ci-shard", shard, "-k", "lean_agrees")
+        filtered = collect(suite, "--ci-shard", shard, "-m", "lean")
         assert nodeids(filtered) == unfiltered & matching
         assert len(filtered["selected"]) + len(filtered["deselected"]) == 43
         selected.append(nodeids(filtered))
@@ -128,3 +135,21 @@ def test_invalid_shards_are_usage_errors(suite: Path, shard: str) -> None:
     assert result.returncode == pytest.ExitCode.USAGE_ERROR
     assert "--ci-shard must be INDEX/COUNT with 1 <= INDEX <= COUNT" in result.stderr
     assert not (suite / "inventory.json").exists()
+
+
+@pytest.mark.parametrize("marker", ["lean", "oracle"])
+def test_bad_dependency_marks_fail_before_deselection(suite: Path, marker: str) -> None:
+    (suite / "test_hidden.py").write_text(
+        f"import pytest\n@pytest.mark.{marker}\ndef test_hidden():\n    pass\n"
+    )
+    result = run_collection(suite, "-m", "not lean and not oracle")
+    assert result.returncode == pytest.ExitCode.USAGE_ERROR
+    assert "test_hidden.py::test_hidden" in result.stderr
+    assert "dependency" in result.stderr
+
+
+def test_missing_lean_marker_fails_even_in_native_selection(suite: Path) -> None:
+    (suite / "test_hidden.py").write_text("def test_hidden(lean_binary):\n    pass\n")
+    result = run_collection(suite, "-m", "lean")
+    assert result.returncode == pytest.ExitCode.USAGE_ERROR
+    assert "lean marker must match lean_binary dependency" in result.stderr

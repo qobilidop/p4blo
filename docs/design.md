@@ -436,15 +436,20 @@ Six layers, each answering a different question.
    and mutation campaigns that check the tests would notice a wrong
    implementation.
 
-The test suites under `tests/` are grouped by the question they answer,
-each directory with a README in these terms: `unit/` holds layers 1 and
-2, `codec/` applies layer 1 to the wire encoding, `programs/` holds
-layers 3 and 4 for the corpus and the applications, `drt/` holds layer
-5 and the fault side of layer 6, `lean/` compares the Lean semantics with
-Python and with independent answers, and `external/` replays on the two
-oracles. `structure/` sits beside the layers: it checks no semantics, but
-pins the layout, the links and the ledger that make the evidence
-findable.
+Test ownership is separate from these assurance layers. Python component
+checks live in `impl/python/tests/`, beside the package and outside its
+installed contents. `tests/conformance/` holds wire/semantic agreement,
+fixtures and fault campaigns; `tests/oracles/` holds external drivers and
+comparisons; `tests/programs/` keeps program-specific checks with corpus and
+application assets. `tests/repository/` checks discovery, import boundaries,
+generated outputs, links and evidence references. Shared builders, catalogs
+and independent answers live in `tests/support/`; test modules do not import
+one another. [The test guide](../tests/README.md) gives commands and ownership.
+
+Explicit dependency markers select Lean and P4 tools for their respective CI
+jobs. Pure checks remain runnable without those tools, including tests of
+oracle adapters and differential-runner failure handling. Pytest importlib
+mode allows the same test filename in different package areas.
 
 Every external input, from the oracle commits to the Docker image
 digests and the GitHub Actions, is pinned and listed in
@@ -481,14 +486,15 @@ p4blo/
       v0/                           generated architecture protobuf code
     drt/                            the differential loop
   examples/<application>/           public Python programs, demos, READMEs
-  tests/                            everything that runs
-    unit/, codec/, programs/,       the suites, one directory per question
-    drt/, lean/, external/,         of the testing strategy above
-    structure/
-    corpus/<program>/               source, golden, README, STF vectors
-    examples/<application>/         application goldens, vectors, tests
-    oracle/                         P4-SpecTec and BMv2 drivers, original programs
-    pyright/                        the eDSL's static-check fixtures
+  impl/python/tests/               package tests (arch, drt, edsl, interp,
+                                    printer, validator), eDSL typing fixtures
+  tests/
+    conformance/                   codecs, execution, semantics, fixtures, assurance
+    oracles/                       P4-SpecTec/BMv2/p4c tests, drivers, patches, inputs
+    programs/corpus/<program>/     source, golden, README, vectors, behavior tests
+    programs/examples/<app>/       application goldens, vectors, behavior tests
+    repository/                    discovery, generated files, docs, CI boundaries
+    support/                       reusable builders, catalogs and expected answers
   scripts/, .github/workflows/      the gates, four validation workflows and website publishing
 ```
 

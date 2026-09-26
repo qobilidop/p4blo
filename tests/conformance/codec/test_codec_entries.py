@@ -51,6 +51,7 @@ def test_entries_public_known_answers(case: EntriesCase) -> None:
 
 
 @pytest.mark.parametrize("case", cases())
+@pytest.mark.lean
 def test_lean_agrees_entries_answers(lean_binary: Path, case: EntriesCase) -> None:
     actual = assert_leaf(
         lean_binary, case.kind, case.wire, {"value": case.value, "encoded": case.wire}
@@ -62,6 +63,7 @@ def test_lean_agrees_entries_answers(lean_binary: Path, case: EntriesCase) -> No
 
 
 @pytest.mark.parametrize("kind,wire,error", malformed())
+@pytest.mark.lean
 def test_lean_agrees_entries_errors(
     lean_binary: Path, kind: EntriesCodecKind, wire: object, error: str
 ) -> None:
@@ -69,6 +71,7 @@ def test_lean_agrees_entries_errors(
 
 
 @pytest.mark.parametrize("kind,wire,case", normalized())
+@pytest.mark.lean
 def test_lean_agrees_entries_defaults(
     lean_binary: Path, kind: EntriesCodecKind, wire: object, case: EntriesCase
 ) -> None:
@@ -146,6 +149,7 @@ def test_host_observer_rejects_metadata_boolean_integer_alias() -> None:
 
 
 @pytest.mark.parametrize("case", host_rejections(), ids=lambda c: c.name)
+@pytest.mark.lean
 def test_lean_agrees_host_rejection_state(
     lean_binary: Path, tmp_path: Path, case: HostRejection
 ) -> None:
@@ -205,6 +209,7 @@ def test_program_startup_rejection_before_binding(kind: str) -> None:
         ("empty-name", "empty name in program"),
     ],
 )
+@pytest.mark.lean
 def test_lean_agrees_program_startup_rejection(
     lean_binary: Path, tmp_path: Path, kind: str, error: str
 ) -> None:

@@ -34,6 +34,7 @@ def test_program_public_known_answers(case: ProgramCase) -> None:
 
 
 @pytest.mark.parametrize("case", cases())
+@pytest.mark.lean
 def test_lean_agrees_program_answers(lean_binary: Path, case: ProgramCase) -> None:
     actual = assert_leaf(
         lean_binary, case.kind, case.wire, {"value": case.value, "encoded": case.wire}
@@ -45,6 +46,7 @@ def test_lean_agrees_program_answers(lean_binary: Path, case: ProgramCase) -> No
 
 
 @pytest.mark.parametrize("kind,wire,error", malformed())
+@pytest.mark.lean
 def test_lean_agrees_program_errors(
     lean_binary: Path, kind: ProgramCodecKind, wire: object, error: str
 ) -> None:
@@ -52,6 +54,7 @@ def test_lean_agrees_program_errors(
 
 
 @pytest.mark.parametrize("kind,wire,case", normalized())
+@pytest.mark.lean
 def test_lean_agrees_program_defaults(
     lean_binary: Path, kind: ProgramCodecKind, wire: object, case: ProgramCase
 ) -> None:

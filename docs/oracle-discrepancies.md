@@ -66,7 +66,7 @@ adds the extra zero byte through `pad_right_to_16` before choosing the
 algorithm. That changes the CRC input; it is not CRC32 of the requested byte
 string. p4blo therefore preserves the exact input length. Broader CRC16,
 even-byte and explicit-leading-zero controls remain in
-[test_crc.py](../impl/python/tests/arch/test_crc.py).
+[test_crc.py](../tests/oracles/test_crc.py).
 
 ## Out-of-range register reads
 

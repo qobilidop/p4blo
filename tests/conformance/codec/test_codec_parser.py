@@ -40,6 +40,7 @@ def test_parser_protobuf_known_answers(case: ParserCase) -> None:
 
 
 @pytest.mark.parametrize("case", cases())
+@pytest.mark.lean
 def test_lean_agrees_parser_known_answers(lean_binary: Path, case: ParserCase) -> None:
     actual = assert_leaf(
         lean_binary, case.kind, case.wire, {"value": case.value, "encoded": case.wire}
@@ -52,6 +53,7 @@ def test_lean_agrees_parser_known_answers(lean_binary: Path, case: ParserCase) -
 
 
 @pytest.mark.parametrize("kind,wire,error", malformed())
+@pytest.mark.lean
 def test_lean_agrees_parser_exact_errors(
     lean_binary: Path, kind: ParserKind, wire: object, error: str
 ) -> None:
@@ -59,6 +61,7 @@ def test_lean_agrees_parser_exact_errors(
 
 
 @pytest.mark.parametrize("kind,wire,case", normalized())
+@pytest.mark.lean
 def test_lean_agrees_parser_normalization(
     lean_binary: Path, kind: ParserKind, wire: object, case: ParserCase
 ) -> None:

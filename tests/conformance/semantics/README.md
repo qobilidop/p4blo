@@ -21,6 +21,5 @@ P4BLO_REQUIRE_LEAN=1 uv run pytest tests/conformance/semantics
 
 Without `P4BLO_REQUIRE_LEAN=1`, the `lean_binary` fixture in
 `conftest.py` skips these when the executable is missing. The
-required Lean CI gate selects every test whose name starts with
-`test_lean_agrees`, wherever it lives (`uv run pytest tests -k
-lean_agrees`), so new conformance tests need no file list.
+required Lean CI gate selects every `lean`-marked test across both configured
+roots (`uv run pytest -m lean`), so new conformance tests need no file list.

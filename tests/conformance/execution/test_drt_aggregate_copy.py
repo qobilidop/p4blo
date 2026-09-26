@@ -21,6 +21,7 @@ from tests.support.drt_aggregate_copy import WIDTHS, CopyKind, check_copy, copy_
 @pytest.mark.parametrize("kind", ["header", "struct"])
 @pytest.mark.parametrize("width", WIDTHS)
 @pytest.mark.parametrize("valid", [False, True])
+@pytest.mark.lean
 def test_lean_agrees_aggregate_copy_boundaries(
     lean_binary: Path, kind: CopyKind, width: int, valid: bool
 ) -> None:
@@ -35,6 +36,7 @@ def test_lean_agrees_aggregate_copy_boundaries(
     valid=st.booleans(),
     data=st.data(),
 )
+@pytest.mark.lean
 def test_lean_agrees_aggregate_copy_generated(
     lean_binary: Path, kind: CopyKind, width: int, valid: bool, data: st.DataObject
 ) -> None:
@@ -44,6 +46,7 @@ def test_lean_agrees_aggregate_copy_generated(
 
 
 @pytest.mark.parametrize("kind", ["header", "struct"])
+@pytest.mark.lean
 def test_lean_agrees_copy_observer_kills_aliasing(
     lean_binary: Path, kind: CopyKind, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

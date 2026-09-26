@@ -32,6 +32,7 @@ from tests.support.drt_programs import (
 )
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_cast_slice_mux_boundaries(lean_binary: Path) -> None:
     for value in (False, True):
         check_expression(
@@ -73,6 +74,7 @@ def test_lean_agrees_on_cast_slice_mux_boundaries(lean_binary: Path) -> None:
         )
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_faulting_unselected_branches(lean_binary: Path) -> None:
     trap = pb.Expr(
         cast=pb.Cast(
@@ -107,6 +109,7 @@ def test_lean_agrees_on_faulting_unselected_branches(lean_binary: Path) -> None:
 
 
 @pytest.mark.parametrize("width", [1, 7, 8, 9, 31, 32, 65])
+@pytest.mark.lean
 def test_lean_agrees_on_every_scalar_operator(width: int, lean_binary: Path) -> None:
     maximum = (1 << width) - 1
     for op in ARITHMETIC + COMPARISONS:
@@ -131,6 +134,7 @@ def test_lean_agrees_on_every_scalar_operator(width: int, lean_binary: Path) -> 
 @pytest.mark.parametrize(
     "op", [pb.BINARY_OP_AND, pb.BINARY_OP_OR, pb.BINARY_OP_EQ, pb.BINARY_OP_NE]
 )
+@pytest.mark.lean
 def test_lean_agrees_on_boolean_truth_tables(op: pb.BinaryOp, lean_binary: Path) -> None:
     for left in (False, True):
         for right in (False, True):
@@ -139,6 +143,7 @@ def test_lean_agrees_on_boolean_truth_tables(op: pb.BinaryOp, lean_binary: Path)
 
 @settings(max_examples=200, deadline=None, derandomize=True)
 @given(data=st.data(), width=st.one_of(st.none(), WIDTHS))
+@pytest.mark.lean
 def test_lean_agrees_on_shrinking_typed_programs(
     lean_binary: Path, data: st.DataObject, width: int | None
 ) -> None:
@@ -151,6 +156,7 @@ def test_lean_agrees_on_shrinking_typed_programs(
     width=st.one_of(st.none(), WIDTHS),
     seed=st.integers(0, 2**32 - 1),
 )
+@pytest.mark.lean
 def test_lean_agrees_on_shrinking_packet_programs(
     lean_binary: Path, data: st.DataObject, width: int | None, seed: int
 ) -> None:

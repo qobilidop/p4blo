@@ -3,6 +3,8 @@
 from pathlib import Path
 from struct import pack
 
+import pytest
+
 from examples.load_balancer.program import build
 from p4blo import stf
 from p4blo.arch.bindings import BoundIndex
@@ -235,6 +237,7 @@ def test_load_balancer_independent_packets() -> None:
     check_python(build(), cases, expected)
 
 
+@pytest.mark.lean
 def test_lean_agrees_load_balancer_independent_packets(lean_binary: Path, tmp_path: Path) -> None:
     cases, expected = sequence()
     check_lean(build(), cases, expected, lean_binary, tmp_path)

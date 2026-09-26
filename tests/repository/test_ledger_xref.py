@@ -3,7 +3,7 @@
 The cross-reference table is generated from the ledger, so it can only
 lie by going stale. Regenerating it here and comparing catches that, and
 checking its rows against this directory's own ledger parser
-(test_ledger.py) catches the generator skipping or reordering entries.
+(ledger.py) catches the generator skipping or reordering entries.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
-from tests.repository import test_ledger
+from tests.support import ledger
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "ledger-xref.py"
@@ -40,8 +40,8 @@ def test_one_row_per_entry_in_ledger_order() -> None:
     module = generator()
     table = (ROOT / "docs" / "ledger-xref.md").read_text(encoding="utf-8")
     rows = [line for line in table.splitlines() if line.startswith("| [")]
-    expected = [e.name for e in test_ledger.entries()]
-    assert [e.name for e in module.entries(test_ledger.LEDGER.read_text())] == expected
+    expected = [e.name for e in ledger.entries()]
+    assert [e.name for e in module.entries(ledger.LEDGER.read_text())] == expected
     assert len(rows) == len(expected)
     for row, name in zip(rows, expected, strict=True):
         assert row.startswith(f"| [{name.rstrip('.').replace('|', chr(92) + '|')}]("), name
@@ -50,5 +50,5 @@ def test_one_row_per_entry_in_ledger_order() -> None:
 def test_every_spectec_name_links_to_the_pinned_source() -> None:
     table = (ROOT / "docs" / "ledger-xref.md").read_text(encoding="utf-8")
     module = generator()
-    cited = sum(len(module.BACKTICKED.findall(e.get("SpecTec"))) for e in test_ledger.entries())
+    cited = sum(len(module.BACKTICKED.findall(e.get("SpecTec"))) for e in ledger.entries())
     assert table.count(f"({module.SPECTEC_REPO}/blob/") == cited

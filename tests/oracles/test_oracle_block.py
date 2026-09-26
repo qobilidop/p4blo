@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import contextlib
 import json
-import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +35,8 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from tests.support.catalog import ORACLE_VECTORS as VECTORS
+from tests.support.catalog import program_of
 
 from p4blo import arch, ir, stf
 from p4blo.arch import entry, spectec_block, v1model
@@ -50,14 +51,12 @@ from p4blo.interp.expr import zero_header
 from p4blo.interp.packet import Emitter
 from p4blo.interp.values import Bits, Header, Stack, Struct, Value, copy, zero
 from p4blo.v0 import p4blo_pb2 as pb
-
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-
 from tests.oracles import block as oracle_block  # noqa: E402
-from tests.oracles.test_oracle import VECTORS, program_of  # noqa: E402
 
 PROGRAMS = sorted({program_of(v) for v in VECTORS})
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def load(path: Path) -> arch.Loaded:
@@ -218,6 +217,7 @@ def test_entries_for_a_valid_key_name_are_refused() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.spectec
 def test_state_from_another_session_is_refused(runner: oracle_block.BlockRunner) -> None:
     loaded = load(ROOT / "tests/programs/corpus/stateful/stateful.txtpb")
     inputs = oracle_block.BlockInputs(
@@ -235,6 +235,7 @@ def _stateful_parser_state(runner: oracle_block.BlockRunner) -> Any:
     return runner.run_block(loaded.index, "parser", inputs).state
 
 
+@pytest.mark.spectec
 def test_state_from_another_program_is_refused(runner: oracle_block.BlockRunner) -> None:
     # stateful's register `main.c.r` is renamed nowhere: register_bounds has
     # an object of the same id, of another size and cell type.
@@ -247,6 +248,7 @@ def test_state_from_another_program_is_refused(runner: oracle_block.BlockRunner)
         runner.run_block(loaded.index, "parser", inputs)
 
 
+@pytest.mark.spectec
 def test_state_that_does_not_parse_is_refused(runner: oracle_block.BlockRunner) -> None:
     state = _stateful_parser_state(runner)
     assert state["objects"], "stateful has extern objects"
@@ -305,6 +307,7 @@ def _set_h1(key: str, value: Any) -> Any:
     ],
     ids=["next-index-above", "next-index-negative", "bits-above", "bits-negative", "type-name"],
 )
+@pytest.mark.spectec
 def test_values_outside_their_type_are_refused(
     runner: oracle_block.BlockRunner, change: Any, message: str
 ) -> None:
@@ -313,6 +316,7 @@ def test_values_outside_their_type_are_refused(
         runner.request(request)
 
 
+@pytest.mark.spectec
 def test_a_struct_of_another_type_is_refused(runner: oracle_block.BlockRunner) -> None:
     request = _stacks_control_request(runner, lambda fields: None)
     request["metadata"] = json.loads(
@@ -322,6 +326,7 @@ def test_a_struct_of_another_type_is_refused(runner: oracle_block.BlockRunner) -
         runner.request(request)
 
 
+@pytest.mark.spectec
 def test_an_error_reply_leaves_the_session_usable(runner: oracle_block.BlockRunner) -> None:
     with pytest.raises(oracle_block.BlockError, match="unknown block"):
         runner.request({"program": "nowhere.p4", "block": "egress"})
@@ -727,6 +732,7 @@ def judge(runner: oracle_block.BlockRunner, vector: Path) -> None:
 
 
 @pytest.mark.parametrize("vector", vector_params())
+@pytest.mark.spectec
 def test_blocks_agree_on_spectec(runner: oracle_block.BlockRunner, vector: Path) -> None:
     judge(runner, vector)
 
@@ -736,6 +742,7 @@ def test_blocks_agree_on_spectec(runner: oracle_block.BlockRunner, vector: Path)
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.spectec
 def test_a_push_front_that_keeps_next_index_is_caught(
     runner: oracle_block.BlockRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -753,6 +760,7 @@ def test_a_push_front_that_keeps_next_index_is_caught(
         judge(runner, vector_named("stacks/header-stack-ops-bmv2.stf"))
 
 
+@pytest.mark.spectec
 def test_an_odd_byte_crc32_binding_on_the_wrong_bytes_is_caught(
     runner: oracle_block.BlockRunner, monkeypatch: pytest.MonkeyPatch
 ) -> None:

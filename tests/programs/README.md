@@ -1,25 +1,19 @@
 # Program tests
 
-Does every corpus program rebuild from its source and behave as its
-README and vectors say, and do the tutorial firewall and the homepage's
-VLAN gateway give the answers written for them independently?
+Program checks specify intended behavior independently of the interpreters.
+`corpus/<program>/` keeps the eDSL source, golden IR, README, STF vectors and
+specialized behavior tests together. `examples/<application>/` keeps verification
+assets for canonical public sources under `examples/`.
 
-These are layers 3 and 4 of the testing strategy in
-[`docs/design.md`](../../docs/design.md#testing-strategy).
-`test_corpus.py` discovers every program under
-[`../corpus/`](corpus) by itself: it validates the program, rebuilds
-its golden from the eDSL source byte for byte and replays its STF vectors
-on the Python interpreter. The other files hold the per-program checks
-that a golden and a vector cannot express: the forwarder's tutorial
-shape, the firewall's packets, boundaries, generated flows and complete
-register state, and the VLAN gateway's wire and counter answers.
+`test_corpus.py` discovers each corpus program, checks that its source rebuilds
+its golden, and replays its vectors. Other checks cover packet boundaries,
+state persistence and application-specific intent. Shared builders and expected
+answers live in `tests/support/`; tests never import one another.
 
 ```
-uv run pytest tests/programs
+uv run pytest tests/programs -m 'not lean and not oracle'
 ```
 
-The firewall files also hold probes on the original P4 source that run
-on the external oracles; they skip when an oracle is not built, and the
-oracle workflows select them with `-k spectec` and `-k bmv2`. The public
-application examples have their own tests beside their assets in
-[`../examples/`](examples).
+Tests that also compare with Lean or an external P4 tool declare `lean`,
+`spectec` or `bmv2`. The specialist CI jobs find them here automatically by
+marker. See [the test guide](../README.md).

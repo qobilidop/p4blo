@@ -20,6 +20,7 @@ from tests.support.copyback import (
 
 @pytest.mark.parametrize("kind", ["action", "block"])
 @pytest.mark.parametrize(("first", "second"), [(0, 1), (1, 0), (2, 0), (0, 2)])
+@pytest.mark.lean
 def test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in(
     lean_binary: Path, kind: CallKind, first: int, second: int
 ) -> None:
@@ -34,6 +35,7 @@ def test_lean_agrees_copyback_writes_the_element_resolved_at_copy_in(
 
 @pytest.mark.parametrize("kind", ["action", "block"])
 @pytest.mark.parametrize(("first", "second"), [(0, 1), (1, 0), (2, 1)])
+@pytest.mark.lean
 def test_lean_agrees_copyback_with_an_overlapping_in_argument(
     lean_binary: Path, kind: CallKind, first: int, second: int
 ) -> None:
@@ -47,6 +49,7 @@ def test_lean_agrees_copyback_with_an_overlapping_in_argument(
 
 
 @pytest.mark.parametrize("first", [0, 1, 2])
+@pytest.mark.lean
 def test_lean_agrees_extern_out_and_result_through_computed_indices(
     lean_binary: Path, first: int
 ) -> None:

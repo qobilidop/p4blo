@@ -34,6 +34,7 @@ def test_stage_order_and_drop_state() -> None:
     }
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_six_stage_state(lean_binary: Path) -> None:
     packets = [
         s
@@ -91,20 +92,20 @@ def run_bmv2(source: str, vector: Path) -> None:
     assert verdict == "pass", detail
 
 
-@pytest.mark.oracle
 @pytest.mark.parametrize("name", NATIVE)
+@pytest.mark.spectec
 def test_spectec_native_stage_profiles(name: str) -> None:
     done = run_spectec(PROBES / f"{name}.p4", PROBES / f"{name}.stf")
     assert done.returncode == 0, done.stdout + done.stderr
 
 
-@pytest.mark.oracle
 @pytest.mark.parametrize("name", (*(n for n in NATIVE if n != "v1model_stages"), *ACTUAL))
+@pytest.mark.bmv2
 def test_bmv2_native_stage_profiles(name: str) -> None:
     run_bmv2((PROBES / f"{name}.p4").read_text(), PROBES / f"{name}.stf")
 
 
-@pytest.mark.oracle
+@pytest.mark.spectec
 def test_spectec_printed_stage_profile(tmp_path: Path) -> None:
     source = tmp_path / "stages.p4"
     source.write_text(v1model.print_program(stages()))
@@ -112,13 +113,13 @@ def test_spectec_printed_stage_profile(tmp_path: Path) -> None:
     assert done.returncode == 0, done.stdout + done.stderr
 
 
-@pytest.mark.oracle
 @pytest.mark.parametrize("name", ACTUAL)
 @pytest.mark.xfail(
     strict=True,
     raises=KnownV1ModelDisagreement,
     reason="Pinned P4-SpecTec egress behavior; docs/oracle-discrepancies.md",
 )
+@pytest.mark.spectec
 def test_spectec_native_egress_disagreement(name: str) -> None:
     done = run_spectec(PROBES / f"{name}.p4", PROBES / f"{name}.stf")
     if known(name, done):

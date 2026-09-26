@@ -98,7 +98,7 @@ from the repository root:
 ```sh
 uv sync --locked
 uv run python -m examples.router.demo
-uv run pytest tests/programs/examples -k 'not lean'
+uv run pytest tests/programs/examples -m "not lean and not oracle"
 ```
 
 The `.python-version` file selects Python 3.13; uv can download it if needed.
@@ -156,7 +156,8 @@ typechecked with p4c through Docker when it is available.
 | `tests/oracles/` | the two oracles: P4-SpecTec's simulator and BMv2 |
 | `docs/` | design, IR semantics, architecture support, coverage, assurance, quickstart, workflows |
 | `.agents/` | agent state: current status, decisions register, roadmap, live notes and skills; `AGENTS.md` is the entry point |
-| `tests/` | everything that runs: the suites grouped by question (`unit/`, `codec/`, `programs/`, `drt/`, `lean/`, `external/`, `structure/`, each with a README) and `pyright/`, the eDSL's static-check fixtures |
+| `impl/python/tests/` | package tests beside the implementation, including eDSL typing fixtures |
+| `tests/` | conformance, oracles, programs, repository checks and shared support; [test guide](tests/README.md) |
 
 ## Neighbors
 

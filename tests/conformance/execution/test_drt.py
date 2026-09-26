@@ -22,6 +22,7 @@ from tests.support.drt import CORPUS, PORTS, PROGRAMS, fate_program, golden, lea
 
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)
+@pytest.mark.lean
 def test_lean_agrees_with_python(program_dir: Path, lean_binary: Path) -> None:
     report = compare(program_dir, 42, 200, PORTS, [lean_binary])
     assert report.cases == 200
@@ -36,6 +37,7 @@ def test_lean_agrees_with_python(program_dir: Path, lean_binary: Path) -> None:
     assert report.both_errored == 0, report.summary()
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_error_reasons(lean_binary: Path, tmp_path: Path) -> None:
     """Both sides refuse an lpm prefix wider than the key and an ingress
     port that is not the switch's, in the same words."""
@@ -53,6 +55,7 @@ def test_lean_agrees_on_error_reasons(lean_binary: Path, tmp_path: Path) -> None
     ]
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_drop_redirection_and_the_port_rules(
     lean_binary: Path, tmp_path: Path
 ) -> None:

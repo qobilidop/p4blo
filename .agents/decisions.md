@@ -47,6 +47,16 @@ Design and semantics pages hold contracts; this register keeps choices and bound
 
 ## Layout and ownership
 
+- **Tests follow responsibility and declare native dependencies.** Python package
+  components live beside the package under `impl/python/tests/`, outside the
+  installed module. Root suites cover conformance, external oracles, intended
+  program behavior and repository boundaries. Shared builders/catalogs/answers
+  live in support modules, never behind imports of collected tests. Explicit
+  `lean`, `spectec`, `bmv2` and `p4c` markers replace filename inference so moving
+  or adding a suite cannot silently remove it from specialist CI. Preserve
+  independent answers and all existing cases; simplify ownership rather than
+  reducing evidence. `spec/` is excluded from this reorganization. (2026-09-25)
+
 - **Lean owns abstract syntax, validity and meaning; protobuf owns wire syntax.** Conversion
   has separate proof obligations. `spec/ir/` is `P4bloIR`/`p4blo-ir`, schema beside it,
   nothing architectural; `spec/arch/` is `P4bloArch`/`p4blo-arch`, depending on IR and

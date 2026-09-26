@@ -36,6 +36,7 @@ def test_table_protobuf_known_answers(case: TableCase) -> None:
 
 
 @pytest.mark.parametrize("case", cases())
+@pytest.mark.lean
 def test_lean_agrees_table_known_answers(lean_binary: Path, case: TableCase) -> None:
     actual = assert_leaf(
         lean_binary, case.kind, case.wire, {"value": case.value, "encoded": case.wire}
@@ -48,6 +49,7 @@ def test_lean_agrees_table_known_answers(lean_binary: Path, case: TableCase) -> 
 
 
 @pytest.mark.parametrize("kind,wire,error", malformed())
+@pytest.mark.lean
 def test_lean_agrees_table_exact_errors(
     lean_binary: Path, kind: TableKind, wire: object, error: str
 ) -> None:
@@ -55,6 +57,7 @@ def test_lean_agrees_table_exact_errors(
 
 
 @pytest.mark.parametrize("kind,wire,case", normalized())
+@pytest.mark.lean
 def test_lean_agrees_table_normalization(
     lean_binary: Path, kind: TableKind, wire: object, case: TableCase
 ) -> None:

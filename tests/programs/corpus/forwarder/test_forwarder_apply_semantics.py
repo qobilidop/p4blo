@@ -228,6 +228,7 @@ def test_python_apply_hit_and_error_controls(
 
 
 @pytest.mark.parametrize("name", PACKET_PROFILES)
+@pytest.mark.lean
 def test_lean_agrees_apply_packets(
     checked: apb.BlockAssembly, lean_binary: Path, name: str
 ) -> None:
@@ -248,6 +249,7 @@ def test_lean_agrees_apply_packets(
     assert run_python(v1model.load(program), case, 4) == application_output(name)
 
 
+@pytest.mark.lean
 def test_lean_agrees_skip_default_packet_replay(
     checked: apb.BlockAssembly,
     lean_binary: Path,
@@ -292,6 +294,7 @@ def test_lean_agrees_skip_default_packet_replay(
     assert restored.passed and restored.agreed == 1 and restored.both_errored == 0
 
 
+@pytest.mark.bmv2
 def test_apply_packets_bmv2(tmp_path: Path) -> None:
     """Independent immutable oracle: both overlap orders and three defaults."""
     image = bmv2_run.default_image()

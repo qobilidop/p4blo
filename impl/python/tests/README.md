@@ -1,23 +1,18 @@
-# Unit tests
+# Python package tests
 
-Does each piece of the Python implementation do what
-[`docs/ir-semantics.md`](../../../docs/ir-semantics.md) and
-[`docs/arch-supports.md`](../../../docs/arch-supports.md) say, taken one at a
-time?
-
-These are layers 1 and 2 of the testing strategy in
-[`docs/design.md`](../../../docs/design.md#testing-strategy): unit and
-property tests on the primitives (values, expressions, parsers, controls,
-deparsers, tables, externs, CRC, the STF reader), and one tiny malformed
-program per validator rule. The printer, the eDSL (including its
-pyright-checked static guarantees), the IR text form, the expression
-typer and the two architectures are checked here too, each against
-hand-computed answers.
+Tests live beside `p4blo/`, outside the installed package, and follow its
+components: `arch/`, `drt/`, `edsl/`, `interp/`, `printer/` and `validator/`.
+Top-level modules cover the IR and STF APIs. `edsl/typing/` holds must-pass and
+must-fail pyright inputs; printer goldens stay with printer tests.
 
 ```
 uv run pytest impl/python/tests
 ```
 
-`test_crc.py` also holds probes that run on the external oracles; they
-skip when an oracle is not built, and the oracle workflows select them
-with `-k spectec` and `-k bmv2`.
+These checks require no Lean executable, P4 simulator or Docker image. DRT
+unit checks use fake peers to exercise protocol errors, timeouts and replay
+handling. Actual Lean agreement belongs in `tests/conformance/`; native P4
+checks belong in `tests/oracles/`. Shared test data and helpers come from
+`tests/support/`, never another test module.
+
+See [the test guide](../../../tests/README.md) for the complete organization.

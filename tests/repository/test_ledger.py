@@ -34,90 +34,31 @@ import importlib
 import inspect
 import json
 import re
-from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
-LEDGER = ROOT / "docs" / "ir-semantics.md"
+from tests.support.ledger import (
+    BACKTICKED,
+    CLASSES,
+    FIELDS,
+    ROOT,
+    Entry,
+    entries,
+    ledger_lines,
+)
+
 CLASS_PIN = ROOT / "tests/repository/data/ledger-classes.json"
 LEAN_DIRS = (ROOT / "spec/ir/P4bloIR", ROOT / "spec/arch/P4bloArch")
 
-FIELDS = ("P4", "SpecTec", "Lean", "Python", "Test", "Class")
-CLASSES = ("same", "refines undefined", "deviates", "not representable")
-# Sections of the page that hold no entries.
-NON_ENTRY_SECTIONS = frozenset({"How to read an entry", "Decimal values at the JSON boundary"})
 
-HEADING = re.compile(r"^(#{1,6})\s+(?P<title>.*?)\s*$")
-TOP_BULLET = re.compile(r"^- (?P<text>.*)$")
-BOLD_START = re.compile(r"^\*\*(?P<name>.+?)\*\*")
-SUB_ITEM = re.compile(r"^  - (?P<key>[A-Za-z0-9]+):\s*(?P<value>.*)$")
-BACKTICKED = re.compile(r"`([^`]+)`")
+# Sections of the page that hold no entries.
+
+
 CLASS_LINE = re.compile(r"^(?P<cls>" + "|".join(CLASSES) + r")\.\s+\S")
 COUNT_ROW = re.compile(r"^\|\s*(?P<cls>[a-z ]+?)\s*\|\s*(?P<n>\d+)\s*\|\s*$")
-
-
-@dataclass
-class Entry:
-    name: str
-    line: int
-    section: str
-    fields: list[tuple[str, str]] = field(default_factory=list)
-
-    def get(self, key: str) -> str:
-        for k, v in self.fields:
-            if k == key:
-                return v
-        raise KeyError(key)
-
-    def where(self) -> str:
-        return f"docs/ir-semantics.md:{self.line} ({self.name})"
-
-
-@cache
-def ledger_lines() -> tuple[str, ...]:
-    return tuple(LEDGER.read_text(encoding="utf-8").splitlines())
-
-
-@cache
-def entries() -> tuple[Entry, ...]:
-    """Every entry of the semantics sections, with its sub-list lines."""
-    found: list[Entry] = []
-    section = ""
-    current: Entry | None = None
-    stray: list[str] = []
-    for number, line in enumerate(ledger_lines(), start=1):
-        heading = HEADING.match(line)
-        if heading:
-            current = None
-            if len(heading.group(1)) == 2:
-                section = heading.group("title")
-            continue
-        if section == "" or section in NON_ENTRY_SECTIONS:
-            continue
-        bullet = TOP_BULLET.match(line)
-        if bullet:
-            bold = BOLD_START.match(bullet.group("text"))
-            if bold is None:
-                stray.append(f"docs/ir-semantics.md:{number}: a bullet without a bold name")
-                current = None
-                continue
-            current = Entry(bold.group("name"), number, section)
-            found.append(current)
-            continue
-        sub = SUB_ITEM.match(line)
-        if sub and current is not None:
-            current.fields.append((sub.group("key"), sub.group("value").strip()))
-        elif line.startswith("  - ") and current is not None:
-            stray.append(f"docs/ir-semantics.md:{number}: a sub-list line without a field name")
-        elif line and not line.startswith(" ") and current is not None:
-            # Unindented text ends the entry.
-            current = None
-    assert not stray, "\n".join(stray)
-    return tuple(found)
 
 
 def names_on(entry: Entry, key: str) -> list[str]:

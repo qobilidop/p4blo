@@ -108,12 +108,14 @@ def test_generated_profile_shrinks_valid_configurations(events: list[Event]) -> 
 
 
 @pytest.mark.parametrize("events", targeted().values(), ids=targeted())
+@pytest.mark.lean
 def test_lean_agrees_on_targeted_flow_policies(lean_binary: Path, events: list[Event]) -> None:
     check_lean(events, lean_binary)
 
 
 @settings(max_examples=40, deadline=None, derandomize=True)
 @given(events=campaigns())
+@pytest.mark.lean
 def test_lean_agrees_on_shrinking_flow_policies(lean_binary: Path, events: list[Event]) -> None:
     check_lean(events, lean_binary)
 
@@ -127,6 +129,7 @@ def test_lean_agrees_on_shrinking_flow_policies(lean_binary: Path, events: list[
     ],
     ids=["seed-20260923", "seed-20260924-swapped", "missing-direction-syn"],
 )
+@pytest.mark.bmv2
 def test_generated_original_prefixes_on_bmv2(
     original_bmv2: tuple[str, bmv2.Compiled], events: list[Event]
 ) -> None:

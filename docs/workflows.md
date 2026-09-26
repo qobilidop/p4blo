@@ -32,12 +32,12 @@ Check exit codes, not output.
 |---|---|---|
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
 | Lean | `scripts/check-lean.sh` | both packages build in dependency order, core audits and both test drivers pass, exit 0 |
-| Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
+| Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest -m lean` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/oracles/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/oracles/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracles/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
-| Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs tests with `-n auto`; dedicated oracle jobs bound their worker count and keep coverage measurement serial) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
-| Original-source SpecTec probes | `uv run pytest impl/python/tests/arch/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
-| Original-source BMv2 probes | `uv run pytest impl/python/tests/arch/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py tests/programs/corpus/tutorial_firewall/test_firewall_boundaries.py tests/programs/corpus/tutorial_firewall/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
+| Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs tests with `-n auto`; dedicated oracle jobs bound their worker count) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
+| Original-source SpecTec probes | `uv run pytest tests/oracles/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py -m spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
+| Original-source BMv2 probes | `uv run pytest tests/oracles/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py tests/programs/corpus/tutorial_firewall/test_firewall_boundaries.py tests/programs/corpus/tutorial_firewall/test_firewall_generated.py -m bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
 | Forwarding application BMv2 profile | `uv run pytest tests/programs/corpus/forwarder/test_forwarder_apply_semantics.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
@@ -70,8 +70,8 @@ For a clean-build check, wait for all binary consumers to finish, move only
 the worktree-owned `.lake/build` directories to a recoverable temporary
 location, verify their absence, rebuild the packages, and rerun required
 DRT. Never move a source directory or shared toolchain as cache cleanup.
-New real-Lean tests use the shared `lean_binary` fixture and names beginning
-with `test_lean_agrees`; CI discovers them across the complete test tree.
+New real-Lean tests use the shared `lean_binary` fixture and `pytest.mark.lean`;
+CI discovers them across both configured test roots.
 Two Lean jobs split this collection by a stable hash of the full test node ID
 (`--ci-shard 1/2` and `--ci-shard 2/2`), then use pytest's load scheduler within
 each runner. Their disjoint union is the full selection; no seed or case count
@@ -81,12 +81,14 @@ local collection. Each shard retains its own failure replays.
 In authored-program gates, retain differential failure bundles before a
 Python-only known-answer assertion can exit. Keep independent known answers
 after comparison: agreement alone misses valid-but-unintended source terms.
-New external-oracle tests must also be selected by the job that builds that
-oracle; ordinary Python CI can skip unavailable tools. Rebuild the BMv2 image
-after driver changes. CI runs the generated P4-SpecTec suite and the BMv2
-corpus/firewall/boundary/generated suites with four workers and load scheduling.
-Each simulator input uses a private temporary directory, each BMv2 invocation
-a separate container. The coverage probe and its measurement remain serial.
+External checks declare `pytest.mark.spectec`, `pytest.mark.bmv2` or
+`pytest.mark.p4c`; the shared hook derives the `oracle` union. Pure adapter
+checks have no external marker. Python CI selects `not lean and not oracle`;
+specialist jobs select their dependency across both roots. Rebuild the BMv2
+image after driver changes. P4-SpecTec and BMv2 use four workers with load
+scheduling. Each simulator input uses a private temporary directory, each
+BMv2 invocation a separate container. One test owns the coverage measurement.
+The optional p4c check runs in the Docker job and skips if its image is absent.
 In concurrent worktrees use distinct image tags and
 `P4BLO_BMV2_IMAGE`, never replace an image while another gate is using it.
 If local disk capacity is insufficient, use a reviewed isolated-branch CI
@@ -166,7 +168,7 @@ and maintenance boundaries are in `website/README.md`.
 | Lean toolchain | `spec/ir/lean-toolchain` and `spec/arch/lean-toolchain` (must match) | edit both; architecture package depends on local `../ir`, manifests committed |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracles/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracles/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/oracles/test_spectec_rules.py`) |
 | opam package universe | `OPAM_REPO_COMMIT` in `tests/oracles/build.sh` | edit together with the commit above |
-| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `impl/python/tests/printer/test_program.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
+| p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/support/printer_runtime.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
 | p4c test-suite sources | copies under `tests/programs/corpus/*/` with SPDX headers | not updated; they are the vectors |
 | Original tutorial firewall | `tests/oracles/firewall.py` commit/path/SHA-256; vendored `firewall.p4` | review source/profile and update pin together; both oracle jobs run it directly |
@@ -311,17 +313,16 @@ The dynamic form for generated programs is a helper in
 `impl/python/p4blo/arch/externs/declarations.py`. Pin the two models with a corpus
 program whose vectors observe the extern.
 
-**A test.** Put it in the directory of `tests/` whose README asks the
-question it answers (`unit/`, `codec/`, `programs/`, `drt/`, `lean/`,
-`external/` or `structure/`; `docs/design.md` maps them to the six
-layers), never at the top of `tests/`, which
-`tests/repository/test_package_layout.py` keeps free of test modules. A
-test that compares with real Lean takes the `lean_binary` fixture and a
-name starting with `test_lean_agrees`, so the required gate finds it in
-any directory. A module that drives an external oracle is listed by its
-file stem in `conftest.py`'s `ORACLE_MODULES`, which marks it
-`oracle`; since the marker is keyed by stem, a new module must not reuse
-the stem of an oracle module in another directory.
+**A test.** Place Python component checks beside the implementation under
+`impl/python/tests/`, with eDSL typing fixtures under `edsl/typing/`.
+Use `tests/conformance/` for agreement/fixtures/fault campaigns,
+`tests/oracles/` for external comparison and its adapters,
+`tests/programs/` for intended program behavior, and `tests/repository/` for
+checks of the repository itself. See [the test guide](../tests/README.md).
+Extract reusable builders and independent expected answers into
+`tests/support/`; never import another test module. Real Lean tests take
+`lean_binary` and declare `pytest.mark.lean`. External checks declare their
+specific dependency marker. Names describe behavior and do not select CI.
 
 **An architecture.** Ordinary code selects and invokes blocks, supplies
 extern implementations, and defines its own contract and execution policy.

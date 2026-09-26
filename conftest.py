@@ -1,14 +1,8 @@
-"""Shared executable gate for all Lean conformance suites, and the oracle marker.
+"""Shared Lean fixture, explicit dependency categories and deterministic CI shards.
 
-Modules that drive an external oracle (the P4-SpecTec simulator, its
-coverage probe, the IL export, or BMv2) are marked `oracle` here by name,
-so that `scripts/check.sh` can deselect them with `-m "not oracle"`. They
-take a quarter of an hour once the oracle is built locally, and CI runs
-them in their own workflows. `P4BLO_ALL_TESTS=1 scripts/check.sh` runs
-everything.
-
-The optional --ci-shard INDEX/COUNT selects a deterministic partition by test
-node ID. It composes with -k and -m; without it the inventory is unchanged.
+Specialist tests declare lean, spectec, bmv2 or p4c markers at their definitions.
+The oracle category is the union of the three external P4 dependencies.
+--ci-shard INDEX/COUNT composes with pytest marker selection.
 """
 
 from __future__ import annotations
@@ -42,17 +36,6 @@ def lean_binary(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return binary
 
 
-ORACLE_MODULES = {
-    "test_oracle",
-    "test_oracle_generated",
-    "test_oracle_block",
-    "test_oracle_bmv2",
-    "test_bmv2_readback",
-    "test_frontend_spectec",
-    "test_spectec_coverage",
-}
-
-
 def ci_shard(value: str) -> tuple[int, int]:
     """Parse a one-based shard index and a positive shard count."""
     message = "--ci-shard must be INDEX/COUNT with 1 <= INDEX <= COUNT"
@@ -79,13 +62,19 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    # Mark before either our shard selection or pytest's -m/-k selection so
-    # every deselection observer sees the same oracle classification.
+    # Derive only a category union; filenames and function names imply nothing.
     for item in items:
-        # BMv2 tests also live in mixed modules; the BMv2 workflow selects
-        # them by name (`-k bmv2`), so the name is the rule here too.
-        if item.path.stem in ORACLE_MODULES or "bmv2" in item.name:
+        if any(item.get_closest_marker(name) for name in ("spectec", "bmv2", "p4c")):
             item.add_marker(pytest.mark.oracle)
+        markers = {mark.name for mark in item.iter_markers()}
+        fixtures = set(getattr(item, "fixturenames", ()))
+        if ("lean" in markers) != ("lean_binary" in fixtures):
+            raise pytest.UsageError(f"{item.nodeid}: lean marker must match lean_binary dependency")
+        if "oracle" in markers and not markers.intersection({"spectec", "bmv2", "p4c"}):
+            raise pytest.UsageError(f"{item.nodeid}: oracle requires a specific dependency marker")
+        package_tests = Path(__file__).resolve().parent / "impl/python/tests"
+        if item.path.is_relative_to(package_tests) and markers.intersection({"lean", "oracle"}):
+            raise pytest.UsageError(f"{item.nodeid}: package tests must require no native tools")
     shard: tuple[int, int] | None = config.getoption("ci_shard")
     if shard is None:
         return

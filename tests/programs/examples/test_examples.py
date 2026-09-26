@@ -47,6 +47,7 @@ def test_vectors(name: str) -> None:
 
 
 @pytest.mark.parametrize("name", NAMES)
+@pytest.mark.lean
 def test_lean_agrees_generated_application(name: str, lean_binary: Path) -> None:
     program = build(name)
     cases = generate(BoundIndex.build(program), seed=73, count=80, ports=4)

@@ -27,6 +27,7 @@ def test_leaf_protobuf_known_answers(leaf: Leaf) -> None:
 
 
 @pytest.mark.parametrize("leaf", leaves())
+@pytest.mark.lean
 def test_lean_agrees_leaf_known_answers(lean_binary: Path, leaf: Leaf) -> None:
     actual = assert_leaf(
         lean_binary, leaf.kind, leaf.wire, {"value": leaf.value, "encoded": leaf.wire}
@@ -141,6 +142,7 @@ def test_leaf_observer_retains_process_failures(
         ),
     ],
 )
+@pytest.mark.lean
 def test_lean_agrees_leaf_rejection_profile(
     lean_binary: Path, kind: LeafKind, wire: dict[str, object], message: str
 ) -> None:
@@ -149,6 +151,7 @@ def test_lean_agrees_leaf_rejection_profile(
     assert_leaf(lean_binary, kind, wire, {"error": message})
 
 
+@pytest.mark.lean
 def test_lean_agrees_leaf_decimal_canonicalization(lean_binary: Path) -> None:
     assert_leaf(
         lean_binary,
@@ -172,6 +175,7 @@ def test_key_protobuf_known_answers(leaf: Leaf) -> None:
 @pytest.mark.parametrize(
     "leaf", [leaf for _, leaf in key_leaves()], ids=[name for name, _ in key_leaves()]
 )
+@pytest.mark.lean
 def test_lean_agrees_key_known_answers(lean_binary: Path, leaf: Leaf) -> None:
     actual = assert_leaf(lean_binary, "key", leaf.wire, {"value": leaf.value, "encoded": leaf.wire})
     encoded = actual["encoded"]
@@ -220,6 +224,7 @@ def test_lean_agrees_key_known_answers(lean_binary: Path, leaf: Leaf) -> None:
         ({"ternary": {"value": "0", "mask": 0}}, "leaf.ternary.mask: expected a string"),
     ],
 )
+@pytest.mark.lean
 def test_lean_agrees_key_rejection_profile(
     lean_binary: Path, wire: dict[str, object], message: str
 ) -> None:
@@ -247,6 +252,7 @@ def test_lean_agrees_key_rejection_profile(
         ),
     ],
 )
+@pytest.mark.lean
 def test_lean_agrees_key_normalization(
     lean_binary: Path, wire: dict[str, object], value: dict[str, object], encoded: dict[str, object]
 ) -> None:
@@ -259,6 +265,7 @@ def test_lean_agrees_key_normalization(
 
 @pytest.mark.parametrize("position", ["exact", "lpm.value", "ternary.value", "ternary.mask"])
 @pytest.mark.parametrize("spelling", ["-1", "0x1", "١"])
+@pytest.mark.lean
 def test_lean_agrees_key_rejects_nondecimal_spelling(
     lean_binary: Path, position: str, spelling: str
 ) -> None:

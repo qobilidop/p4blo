@@ -1,4 +1,4 @@
-# Structure tests
+# Repository checks
 
 Is the repository still shaped the way its documents say, so that the
 other tests check what they claim to?
@@ -6,8 +6,8 @@ other tests check what they claim to?
 These tests sit beside the six layers of the testing strategy in
 [`docs/design.md`](../../docs/design.md#testing-strategy) rather than in
 one of them: they check no semantics, but they keep the evidence the
-layers produce findable and honest. They pin the package and test
-layout and the import boundaries (`test_package_layout.py`,
+layers produce findable and honest. They check package ownership, test
+discovery and import boundaries (`test_package_layout.py`,
 `test_boundaries.py`), check that every relative link resolves and that
 `docs/` never links into `.agents/` (`test_docs_links.py`), that the
 ledger in `docs/ir-semantics.md` is well formed and cites names that

@@ -30,6 +30,7 @@ from tests.support.drt_coverage import (
 
 
 @pytest.mark.parametrize("part", CAMPAIGN_PARTS)
+@pytest.mark.lean
 def test_lean_agrees_on_campaign_part(lean_binary: Path, part: str) -> None:
     """One part of the retained campaigns agrees with Lean and hits exactly
     the rule tags recorded for it in tests/conformance/coverage/parts/. Parts are
@@ -54,6 +55,7 @@ def test_lean_agrees_on_campaign_part(lean_binary: Path, part: str) -> None:
     )
 
 
+@pytest.mark.lean
 def test_lean_agrees_that_every_rule_tag_is_hit(lean_binary: Path) -> None:
     """The union of the recorded parts covers the inventory, except the tags
     tests/conformance/coverage/unhit-tags.json lists; a tag that stops being hit is a
@@ -91,6 +93,7 @@ def test_the_unhit_list_names_reasons() -> None:
         assert "." in tag and reason.strip(), tag
 
 
+@pytest.mark.lean
 def test_lean_agrees_that_the_inventory_is_well_formed(lean_binary: Path) -> None:
     inventory = rule_inventory([lean_binary])
     assert len(inventory) > 100
@@ -100,6 +103,7 @@ def test_lean_agrees_that_the_inventory_is_well_formed(lean_binary: Path) -> Non
     assert "parser.extract.tooShort" in inventory
 
 
+@pytest.mark.lean
 def test_lean_agrees_that_tag_citations_name_ledger_entries(lean_binary: Path) -> None:
     """A tag docstring that cites the ledger names one of its entries."""
     names = ledger_entry_names()
@@ -112,6 +116,7 @@ def test_lean_agrees_that_tag_citations_name_ledger_entries(lean_binary: Path) -
         assert match[1] in names, f"{tag} cites no ledger entry: {match[1]!r}"
 
 
+@pytest.mark.lean
 def test_lean_agrees_that_every_reply_carries_coverage(lean_binary: Path) -> None:
     """A truncated packet reports the too-short extract; an install error and
     a malformed request still carry a list."""

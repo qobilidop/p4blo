@@ -25,6 +25,7 @@ def test_lvalue_arg_protobuf_known_answers(case: Case) -> None:
 
 
 @pytest.mark.parametrize("case", cases())
+@pytest.mark.lean
 def test_lean_agrees_lvalue_arg_known_answers(lean_binary: Path, case: Case) -> None:
     actual = assert_leaf(
         lean_binary, case.kind, case.wire, {"value": case.value, "encoded": case.wire}
@@ -37,6 +38,7 @@ def test_lean_agrees_lvalue_arg_known_answers(lean_binary: Path, case: Case) -> 
 
 
 @pytest.mark.parametrize("kind,wire,message", malformed())
+@pytest.mark.lean
 def test_lean_agrees_lvalue_arg_exact_errors(
     lean_binary: Path, kind: Kind, wire: object, message: str
 ) -> None:
@@ -44,6 +46,7 @@ def test_lean_agrees_lvalue_arg_exact_errors(
 
 
 @pytest.mark.parametrize("kind,wire,expected", normalized())
+@pytest.mark.lean
 def test_lean_agrees_lvalue_arg_normalization(
     lean_binary: Path, kind: Kind, wire: object, expected: Expression
 ) -> None:

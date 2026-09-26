@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from p4blo import stf
 from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
@@ -108,6 +110,7 @@ def test_gateway_independent_packets_and_persistent_admissions() -> None:
         assert python_outcome(loaded, case, 4) == answer, number
 
 
+@pytest.mark.lean
 def test_lean_agrees_gateway_packets_and_persistent_admissions(
     lean_binary: Path, tmp_path: Path
 ) -> None:

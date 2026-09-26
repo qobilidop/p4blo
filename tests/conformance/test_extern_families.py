@@ -11,6 +11,7 @@ from tests.support.extern_families import family_program
 
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])
+@pytest.mark.lean
 def test_lean_agrees_on_existing_extern_families(suffix: str, lean_binary: Path) -> None:
     report = compare_program(family_program(suffix), [Case(pb.Entries(), 0, b"")], 4, [lean_binary])
     assert report.passed, (report.summary(), report.divergences)

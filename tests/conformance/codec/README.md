@@ -17,5 +17,6 @@ built.
 uv run pytest tests/conformance/codec
 ```
 
-`test_codec_leaves.py` and `test_codec_expr.py` hold the generators and
-helpers the other files import.
+Shared generators, wire examples and assertion helpers live in
+`tests/support/codec_*.py`; the suites retain their independent expected
+answers. Real Lean cases declare the `lean` marker.

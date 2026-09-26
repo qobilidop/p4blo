@@ -31,6 +31,7 @@ from tests.support.firewall_semantics import (
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
+@pytest.mark.lean
 def test_lean_agrees_firewall_stf(
     firewall: apb.BlockAssembly, lean_binary: Path, vector: Path
 ) -> None:
@@ -55,6 +56,7 @@ def test_lean_agrees_firewall_stf(
     [connection(), collision(), collision(reverse=True), shapes(), bypass(), edges()],
     ids=["connection", "collision", "reverse-collision", "shapes", "bypass", "edges"],
 )
+@pytest.mark.lean
 def test_lean_agrees_firewall_known_sequences(
     firewall: apb.BlockAssembly, lean_binary: Path, sequence: list[Step]
 ) -> None:
@@ -62,6 +64,7 @@ def test_lean_agrees_firewall_known_sequences(
 
 
 @pytest.mark.parametrize("length", range(55))
+@pytest.mark.lean
 def test_lean_agrees_firewall_packet_boundaries(
     firewall: apb.BlockAssembly, lean_binary: Path, length: int
 ) -> None:
@@ -69,6 +72,7 @@ def test_lean_agrees_firewall_packet_boundaries(
 
 
 @pytest.mark.parametrize("length", range(54))
+@pytest.mark.lean
 def test_lean_agrees_firewall_persistent_boundaries(
     firewall: apb.BlockAssembly, lean_binary: Path, length: int
 ) -> None:
@@ -76,6 +80,7 @@ def test_lean_agrees_firewall_persistent_boundaries(
 
 
 @pytest.mark.parametrize("events", targeted().values(), ids=targeted().keys())
+@pytest.mark.lean
 def test_lean_agrees_firewall_host_policy(
     firewall: apb.BlockAssembly, lean_binary: Path, events: list[Event]
 ) -> None:
@@ -84,6 +89,7 @@ def test_lean_agrees_firewall_host_policy(
 
 @settings(max_examples=40, derandomize=True, deadline=None)
 @given(events=campaigns())
+@pytest.mark.lean
 def test_lean_agrees_firewall_generated(
     firewall: apb.BlockAssembly, lean_binary: Path, events: list[Event]
 ) -> None:

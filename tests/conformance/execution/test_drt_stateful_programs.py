@@ -31,6 +31,7 @@ from tests.support.drt_stateful_programs import (
 
 @settings(max_examples=100, deadline=None, derandomize=True)
 @given(campaign=campaigns())
+@pytest.mark.lean
 def test_lean_agrees_on_shrinking_stateful_program_sequences(
     lean_binary: Path, campaign: tuple[StatefulSpec, list[tuple[int, int]]]
 ) -> None:
@@ -40,6 +41,7 @@ def test_lean_agrees_on_shrinking_stateful_program_sequences(
 
 @pytest.mark.parametrize("width", WIDTHS)
 @pytest.mark.parametrize("op", UPDATE_OPS)
+@pytest.mark.lean
 def test_lean_agrees_on_stateful_width_operator_and_write_order_boundaries(
     lean_binary: Path, width: int, op: pb.BinaryOp
 ) -> None:
@@ -61,6 +63,7 @@ def test_lean_agrees_on_stateful_width_operator_and_write_order_boundaries(
 
 
 @pytest.mark.parametrize("condition", CONDITIONS)
+@pytest.mark.lean
 def test_lean_agrees_on_stateful_conditional_writes_and_counts(
     lean_binary: Path, condition: Condition
 ) -> None:
@@ -71,6 +74,7 @@ def test_lean_agrees_on_stateful_conditional_writes_and_counts(
         check_sequence(spec, [(0, 2), (0, 0), (0, 1), (0, 255), (0, 0), (1, 3)], lean_binary)
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_stateful_known_answer_sequence(lean_binary: Path) -> None:
     spec = StatefulSpec(8, 1, 1, pb.BINARY_OP_ADD)
     fields = [(0, 255), (0, 1), (1, 7), (0, 2)]

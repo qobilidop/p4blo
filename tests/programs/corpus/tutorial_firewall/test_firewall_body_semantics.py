@@ -95,6 +95,7 @@ def test_python_firewall_invalid_observer_rejects_effects(
     assert hits == 1
 
 
+@pytest.mark.lean
 def test_lean_agrees_firewall_packet_observer_misses_local_effect(
     firewall: apb.BlockAssembly, lean_binary: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -48,6 +48,7 @@ def test_python_quickstart_sources_and_persistence() -> None:
     assert result.stderr == "" and result.stdout == OUTPUT
 
 
+@pytest.mark.lean
 def test_lean_agrees_quickstart_sources_and_persistence(lean_binary: Path) -> None:
     assert lean_binary.is_file()
     result = python_demo("lean-run")

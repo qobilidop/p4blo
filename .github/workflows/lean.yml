@@ -77,7 +77,7 @@ jobs:
           P4BLO_REQUIRE_LEAN: "1"
         run: |
           nix develop -c uv sync --locked
-          nix develop -c uv run pytest -k lean_agrees -v -n auto --dist load --ci-shard ${{ matrix.shard }}/2 --durations=20
+          nix develop -c uv run pytest -m lean -v -n auto --dist load --ci-shard ${{ matrix.shard }}/2 --durations=20
       - name: Retain differential failure replays
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

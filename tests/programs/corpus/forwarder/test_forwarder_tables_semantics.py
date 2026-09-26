@@ -133,6 +133,7 @@ def test_python_table_rejections(
         installed.set_default(REF, pb.ActionCall(action="missing"))
 
 
+@pytest.mark.lean
 def test_lean_agrees_overlapping_routes_packet(
     validated: apb.BlockAssembly,
     lean_binary: Path,
@@ -154,6 +155,7 @@ def test_lean_agrees_overlapping_routes_packet(
     assert run_python(v1model.load(program), packet_case(), 4) == packet_expected()
 
 
+@pytest.mark.lean
 def test_lean_agrees_shortest_prefix_fault_replay(
     validated: apb.BlockAssembly,
     lean_binary: Path,

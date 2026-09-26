@@ -24,6 +24,7 @@ from tests.support.drt_call_copy import CallKind, call_program, check_call
 @pytest.mark.parametrize("kind", ["action", "block"])
 @pytest.mark.parametrize("width", [8, 9, 65])
 @pytest.mark.parametrize("valid", [False, True])
+@pytest.mark.lean
 def test_lean_agrees_call_copy_boundaries(
     lean_binary: Path, kind: CallKind, width: int, valid: bool
 ) -> None:
@@ -37,6 +38,7 @@ def test_lean_agrees_call_copy_boundaries(
     valid=st.booleans(),
     data=st.data(),
 )
+@pytest.mark.lean
 def test_lean_agrees_call_copy_generated(
     lean_binary: Path, kind: CallKind, width: int, valid: bool, data: st.DataObject
 ) -> None:
@@ -52,6 +54,7 @@ def test_lean_agrees_call_copy_generated(
     overlap=st.booleans(),
     packet=st.binary(min_size=2, max_size=4),
 )
+@pytest.mark.lean
 def test_lean_agrees_call_copy_computed_index_generated(
     lean_binary: Path, kind: CallKind, first: int, second: int, overlap: bool, packet: bytes
 ) -> None:
@@ -69,6 +72,7 @@ def test_lean_agrees_call_copy_computed_index_generated(
 
 @pytest.mark.parametrize("kind", ["action", "block"])
 @pytest.mark.parametrize("fault", ["alias", "out-initial", "skip-copyback"])
+@pytest.mark.lean
 def test_lean_agrees_call_copy_mutation_replays(
     lean_binary: Path,
     kind: CallKind,

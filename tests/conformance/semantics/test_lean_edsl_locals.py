@@ -160,6 +160,7 @@ def test_python_sees_a_fresh_local_at_every_entry(name: str) -> None:
 
 
 @pytest.mark.parametrize("name", CASES)
+@pytest.mark.lean
 def test_lean_agrees_on_edsl_locals_at_every_entry(name: str, lean_binary: Path) -> None:
     program, packet, expected = CASES[name]
     case = Case(pb.Entries(), 0, packet)

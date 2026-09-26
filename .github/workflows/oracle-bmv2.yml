@@ -51,24 +51,10 @@ jobs:
           gc-max-store-size-linux: 2G
       - name: Sync Python environment
         run: nix develop -c uv sync --locked
-      - name: Characterize pinned oracle discrepancies
-        run: nix develop -c uv run pytest tests/oracles/test_oracle_discrepancies.py -k pinned_bmv2 -v
-      - name: Check v1model stage and drop boundaries
-        run: nix develop -c uv run pytest tests/programs/test_v1model.py -k bmv2 -v
-      - name: Replay the corpus on BMv2
-        # Driver invocations use separate containers. Load scheduling also
-        # spreads each firewall module's cases across workers; duplicating its
-        # immutable compiled fixture costs less than serial packet replay.
-        run: nix develop -c uv run pytest tests/oracles/test_oracle_bmv2.py -n 4 --dist load --durations=20 -v
-      - name: Check original and printed CRC known answers
-        run: nix develop -c uv run pytest impl/python/tests/arch/test_crc.py -k bmv2 -v
-      - name: Check original firewall packets and complete register state
-        run: nix develop -c uv run pytest tests/programs/corpus/tutorial_firewall/test_firewall.py -k bmv2 -n 4 --dist load --durations=20 -v
-      - name: Check original firewall truncation and persistence boundaries
-        run: nix develop -c uv run pytest tests/programs/corpus/tutorial_firewall/test_firewall_boundaries.py -k bmv2 -n 4 --dist load --durations=20 -v
-      - name: Check original firewall generated flow profiles
-        run: nix develop -c uv run pytest tests/programs/corpus/tutorial_firewall/test_firewall_generated.py -k bmv2 -n 4 --dist load --durations=20 -v
-      - name: Check forwarding overlap and default profiles
+      - name: Check all BMv2 comparisons
+        # Each driver invocation owns a container; compiled fixtures are immutable.
         run: |
           nix develop -c uv run python -c 'from tests.oracles.bmv2 import run; reason = run.unavailable(run.default_image()); assert reason is None, reason'
-          nix develop -c uv run pytest tests/programs/corpus/forwarder/test_forwarder_apply_semantics.py::test_apply_packets_bmv2 -v
+          nix develop -c uv run pytest -m bmv2 -n 4 --dist load --durations=20 -v
+      - name: Typecheck printer goldens when p4c is available
+        run: nix develop -c uv run pytest -m p4c -v

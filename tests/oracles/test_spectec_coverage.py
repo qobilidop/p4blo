@@ -214,6 +214,7 @@ def test_docs_state_the_report_counts() -> None:
     assert table == expected
 
 
+@pytest.mark.spectec
 def test_report_matches_a_fresh_measurement() -> None:
     """The oracle job sets P4BLO_REQUIRE_SPECTEC_COVERAGE=1, so that a
     missing probe fails there instead of skipping."""

@@ -39,7 +39,7 @@ jobs:
       - name: Type check
         run: nix develop -c uv run pyright
       - name: Test
-        run: nix develop -c uv run pytest -n auto --dist load --durations=20
+        run: nix develop -c uv run pytest -m "not lean and not oracle" -n auto --dist load --durations=20
 
   schema:
     name: Schema

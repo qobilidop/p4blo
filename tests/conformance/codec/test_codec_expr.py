@@ -31,6 +31,7 @@ def test_expr_protobuf_known_answers(expr: Expression) -> None:
 
 
 @pytest.mark.parametrize("expr", expressions())
+@pytest.mark.lean
 def test_lean_agrees_expr_known_answers(lean_binary: Path, expr: Expression) -> None:
     actual = assert_leaf(
         lean_binary, "expr", expr.wire, {"value": expr.value, "encoded": expr.wire}
@@ -46,10 +47,12 @@ def test_lean_agrees_expr_known_answers(lean_binary: Path, expr: Expression) -> 
 
 
 @pytest.mark.parametrize("wire,message", malformed())
+@pytest.mark.lean
 def test_lean_agrees_expr_exact_errors(lean_binary: Path, wire: object, message: str) -> None:
     assert_leaf(lean_binary, "expr", wire, {"error": message})
 
 
 @pytest.mark.parametrize("wire,expr", normalized())
+@pytest.mark.lean
 def test_lean_agrees_expr_normalization(lean_binary: Path, wire: object, expr: Expression) -> None:
     assert_leaf(lean_binary, "expr", wire, {"value": expr.value, "encoded": expr.wire})

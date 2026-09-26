@@ -5,11 +5,13 @@ Last updated: 2026-09-25. **Active: test organization refactor.**
 User-authorized scope at base 0e55340, branch work/test-organization:
 [ownership and acceptance](notes/test-organization.md). Keep spec/ unchanged,
 preserve test responsibilities and reorganize Python, conformance, oracle,
-program and repository checks. Mechanical moves are complete and independently reviewed: 5,320 cases
-retained, spec/ and fixture answers unchanged, full required-Lean local gate
-passed (4,798 passes/four expected failures). Next: helper extraction, mixed
-suite separation and explicit markers; final oracle/assurance/remote gates
-remain outstanding.
+program and repository checks. Ownership, shared helpers and explicit dependency selection are implemented.
+All 5,320 original cases remain; six printer compile cases and five boundary
+checks bring collection to 5,331. All 310 validator input identities survive.
+The full required-Lean local gate passes 5,007 tests, without skips; the Lean
+package gate passes. Final oracle runs, frozen assurance, independent review,
+exact-main remote CI and closure remain outstanding. See the scope note for
+selection counts and the fixed pre-deselection guard finding.
 The completed implementation evidence below predates this refactor.
 
 Minimal architectures and the discrepancy catalogue are complete on main

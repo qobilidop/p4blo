@@ -22,6 +22,7 @@ def library() -> pb.BlockLibrary:
 
 
 @pytest.mark.parametrize("invalid", [False, True])
+@pytest.mark.lean
 def test_lean_agrees_core_block_library(lean_binary: Path, tmp_path: Path, invalid: bool) -> None:
     candidate = library()
     if invalid:

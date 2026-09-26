@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import shlex
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -20,22 +19,12 @@ import pytest
 from p4blo import ir, stf
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
-
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-
 from tests.oracles import firewall  # noqa: E402
 from tests.oracles import run as oracle_run  # noqa: E402
+from tests.support.catalog import CORPUS, program_of
+from tests.support.catalog import ORACLE_VECTORS as VECTORS
 
-CORPUS = ROOT / "tests/programs/corpus"
-VECTORS = sorted([*CORPUS.glob("*/*.stf"), *(ROOT / "tests/programs/examples").glob("*/*.stf")])
-
-
-def program_of(vector: Path) -> Path:
-    """The one IR text file beside a vector."""
-    programs = sorted(vector.parent.glob("*.txtpb"))
-    assert len(programs) == 1, f"{vector.parent} should hold exactly one .txtpb"
-    return programs[0]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="module")
@@ -151,6 +140,7 @@ def test_original_firewall_adapter_rejects_configuration_drift() -> None:
         firewall.plan(firewall.VECTOR + firewall.CONFIGURATION[0] + "\n")
 
 
+@pytest.mark.spectec
 def test_original_firewall_on_spectec(oracle: oracle_run.Oracle, tmp_path: Path) -> None:
     firewall.source()  # Verify unchanged upstream source; do not print our IR.
     firewall.plan()  # Both oracle encodings must still describe this fixed profile.
@@ -185,6 +175,7 @@ def test_original_firewall_on_spectec(oracle: oracle_run.Oracle, tmp_path: Path)
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda p: f"{p.parent.name}/{p.name}")
+@pytest.mark.spectec
 def test_vector_passes_on_the_oracle(oracle: oracle_run.Oracle, vector: Path) -> None:
     (verdict,) = oracle_run.run(oracle, program_of(vector), [vector])
     where = f"{vector.relative_to(ROOT)}\ncommand: {shlex.join(verdict.command)}"

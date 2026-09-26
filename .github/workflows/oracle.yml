@@ -55,28 +55,11 @@ jobs:
         run: nix develop .#oracle -c tests/oracles/build.sh
       - name: Sync Python environment
         run: nix develop -c uv sync --locked
-      - name: Characterize pinned oracle discrepancies
-        run: nix develop -c uv run pytest tests/oracles/test_oracle_discrepancies.py -k pinned_spectec -v
-      - name: Check v1model stage and drop boundaries
-        run: nix develop -c uv run pytest tests/programs/test_v1model.py -k spectec -v
-      - name: Replay the corpus on the oracle
-        run: nix develop -c uv run pytest tests/oracles/test_oracle.py -v
-      - name: Compare every block on the block architecture
-        run: nix develop -c uv run pytest tests/oracles/test_oracle_block.py -v
-      - name: Check CRC known answers and precise discrepancies
-        run: nix develop -c uv run pytest impl/python/tests/arch/test_crc.py -k spectec -v
-      - name: Check original firewall sequences and mask discrepancy
-        run: nix develop -c uv run pytest tests/programs/corpus/tutorial_firewall/test_firewall.py -k spectec -v
-      - name: Run generated programs and cases on the oracle
-        # Each case owns its tmp_path; the shared oracle checkout is read-only.
-        run: nix develop -c uv run pytest tests/oracles/test_oracle_generated.py -n 4 --dist load --durations=20 -v
-      - name: Translate P4 source into IR through the IL bridge
-        run: nix develop -c uv run pytest tests/oracles/test_frontend_spectec.py -v
+      - name: Build the P4-SpecTec coverage probe
+        run: nix develop .#oracle -c python3 tests/oracles/coverage.py build
+      - name: Check all P4-SpecTec comparisons
+        # Every test declares its dependency; new suites join this gate automatically.
+        run: nix develop -c uv run pytest -m spectec -n 4 --dist load --durations=20 -v
         env:
           P4BLO_REQUIRE_IL_EXPORT: "1"
-      - name: Build the SpecTec coverage probe
-        run: nix develop .#oracle -c python3 tests/oracles/coverage.py build
-      - name: Check SpecTec rule coverage against the pinned simulator
-        run: nix develop -c uv run pytest tests/oracles/test_spectec_coverage.py -v
-        env:
           P4BLO_REQUIRE_SPECTEC_COVERAGE: "1"

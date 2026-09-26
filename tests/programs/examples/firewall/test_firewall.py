@@ -3,6 +3,8 @@
 import struct
 from pathlib import Path
 
+import pytest
+
 from examples.firewall.demo import REPLY, SYN
 from examples.firewall.program import build
 from p4blo import stf
@@ -198,6 +200,7 @@ def test_firewall_independent_packets() -> None:
     check_python(build(), cases, expected)
 
 
+@pytest.mark.lean
 def test_lean_agrees_firewall_independent_packets(lean_binary: Path, tmp_path: Path) -> None:
     cases, expected = sequence()
     check_lean(build(), cases, expected, lean_binary, tmp_path)

@@ -97,6 +97,7 @@ def test_known_packets_and_complete_state(sequence: list[Step]) -> None:
         "edges",
     ],
 )
+@pytest.mark.lean
 def test_lean_agrees_with_independent_firewall_expectations(
     lean_binary: Path, tmp_path: Path, sequence: list[Step]
 ) -> None:
@@ -129,6 +130,7 @@ def test_lean_agrees_with_independent_firewall_expectations(
         "edges",
     ],
 )
+@pytest.mark.bmv2
 def test_original_firewall_prefix_state_on_bmv2(
     original_bmv2: tuple[str, bmv2.Compiled], sequence: list[Step], directions: bool
 ) -> None:
@@ -164,6 +166,7 @@ def test_original_firewall_prefix_state_on_bmv2(
         "edges",
     ],
 )
+@pytest.mark.spectec
 def test_original_firewall_packets_on_spectec(
     tmp_path: Path, sequence: list[Step], directions: bool
 ) -> None:
@@ -205,6 +208,7 @@ def test_original_firewall_packets_on_spectec(
     raises=KnownSpecTecTableMaskDisagreement,
     reason="pinned SpecTec table adapter casts base as mask; docs/assurance.md",
 )
+@pytest.mark.spectec
 def test_firewall_route_miss_on_spectec(tmp_path: Path, printed: bool) -> None:
     oracle = spectec.find_oracle()
     if oracle is None:
@@ -335,6 +339,7 @@ def test_firewall_known_answers_kill_valid_semantic_mutations(name: str) -> None
 
 
 @pytest.mark.parametrize("name", MUTATIONS)
+@pytest.mark.lean
 def test_lean_agrees_on_firewall_mutant_detection(
     lean_binary: Path, tmp_path: Path, name: str
 ) -> None:

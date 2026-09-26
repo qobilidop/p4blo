@@ -88,6 +88,7 @@ def test_parser_observer_preserves_the_original_parser() -> None:
         assert snapshot(loaded) == expected_state(set())
 
 
+@pytest.mark.lean
 def test_lean_agrees_on_parser_error_and_validity_boundaries(
     lean_binary: Path, tmp_path: Path
 ) -> None:
@@ -105,6 +106,7 @@ def test_lean_agrees_on_parser_error_and_validity_boundaries(
 
 
 @pytest.mark.parametrize("length", range(55))
+@pytest.mark.lean
 def test_lean_agrees_on_unmodified_boundary_state(
     lean_binary: Path, tmp_path: Path, length: int
 ) -> None:
@@ -122,11 +124,13 @@ def test_lean_agrees_on_unmodified_boundary_state(
 
 
 @pytest.mark.parametrize("length", [0, 1, 13, 14, 15, 33, 34, 35, 47, 48, 49, 53, 54])
+@pytest.mark.bmv2
 def test_original_boundaries_on_bmv2(original_bmv2: tuple[str, bmv2.Compiled], length: int) -> None:
     check_original_bmv2(*original_bmv2, [truncated(length)])
 
 
 @pytest.mark.parametrize("length", [0, 13, 14, 33, 34, 48, 53])
+@pytest.mark.bmv2
 def test_original_boundary_persistence_on_bmv2(
     original_bmv2: tuple[str, bmv2.Compiled], length: int
 ) -> None:

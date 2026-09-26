@@ -247,8 +247,8 @@ def stateful_family(seed: int, rng: random.Random) -> Generated:
 
 def aggregate_copy_family(seed: int, rng: random.Random) -> Generated:
     # The profile lives with its Hypothesis tests; it is a plain function.
-    from tests.conformance.execution.test_drt_aggregate_copy import WIDTHS as COPY_WIDTHS
-    from tests.conformance.execution.test_drt_aggregate_copy import CopyKind, copy_program
+    from tests.support.drt_aggregate_copy import WIDTHS as COPY_WIDTHS
+    from tests.support.drt_aggregate_copy import CopyKind, copy_program
 
     kinds: tuple[CopyKind, ...] = ("header", "struct")
     kind = rng.choice(kinds)
@@ -261,7 +261,7 @@ def aggregate_copy_family(seed: int, rng: random.Random) -> Generated:
 
 
 def call_copy_family(seed: int, rng: random.Random) -> Generated:
-    from tests.conformance.execution.test_drt_call_copy import CallKind, call_program
+    from tests.support.drt_call_copy import CallKind, call_program
 
     kinds: tuple[CallKind, ...] = ("action", "block")
     kind = rng.choice(kinds)

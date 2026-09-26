@@ -1,32 +1,24 @@
 # External oracle tests
 
-Does p4blo agree with the P4 tools it does not control: the P4-SpecTec
-simulator, the P4-SpecTec IL export, and BMv2's `simple_switch`?
-
-These are the oracle half of layer 4 of the testing strategy in
-[`docs/design.md`](../../docs/design.md#testing-strategy), and the
-evidence for claim 2. Every corpus and example vector replays on
-P4-SpecTec through the v1model shim (`test_oracle.py`) and through the
-block architecture (`test_oracle_block.py`), and on BMv2
-(`test_oracle_bmv2.py`, `test_bmv2_readback.py`); generated programs run
-on P4-SpecTec at CI size (`test_oracle_generated.py`); real P4 comes
-back through the IL bridge (`test_frontend_spectec.py`); every in-scope
-P4-SpecTec rule is exercised or excluded with a reason
-(`test_spectec_coverage.py`); and the pinned rule inventory resolves the
-ledger's `SpecTec:` citations (`test_spectec_rules.py`).
-
-The drivers, patches and pinned inventories these tests use live in
-[`../oracle/`](README.md), which says how to build each
-oracle. `conftest.py` marks every module here but
-`test_spectec_rules.py` `oracle` by file stem, so `scripts/check.sh`
-deselects them and the oracle workflows run them.
-With the oracles built:
+These suites compare with P4-SpecTec and BMv2, check printed P4 with p4c, and
+exercise the adapters that make those comparisons. Drivers, pinned original
+sources, patches and inventories live here too. [The driver reference](README.md)
+explains setup and exact oracle boundaries.
 
 ```
-P4BLO_REQUIRE_IL_EXPORT=1 uv run pytest -m oracle -k "not bmv2"
-uv run pytest tests/oracles/test_oracle_bmv2.py
+uv run pytest -m spectec
+uv run pytest -m bmv2
+uv run pytest -m p4c
+uv run pytest tests/oracles -m 'not oracle'
 ```
 
-Each suite skips when its oracle is missing;
-`P4BLO_REQUIRE_IL_EXPORT=1` and `P4BLO_REQUIRE_SPECTEC_COVERAGE=1` turn
-the IL-export and coverage skips into failures.
+External tests explicitly declare their dependency. Pure translator,
+classifier, catalog and readback-parser checks run without external tools,
+even when their names mention an oracle. Program-specific comparisons may stay
+beside their assets under `tests/programs/`; the marker selects them too.
+
+`P4BLO_REQUIRE_IL_EXPORT=1` and `P4BLO_REQUIRE_SPECTEC_COVERAGE=1` make missing
+export/coverage tooling fail instead of skip. Oracle characterization requires
+exact recorded answers; known discrepancies use narrow, strict expected
+failures. See [the test guide](../README.md) and
+[discrepancies](../../docs/oracle-discrepancies.md).

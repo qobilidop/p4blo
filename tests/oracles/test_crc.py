@@ -29,6 +29,7 @@ from tests.support.crc import (
     raises=KnownSpecTecCRCDisagreement,
     reason="pinned SpecTec prepends zero to odd-byte CRC input; docs/assurance.md",
 )
+@pytest.mark.spectec
 def test_crc_known_answers_on_spectec(tmp_path: Path, printed: bool) -> None:
     oracle = spectec.find_oracle()
     if oracle is None:
@@ -77,6 +78,7 @@ def test_crc_known_answers_on_spectec(tmp_path: Path, printed: bool) -> None:
 
 
 @pytest.mark.parametrize("printed", [False, True], ids=["original-p4", "printed-ir"])
+@pytest.mark.bmv2
 def test_crc_known_answers_on_bmv2(tmp_path: Path, printed: bool) -> None:
     image = bmv2.default_image()
     unavailable = bmv2.unavailable(image)
@@ -91,6 +93,7 @@ def test_crc_known_answers_on_bmv2(tmp_path: Path, printed: bool) -> None:
 
 
 @pytest.mark.parametrize("control", ["crc16-all", "crc32-even", "crc32-explicit-leading-zero"])
+@pytest.mark.spectec
 def test_crc_passing_controls_on_spectec(tmp_path: Path, control: str) -> None:
     oracle = spectec.find_oracle()
     if oracle is None:

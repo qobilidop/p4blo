@@ -24,6 +24,8 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
+import pytest
+
 from p4blo.arch import validator as v
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
@@ -160,12 +162,14 @@ def compare(cases: list[Case], lean: Path, tmp: Path) -> list[str]:
     return problems
 
 
+@pytest.mark.lean
 def test_lean_agrees_validity_on_valid_programs(lean_binary: Path, tmp_path: Path) -> None:
     cases = list(positive_cases())
     assert len(cases) > 100
     assert compare(cases, lean_binary, tmp_path) == []
 
 
+@pytest.mark.lean
 def test_lean_agrees_validity_on_the_validator_tests(lean_binary: Path, tmp_path: Path) -> None:
     cases = validator_cases()
     rejected = [c for c in cases if v.validate(c.program)]
@@ -175,6 +179,7 @@ def test_lean_agrees_validity_on_the_validator_tests(lean_binary: Path, tmp_path
     assert compare(cases, lean_binary, tmp_path) == []
 
 
+@pytest.mark.lean
 def test_lean_agrees_validity_on_the_rule_each_validator_test_targets(
     lean_binary: Path, tmp_path: Path
 ) -> None:

@@ -30,12 +30,14 @@ from tests.support.drt_families import (
 
 
 @pytest.mark.parametrize("family", sorted(FAMILIES))
+@pytest.mark.lean
 def test_lean_agrees_on_family_seeds(family: str, lean_binary: Path) -> None:
     for seed in SEEDS:
         check(sample(family, seed), [lean_binary], seed)
 
 
 @pytest.mark.parametrize("family", sorted(FAMILIES))
+@pytest.mark.lean
 def test_lean_agrees_on_spectec_profile_seeds(family: str, lean_binary: Path) -> None:
     for seed in range(50):
         check(sample(family, seed, "spectec"), [lean_binary], seed)
@@ -43,6 +45,7 @@ def test_lean_agrees_on_spectec_profile_seeds(family: str, lean_binary: Path) ->
 
 @settings(max_examples=100, deadline=None, derandomize=True, database=None)
 @given(data=st.data(), family=st.sampled_from(sorted(FAMILIES)))
+@pytest.mark.lean
 def test_lean_agrees_on_shrinking_family_programs(
     lean_binary: Path, data: st.DataObject, family: str
 ) -> None:
@@ -57,6 +60,7 @@ def test_lean_agrees_on_shrinking_family_programs(
     ],
     ids=["push", "pop"],
 )
+@pytest.mark.lean
 def test_lean_agrees_only_with_the_stack_clamps(
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -78,6 +82,7 @@ def test_lean_agrees_only_with_the_stack_clamps(
     pytest.fail(f"no retained parser seed tells {name} without its clamp from Lean")
 
 
+@pytest.mark.lean
 def test_lean_agrees_with_the_recorded_guided_measurement(lean_binary: Path) -> None:
     """The first seed's rows of tests/conformance/coverage/guided-measurement.json come out
     the same when run again, so the document is what `python -m p4blo.drt

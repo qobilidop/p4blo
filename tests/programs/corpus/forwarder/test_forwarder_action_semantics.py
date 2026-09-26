@@ -179,6 +179,7 @@ def test_python_action_wrong_arity(
     assert freeze(env) == before
 
 
+@pytest.mark.lean
 def test_lean_agrees_action_field_fault_replay(
     checked: apb.BlockAssembly,
     lean_binary: Path,

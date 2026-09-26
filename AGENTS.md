@@ -83,7 +83,7 @@ specific package manager. Preserve actual historical command transcripts.
 ```
 scripts/check.sh                                   # every Python and schema check CI runs
 scripts/check-lean.sh                              # core proofs and executable adapter tests
-P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees # Lean versus Python
+P4BLO_REQUIRE_LEAN=1 uv run pytest -m lean # Lean versus Python
 uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
 tests/oracles/build.sh                              # the P4-SpecTec oracle, once
 uv run pytest tests/oracles/test_oracle.py        # corpus vectors on that oracle
@@ -102,8 +102,12 @@ when available and is skipped otherwise. `docs/workflows.md` has the
 full gates table, every pin, and the procedure for each kind of change.
 Build Lean before running differential tests; never rebuild its executable
 concurrently with tests in the same worktree. New real-Lean conformance
-tests use the shared `lean_binary` fixture and `test_lean_agrees` name prefix
-so the required CI gate discovers them without a hand-maintained file list.
+tests use the shared `lean_binary` fixture and explicit `lean` marker. External
+checks declare `spectec`, `bmv2` or `p4c`; CI selects by dependency, independent
+of filenames. Package tests live in `impl/python/tests/`; cross-implementation,
+oracle, program and repository checks live under `tests/`. Shared inputs and
+expected-answer helpers live in `tests/support/`, never imported from test modules.
+See `tests/README.md` for ownership and commands.
 
 ## Conventions
 

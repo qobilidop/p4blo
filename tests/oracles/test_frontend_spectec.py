@@ -328,6 +328,7 @@ def _unsupported_checksum_source(exporter: Exporter, entry: catalog.CorpusSource
 
 
 @pytest.mark.parametrize("entry", catalog.CORPUS, ids=lambda e: e.program)
+@pytest.mark.spectec
 def test_corpus_program_from_its_original_source(
     exporter: Exporter, entry: catalog.CorpusSource
 ) -> None:
@@ -377,6 +378,7 @@ CORPUS_VECTORS = [
     CORPUS_VECTORS,
     ids=[f"{e.program}/{v.stem}" for e, v in CORPUS_VECTORS],
 )
+@pytest.mark.spectec
 def test_corpus_vectors_agree_with_the_golden(
     exporter: Exporter, entry: catalog.CorpusSource, vector: Path
 ) -> None:
@@ -395,6 +397,7 @@ def test_corpus_vectors_agree_with_the_golden(
         assert differ == [], f"packets at lines {differ} differ from the golden"
 
 
+@pytest.mark.spectec
 def test_priority_translation_numbers_entries_as_the_specification(
     exporter: Exporter,
 ) -> None:
@@ -432,6 +435,7 @@ ROUND_TRIP_EXCLUDED = {"priority": "tableEntriesPropertyIR without const, and a 
 
 
 @pytest.mark.parametrize(("name", "path"), ROUND_TRIP, ids=[n for n, _ in ROUND_TRIP])
+@pytest.mark.spectec
 def test_printed_golden_preserves_stages_and_behavior(
     exporter: Exporter, tmp_path: Path, name: str, path: Path
 ) -> None:
@@ -496,6 +500,7 @@ def test_printed_golden_preserves_stages_and_behavior(
 
 
 @pytest.mark.parametrize("name", catalog.NO_SOURCE)
+@pytest.mark.spectec
 def test_edsl_only_program_runs_the_same_after_the_round_trip(
     exporter: Exporter, tmp_path: Path, name: str
 ) -> None:
@@ -616,6 +621,7 @@ EXCLUDED_CASES = [
     [c[1:] for c in EXCLUDED_CASES],
     ids=[c[0] for c in EXCLUDED_CASES],
 )
+@pytest.mark.spectec
 def test_excluded_row_is_refused_by_name(
     exporter: Exporter, tmp_path: Path, top: str, decls: str, body: str, row: str
 ) -> None:
@@ -627,12 +633,14 @@ def test_excluded_row_is_refused_by_name(
     assert any(r.startswith(row) for r in _coverage_rows())
 
 
+@pytest.mark.spectec
 def test_the_template_itself_translates(exporter: Exporter, tmp_path: Path) -> None:
     source = tmp_path / "plain.p4"
     source.write_text(TEMPLATE.format(top="", decls="", body="hdr.h.f = hdr.h.f + 1;"))
     translate(exporter.export(source), "plain")
 
 
+@pytest.mark.spectec
 def test_what_the_bridge_does_not_attempt_is_named_by_production(
     exporter: Exporter, tmp_path: Path
 ) -> None:
@@ -655,6 +663,7 @@ def test_what_the_bridge_does_not_attempt_is_named_by_production(
 
 
 @pytest.mark.parametrize("name", sorted(catalog.NEW_PROGRAMS))
+@pytest.mark.spectec
 def test_new_p4c_program_passes_its_own_vectors(exporter: Exporter, name: str) -> None:
     source = catalog.HERE / "p4c" / f"{name}.p4"
     program = _translated(exporter, source, name).program
@@ -682,6 +691,7 @@ def test_new_p4c_program_passes_its_own_vectors(exporter: Exporter, name: str) -
         for name in sorted(p.stem for p in PROBES.glob("*.p4"))
     ],
 )
+@pytest.mark.spectec
 def test_probe_agrees_with_spectec(exporter: Exporter, name: str) -> None:
     """Each probe says in its first lines what it checks. Its vector's
     expectations are exact bytes: P4-SpecTec's simulator must pass it, on
@@ -700,6 +710,7 @@ def test_probe_agrees_with_spectec(exporter: Exporter, name: str) -> None:
     assert done.returncode == 0, f"P4-SpecTec fails the vector:\n{done.stderr[-2000:]}"
 
 
+@pytest.mark.spectec
 def test_user_metadata_stays_distinct_from_native_standard_metadata(
     exporter: Exporter,
 ) -> None:

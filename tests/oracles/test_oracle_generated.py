@@ -292,6 +292,7 @@ def test_the_table_mask_defect_must_change_a_winner(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.parametrize("seed", [seed_param(seed) for seed in SEEDS])
+@pytest.mark.spectec
 def test_generated_program_on_the_oracle(
     oracle: oracle_run.Oracle, seed: int, tmp_path: Path
 ) -> None:
@@ -319,6 +320,7 @@ def shift_program(op: pb.BinaryOp, amount: int) -> generated.Generated:
 
 
 @pytest.mark.parametrize("op", [pb.BINARY_OP_SHL, pb.BINARY_OP_SHR], ids=["shl", "shr"])
+@pytest.mark.spectec
 def test_shifts_up_to_the_simulator_limit_pass(
     oracle: oracle_run.Oracle, op: pb.BinaryOp, tmp_path: Path
 ) -> None:
@@ -332,6 +334,7 @@ def test_shifts_up_to_the_simulator_limit_pass(
     raises=KnownSpecTecDefect,
     reason="pinned SpecTec refuses shift amounts above 2048; tests/oracles/generated.py",
 )
+@pytest.mark.spectec
 def test_shift_beyond_the_simulator_limit(
     oracle: oracle_run.Oracle, op: pb.BinaryOp, tmp_path: Path
 ) -> None:
@@ -347,6 +350,7 @@ def test_shift_beyond_the_simulator_limit(
     raises=KnownDeviation,
     reason="p4blo pads emitted bits before the payload; docs/ir-semantics.md, Deparsers",
 )
+@pytest.mark.spectec
 def test_unaligned_emission_before_a_payload(oracle: oracle_run.Oracle, tmp_path: Path) -> None:
     # A 7-bit header 0010110 before the payload abcd: p4blo writes
     # 0010110 0 then the payload, the simulator 0010110 then the payload's
@@ -361,6 +365,7 @@ def test_unaligned_emission_before_a_payload(oracle: oracle_run.Oracle, tmp_path
     assert result.status == "pass", result.report()
 
 
+@pytest.mark.spectec
 def test_a_wrong_longest_prefix_rule_is_a_failure_not_a_known_defect(
     oracle: oracle_run.Oracle, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -375,6 +380,7 @@ def test_a_wrong_longest_prefix_rule_is_a_failure_not_a_known_defect(
 
 
 @pytest.mark.parametrize("seed", MASK_BUG_SEEDS)
+@pytest.mark.spectec
 def test_a_matching_bug_on_real_masks_is_a_failure_not_a_known_defect(
     oracle: oracle_run.Oracle, seed: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
