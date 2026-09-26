@@ -51,6 +51,9 @@ same worktree concurrently can remove the executable while a test needs it.
 Prefer fresh build directories in new worktrees. Do not copy entire old
 Lean caches across package/namespace moves: stale modules can shadow current
 imports in standalone queries even when Lake's explicit build graph passes.
+CI's Lean job restores main's compiled modules (`lib` and `ir`, not `bin`)
+and runs only `lake build` and `lake test`, which reject an import whose
+source is gone; a gate that queries Lean directly would need a clean build.
 For a clean-build check, wait for all binary consumers to finish, move only
 the worktree-owned `.lake/build` directories to a recoverable temporary
 location, verify their absence, rebuild the packages, and rerun required
