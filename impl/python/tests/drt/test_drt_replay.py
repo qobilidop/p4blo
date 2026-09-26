@@ -1,4 +1,4 @@
-"""The test infrastructure must detect faults and preserve stateful reproducers."""
+"""Package checks without native oracle dependencies."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 from p4blo.arch import v1model
-from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import __main__ as cli
 from p4blo.drt.case import Case
@@ -27,9 +26,7 @@ from p4blo.drt.run import (
 )
 from p4blo.drt.state import Observation, encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
-
-ROOT = Path(__file__).resolve().parents[3]
-FAKE = [sys.executable, "-m", "p4blo.drt.fake_lean"]
+from tests.support.drt_replay import FAKE, ROOT, envelope, register_program
 
 
 @pytest.mark.parametrize("packet", [b"\x00\x01\x00", b""])
@@ -51,23 +48,6 @@ def test_both_clis_describe_state_only_divergences(
     for output in (replay_output, excerpt_output):
         assert "state counter: Python" in output
         assert '"0x3"' in output and '"0x2"' in output
-
-
-def register_program() -> apb.BlockAssembly:
-    return arch_wire.load_text(ROOT / "tests/programs/corpus/register_bounds/register_bounds.txtpb")
-
-
-def envelope(**changes: object) -> dict[str, object]:
-    result: dict[str, object] = {
-        "format": "p4blo.drt",
-        "version": 1,
-        "program": {},
-        "ports": 4,
-        "seed": 0,
-        "requests": [],
-    }
-    result.update(changes)
-    return result
 
 
 @pytest.mark.parametrize("version", [True, 1.0])

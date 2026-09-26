@@ -1,4 +1,4 @@
-"""A broken comparator must fail, never hang or be coerced to agreement."""
+"""Package checks without native oracle dependencies."""
 
 from __future__ import annotations
 

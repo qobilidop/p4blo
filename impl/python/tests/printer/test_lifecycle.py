@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from impl.python.tests.printer import test_program as printer
+from tests.support import printer_runtime as printer
 
 
 @pytest.mark.parametrize(
