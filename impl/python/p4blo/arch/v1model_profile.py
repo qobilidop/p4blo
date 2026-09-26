@@ -302,6 +302,8 @@ class V1Model:
             self.diagnostics.append(f"egress_spec {selected} is not a configured v1model port")
             return []
         meta.write(m, "egress_port", selected)
+        # BMv2 v1model resets its egress drop request before the egress stage.
+        meta.write(m, "egress_spec", 0)
         if "egress" in loaded.blocks:
             h, m = entry.run_control(index, loaded.block("egress"), h, m, entries, externs)
         if meta.number(m, "egress_spec") == DROP_PORT:

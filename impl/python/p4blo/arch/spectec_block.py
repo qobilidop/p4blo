@@ -40,11 +40,30 @@ PACKAGE = "P4blo"
 DECLARED = frozenset({PACKAGE, "P4bloParser", "P4bloControl", "P4bloDeparser", "main"})
 
 
-def print_program(program: apb.BlockAssembly, *, index: BoundIndex | None = None) -> str:
-    """The complete P4-16 program for the p4blo block architecture."""
+def print_program(
+    program: apb.BlockAssembly,
+    *,
+    index: BoundIndex | None = None,
+    control_role: str | None = None,
+) -> str:
+    """Print independent blocks, selecting one control stage without merging.
+
+    Packet assemblies select ingress by default; a core block assembly may
+    export the literal control role. Other packet stages remain declarations.
+    """
     if index is None:
         index = BoundIndex.build(program)
-    return BlockPrinter(index, roles={e.role: e.block for e in index.bindings.exports}).render()
+    exports = {e.role: e.block for e in index.bindings.exports}
+    selected = control_role or ("ingress" if "ingress" in exports else "control")
+    if control_role is not None and selected not in exports:
+        raise PrintError(f"no block exported as {selected!r}")
+    roles = {role: exports[role] for role in ("parser", "deparser") if role in exports}
+    if selected in exports:
+        block = index.blocks[exports[selected]]
+        if block.kind != pb.BLOCK_KIND_CONTROL:
+            raise PrintError(f"selected role {selected!r} is not a control")
+        roles["control"] = block.name
+    return BlockPrinter(index, roles=roles).render()
 
 
 class BlockPrinter(BoundProgramPrinter):

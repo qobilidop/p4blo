@@ -26,7 +26,11 @@ fields: ingress_port bit9, parser_error error, egress_spec bit9, egress_port
 bit9. Missing fields read zero; ingress_port and parser_error are provided;
 egress_port is the selected destination snapshot before egress. Only
 Egress/Ingress may write egress_spec; other standard fields are read-only
-program inputs. Enforce supported-profile restrictions in architecture
+program inputs. Parser reads only ingress_port; verify_checksum reads none
+of the reserved fields; ingress reads all but egress_port; egress and
+compute_checksum read all four. Each explicit role has a distinct block,
+and exported stage blocks cannot be called as nested helpers, since their
+native signatures differ. Enforce supported-profile restrictions in architecture
 validation, not core validity. Retired drop/flood fields are not architecture
 facilities; migrate callers to egress_spec511. Unsupported native metadata,
 extern functions and services must fail explicitly; verify_checksum is
@@ -72,5 +76,21 @@ required-Lean Python gate, both applicable oracle suites, staged acceptance,
 and frozen assurance/mutation checks before final exact-main CI. Final notes
 must record removed/migrated test inventory and any changed discrepancies.
 
-Current iteration: shared contract established after three independent design
-audits; implementation begins. No validation has yet run for this scope.
+Current iteration: Python/Lean implementations integrated; caller and oracle
+migration in progress. Whole-M and dynamic-index profile findings repaired.
+Pre-egress egress_spec resets to zero per pinned BMv2. Printer lowers egress
+as a fresh local drop request and selected destination, compensating the
+P4-SpecTec final-port defect without changing native oracle probes.
+BMv2 only permits checksum calls in checksum stages and emission in deparser;
+the full six-stage/state witness therefore runs on Python/Lean/P4-SpecTec,
+with a separate portable BMv2 witness. The model executes packets serially;
+BMv2's cross-stage concurrent scheduling is outside that claim.
+
+Removed tests so far: 10 Filter/flood-exclusive cases from test_arch, the
+corpus Filter-fate comparison (one per vector), and redundant Filter branches
+inside the three application vector tests. All 470 detailed semantic observer
+cases and all 56 printer cases remain. The conformance set retains 89 fixtures;
+contract-fate replaces flood with egress-redirection attempts and reserved511
+becomes a silent drop. The three assurance input hashes intentionally change
+for the new metadata/roles, while all six request sequences and ten faults
+remain. Exact input and answer diffs must be reviewed before closing.

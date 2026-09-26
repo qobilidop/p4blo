@@ -5,6 +5,19 @@ The user authorized core block execution plus scoped v1model, retiring the
 custom Filter/Switch. Branch `work/minimal-arch`, base `14e6f44`.
 [Scope and shared contract](notes/minimal-architectures.md).
 
+Current iteration: implementations integrated through `7cb3ce7`, printer
+regressions through `d3b9e95`; caller/golden/conformance migration remains
+uncommitted on the integrator branch. Python profile indexing and Lean
+whole-metadata validation findings are repaired. The six-stage witness passes
+Python and P4-SpecTec; the portable checksum/deparser witness passes both
+external oracles. Two native egress discrepancies are precisely classified;
+[the catalog](../docs/oracle-discrepancies.md) states adopted behavior and reason.
+All 89 conformance fixtures have been deliberately re-exported after role,
+metadata and fate changes. Required integrated full gates, final independent
+review, frozen assurance, commits/push and exact-main CI are still outstanding.
+The evidence below describes the preceding completed scope, not this work.
+
+
 Core-only assurance
 simplification is complete and integrated into `main` at
 `090fb6813600cbd56bc375a6ff6cdc81b893bb4d`; all applicable remote CI passed.

@@ -89,8 +89,23 @@ def standard_metadata_binding(
         f"{meta}.{name} = {STANDARD_METADATA}.{name};" for name in inputs[role] if name in fields
     ]
     epilogue = []
-    if role in {"ingress", "egress"} and "egress_spec" in fields:
+    if role == "ingress" and "egress_spec" in fields:
         epilogue.append(f"{STANDARD_METADATA}.egress_spec = {meta}.egress_spec;")
+    if role == "egress":
+        # Egress has a fresh drop request, not a new routing decision. Keep
+        # its local value visible to ComputeChecksum, but lower its final
+        # native value to drop or the already selected destination. This
+        # also avoids the pinned P4-SpecTec runner's post-egress redirection.
+        prologue = [
+            f"{meta}.egress_spec = 0;"
+            if line == f"{meta}.egress_spec = {STANDARD_METADATA}.egress_spec;"
+            else line
+            for line in prologue
+        ]
+        destination = f"{STANDARD_METADATA}.egress_port"
+        if "egress_spec" in fields:
+            destination = f"({meta}.egress_spec == 9w511 ? 9w511 : {destination})"
+        epilogue.append(f"{STANDARD_METADATA}.egress_spec = {destination};")
     return prologue, epilogue
 
 

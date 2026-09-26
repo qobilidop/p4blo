@@ -51,6 +51,10 @@ jobs:
           gc-max-store-size-linux: 2G
       - name: Sync Python environment
         run: nix develop -c uv sync --locked
+      - name: Characterize pinned oracle discrepancies
+        run: nix develop -c uv run pytest tests/external/test_oracle_discrepancies.py -k pinned_bmv2 -v
+      - name: Check v1model stage and drop boundaries
+        run: nix develop -c uv run pytest tests/programs/test_v1model.py -k bmv2 -v
       - name: Replay the corpus on BMv2
         # Driver invocations use separate containers. Load scheduling also
         # spreads each firewall module's cases across workers; duplicating its
