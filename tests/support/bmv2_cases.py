@@ -6,9 +6,9 @@ import shlex
 from pathlib import Path
 
 import pytest
-from tests.support.catalog import CORPUS, program_of
 
 from tests.oracles.bmv2 import run as bmv2_run
+from tests.support.catalog import CORPUS, program_of
 
 ROOT = Path(__file__).resolve().parents[2]
 

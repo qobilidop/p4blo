@@ -35,8 +35,6 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from tests.support.catalog import ORACLE_VECTORS as VECTORS
-from tests.support.catalog import program_of
 
 from p4blo import arch, ir, stf
 from p4blo.arch import entry, spectec_block, v1model
@@ -52,6 +50,8 @@ from p4blo.interp.packet import Emitter
 from p4blo.interp.values import Bits, Header, Stack, Struct, Value, copy, zero
 from p4blo.v0 import p4blo_pb2 as pb
 from tests.oracles import block as oracle_block  # noqa: E402
+from tests.support.catalog import ORACLE_VECTORS as VECTORS
+from tests.support.catalog import program_of
 
 PROGRAMS = sorted({program_of(v) for v in VECTORS})
 

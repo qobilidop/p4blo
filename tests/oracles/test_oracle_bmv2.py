@@ -26,8 +26,6 @@ import sys
 from pathlib import Path
 
 import pytest
-from tests.support.catalog import CORPUS, program_of
-from tests.support.catalog import ORACLE_VECTORS as VECTORS
 
 from p4blo import stf  # noqa: E402
 from p4blo.arch import wire as arch_wire
@@ -51,6 +49,8 @@ from tests.support.bmv2_cases import (  # noqa: E402
     marks,
     vector_id,
 )
+from tests.support.catalog import CORPUS, program_of
+from tests.support.catalog import ORACLE_VECTORS as VECTORS
 
 # A vector p4blo and BMv2 genuinely disagree about, with the reason. Strict,
 # so that a vector that starts passing fails here and the entry is removed
