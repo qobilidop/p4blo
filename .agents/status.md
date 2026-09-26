@@ -1,6 +1,14 @@
 # Status
 
-Last updated: 2026-09-25. **No active implementation work.**
+Last updated: 2026-09-25. **Active: test organization refactor.**
+
+User-authorized scope at base 0e55340, branch work/test-organization:
+[ownership and acceptance](notes/test-organization.md). Keep spec/ unchanged,
+preserve test responsibilities and reorganize Python, conformance, oracle,
+program and repository checks. Initial step: capture baseline inventories and
+move paths; independent review and all affected gates remain outstanding.
+The completed implementation evidence below predates this refactor.
+
 Minimal architectures and the discrepancy catalogue are complete on main
 `516cbdf67519a1af360ac1d9f442e70133bf77b7`, with all applicable remote CI green.
 Only independent Parser, Control and Deparser blocks and scoped v1model remain.
@@ -129,11 +137,11 @@ and queue time; this is one observation, not a latency guarantee.
 
 ## Blocked / next action
 
-Nothing is blocked and no implementation scope is active.
+Nothing is blocked. The active test organization scope is described above.
 [Independent compaction review](reviews/minimal-architecture-compaction.md)
 approved b81bd54 plus the repaired historical archive hash; all 65 decisions
 and all open threads survive. Its full required-Lean local gate passed 4,798
 cases with four expected failures and no skips. The follow-up is narrative
 only; implementation evidence above is unchanged. All temporary worktrees
 and integrated branches are removed; the three unique parked branches remain.
-Wait for the next user-scoped task.
+Complete the active refactor, review and applicable local/remote gates.

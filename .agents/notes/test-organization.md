@@ -1,0 +1,42 @@
+# Test organization refactor
+
+User-authorized 2026-09-25, base `0e553402cddd1f12e5575c114bbee8e4ca8459d4`.
+Branch `work/test-organization`. Preserve every existing test responsibility and
+all fixture/program answers; this scope reorganizes rather than pruning tests.
+Everything under `spec/` must remain byte-identical, including historical path
+comments. No semantic implementation changes or new proof scope.
+
+Target ownership:
+
+- `impl/python/tests/`: Python package component checks, grouped by package.
+  Outside the installed p4blo package; pytest importlib mode, no ambiguous tests
+  package imports. Runtime unit tests require neither Lean nor P4 oracles.
+- `tests/conformance/`: codecs, Python/Lean execution, fixed fixtures, rule
+  coverage and finite fault campaigns.
+- `tests/oracles/`: real P4 oracle suites, drivers, patches and native inputs.
+- `tests/programs/`: corpus and public-example intended behavior/assets,
+  organized per program. Public canonical sources remain in examples/.
+- `tests/repository/`: meaningful generation, import, docs and CI boundaries.
+- `tests/support/`: shared generators/catalogues/expected answers, never imports
+  from test modules. Do not consolidate independent implementations or answers.
+
+Integrate in coherent steps: mechanical moves/path updates; extract helpers and
+split mixed responsibilities; explicit dependency markers and CI selection;
+current docs and policy; full validation, independent review, exact-main CI.
+Pytest collection must preserve all 5,320 baseline cases modulo recorded moves
+and intentional new boundary checks. Compare complete fixtures and requests,
+not just counts. Keep all 710 detailed semantic and all independent fault checks.
+Explicit lean/spectec/bmv2 markers replace filename-based dependency inference;
+unit marker/selection gates ensure no specialist fixture dependency leaks in.
+
+All subagents work in separate worktrees from a committed base, own disjoint
+files, and hand off commits with check results. At most two heavy local jobs;
+never rebuild root Lean concurrently with consumers. Review each integrated
+step independently. Preserve the three unique parked proof branches.
+
+Initial inventory: 413 tracked test-tree files, 92 test modules, 16 immediate
+subdirectories, 5,320 collected cases; 2,167 names selected by the legacy
+lean_agrees selector. Unit folder includes CRC oracle calls; drt mixes runner
+unit checks and actual conformance. There are 73 test-module imports in 29
+files. Source collection/logs/maps are convenience data in
+`.artifacts/test-organization/`; durable conclusions belong here and in status.
