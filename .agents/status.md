@@ -1,19 +1,14 @@
 # Status
 
-Last updated: 2026-09-25. **XDP removal is active** on `work/remove-xdp`,
-based on `b7860a5`. The user requested removal of the premature compile-only
-experiment. Its workflow, container sources, inspector and dedicated tests
-are removed, and current commands/pins/structural inventories are updated.
-The P4 interpreters, schemas, proofs and oracle inputs are unchanged.
-Historical XDP evidence is retained as historical evidence; the roadmap keeps
-one revisit condition. Independent [review](reviews/xdp-removal-2026-09-25.md)
-approved `fe927ef` with no findings; all 154 structure tests passed. Collection
-retains all 3,045 Lean cases; the 19 removed entries belong only to XDP and its
-two structural registrations. Next: full required-Lean local gate, final-head
-remote CI and integration. No Lean/Docker rebuild or assurance mutation rerun
-is needed for unchanged semantics; remote specialist gates still apply.
-The eDSL, closure and CI-efficiency scopes remain complete;
-[CI measurements](notes/ci-efficiency.md) record their limits.
+Last updated: 2026-09-25. **No implementation scope is active.** XDP removal
+is complete: [PR #7](https://github.com/qobilidop/p4blo/pull/7) merged as
+`da6f6202e3014b195bba864844f9923d1223ddd7` after independent review and all
+final-head checks passed. The workflow, container sources, inspector and
+dedicated tests are gone; current commands, pins and structural inventories
+are updated. The P4 interpreters, schemas, proofs and oracle inputs are unchanged.
+Historical XDP evidence stays historical; only a short revisit condition
+remains in the roadmap. The eDSL, closure and CI-efficiency scopes also remain
+complete. Ask for a new scope; the roadmap is backlog.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.
@@ -34,6 +29,7 @@ Logs in `.artifacts/` are conveniences, not portable evidence.
 | Example-guided eDSL / library boundary | merged, `f6c3a6e`, PR #2 | [authoring guide](../docs/python-edsl.md); archived reflection and library-boundary review |
 | CI speed | merged, `fffbac7`, PR #3 | [workflow](../.github/workflows/lean.yml); archived ci-speed and ci-speed-final reviews |
 | CI efficiency | merged, `967e0a3`, PR #5 | [measurements](notes/ci-efficiency.md), [independent review](reviews/ci-efficiency-2026-09-25.md) |
+| XDP retirement | merged, `da6f620`, PR #7 | [independent review](reviews/xdp-removal-2026-09-25.md); removed experiment recoverable from `b7860a5` |
 
 The three semantic scopes remain frozen. Maintenance does not reopen proofs.
 The eDSL scope supplies architecture-free Python/protobuf/Lean BlockLibrary,
@@ -60,6 +56,18 @@ All hashes below resolve. Earlier reviews are available at the archive point;
 AI-agent review is independent of the author, not human review.
 The [closure review](reviews/closure-2026-09-25.md) compares the compacted
 state at `9bd5434` with the archive and separately approves cleanup `a31ff19`.
+
+- XDP removal final head `c3d8a76e6c1d7e68851ecffd8dab04b661ff96c2`:
+  independent review approved; all seven validation jobs and three scope jobs
+  passed: [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36210833516),
+  [Lean](https://github.com/qobilidop/p4blo/actions/runs/36210833804),
+  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36210833820),
+  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36210833677).
+  Full required-Lean local gate exited 0: 5,271 passed, four expected failures,
+  no skips. All 154 structure tests also passed. All 3,045 Lean cases remain;
+  the 19 removed collection entries are XDP's 17 tests and its two structural
+  registrations. No local Lean/Docker rebuild or assurance mutation rerun was
+  needed for unchanged semantics; remote specialist gates all ran and passed.
 
 - CI-efficiency final head `e4c1d759549dfa3c8518184e2a9b4818993071fd`:
   independent review approved; all eight validation jobs and four scope jobs
@@ -176,4 +184,4 @@ in the prior Codex session were not repository build failures.
 
 ## Blocked
 
-Nothing. Finish the reviewed XDP-removal PR and its applicable checks.
+Nothing. Ask for a new scope before starting more implementation.
