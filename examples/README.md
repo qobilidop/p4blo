@@ -16,13 +16,13 @@ limitations stated in its README.
 
 The [Python authoring guide](../docs/python-edsl.md) explains the eDSL,
 named exports and explicit extern registration. For a small extension outside
-the supplied switch, run `uv run python -m examples.custom_extern`.
+the supplied v1model profile, run `uv run python -m examples.custom_extern`.
 
 Each application has a complete `program.py`, a host-side `demo.py` and a
 behavioral contract in its README. Run from the repository root using the
 environment created by `uv sync --locked`; see the [setup guide](../README.md#getting-started).
 Python builds IR; the interpreter executes that IR for each packet. Table
-entries are host inputs. The switch architecture turns metadata into packet
+entries are host inputs. The v1model architecture turns metadata into packet
 delivery or drop decisions.
 
 Verification lives under [`tests/examples/`](../tests/examples/). Existing

@@ -89,7 +89,7 @@ Productions from `2.2.1-type.watsup`.
 | `serializableEnumTypeIR` (with `valueFieldIR`) | elaborated | `bit<N>` and `BitsLiteral` | Schema: "Serializable enums are elaborated to bits and literals." Casts among them become the IR's three casts (ir-semantics.md, Casts). | performed |
 | `externObjectTypeIR` | in | `ExternType` | Monomorphic. Decision: one `ExternType` per instantiation (`register`, `register.16`); `externMethodTypeDefEnv` is `Method`. | translated for v1model's `register` and `counter`; other extern objects not attempted |
 | `parserObjectTypeIR`, `controlObjectTypeIR` | in | `Block.kind` and `Block.params` | A P4 deparser is a control; here it is a third kind with its own statement set. | translated |
-| `packageObjectTypeIR` | excluded, by thesis | `Export` names the role | Design: the architecture is outside; SpecTec's `7-instantiation` and `9-arch`. | V1Switch bound by the v1model shim in reverse (`p4blo.frontend.v1model`); other packages refused |
+| `packageObjectTypeIR` | excluded, by thesis | `Export` names the role | Design: the architecture is outside; SpecTec's `7-instantiation` and `9-arch`. | V1Switch binds six distinct stage roles; other packages refused |
 | `tableObjectTypeIR` | in | `Table` | Its result struct: see `tableMetadataStructTypeIR`. | translated |
 | `typeArgumentIR`, type arguments on `STRUCT`, `HEADER`, `EXTERN`, `PARSER`, `CONTROL` | excluded, by elaboration | none | Design: no generics. Every IR type is concrete. | refused by name |
 | `defaultTypeIR` (`DEFAULT`) | excluded, by elaboration | none | Type of `...`; see `defaultExpressionIR`. | refused by name |
@@ -247,7 +247,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `constantDeclarationIR` at top level | elaborated | folded into literals | Forwarder README. | performed |
 | `instantiationIR` of an extern object | in | `ExternInstance` | Constructor arguments are literals. Program-level state (schema). | translated for v1model's `register` and `counter`, hoisted to program level; other objects not attempted |
 | `instantiationIR` of a parser or control | elaborated | the block is called by name; a block that owns extern state and is instantiated more than once becomes one block per instantiation | Schema `BlockLibrary`; stacks and subparser_stack READMEs. | performed |
-| `instantiationIR` of a package (`main`) | excluded, by thesis | architecture `Export` per role | Design: the architecture binds blocks to roles. | V1Switch bound by the v1model shim in reverse; other packages refused |
+| `instantiationIR` of a package (`main`) | excluded, by thesis | architecture `Export` per role | Design: the architecture binds blocks to roles. | V1Switch binds parser, verify_checksum, ingress, egress, compute_checksum and deparser separately; other packages refused |
 | `objectInitializerIR`, `ABSTRACT` in `externMethodPrototypeIR` | excluded, by scope | none | The survey recommends exclusion. The design's "extern function objects" may be meant to cover this; the wording does not say. | refused by name |
 | `functionDeclarationIR`, `functionPrototypeIR` | elaborated | inlined at every call site (p4c `InlineFunctions`) | Core P4, absent from both the In list and the exclusions. Precedent: p4c `FunctionsInliner`. | partial: as the call rows |
 | `actionDeclarationIR` | in | `Action` inside a `Block` | Directionless parameters are action data. Top-level actions have no corpus instance; the IR keeps actions block-scoped. | translated; a top-level action a block uses becomes that block's |
@@ -260,11 +260,11 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `typedefDeclarationIR` with `TYPEDEF` | elaborated | replaced by its definition | Forwarder README. | performed |
 | `typedefDeclarationIR` with `TYPE` | elaborated | as `newTypeIR` | As `newTypeIR`. | performed |
 | `externFunctionDeclarationIR`: core.p4's `verify` | in | `Verify` | Decision: dedicated nodes. | translated |
-| `externFunctionDeclarationIR`: an architecture's functions | excluded, by thesis | none | Design: packet fate as externs. The corpus routes: `mark_to_drop` is `meta.drop = true` (forwarder), `update_checksum` is a `checksum16` instance (forwarder, csum16), `verify_checksum` deferred pending a contract field. | `mark_to_drop` as v1model defines it, writing only the drop port 511 to `egress_spec` (`M.egress_port`) in ingress, so that a later write of a port undoes it, and setting `drop` in egress; `hash`, `update_checksum` mapped as the v1model shim maps them back; `verify_checksum` left out while nothing reads `checksum_error`; others refused |
+| `externFunctionDeclarationIR`: an architecture's functions | excluded, by thesis | none | Design: packet fate belongs to the architecture. Supported v1model drop requests assign 511 to `M.egress_spec`; checksum computation uses the supplied checksum16 family. | `mark_to_drop` writes `egress_spec = 511` in ingress/egress, permitting a later assignment to undo it; supported `hash` and `update_checksum` translate to declared extern calls; `verify_checksum` and other unsupported functions are explicitly refused |
 | `externObjectDeclarationIR` | in | `ExternType` | Type parameters: one type per instantiation (decision: monomorphic externs). | translated for v1model's `register` and `counter` |
 | `externConstructorPrototypeIR` | in | `ExternType.constructor_params` | | translated for v1model's `register` and `counter` |
 | `externMethodPrototypeIR` (non-abstract) | in | `Method` | | translated for v1model's `register` and `counter` |
-| `controlDeclarationIR`, `controlBodyIR` | in | `Block` with `BLOCK_KIND_CONTROL` or `BLOCK_KIND_DEPARSER`; `Block.body` | The kind decides the statement set. | translated; V1Switch's verify, ingress, egress and compute controls merge into the control role; when there is an egress part, the ingress part ends with v1model's drop decision `drop = (egress_port == 511)` and the egress part is guarded by `!drop`; without one, 511 is no port of p4blo's switch, which drops the packet as v1model does |
+| `controlDeclarationIR`, `controlBodyIR` | in | `Block` with `BLOCK_KIND_CONTROL` or `BLOCK_KIND_DEPARSER`; `Block.body` | The kind decides the statement set. | translated independently; V1Switch verify-checksum, ingress, egress and compute-checksum controls retain separate exports and are sequenced by the architecture runtime, including its drop boundaries |
 | its two `typeParameterListIR` | excluded, by elaboration | none | Design: no generics. | refused by name |
 | its `constructorParameterListIR` | elaborated | as for parsers | As for parsers. | performed for scalar constant arguments; others not attempted |
 | its `packet_out` parameter | elaborated | carried by the block's kind | Every corpus README. | performed |
@@ -272,7 +272,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 | `controlLocalDeclarationIR`: `constantDeclarationIR`, `instantiationIR` | see the rows above | | | |
 | `controlTypeDeclarationIR`, `packageTypeDeclarationIR` | excluded, by thesis | architecture `Export` and core `BlockKind` | The architecture's interface. | set aside |
 | `parameterListIR`, `parameterIR` with a direction | in | `Param` with `Direction` | `DIRECTION_NONE` is action data. | translated |
-| `standard_metadata` and other intrinsic metadata parameters (no IL production; the architecture's parameter) | excluded, by thesis | fields of the program's `M` under the metadata contract | Design, Metadata contract; forwarder README: `egress_spec` is `meta.egress_port`. | mapped: `ingress_port`, `parser_error`, `egress_spec` and `egress_port` onto the contract, `egress_spec` read in egress being 511 once `mark_to_drop` has run there; other fields refused; a user field of `M` named like a contract field is renamed, and is the contract field only where the source copies it to or from `standard_metadata` exactly as the printer's shim does |
+| `standard_metadata` and other intrinsic metadata parameters (no IL production; the architecture's parameter) | excluded, by thesis | reserved fields of the program's `M` under the v1model profile | Design, Metadata contract; requested `egress_spec` and selected `egress_port` have different meanings. | mapped: ingress_port, parser_error, egress_spec and egress_port, subject to stage read/write restrictions; other fields refused; colliding ordinary user fields are renamed to keep their identity separate from standard metadata |
 
 ## Annotations and misc
 
@@ -351,7 +351,7 @@ records, for every rule, rule group, relation and function of the
 in how many of the vectors, over every corpus program and example and a
 fixed set of 18 generated programs
 ([`generated.py`](../tests/oracle/generated.py)), printed through the
-v1model shim. The simulator runs the spec in a structured form in
+v1model adapter. The simulator runs the spec in a structured form in
 which each relation's rules are merged into one instruction tree; a rule
 counts as fired when the instruction that concludes it ran, found through
 the source region the instruction keeps.

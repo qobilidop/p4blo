@@ -4,8 +4,13 @@ p4c's `table-entries-priority-bmv2`, a companion to the ACL: one ternary
 table whose `const entries` carry `@priority` annotations, with three
 vectors that each match more than one entry. It is the only priority-bearing
 `const entries` in p4c's v1model suite, so it is the program that pins how
-the IR numbers const entries, and the one place where the language
-specification and p4c's BMv2 backend give opposite answers.
+the IR numbers const entries. P4-SpecTec follows portable language priority
+syntax; p4c's BMv2 backend honors this source's nonstandard `@priority`
+extension, so their expected answers differ. This does not establish a BMv2
+violation of the language: p4blo chooses the portable interpretation, and
+its printer emits explicit language priorities. The
+[discrepancy catalog](../../../docs/oracle-discrepancies.md#const-entry-priority-annotations)
+records that policy and a reduced reproducer.
 
 | | |
 |---|---|
@@ -29,8 +34,7 @@ specification and p4c's BMv2 backend give opposite answers.
   language decided against it), and the specification's typing carries
   it as an annotation without reading it. None of the source's entries
   therefore has a priority in the language's sense, and the three are
-  numbered by position ([decisions.md](../../../.agents/decisions.md),
-  "Entry priority"):
+  numbered by position under the portable language interpretation:
 
   | entry | source | rule | IR priority | p4c/BMv2 number (smaller wins) |
   |---|---|---|---|---|
@@ -79,7 +83,7 @@ specification and p4c's BMv2 backend give opposite answers.
   ([semantics.md](../../../docs/ir-semantics.md), "Tables"); the plain `0x1181`
   is a full mask.
 - **`standard_meta.egress_spec`.** The source's `Meta_t` is empty; the
-  program's has the one contract field the source writes, `egress_port`,
+  program's has the one contract field the source writes, `egress_spec`,
   and `m` and `standard_meta` become one `meta`. `h` keeps its name.
 - **Unsized literals.** `a_with_control_params(1)` and the others take the
   parameter's width, `bit<9>`.

@@ -49,8 +49,8 @@ Goals:
 - Give it two independent executable semantics, in Lean and Python,
   checked against P4-SpecTec and each other.
 - Show that a P4 block is a function and that an architecture is
-  ordinary code outside the IR, by running one corpus under two
-  architectures unchanged.
+  ordinary code outside the IR, by testing independent blocks and their
+  explicit composition under one scoped v1model architecture.
 - Validate the whole against external oracles on real programs.
 - Publish a coverage table that walks P4's core construct by construct
   and says for each one whether it is in, elaborated away, or excluded.
@@ -80,14 +80,13 @@ these claims and no others; their current status is in
    corpus program needs an escape hatch.
 2. **The core is semantically complete for real programs.** Programs
    authored in the Python eDSL, printed to P4 text and run through
-   external oracles under a v1model shim, match the reference interpreter
+   external oracles under the supported v1model profile, match the reference interpreter
    packet for packet. Fails on any divergence not traceable to a
    documented closed behavior or a documented oracle defect.
-3. **A block is a function; an architecture is ordinary code.** Two
-   architectures, a filter and a switch, each around fifty lines of
-   Python with no P4 in them; every corpus program runs under both
-   unchanged. Fails if the line counts say otherwise or a block needs a
-   hook one architecture lacks.
+3. **A block is a function; an architecture is ordinary code.** Core
+   blocks compile and execute independently, and a separate v1model adapter
+   chooses six pipeline stages, metadata and packet fate. Fails if core
+   validity or execution requires a particular pipeline or architecture role.
 4. **The semantics is mechanized and agrees with the reference.** A
    proof-visible Lean interpreter over the IR, differential testing
    against the Python interpreter with every divergence attributed to a
@@ -178,9 +177,8 @@ deparse : H → Packet
 In this convention, rejection is an outcome, not an exception: the
 caller gets the partial headers, whether the parser accepted, and the
 error, and decides what to do. A control writes fields of `M`; whoever
-called it acts on them afterwards. Drop, forward, flood, clone and
-recirculate are decisions written as data, executed by the
-architecture. Tables are inputs installed by the host. A block may call
+called it acts on them afterwards. Packet fate is data interpreted by the
+architecture; it is not a core operation. Tables are inputs installed by the host. A block may call
 another block; that is P4's own composition and it is in.
 
 There is one `Block` message with a kind tag, parse, control or deparse,
@@ -195,28 +193,14 @@ the meaning of a program depend on a number nobody specifies.
 
 ### Metadata contract
 
-The supplied H/M adapter declares the `M` fields its architecture needs,
-each with a width and whether the architecture provides it before the block
-runs or consumes it after. At load the selected `M` is checked structurally
-against the declaration, by field name and width. Each `BlockBindings`
-selects one `H` type and one `M` type; the core library makes no such choice.
-Other architectures may invoke blocks with their own calling conventions.
-The vocabulary shared by the supplied filter and switch has the following
-fields, each optional and checked only when present:
-
-| Field | Type | Direction | Meaning |
-|---|---|---|---|
-| `ingress_port` | `bit<9>` | provided | port the packet arrived on |
-| `parser_error` | `error` | provided | the parser's error, `NoError` on accept |
-| `egress_port` | `bit<9>` | consumed | unicast destination |
-| `drop` | `bool` | consumed | discard the packet; wins over the rest |
-| `flood` | `bool` | consumed | send to every port but the ingress one |
-
-Fate is a set of booleans rather than an enum so that a program that
-knows nothing of flooding, such as the forwarder, runs unchanged under an
-architecture that offers it, which is what claim 3 requires. The v1model
-shim maps these names onto `standard_metadata`; flood has no shim
-mapping and is checked between the two architectures instead.
+The v1model adapter selects one H and one M root; the core library does not.
+Its reserved optional fields are `ingress_port: bit<9>`, `parser_error: error`,
+`egress_spec: bit<9>` and `egress_port: bit<9>`. `egress_spec` is writable only
+in ingress/egress; the other fields are supplied read-only values. Reads are
+restricted to stages where native interfaces supply them. The profile checker
+also follows aliases through nested calls and actions. Other ordinary metadata
+remains private program data. Exact availability and rejection rules are in
+[architecture support](arch-supports.md#the-metadata-contract).
 
 ### Externs
 
@@ -234,20 +218,20 @@ checksum16 and the byte-aligned CRC16 and CRC32 services, specified in
 
 ### Architectures
 
-The supplied packet adapters expose one shape to the STF driver: given an
-ingress port and a packet, return egress ports and packets. The filter runs
-parser then control.
-The switch runs all three blocks over a few ports and implements drop,
-unicast and flood. Neither contains P4; their size is the experiment for
-claim 3. Three things every architecture here does the same way,
-because the IR does not decide them: after a parser rejection the
-control still runs over the partial headers, with `parser_error` set if
-the program declares it, as v1model does; the payload is the bytes after
-the ones the parser consumed, and a parse that ends off a byte boundary
-drops the packet with a diagnostic; the output packet is the deparser's
-bytes followed by the payload. Lean's `Switch` follows the same rules.
-The contract, the rules, each supplied architecture, the extern families
-and the v1model shim are specified in [arch-supports.md](arch-supports.md).
+The sole supplied packet architecture is scoped v1model: parser,
+verify-checksum, ingress, egress, compute-checksum and deparser. Omitted
+optional stages are empty. The ordinary Python adapter and its independent
+Lean implementation decide metadata initialization, stage sequencing, packet
+fate and payload handling; they carry no architecture-specific proof claim.
+
+Ingress chooses an output destination or drops. Egress observes the selected
+`egress_port`; resetting/writing `egress_spec` affects its drop request, not
+the saved destination. A drop skips downstream stages and their effects.
+Parser rejection still reaches ingress with `parser_error`; unconsumed bytes
+remain payload. The model is serial across packets. The exact target profile,
+BMv2 backend limitations and unchanged-source oracle discrepancies are in
+[architecture support](arch-supports.md) and
+[oracle discrepancies](oracle-discrepancies.md).
 
 ### Python eDSL
 
@@ -318,7 +302,7 @@ and the initial machine meets the theorem's typed-entry premises. These are
 assumptions, not guarantees about the supplied architecture.
 
 `spec/arch/`, package `p4blo-arch` imported as `P4bloArch`, depends on the IR
-and supplies executable bindings, switch, five extern families and the
+and supplies executable bindings, v1model, five extern families and the
 `p4blo-lean` endpoint used by differential tests. It compiles and runs tests,
 but carries no formal architecture-specific guarantee. Python is the program
 authoring interface; there is no separate Lean authoring package.
@@ -344,38 +328,30 @@ specification; none upgrades Python's tested conformance into equivalence.
 
 ### Printer and oracles
 
-The printer turns IR into P4-16 text. It pays twice: it feeds the
-oracles, and it is a frontend in reverse. It has no architecture of its
-own (`p4blo.printer`): it prints declarations and blocks, and an
-architecture binds them to its package through a few hooks. The v1model
-shim (`p4blo.arch.v1model`) maps the metadata contract onto
-`standard_metadata`, prints the extern families in their v1model form and
-adds V1Switch's other blocks; the block architecture
-(`p4blo.arch.spectec_block`) keeps each block's own signature for
-P4-SpecTec's one-block-per-request runs. The oracles run the printed
-programs, replaying the corpus vectors. The first oracle is
-P4-SpecTec's simulator, the specification's own mechanization, which
-needs no Docker and runs natively; the second is BMv2's `simple_switch`
-in a pinned Docker image, the implementation P4 programmers actually run.
-They disagree in useful ways: SpecTec has no longest-prefix rule, so the
-adapter supplies prefix lengths as priorities and BMv2 independently
-decides longest prefix and const-entry and ternary priorities. Where an
-oracle is wrong, the disagreement is recorded as a strict, narrowly
-classified expected failure rather than adapted away; the list is in
-assurance.md.
+The architecture-free printer emits core declarations and blocks. The
+v1model printer binds six native stage interfaces, mirrors supported standard
+metadata and prints extern families in their target form. Empty optional
+stages remain explicit. A separate block printer selects parser/control/
+deparser for P4-SpecTec's one-block-per-request adapter; it never merges the
+v1model controls into one semantic block.
 
-The IL bridge goes the other way, from P4 source to IR, and makes
-elaboration a function rather than a set of rulings. A patch adds an
-`il-export` command to the pinned P4-SpecTec that prints what its own
-typing and instantiation relations make of a program, and
-`p4blo.frontend` translates that IL construct by construct, as the
-coverage table prescribes: in-rows to their messages, elaborated rows by
-their elaboration, excluded rows refused by name. The v1model shim runs in
-reverse to bind V1Switch's blocks to the roles and `standard_metadata` to
-the metadata contract. It is checked by reproducing the corpus goldens
-from their P4 originals, by reading back every golden the printer prints,
-and by running p4c programs the corpus does not include against their own
-vectors; it is a checked translation, not a verified frontend.
+P4-SpecTec supplies independently implemented P4 evaluation rules. BMv2's
+`simple_switch`, compiled by pinned p4c, supplies a second packet oracle.
+Portable source and packet witnesses run on both, while runtime-only stage
+operations that BMv2 cannot compile are tested without claiming that external
+coverage. The source frontend preserves each V1Switch stage and refuses
+unsupported native metadata/functions. It remains a tested translation, not a
+verified compiler; imported blocks are validated and compared using original
+source vectors and printer roundtrips.
+
+The original-source probes are kept separate from printer binding: for example,
+the explicit egress metadata reset used by our printer must not conceal the
+pinned simulators' different native initialization. Every discrepancy records
+its authority, chosen behavior and exact evidence in
+[oracle discrepancies](oracle-discrepancies.md). Where a contract permits
+multiple answers, the document states p4blo's policy rather than declaring an
+oracle incorrect. The P4-SpecTec STF adapter supplies LPM prefix priorities;
+BMv2 independently judges longest prefix and target table behavior.
 
 ### Differential testing and proofs
 
@@ -488,7 +464,7 @@ p4blo/
     P4bloIRTest/                    tests, proof audits, fixtures
     proto/p4blo/v0/p4blo.proto      versioned wire encoding
   spec/arch/                        Lake package p4blo-arch (P4bloArch): the
-    P4bloArch/                      executable switch, bindings, extern families
+    P4bloArch/                      executable v1model, bindings, extern families
     P4bloArchTest/                  tests and fixtures
     proto/p4blo/arch/v0/assembly.proto  architecture binding wire encoding
     Main.lean                       the p4blo-lean conformance endpoint
@@ -500,8 +476,8 @@ p4blo/
     interp/                         the reference interpreter
     printer/                        IR to P4-16 text, with no architecture
     edsl/                           the typed eDSL; core/ is the builder beneath it
-    arch/                           architecture bindings, contract, filter,
-                                    switch, extern families and printer shims
+    arch/                           bindings, contract, v1model, extern families
+                                    and block-runner printing
       v0/                           generated architecture protobuf code
     drt/                            the differential loop
   examples/<application>/           public Python programs, demos, READMEs

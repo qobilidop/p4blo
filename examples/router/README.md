@@ -29,14 +29,14 @@ Ports in the demo's architecture are 0 through 3.
 one routing table, one forwarding action and a deparser. `build()` returns the
 IR; no packet processing runs while Python constructs the program.
 
-`Route.apply` starts with `drop=True`, because control executes even after
+`Route.apply` starts with `egress_spec=511`, because ingress executes even after
 parser failure. A complete supported IPv4 header and matching checksum open
 the gate to table lookup. `forward` rewrites both MAC addresses from explicit
 host parameters, decrements TTL and recomputes the checksum. Only that action
-clears drop. `Emit` writes valid headers; the switch appends unconsumed payload.
+selects a forwarding port. `Emit` writes valid headers; v1model appends unconsumed payload.
 
 [`demo.py`](demo.py) is the host: it supplies table entries and packet bytes to
-the switch. This separation is why changing a route does not rebuild the IR.
+v1model. This separation is why changing a route does not rebuild the IR.
 The checksum helper is ordinary Python composition of typed eDSL expressions,
 not a separate runtime implementation.
 
@@ -57,13 +57,12 @@ or exported roles. This is a core protobuf `BlockLibrary` that can be
 validated independently. Types follow the blocks' parameter and local
 declarations.
 
-`build()` separately calls `reference.assemble` with that library to select the
-parser, control and deparser of the supplied architecture. Its metadata
-contract gives fields such as `drop` and `egress_port` their host meaning;
-the core sees ordinary block parameters and typed fields. The demo selects
-`reference.load`, passes `supplied_registry()` to bind declared externs to
-their implementations, and chooses `Switch(ports=4)`. Extern declarations
-describe typed calls; the registry supplies their execution.
+`build()` separately calls `v1model.assemble` with that library to select
+parser, ingress and deparser; omitted checksum/egress stages are empty.
+`egress_spec` carries the requested port or drop value 511; the core sees
+ordinary typed fields. The demo selects `v1model.load` to bind the supplied
+externs and `v1model.V1Model(ports=4)` to execute the packet profile. Extern
+declarations describe typed calls; the registry supplies their execution.
 
 `ChecksumWords` names the 144-bit expression type used by `checksum_data`.
 `supported_packet` names a symbolic condition; `with self.if_(...)` records
@@ -84,10 +83,10 @@ build time, while `self.assign` records packet-time writes.
   No transport checksum validation, ARP, ICMP generation, MTU handling or
   fragmentation is implemented.
 - Host configuration is trusted. It can change the default action and install
-  any representable MAC/port. Under the demo's four-port switch an out-of-range
-  egress drops with an architecture diagnostic. Table size is descriptive,
-  not an enforced capacity limit. The filter adapter agrees on fate but keeps
-  original bytes, whereas the switch emits the rewritten packet.
+  any representable MAC/port. Under the demo's four-port profile an unsupported
+  output port drops with a diagnostic; 511 is an ordinary drop request.
+  Table size is descriptive, not an enforced capacity limit. Output contains
+  the rewritten packet followed by the unconsumed payload.
 
 ## Evidence
 

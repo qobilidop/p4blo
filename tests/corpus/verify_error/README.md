@@ -25,9 +25,9 @@ wire.
   the two apart, and the spec says the same.
 - **`standard_metadata`.** The source's `metadata` keeps its `mystruct1`
   field, unused, and gains `parser_error` under the contract's name. The
-  program never writes `egress_spec`, so no `egress_port` is declared: an
+  program never writes `egress_spec`, so that field is not declared: an
   undeclared contract field reads as zero
-  ([decisions.md](../../../.agents/decisions.md), "Architecture rules"), which is
+  ([architecture support](../../../docs/arch-supports.md)), which is
   BMv2's default egress port too, and the vector expects port 0.
 - **`0xbad`** takes the width of `dstAddr`, `bit<48>`.
 - **`packet_in`, `packet_out`, `V1Switch`.** As in every corpus program;

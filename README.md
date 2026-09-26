@@ -23,7 +23,7 @@ in this repository and runs in CI.
 |---|---|---|
 | The core is small and post-elaboration | twelve corpus programs use existing core constructs and explicit extern contracts, without application escape hatches | [`spec/ir/proto/p4blo/v0/p4blo.proto`](spec/ir/proto/p4blo/v0/p4blo.proto), [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md), [`tests/corpus/`](tests/corpus/) |
 | The core supports the tested real programs | corpus packet replays on two oracles, plus original firewall packet/state checks; precise known discrepancies remain explicit | [`tests/oracle/`](tests/oracle/), [`docs/assurance.md`](docs/assurance.md#known-disagreements-with-the-oracles) |
-| A block is a function; an architecture is ordinary code | a filter in 45 lines and a switch in 50, no P4 in either; every program runs under both with the same fate decisions | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch/) |
+| A block is a function; an architecture is ordinary code | independent blocks and one explicit six-stage v1model adapter; core meaning does not depend on pipeline roles | [`impl/python/p4blo/arch/`](impl/python/p4blo/arch/) |
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`spec/ir/`](spec/ir/), `impl/python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
@@ -78,7 +78,7 @@ to manufacture agreement.
    interpreter, written to be read as an explanation of P4's core.
 5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR/): the independent executable Lean
    semantics, checked against P4-SpecTec. Core properties are proved here;
-   `spec/arch/` supplies the tested switch and extern models needed to run
+   `spec/arch/` supplies the tested v1model and extern models needed to run
    programs through the `p4blo-lean` endpoint.
 6. [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
@@ -148,8 +148,8 @@ typechecked with p4c through Docker when it is available.
 | Path | What |
 |---|---|
 | `spec/ir/` | the IR specification: Lean syntax, semantics, codecs and scoped proofs, with the wire schema |
-| `spec/arch/` | tested executable adapters: architecture bindings, switch, extern families and the `p4blo-lean` endpoint |
-| `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
+| `spec/arch/` | tested executable adapters: architecture bindings, v1model, extern families and the `p4blo-lean` endpoint |
+| `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, v1model, STF runner, differential loop |
 | `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
 | `tests/examples/` | application goldens, packet vectors and independent behavior checks |

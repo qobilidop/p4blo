@@ -35,7 +35,7 @@ p4c maintainers.
   the copy of the table they add to.
 - **`standard_metadata.egress_spec`.** The source's `Meta` is empty; the
   program's `Meta` has the one contract field the source writes,
-  `egress_port`, and the parser's and control's `inout Meta m` and
+  `egress_spec`, and the parser's and ingress control's `inout Meta m` and
   `inout standard_metadata_t meta` become one `meta`.
 - **`hdrs.extra.last`.** `hdrs.extra[hdrs.extra.lastIndex]`; the eDSL's
   `.last` is that expression in one word, and the IR holds the index. The

@@ -14,7 +14,7 @@ contracts; no eDSL or interpreter extension is needed.
 | [vlan_gateway.py](vlan_gateway.py) | Complete typed Python source; `build()` returns the IR |
 | [vlan_gateway.txtpb](vlan_gateway.txtpb) | Generated IR golden, checked against the source |
 | [gateway.stf](gateway.stf) | Host policy and independent packet expectations, used by both P4 oracles |
-| [demo.py](demo.py) | Three packets on one persistent four-port switch |
+| [demo.py](demo.py) | Three packets on one persistent four-port v1model instance |
 | [test_vlan_gateway.py](../../programs/test_vlan_gateway.py) | Independent packet, diagnostic and full-counter-state answers in Python and Lean |
 
 ## Try it
@@ -58,11 +58,11 @@ is entirely the Python eDSL source. Reusing `loaded` preserves counter state.
   appropriate entries/defaults and valid destination ports; this program
   does not enforce host configuration or prohibit forwarding to ingress.
 - `admissions[port]` counts action decisions, not physical transmissions.
-  Under the four-port adapter, an installed port 4 or 511 increments its
-  counter and then drops with an architecture diagnostic. Tests pin that
+  Under the four-port profile, an installed port 4 or 511 increments its
+  counter and then drops. Port 4 produces a diagnostic; 511 is the ordinary
+  drop request. Tests pin that
   distinction and all 512 cells, including counters untouched by drops.
-- The switch deparses valid headers and appends unconsumed payload. The
-  filter adapter makes the same fate decisions but keeps original bytes.
+- v1model deparses valid headers and appends unconsumed payload.
   P4 oracle STF tests observe packets, not counter state; state expectations
   are checked independently against Python and Lean.
 

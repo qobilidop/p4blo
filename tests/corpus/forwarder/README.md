@@ -29,14 +29,10 @@ tests, not a formal forwarding or whole-pipeline guarantee.
   widths, 48, 32 and 9.
 - **`const bit<16> TYPE_IPV4 = 0x800`.** A literal in the one select case
   that used it, written in decimal as the schema requires: 2048.
-- **`standard_metadata`.** The three intrinsic fields the program actually
-  uses become fields of the program's own `metadata` struct, which is the
-  metadata contract of the step-1 architecture: `ingress_port`, which the
-  architecture provides, and `egress_port` and `drop`, which it consumes.
-  `standard_metadata.egress_spec = port` is `meta.egress_port = port`, and
-  `mark_to_drop(standard_metadata)` is `meta.drop = true`. This is the
-  substance of claim 3 on one program: the packet's fate is data the block
-  writes, not an effect it performs.
+- **`standard_metadata`.** The authored metadata carries provided
+  `ingress_port` and requested `egress_spec`. A drop writes 511 to
+  `meta.egress_spec`; another assignment can overwrite that request. The
+  packet's fate is data interpreted by v1model, not a core effect.
 - **The parser's `packet_in` and the deparser's `packet_out`.** A p4blo
   parser and deparser carry the packet by their kind, not as a parameter.
 - **`NoAction`.** core.p4 declares it; the IR has no implicit declarations,
@@ -48,22 +44,23 @@ tests, not a formal forwarding or whole-pipeline guarantee.
   hdr.ipv4.hdrChecksum, HashAlgorithm.csum16)`, is a `checksum16` extern
   instance `csum` whose `compute(in bit<144> data)` takes those fields
   concatenated in header order and whose result is assigned to
-  `hdr.ipv4.hdrChecksum`. v1model runs the block after egress, which is
-  empty here, so the call sits at the end of the one control under the
-  same `hdr.ipv4.isValid()` guard. The printer turns it back into
+  `hdr.ipv4.hdrChecksum`. The authored program places the stateless
+  computation at the end of ingress under `hdr.ipv4.isValid()`, whereas
+  the original source computes after egress. The printer turns it back into
   v1model's `hash(..., HashAlgorithm.csum16, 16w0, { data }, 32w65536)`,
   the same arithmetic. Every expected IPv4 header in the vectors carries
   the checksum this computes, derived by hand in each file.
 
 ## Deferred
 
-- **`MyVerifyChecksum`.** `verify_checksum` is left out. In v1model a
-  failed check sets `standard_metadata.checksum_error`, which the tutorial
-  program never reads, so nothing observable is lost: the vectors send a
-  zero input checksum, which is wrong, and it goes unnoticed on the way in
-  and is overwritten on the way out. A verify extern would need a contract
-  field to report through, and none is declared yet.
+- **`MyVerifyChecksum`.** The authored program omits checksum verification.
+  The original sets `standard_metadata.checksum_error`, which its ingress
+  does not read. Packet vectors exercise this scoped behavior; they do not
+  establish equality of all native metadata. The frontend explicitly rejects
+  the unsupported `verify_checksum` intrinsic rather than deleting it.
 - **`size = 1024`** is carried on the table but is informative; the IR gives
   it no meaning and the interpreter does not bound the entry count.
-- **The egress pipeline.** The tutorial program's `MyEgress` is empty, so
-  nothing is lost; the step-1 architecture runs one control regardless.
+- **The egress pipeline.** The authored program omits the empty optional
+  egress and checksum stage bindings. Its stateless checksum calculation
+  remains in ingress; this is not a source-identical six-stage translation or
+  a claim of complete pipeline-state equivalence.

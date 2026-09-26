@@ -57,9 +57,9 @@ the P4_16 semantics ("v3").
   side-effect-ordering pass performs, so the program's meaning is
   unchanged.
 - **`standard_metadata`.** The program never reads or writes it, so `M` is
-  an empty struct. With no `egress_port` in the metadata contract the
-  switch sends every packet to port 0, which is what every vector expects
-  ([decisions.md](../../../.agents/decisions.md), architecture rules).
+  an empty struct. With no `egress_spec` in the metadata contract,
+  v1model sends every packet to port 0, as every vector expects
+  ([architecture support](../../../docs/arch-supports.md)).
 - **`error { BadHeaderType }`** is declared after core.p4's seven errors,
   as the IR requires, and `verify(..., error.BadHeaderType)` names it.
 - **The parser's `packet_in` and the deparser's `packet_out`.** A p4blo

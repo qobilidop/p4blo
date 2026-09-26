@@ -23,9 +23,11 @@ implementation the forwarder's IPv4 checksum uses.
   the literal `true`, so there is no guard. The printer reverses this into
   v1model's `hash(hdr.h.c, HashAlgorithm.csum16, 16w0, { hdr.h.d },
   32w65536)`, which is the same arithmetic.
-- **`cIngress`, `cEgress` and `uc`.** One control, `cIngress`, whose body
-  is the ingress body followed by the checksum update, at the end where
-  v1model runs `uc`. `cEgress` is empty and contributes nothing.
+- **`cIngress`, `cEgress` and `uc`.** The authored program computes the
+  stateless checksum at the end of ingress, rather than in the original
+  ComputeChecksum stage. Optional egress/checksum bindings are empty. Packet
+  vectors check the resulting arithmetic, not source-identical scheduling or
+  complete pipeline-state equivalence.
 - **`1`.** An unsized literal; the eDSL gives it the width of `hdr.h.d`.
 - **`standard_metadata`.** Unused, and `Metadata` is empty: no contract
   field, so every packet leaves on port 0 undropped, as the vectors expect.
@@ -34,8 +36,8 @@ implementation the forwarder's IPv4 checksum uses.
 
 ## Deferred
 
-- **`verify_checksum`.** The `vc` control is dropped. In v1model a failed
-  verification sets `standard_metadata.checksum_error`, which this program
-  never reads, so the six vectors cannot tell the difference: several send
-  a wrong input `c` and are rewritten all the same. A verify extern would
-  need a contract field to report through, and none is declared yet.
+- **`verify_checksum`.** The authored program omits the original `vc`
+  verification, which sets native `checksum_error`. These packet vectors do
+  not observe that field: several supply an incorrect checksum and still get
+  the recomputed output. This is a scoped authored example; the frontend
+  explicitly rejects that unsupported intrinsic in native source.

@@ -21,11 +21,11 @@ set ([design.md](../../../docs/design.md#architectures)).
 
 - **`standard_metadata`.** The source's `local_metadata_t` is empty; the
   program's has the two contract fields the source touches:
-  `parser_error`, which the architecture provides, and `egress_port`,
+  `parser_error`, which the architecture provides, and `egress_spec`,
   which it consumes. `standard_metadata.parser_error ==
   error.PacketTooShort` is `meta.parser_error == PacketTooShort`, the
   literal of the core error, and `standard_metadata.egress_spec = 0` is
-  `meta.egress_port = 0`.
+  `meta.egress_spec = 0`.
 - **`b.emit(hdr)` of the whole struct** is kept as it is: the IR's `emit`
   takes a header, a stack, or a struct of those, and emits the struct's
   fields in order.

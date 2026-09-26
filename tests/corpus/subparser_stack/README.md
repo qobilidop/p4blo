@@ -40,7 +40,7 @@ valid bits `03`.
   operand, which the eDSL does.
 - **`hdr.h2.last`** is `hdr.h2[hdr.h2.lastIndex]`.
 - **`standard_metadata`.** Unused, so `M` is an empty struct; with no
-  `egress_port` the switch sends the packet to port 0, as the vector
+  `egress_spec` v1model sends the packet to port 0, as the vector
   expects.
 - **`error { BadHeaderType }`** is declared after core.p4's seven errors.
 - **`isValid()` and `emit`.** The IR's own nodes; `packet.emit(hdr.h2)`

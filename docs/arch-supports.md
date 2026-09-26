@@ -1,40 +1,48 @@
 # Architecture support
 
-The IR is architecture-free: a parser, control or deparser is a function
-of its inputs, and [ir-semantics.md](ir-semantics.md) never mentions a
-port, a packet's fate or its payload. An architecture is ordinary code
-that calls those functions, decides what the metadata they leave means,
-and supplies the externs a program may declare. This page records what
-this repository supplies, the rules those architectures share, and what
-is deliberately not supported.
+p4blo supports one packet architecture: a scoped, single-pass **v1model**
+profile. Core **Parser**, **Control** and **Deparser** blocks remain independent
+functions with arbitrary typed parameters. The block runner invokes those
+blocks for semantic testing; it is not a second packet architecture.
 
-| Architecture | Where | What it is |
+| Surface | Implementation | Independent comparison |
 |---|---|---|
-| filter | `impl/python/p4blo/arch/filter.py` | parser and control; the packet leaves as it came, or not at all |
-| switch | `impl/python/p4blo/arch/switch.py`, `spec/arch/P4bloArch/Switch.lean` | parser, control and deparser over a few ports, with drop, unicast and flood; the Lean twin is what the differential tests run |
-| v1model | `standard_metadata_binding` in `impl/python/p4blo/arch/v1model.py` | not an implementation: a printing shim that maps the contract onto `standard_metadata` so the P4 oracles can run printed programs |
-| PSA, PNA, TNA and other P4 architectures | none | see [Not supported](#not-supported) |
+| Core blocks | Python and Lean core interpreters; H/M entry helpers for the block runner | P4-SpecTec through our explicit block-runner adapter |
+| v1model packet processing | `p4blo.arch.v1model`, `spec/arch/P4bloArch/V1Model.lean` | Python/Lean; supported P4 programs on P4-SpecTec and BMv2 `simple_switch` |
 
-The filter and the switch exist to make [claim 3](design.md#the-four-claims)
-measurable: each is about fifty lines with no P4 in it, and every corpus
-program runs under both unchanged. They are reference architectures in
-the sense that differential tests and oracles run programs under them,
-not in the sense of a standard anyone else implements. They and their
-concrete extern families are tested executable adapters with no formal
-architecture-specific guarantee. Core progress assumes an extern contract;
-this package does not prove that the supplied families discharge it.
+Architecture and concrete extern implementations are tested executable code,
+without architecture-specific proof guarantees. Core progress assumes a
+generic `ExternContract`; this package does not prove that its families
+satisfy that premise. [Assurance](assurance.md) states the evidence boundary;
+[oracle discrepancies](oracle-discrepancies.md) records the governing contract,
+selected behavior and reduced reproductions when the external tools differ.
 
-The generic Python loader, `p4blo.arch.load`, requires an explicit extern
-registry, metadata contract and mapping of required roles to block kinds.
-`p4blo.arch.reference.load` selects the supplied switch/filter environment
-as a convenience; it is not a mandatory architecture. Independent P4 blocks
-are collected in a core `BlockLibrary`, which may have several blocks of each
-kind and no selected pipeline. `reference.assemble` or a custom adapter
-selects wire exports and H/M roots in an architectural `BlockAssembly`.
-The generic loader can also take a compiled library and explicit
-`BlockBindings` directly. Another composition can use the same block
-definitions without the supplied pipeline defaults. See
-[Python authoring](python-edsl.md) for the public API and a custom extern.
+## Minimal v1model profile
+
+A `BlockLibrary` contains declarations and independent blocks without pipeline
+selection. `v1model.assemble` chooses H/M roots and named exports in an
+architectural `BlockAssembly`. The parser, ingress and deparser are required;
+omitted verify-checksum, egress and compute-checksum stages are empty. All
+four controls use the existing `(inout H, inout M)` core calling convention.
+
+```python
+from p4blo.arch import v1model
+
+program = v1model.assemble(
+    blocks, name="router", headers=Headers, metadata=Metadata,
+    parser=Parse, ingress=Ingress, deparser=Emit,
+    verify_checksum=Verify, egress=Egress, compute_checksum=Compute,
+)
+loaded = v1model.load(program)
+pipeline = v1model.V1Model(ports=4)
+```
+
+Explicit stages must select distinct blocks. A selected stage cannot also be
+called as a sub-block: its native P4 interface has architecture parameters
+that an ordinary core call does not. Internal blocks remain reusable and may
+have arbitrary signatures. These are adapter restrictions, not core validity
+rules. See [Python authoring](python-edsl.md) for the generic assembly and
+loader interfaces.
 
 ## Minimal v1model profile
 
@@ -64,88 +72,74 @@ be replaced by the final supported profile when implementation lands.
 
 ## The metadata contract
 
-The supplied filter and switch communicate their host policy through the
-selected metadata struct `M`. Each names the fields it needs, with a type and a
-direction: provided fields are written before the blocks run, consumed
-fields are read afterwards. At load the selected `M` is checked
-structurally against the contract, by field name and type, and nothing
-else about `M` concerns anyone. Every field is optional. A field the
-program does not declare reads as its zero value and ignores writes, so a
-program without `egress_port` unicasts to port 0 and a program without
-`flood` runs unchanged under an architecture that offers it.
+The adapter reserves four optional fields of the selected `M` struct. A field
+of the wrong type is rejected. Adapter reads of an absent field return zero,
+and adapter writes to it have no effect; ordinary user fields are unrestricted. The frontend renames
+colliding native user-metadata fields to preserve their separate identities.
 
-The vocabulary the supplied architectures share:
+| Field | Type | Meaning |
+|---|---|---|
+| `ingress_port` | `bit<9>` | Provided input port |
+| `parser_error` | `error` | Parser outcome, `NoError` on acceptance |
+| `egress_spec` | `bit<9>` | Requested destination in ingress; drop request in egress |
+| `egress_port` | `bit<9>` | Read-only destination selected after ingress |
 
-| Field | Type | Direction | Meaning |
-|---|---|---|---|
-| `ingress_port` | `bit<9>` | provided | port the packet arrived on |
-| `parser_error` | `error` | provided | the parser's error, `NoError` on accept |
-| `egress_port` | `bit<9>` | consumed | unicast destination |
-| `drop` | `bool` | consumed | discard the packet; wins over the rest |
-| `flood` | `bool` | consumed | send to every port but the ingress one |
+Only ingress and egress may write `egress_spec`. A value of **511** marks a
+stage's packet for dropping; a later assignment in that stage can undo it.
+The adapter does not use boolean `drop` or `flood` fields.
 
-Fate is a set of booleans rather than an enum so that a program that
-knows nothing of flooding runs unchanged under an architecture that
-offers it. A declared contract field of the wrong type is a load error.
-Any other field of `M` is plain user metadata.
+| Stage | Standard fields the program may read |
+|---|---|
+| Parser | `ingress_port` |
+| VerifyChecksum | None |
+| Ingress | `ingress_port`, `parser_error`, `egress_spec` |
+| Egress, ComputeChecksum | All four |
+| Deparser | No metadata parameter |
 
-## Rules every supplied architecture follows
+These restrictions follow the available native stage interfaces. In
+particular, VerifyChecksum has no standard-metadata argument, and the selected
+egress port does not exist during ingress. Profile checking follows accesses
+through actions and nested calls, including argument index expressions; whole
+metadata replacements that overwrite protected fields are rejected. The core
+validator still accepts architecture-independent uses of those same types.
 
-The IR does not decide these, so each architecture here decides them the
-same way, and a Lean twin must match its Python original exactly.
+## Packet execution
 
-- **Loading** happens once per program: validate, bind every extern
-  instance to its implementation, check `M` against the contract, and
-  resolve the blocks the architecture needs by their exported role. Extern
-  state lives with the loaded program and persists for as long as it does,
-  which is what makes a register stateful across packets.
-- **The metadata starts** as the zero value of `M` with `ingress_port`
-  set. An ingress port that is not a port of the architecture, or that
-  does not fit `bit<9>`, is the caller's error, raised before anything
-  runs.
-- **After a parser rejection the control still runs**, over the partial
-  headers the parser returned, with `parser_error` set when the program
-  declares it. This is v1model's behavior and what the corpus expects.
-- **A parse that ends off a byte boundary**, accepted or not, is treated
-  as a program bug: the packet is dropped with a diagnostic, since P4
-  targets require byte-aligned parsing anyway.
-- **The payload** is the bytes after the ones the parser consumed. The
-  output packet is the deparser's bytes followed by the payload.
-- **The deparser runs before the fate is read**, so its extern calls
-  happen on a dropped packet too.
-- **Fate:** `drop` wins over everything; then `flood` sends the packet to
-  every port but the one it arrived on; otherwise the packet goes to
-  `egress_port` alone. An `egress_port` that is not a port of the
-  architecture drops the packet with a diagnostic, the same way a
-  misaligned parse does.
-- **Table entries** are inputs installed by the host: the program's const
-  entries and defaults first, then the host's, afresh for every packet in
-  a vector replay, while extern state persists.
-- **Diagnostics** are the architecture's own record of a packet it
-  dropped for a reason the program did not decide. They are compared by
-  presence, not by exact text, between Python and Lean.
+The serial interpreter executes:
 
-## The filter
+```text
+Parser → VerifyChecksum → Ingress → select output port
+       → Egress → ComputeChecksum → Deparser → append payload
+```
 
-The filter runs the parser and the control and acts on the metadata they
-leave: `drop` discards the packet, otherwise the original bytes leave on
-`egress_port`. There is no deparser, so whatever the control did to the
-headers never reaches the wire; a program that rewrites headers still
-runs here unchanged, its rewrites merely go unseen. The filter has no
-port count: any `bit<9>` egress port passes through. A vector that
-expects a rewritten packet therefore fails under the filter by
-construction, and the filter tests rewrite expectations to the input
-bytes. The filter is Python only; nothing runs under it in Lean.
+- Loading validates core blocks and bindings, checks the profile and binds
+  fresh extern instances. Reuse one `Loaded` object to retain state across
+  packets. Host entries are supplied separately for each request.
+- Metadata begins at zero with the input port populated. `ports` is between
+  1 and 511; configured physical ports are `0 .. ports-1`. An invalid input
+  port is a caller error before any block runs.
+- Parser rejection preserves partial headers, supplies `parser_error`, and
+  continues to the controls. A non-byte-aligned consumed length drops with a
+  diagnostic. Payload is the bytes after the parser's consumed prefix.
+- If ingress ends with `egress_spec = 511`, no egress, compute-checksum or
+  deparser code runs. Otherwise the destination is saved as `egress_port`.
+  A destination outside configured ports drops with a diagnostic.
+- Before egress, `egress_spec` is reset to **zero**, matching the pinned BMv2
+  target profile. Egress may request a drop by writing 511; other writes do
+  not change the saved output port. A drop skips compute-checksum and
+  deparser, including their extern effects.
+- Successful output is deparser bytes followed by the retained payload,
+  emitted once on the saved egress port. Diagnostics accumulate on the
+  pipeline object and should be checked alongside outputs.
 
-## The switch
-
-The switch runs all three blocks over `ports` ports numbered from zero.
-Ports are `0` to `ports - 1`; `511`, BMv2's drop port, is just an
-out-of-range port here, so a program that writes it without `drop` is
-dropped by this architecture for that reason and by BMv2 for its own.
-The Lean switch in `spec/arch/P4bloArch/Switch.lean` follows the same rules line
-for line and is what `p4blo-lean run` executes, so the differential tests
-compare whole packets in and out under one architecture on both sides.
+This is a serial per-packet model, not a model of concurrent ingress/egress
+threads or queue scheduling. Complete extern-state observations and ordered
+stage witnesses check its implementation. The BMv2 backend accepts a narrower
+set of operations in checksum/deparser stages than the core interpreter;
+interpreter tests of arbitrary stage side effects do not claim BMv2 execution
+support. Portable packet witnesses and the original P4 sources are tested on
+both external oracles. A target compile rejection is an unsupported program,
+not oracle agreement.
 
 ## Extern families
 
@@ -160,9 +154,9 @@ relaxes shape checks.
 
 | Family | Shape | Behavior |
 |---|---|---|
-| `register` | `register(bit<32> size)`; `read(out T result, in bit<32> index)`, `write(in bit<32> index, in T value)` for any width `T` | `size` cells of width `T`, zero at load, persistent across packets. A read at or beyond `size` yields zero and a write there is ignored. BMv2 ignores the write too but leaves the read's destination untouched; the divergence is documented, not resolved. |
+| `register` | `register(bit<32> size)`; `read(out T result, in bit<32> index)`, `write(in bit<32> index, in T value)` for any width `T` | `size` cells of width `T`, zero at load, persistent across packets. A read at or beyond `size` yields zero and a write there is ignored. BMv2 ignores the write too but leaves the read's destination untouched. Native v1model leaves that read result unspecified; zero is p4blo's deterministic policy, not a claim that BMv2 is incorrect. |
 | `counter` | `counter(bit<32> size)`; `count(in bit<32> index)` | `size` counts, zero at load, persistent; out-of-range indices are ignored |
-| `checksum16` | `checksum16()`; `get(in T data) -> bit<16>` | the RFC 1071 one's-complement sum over `data` as a bit string, zero-padded to 16-bit words, carries folded; stateless |
+| `checksum16` | `checksum16()`; `compute(in T data) -> bit<16>` | the RFC 1071 one's-complement sum over `data` as a bit string, zero-padded to 16-bit words, carries folded; stateless |
 | `crc16` | `crc16()`; `compute(in bit<D> data) -> bit<16>` | CRC-16/ARC: polynomial 0x8005, reflected input and output, initial value and final XOR zero; full 16-bit result |
 | `crc32` | `crc32()`; `compute(in bit<D> data) -> bit<32>` | CRC-32/ISO-HDLC: polynomial 0x04c11db7, reflected input and output, initial value and final XOR 0xffffffff; full 32-bit result |
 
@@ -182,66 +176,53 @@ arbitrary widths survive, so a fault that changes a register cell but not
 a packet cannot hide. Custom externs need their own model and evidence on
 both sides; the registry does not verify arbitrary plugins.
 
-## The v1model shim
+## P4 printing and import
 
-There is no v1model implementation. What exists is the mapping the
-printer applies so that the two P4 oracles, P4-SpecTec's simulator and
-BMv2, can run printed programs under `v1model`:
+`v1model.print_program` emits native V1Switch stage interfaces and maps the
+four reserved fields onto native metadata. It creates empty controls for
+omitted stages. At egress entry the local M field `egress_spec` is initialized
+to zero, while `egress_port` copies the native selected destination. At egress
+exit the printer writes native `egress_spec` as 511 for a drop request, or the
+native `egress_port` otherwise. This preserves M's observable egress request
+for ComputeChecksum while keeping output selection stable on both simulators.
+The
+[original-source probe](../tests/frontend/probes/v1model_egress_spec_read.p4)
+separately exposes P4-SpecTec's different initialization. Egress destination
+selection is also compared using an unchanged original-source probe, so a
+printer mapping cannot hide that discrepancy.
 
-| `M` field | v1model |
-|---|---|
-| `ingress_port` | `M.ingress_port = standard_metadata.ingress_port;` at the top of the parser's start state and of the ingress control |
-| `parser_error` | `M.parser_error = standard_metadata.parser_error;` at the top of the ingress control |
-| `egress_port` | `standard_metadata.egress_spec = M.egress_port;` at the end of the ingress control |
-| `drop` | `if (M.drop) { mark_to_drop(standard_metadata); }` at the end of the ingress control, after the egress port so that drop wins |
-| `flood` | no mapping; checked between the two architectures instead |
+The printer maps register/counter and checksum/CRC families onto their native
+v1model forms. The P4 frontend preserves all six stage boundaries instead of
+merging controls. `mark_to_drop` becomes an assignment of 511 to `egress_spec`
+in the permitted stages; `update_checksum` with csum16 uses the supplied
+checksum16 computation. `verify_checksum` is explicitly rejected until its
+`checksum_error` behavior is supported. A frontend or printer success does not
+assert that every target backend accepts the program.
 
-The shim prints `register`, `counter` and `checksum16` as the v1model
-externs of the same name, and each CRC service as `hash` with the
-corresponding `HashAlgorithm`, base zero and maximum `2^W`, which needs a
-width of `W+1` so that `2^32` is not encoded as zero. The verify-checksum,
-egress and compute-checksum stages are printed empty, so an oracle neither
-verifies nor recomputes a checksum the program does not compute itself.
-This is a shim for evidence, not support for programs written against
-v1model: intrinsic metadata beyond the contract, meters, digests, clone,
-recirculate and multicast groups have no counterpart.
+The P4-SpecTec block printer selects parser/control/deparser independently over
+the same library, with ingress as the default selected control of a v1model
+assembly. It does not combine the pipeline's controls. Its custom P4 include
+uses `P4bloParser`, `P4bloControl` and `P4bloDeparser`; those names describe our
+adapter's interfaces, not upstream standard architectures.
 
 ## Not supported
 
-The supplied architecture and printing adapters have these limits; they
-do not restrict how a custom caller composes core blocks.
-
-- **PSA, PNA, TNA and any other named P4 architecture.** No program
-  written against them can be loaded, and no `psa.p4` or similar shim
-  exists. Supporting one would be a new architecture module on each side
-  plus a printing shim, not a change to the IR.
-- **An egress pipeline, recirculation, cloning, multicast groups,
-  meters, digests and timestamps.** The supplied pipelines run one control
-  without a second pass; their packet fate is drop, unicast or flood.
-- **Ports outside `bit<9>`**, and any port numbering other than
-  `0 .. ports - 1` for the switch.
-- **Additional match kinds and supplied services.** The core supports exact,
-  LPM and ternary keys. The five extern families above are the supplied
-  implementations; custom families can be registered explicitly, without
-  automatically gaining Lean semantics or P4 printer support.
-
-The block-oracle package named `P4blo` is an isolated P4-SpecTec testing
-adapter. It does not define a required architecture for p4blo programs.
+- Other packet architectures: Filter, the custom Switch, eBPF, PSA, PNA, TNA
+  and XDP are not supplied.
+- Multicast/flooding, cloning, recirculation, resubmission, meters, digests,
+  timestamps, queue metadata and arbitrary standard-metadata fields.
+- The `verify_checksum` intrinsic and `checksum_error` metadata.
+- Ports outside the configured range or the 9-bit profile, and modeling the
+  BMv2 scheduler's concurrent packet interleavings.
+- Automatic Lean semantics or P4 printing for custom Python extern families.
 
 ## Adding an architecture
 
-A custom architecture may live outside p4blo. It assembles a block library,
-loads with an explicit registry and contract, then calls blocks according to
-its own logic. The [custom extern example](../examples/custom_extern.py) runs
-a control without a packet pipeline. Neither ports nor packet fate are
-mandatory inputs to an architecture composition.
-
-To use the supplied STF driver, provide a `run` method of the shape
-`run(loaded, entries, ingress_port, packet)` returning egress ports and
-packets. Use `load` for the once-per-program work and the `Metadata` view
-for contract fields; a contract may declare its own fields. Supplied
-adapters live under `impl/python/p4blo/arch/`. If programs must run under
-it in the differential tests, a Lean twin follows the same rules and the
-`p4blo-lean` endpoint learns to select it. The shared rules above describe
-the supplied filter and switch. A custom architecture defines its own
-contract and execution policy; document those choices with its adapter.
+Custom composition can live outside this package. `p4blo.arch.assemble` and
+`p4blo.arch.load` take explicit bindings, extern registry, contract and role
+kinds without selecting v1model. A caller can invoke independent core blocks
+with no packet pipeline; [custom_extern.py](../examples/custom_extern.py) is a
+runnable example. To use STF replay, supply
+`run(loaded, entries, ingress_port, packet)` returning output port/packet pairs.
+The generic interfaces do not promise support or oracle coverage for that
+custom architecture.

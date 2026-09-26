@@ -24,12 +24,14 @@ aging; this is not exact connection tracking.
 The port introduces no IR construct and no extern beyond the byte-aligned
 CRC16 and CRC32 services of [arch-supports.md](../../../docs/arch-supports.md#extern-families).
 Masking each CRC by 4095 implements the original base-zero modulo-4096
-hash range. The empty verify and egress stages are erased and checksum
-computation runs last in the one control, as in the forwarder.
-`mark_to_drop` maps to the architecture's drop metadata; the egress port
-is also set to 511 so that direction-table lookup keys are preserved after
-a routing drop. This is a fixed sequential two-port profile, not a claim
-about arbitrary v1model metadata or topologies.
+hash range. The authored program leaves optional verify, egress and compute
+bindings empty and computes the stateless checksum last in ingress, as in
+the forwarder. The original instead computes it in ComputeChecksum. Packet
+and register observations cover this authored schedule; they do not establish
+source-identical six-stage execution or complete native metadata equality.
+`mark_to_drop` becomes `egress_spec = 511`, which also preserves the original
+direction-table lookup keys after a routing drop. This is a fixed sequential
+two-port profile, not a claim about arbitrary v1model metadata or topologies.
 
 | Firewall behavior | Existing mechanism |
 |---|---|
@@ -120,7 +122,7 @@ process and transcript failures are tested separately.
 
 ## Cross-language execution
 
-The Python-authored IR runs on the executable Lean switch with persistent
+The Python-authored IR runs on the executable Lean v1model adapter with persistent
 extern state. Packet and full-state regressions cover connections,
 collisions, truncation and generated flow sequences. Focused tests in
 `tests/programs/test_firewall_semantics.py`, `test_firewall_body_semantics.py`

@@ -59,18 +59,18 @@ single control with an explicit scalar
 shorthands, not requirements of independent block compilation.
 
 Architecture assembly selects the roles and the header/metadata values used
-by the existing wire format. The supplied switch adapter is explicit:
+by the existing wire format. The supported v1model adapter is explicit:
 
 ```python
-from p4blo.arch import reference
+from p4blo.arch import v1model
 
-assembly = reference.assemble(
+assembly = v1model.assemble(
     blocks,
     name="router",
     headers=Headers,
     metadata=Metadata,
     parser=Parse,
-    control=Route,
+    ingress=Route,
     deparser=Emit,
 )
 ```
@@ -87,7 +87,12 @@ Assembly compiles the library definitions together in one context, so types,
 sub-blocks and shared extern instances keep one identity. Independent
 `.compile()` produces a core library that can be validated and used without an
 assembly. Assembly does not link separately compiled protobuf fragments. The
-loader checks the assembly and its selected roles.
+loader checks the assembly and its selected roles. Optional
+`verify_checksum`, `egress` and `compute_checksum` arguments select separate
+Control blocks; omitted stages are empty. Explicit stage blocks must be
+distinct and cannot also serve as internal callees. Standard metadata uses
+`egress_spec` for requests and read-only `egress_port` for the selected output;
+see the [stage contract](arch-supports.md#the-metadata-contract).
 
 An architecture may bind a compiled library directly, including several
 blocks of the same kind. For example, a host that runs two controls can name
@@ -158,20 +163,19 @@ Concrete families are outside the generic eDSL:
 | `p4blo.arch.externs.Registry`, `Implementation`, `Shape` | Explicit runtime implementation registration and checked binding |
 | `p4blo.arch.externs.supplied_registry()` | Fresh registry containing the supplied implementations |
 | `p4blo.arch.load` | Load with an explicit registry, metadata contract and required role/kind mapping |
-| `p4blo.arch.reference.load` | Convenience loader selecting the supplied switch/filter contract and defaults |
+| `p4blo.arch.v1model.load` | Load the supported six-stage v1model profile with its supplied extern families |
 
-The three demos explicitly select the reference environment and supplied
-registry:
+The three demos explicitly select the v1model profile:
 
 ```python
-from p4blo.arch import reference
-from p4blo.arch.externs import supplied_registry
+from p4blo.arch import v1model
 
-loaded = reference.load(assembly, registry=supplied_registry())
+loaded = v1model.load(assembly)
+pipeline = v1model.V1Model(ports=4)
 ```
 
-An architecture can select a smaller registry or register different custom
-families. The generic loader supplies no switch defaults. The
+A custom caller can select a smaller registry or register different families
+through generic `arch.load`. That loader supplies no architecture defaults. The
 [custom extern example](../examples/custom_extern.py) defines an extern,
 registers its Python implementation and runs a control-only assembly without
 modifying p4blo:
@@ -189,17 +193,20 @@ required by the authoring or execution APIs.
 
 ## Migrating older source
 
-- Replace typed `p4.Program(...)` authoring with `p4.BlockLibrary(P, C, D,
-  externs=[...])`. Choose pipeline roles and H/M roots separately with
-  `reference.assemble(...)` or a custom architecture adapter.
-- Import concrete extern classes and dynamic declaration helpers from
-  `p4blo.arch.externs.declarations`, rather than `p4blo.edsl.externs`,
-  `p4blo.edsl.core.externs` or the eDSL's top-level CRC exports.
-- Replace the old implicit `arch.load(program)` with
-  `arch.reference.load(program)` when selecting the supplied environment;
-  use explicit `arch.load` dependencies for a custom architecture.
-- Replace `default_registry()` with `supplied_registry()`.
+- Author independent `Parser`, `Control` and `Deparser` classes, optionally
+  collected in `BlockLibrary`; keep pipeline selection in `v1model.assemble`.
+- Replace `reference.assemble(..., control=...)` with
+  `v1model.assemble(..., ingress=...)`; keep optional stages separate.
+- Replace `arch.reference.load` and `arch.Switch` with `v1model.load` and
+  `v1model.V1Model`. Filter and the custom Switch are no longer supplied.
+- Replace requested-destination `egress_port` with `egress_spec`. Replace a
+  drop assignment with `egress_spec = 511` at that point in the block; later
+  writes may undo it. Remove `drop` and `flood` fields. The new `egress_port`
+  is the actual destination snapshot available only after ingress.
+- Keep concrete extern declarations in `p4blo.arch.externs.declarations`.
+  Custom registries use explicit `arch.load` dependencies; they do not extend
+  the supported v1model profile automatically.
 
-These changes affect authoring and runtime assembly. The core and architecture
-message names change; the supplied applications' serialized payloads and
-behavior remain the same.
+Regenerate affected architecture goldens and check packet/state behavior.
+The core BlockLibrary and arbitrary typed block signatures remain independent
+of this migration; serialized architecture bindings and metadata do change.

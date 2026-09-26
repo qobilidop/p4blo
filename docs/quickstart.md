@@ -7,7 +7,10 @@ then the [firewall and load balancer](../examples/README.md). Each combines a
 complete typed eDSL program, host configuration and independent expectations.
 The [authoring guide](python-edsl.md) explains blocks and externs.
 
-The two corpus examples below preserve upstream P4 behavior:
+The two corpus examples below preserve the upstream behaviors covered by
+their packet and state observations. Their authored stateless checksum
+computation runs in ingress; their READMEs explain this schedule and the
+limits of original-source comparison:
 
 | Program | Python source | First vector |
 |---|---|---|
@@ -27,7 +30,7 @@ validator checks. The eDSL is tested, not a verified frontend.
 
 ## Run the Python-authored programs
 
-This builds from the Python sources, validates through `arch.reference.load`, and checks
+This builds from the Python sources, validates through `v1model.load`, and checks
 the independent STF packet expectations. Keep one `Loaded` object for an
 entire sequence: its externs hold the firewall's persistent registers.
 
@@ -36,6 +39,7 @@ entire sequence: its externs hold the firewall's persistent registers.
 uv run python - <<'PY'
 from pathlib import Path
 from p4blo import arch, stf
+from p4blo.arch import v1model
 from tests.corpus.forwarder.forwarder import build as forwarder
 from tests.corpus.tutorial_firewall.tutorial_firewall import build as firewall
 
@@ -44,9 +48,9 @@ for name, build, vector in [
     ("forwarder", forwarder, "forward.stf"),
     ("tutorial_firewall", firewall, "connection.stf"),
 ]:
-    loaded = arch.reference.load(build())
-    switch = arch.Switch(ports=4)
-    driver = arch.stf_driver(switch, loaded)
+    loaded = v1model.load(build())
+    pipeline = v1model.V1Model(ports=4)
+    driver = arch.stf_driver(pipeline, loaded)
     ports = []
     def run(entries, port, packet):
         output = driver(entries, port, packet)
@@ -54,7 +58,7 @@ for name, build, vector in [
         return output
     path = root / "tests/corpus" / name / vector
     stf.assert_replay(loaded.index, stf.parse(path.read_text()), run)
-    assert not switch.diagnostics, switch.diagnostics
+    assert not pipeline.diagnostics, pipeline.diagnostics
     print(f"{name}: output ports {ports}")
 PY
 ```
@@ -69,7 +73,7 @@ tutorial_firewall: output ports [[], [2], [1], []]
 The firewall first drops an unsolicited reply, then an outbound SYN sets its
 two Bloom cells, the corresponding reply passes, and another unsolicited
 reply drops. `[]` means no output packet, **not necessarily an error**.
-Recreating `arch.reference.load(...)` for each packet resets that state. Table entries
+Recreating `v1model.load(...)` for each packet resets that state. Table entries
 are installed from the vector's current configuration for each packet;
 they are separate from persistent extern state.
 
@@ -96,7 +100,7 @@ uv run python - <<'PY'
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from p4blo import arch, stf
-from p4blo.arch import wire
+from p4blo.arch import v1model, wire
 from p4blo.drt import Case, LeanRunner
 from tests.corpus.forwarder.forwarder import build as forwarder
 from tests.corpus.tutorial_firewall.tutorial_firewall import build as firewall
@@ -107,7 +111,7 @@ for name, build, vector in [
     ("tutorial_firewall", firewall, "connection.stf"),
 ]:
     program = build()
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     statements = stf.parse((root / "tests/corpus" / name / vector).read_text())
     ports = []
     with TemporaryDirectory() as directory:
@@ -133,18 +137,18 @@ checksums.
 
 Formal verification covers the architecture-free IR, including soundness of
 its validity checker and progress under explicit extern, installation and
-entry assumptions. The switch and concrete extern families are tested
+entry assumptions. The v1model adapter and concrete extern families are tested
 executable adapters. Neither they nor these applications have a formal
 correctness guarantee; see [assurance](assurance.md#what-is-proved).
 
 ## Diagnostics and checks
 
-Python construction may raise `EdslError` with a source location; `arch.reference.load`
-can reject validation, extern binding, missing exports or architecture-contract
-mismatches. Bad host entries are rejected by `loaded.entries(...)` before
-`Switch.run` starts. Runtime errors are separate from an ordinary drop.
-`Switch.diagnostics` records conditions such as an out-of-range output port;
-check it as well as the returned packets. It accumulates on that Switch object.
+Python construction may raise `EdslError` with a source location; `v1model.load`
+can reject validation, extern binding, missing exports or unsupported profile
+behavior. Bad host entries are rejected by `loaded.entries(...)` before
+`V1Model.run` starts. Runtime errors are separate from an ordinary drop.
+`V1Model.diagnostics` records conditions such as an out-of-range output port;
+check it as well as the returned packets. It accumulates on the pipeline object.
 
 A Lean server's process exit 0 means its input stream was handled; inspect
 **every reply**. `error` is a request/execution error; optional `diagnostic`

@@ -97,13 +97,12 @@ or exported roles. This is a core protobuf `BlockLibrary` that can be
 validated independently. Types follow the blocks' parameter and local
 declarations.
 
-`build()` separately calls `reference.assemble` with that library to select the
-parser, control and deparser of the supplied architecture. Its metadata
-contract gives fields such as `drop` and `egress_port` their host meaning;
-the core sees ordinary block parameters and typed fields. The demo selects
-`reference.load`, passes `supplied_registry()` to bind declared externs to
-their implementations, and chooses `Switch(ports=4)`. Extern declarations
-describe typed calls; the registry supplies their execution.
+`build()` separately calls `v1model.assemble` with that library to select
+parser, ingress and deparser; omitted checksum/egress stages are empty.
+`egress_spec` carries the requested port or drop value 511; the core sees
+ordinary typed fields. The demo selects `v1model.load` to bind the supplied
+externs and `v1model.V1Model(ports=4)` to execute the packet profile. Extern
+declarations describe typed calls; the registry supplies their execution.
 
 `ChecksumWords`, `FlowTuple` and `FlowRecord` name the checksum input,
 flow identity and writable register-record types. `orient_flow` is an ordinary

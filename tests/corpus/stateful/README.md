@@ -33,8 +33,8 @@ STF program whose register is both read and written.
 - **`bit<8> x` and `bit<8> tmp`.** Locals of the apply block become locals
   of the control block, which is where the IR keeps them.
 - **`standard_metadata`.** Unused, and `Meta` is empty. The program
-  declares no contract field, so the switch reads `egress_port` as 0 and
-  `drop` as false; every packet leaves on port 0, which is what p4c's
+  declares no contract field, so v1model reads `egress_spec` as 0;
+  every packet leaves on port 0, which is what p4c's
   vectors expect of BMv2 too.
 - **The parser's `packet_in` and the deparser's `packet_out`.** Carried by
   the block's kind, as in the forwarder.

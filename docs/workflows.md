@@ -286,11 +286,10 @@ misspelled field, state, action or table, an unequal width, or a
 `tests/pyright/must_fail/` per mistake and its expected diagnostic.
 `tests/programs/test_corpus.py` picks the directory up by itself: it
 validates, rebuilds the golden from the source, replays every vector
-under the switch, and checks the filter's fate decisions. Then run the oracle and
+under v1model. Then run the oracle and
 the Lean-versus-Python gates, and add a row to the corpus table in
-`docs/assurance.md`. The sources are in p4c under
-`testdata/p4_16_samples/`; the 2026-09-22 survey of that suite that chose
-the current programs is archived in git as `docs/corpus-candidates.md`.
+`docs/assurance.md`. The upstream sources are in p4c under
+`testdata/p4_16_samples/`; frontend fixtures retain the pinned originals.
 
 **An extern.** A custom Python extern can live outside this package: declare
 its typed interface, register an `Implementation` with a `Shape` and factory
@@ -329,10 +328,18 @@ extern implementations, and defines its own contract and execution policy.
 It may live outside p4blo. The optional supplied H/M adapter uses explicit
 bindings, a registry, a metadata contract and role kinds; its usage is in
 [the authoring guide](python-edsl.md). To use the supplied STF driver,
-provide `run(loaded, entries, ingress_port, packet)`. The filter/switch
-vocabulary and policy in `docs/design.md` apply to those supplied adapters.
-If a change affects the cross-checked Lean switch, update
-`spec/arch/P4bloArch/Switch.lean` in the same commit.
+provide `run(loaded, entries, ingress_port, packet)`. The supported packet
+profile is v1model, specified in `docs/arch-supports.md`. Change its Python
+implementation and `spec/arch/P4bloArch/V1Model.lean` together. Preserve
+independent block execution and native stage boundaries; unsupported features
+must fail explicitly rather than silently becoming no-ops.
+
+For an oracle disagreement, retain unchanged source and inputs, identify the
+language or target contract, and record the selected behavior in
+[the discrepancy catalog](oracle-discrepancies.md). Run its reduced paired
+probes with `uv run pytest tests/external/test_oracle_discrepancies.py -q`;
+a missing oracle is a skip, not a successful comparison. Characterization
+checks require exact recorded answers and fail when an oracle changes.
 
 ## Application development
 
