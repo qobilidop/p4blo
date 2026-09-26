@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-09-25. **Active: simplify formal assurance to the core IR.**
+Last updated: 2026-09-25. **No active work: core-only simplification is complete.**
 The user approved removing Lean authoring/application proofs, concrete
 architecture proofs and the execution-certificate experiment. Preserve the
 core IR proofs, executable architecture adapters, Python authoring/examples,
@@ -10,8 +10,16 @@ wire formats and independent oracle/differential testing. Integration branch:
 and final independent review are complete at `f9cb19e`. Both Lean packages
 passed; the full required-Lean gate passed 4,785 tests with four expected
 failures and no skips. Frozen adversarial replay passed all 28 phases;
-the retained BMv2 forwarding profile passed. Integrated-main CI remains
-pending before closing this scope. [Review](reviews/core-simplification-2026-09-25.md).
+the retained BMv2 forwarding profile passed. Exact integrated main
+`090fb6813600cbd56bc375a6ff6cdc81b893bb4d` passed all applicable workflows:
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36215857990),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36215858104),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36215858109),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36215858092) and
+[website](https://github.com/qobilidop/p4blo/actions/runs/36215857977).
+All specialist validation jobs ran. The scope is closed; only the required
+milestone compaction and its validation remain.
+[Review](reviews/core-simplification-2026-09-25.md).
 
 The user
 has made PRs optional for this personal-project phase. Feature branches
@@ -216,5 +224,5 @@ in the prior Codex session were not repository build failures.
 
 ## Blocked
 
-Nothing. Finish the simplification scope in the working note; do not reopen
-retired application proofs or unrelated roadmap work.
+Nothing. Simplification is complete; compact the finished work notes, then
+ask for a new scope. Do not reopen retired proofs or unrelated roadmap work.
