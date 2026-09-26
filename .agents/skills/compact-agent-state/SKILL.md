@@ -23,8 +23,8 @@ room for a new scope before the old one is recorded as closed.
 
 1. **Record the archive point.** On a clean working tree, note the full
    hash of the committed pre-compaction `HEAD`; it goes into `status.md`
-   as the archive commit and into the compaction commit's body. Create
-   or use a PR branch before editing, following `AGENTS.md`. No tag is
+   as the archive commit and into the compaction commit's body. Follow
+   `AGENTS.md` for feature branches, direct commits or a required PR. No tag is
    created: the repository does not tag commits (user's instruction,
    2026-09-24). If status records an unfinished compaction, resume its
    branch and archive point; a same-day archive date alone does not mean
@@ -65,9 +65,12 @@ room for a new scope before the old one is recorded as closed.
    by claim, and reports anything dropped that is still in force or
    reworded into something stronger. Fix findings before pushing. Keep the
    review under `.agents/reviews/` until the next compaction.
-9. **Integrate through a PR.** Follow `AGENTS.md`: run the full local
-   gate before pushing, obtain independent review and successful applicable
-   remote CI for the final PR revision, verify its head SHA, then merge.
+9. **Integrate following `AGENTS.md`.** Obtain independent review and run
+   the full local gate before pushing. Feature branches are optional;
+   integrate completed work into `main` and verify successful applicable
+   remote CI on that exact revision before completion.
+   Use a PR only when requested or required by repository protections;
+   its final revision must pass review and applicable CI before merge.
 
 ## Invariants
 

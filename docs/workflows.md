@@ -24,8 +24,9 @@ before and after revisions. A failed classifier stays red and cannot skip
 specialist jobs. Superseded PR runs cancel; pushes to `main` do not.
 Run the full local gate before pushing, plus specialist gates affected by
 the change; record unavailable tools and skipped checks explicitly. Remote
-CI must pass for the final PR revision before merge. Check exit codes,
-not output.
+CI must pass on the exact integrated `main` revision before the work is
+complete. If a PR is used, its final revision must pass before merge.
+Check exit codes, not output.
 
 | Gate | Command | Expected |
 |---|---|---|
@@ -198,15 +199,19 @@ translates the STF dialect. The build script creates the pinned OCaml switch;
 
 ## Changing things
 
-Use a branch and pull request for substantive changes, including tooling
-and policy. Keep each commit a coherent change with its tests and necessary
+During the personal-project phase, changes do not require a pull request,
+including substantive changes, tooling and policy. Use feature branches and
+worktrees when useful, or commit directly to `main`. Integrate completed
+feature branches locally and push `main`. Use a pull request when explicitly
+requested or required by repository protections.
+Keep each commit a coherent change with its tests and necessary
 documentation; explain the prior problem and why the chosen approach
 solves it. Stage new deliverables before the full local gate so checks of
 the index see the intended submission. Review the staged diff and commit
 message before committing.
 
-A PR description explains the problem, resulting behavior, consequential
-tradeoffs and validation for a reader without the conversation. Distinguish
+When a PR is used, its description explains the problem, resulting behavior,
+consequential tradeoffs and validation for a reader without the conversation. Distinguish
 local checks from remote CI and name meaningful skips or limitations. Link
 supporting evidence, but keep enough context in the description to make it
 useful if a link disappears. Update it against the final diff after review.
@@ -215,14 +220,18 @@ These practices follow [Google's change-description guidance](https://google.git
 [Git's contribution guidance](https://git-scm.com/docs/SubmittingPatches)
 and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes).
 
-Independent review and applicable CI must cover the final revision being
-merged. Check the PR head SHA and the checks associated with it; a passing
-run for an earlier revision is not sufficient. Required jobs that are
-missing, pending, cancelled or skipped do not establish a pass. Fix
-findings on the branch and rerun affected checks. Follow repository
-protections without bypasses. Prefer merge commits when the individual
-commits form a useful history; squash a WIP/fixup sequence with a considered
-message. Agent coordination and attribution rules are in `AGENTS.md`.
+Obtain independent review of the final patch, fix findings and run the full
+local gate before pushing. After pushing, check applicable CI on the exact
+integrated `main` SHA; a passing run for an earlier revision is not sufficient.
+Feature-branch pushes can checkpoint unfinished work but do not replace
+validation of the integrated revision.
+Required jobs that are missing, pending, cancelled or skipped do not
+establish a pass. Repair failures with follow-up commits and rerun affected
+checks before declaring completion. Follow repository protections without
+bypasses. For a PR, require final-head review and applicable CI before merge.
+Prefer merge commits when the individual commits form a useful history;
+squash a WIP/fixup sequence with a considered message. Agent coordination
+and attribution rules are in `AGENTS.md`.
 
 Generated artifacts must have a reproducible source and regeneration
 command. The protobuf check generates into a temporary directory and

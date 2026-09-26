@@ -1,6 +1,23 @@
 # Status
 
-Last updated: 2026-09-25. **No implementation scope is active.** XDP removal
+Last updated: 2026-09-25. **No implementation scope is active.** The user
+has made PRs optional for this personal-project phase. Feature branches
+remain available when useful, and direct commits to `main` are allowed;
+PRs are used for explicit requests or repository protections. Independent
+review, the full local gate before push and applicable remote CI on the
+integrated `main` revision remain required. This policy checkpoint updates
+AGENTS, workflow documentation and the compaction procedure. Independent
+review found no confirmed defects; the full required-Lean local gate passed
+with 5,271 tests and four expected failures, no skips. Review details are in
+[the policy review](reviews/optional-pr-policy-2026-09-25.md). Remote results
+are recorded by GitHub Actions against the policy commit; the local result
+alone does not establish remote success.
+
+The next requested work is a read-only simplification audit: map current
+Lean verification, assess restricting formal assurance to the architecture-free
+core IR, and identify other maintenance costs. No removal scope is selected.
+
+XDP removal
 is complete: [PR #7](https://github.com/qobilidop/p4blo/pull/7) merged as
 `da6f6202e3014b195bba864844f9923d1223ddd7` after independent review and all
 final-head checks passed. The workflow, container sources, inspector and

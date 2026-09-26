@@ -193,19 +193,23 @@ so the required CI gate discovers them without a hand-maintained file list.
   separate mechanical moves and reusable API changes from application policy.
   Once notes are archived, the commit log is the only narrative of how
   the work went, so the body matters.
-- **PRs are the default for substantive changes**, including code,
-  proofs, dependencies, generated data, CI and policy. Direct-to-`main`
-  is limited to trivial non-behavioral maintenance. The user authorizes
-  committing, pushing and merging completed, checked work autonomously;
-  no separate human approval is needed unless repository protections
-  require it. Inspect the branch and remote, preserve unrelated changes,
-  and never force-push or bypass failing gates or review requirements.
-  Independent review and successful applicable remote CI must cover the
-  final PR revision before merge; re-check the head SHA before merging.
-  Run the full local gate before pushing and record unavailable gates
-  as such. A local pass is not remote CI, and a skip is not a pass.
-- **Write PRs for a reader without the conversation.** Lead with the
-  problem and resulting behavior, explain the approach and consequential
+- **PRs are optional during the personal-project phase.** The user
+  authorizes committing, pushing and integrating completed, checked work
+  autonomously, including substantive changes, without a PR. Use feature
+  branches and worktrees when useful for isolation, review or parked work;
+  direct commits to `main` are also allowed. Inspect the branch and remote,
+  preserve unrelated changes, and never force-push or bypass repository protections. Obtain independent
+  review of the final patch and run the full local gate before pushing;
+  record unavailable gates as such. After pushing, verify applicable remote
+  CI on the exact integrated `main` revision before declaring the work
+  complete. Feature-branch pushes may checkpoint unfinished work; they do
+  not replace validation of the integrated revision. Fix failures promptly
+  with follow-up commits. A local pass is not remote CI, and a skip is not
+  a pass. Use a PR when explicitly requested or
+  required by repository protections; then require final-head review and
+  applicable remote CI before merge, and re-check its head SHA.
+- **When a PR is used, write it for a reader without the conversation.**
+  Lead with the problem and resulting behavior, explain the approach and consequential
   tradeoffs, then give validation commands/results and meaningful limits.
   Link supporting evidence without making the links carry all context.
   Scale detail to the diff; omit empty template sections and progress
@@ -241,9 +245,10 @@ change can affect green: lint and types, the test modules that cover its
 files, and the Lean gate when it touched a Lean package. It runs the
 full gate only when the change is cross-cutting (a path move, the wire
 or pipe protocol, a module many others import). The integrator combines
-reviewed commits on the PR branch in batches, runs the full gate once per
-batch before pushing, then merges the PR only after its final revision
-passes remote CI, and removes the worktrees.
+reviewed commits in batches, integrates them into `main`, and runs the
+full gate once per batch before pushing. Verify applicable remote CI on
+the exact pushed revision before closing the work, then remove the
+worktrees. If a PR is required, follow the PR exception above.
 Before splitting a public API change, agree concrete caller examples and
 an acceptance case that would expose a false abstraction boundary. Follow
 that case through source, wire types, validation, execution and proof premises;

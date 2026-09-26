@@ -365,14 +365,18 @@ and the audit files; these entries record choices and limits.
   checks/limits in `.agents/reviews/`; fix findings on the working branch before
   integration so the
   report identifies the work actually merged. (2026-09-25)
-- **Substantive work uses PRs; trivial nonbehavioral maintenance may use main.**
-  Autonomous commits/pushes/merges are authorized, never protection bypasses.
-  Integrate sub-agent commits on PR branches; distinguish review/local/remote
-  evidence, require final-head remote CI, recheck SHA. Merge coherent commits;
-  squash WIP preserving rationale/attribution; rebase only on explicit linear
-  preference. Reason: adopt the user's p4-spectec-lean practice to protect main
-  while keeping useful history. (2026-09-25)
-- **PRs explain problem, result, tradeoffs, validation/limits without chat
+- **PRs are optional during the personal-project phase.** The user prefers
+  less PR overhead and authorizes autonomous commits, pushes and integration
+  for substantive work too. Use feature branches when useful; direct commits
+  to main are also allowed. Keep coherent commits, independent final-patch review
+  and the full local gate before push; verify applicable remote CI on the
+  exact integrated main revision before completion. Repair failures with follow-up
+  commits. Temporary branches/worktrees still isolate work and preserve WIP.
+  Never bypass protections; use a PR if explicitly requested or required,
+  with final-head review and remote CI before merge. Confidence: high for
+  this phase; revisit when collaboration or release needs justify PRs.
+  (2026-09-25)
+- **When used, PRs explain problem, result, tradeoffs, validation/limits without chat
   context.** Re-read final diff; one AI-disclosure sentence names the verified
   session agent/model; agent review is not human review. Adopt Git/Google/
   GitHub and p4-spectec-lean guidance without boilerplate. Sources/boundaries:
