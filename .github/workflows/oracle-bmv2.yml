@@ -44,15 +44,18 @@ jobs:
       - name: Sync Python environment
         run: nix develop -c uv sync --locked
       - name: Replay the corpus on BMv2
-        run: nix develop -c uv run pytest tests/external/test_oracle_bmv2.py -v
+        # Driver invocations use separate containers. Load scheduling also
+        # spreads each firewall module's cases across workers; duplicating its
+        # immutable compiled fixture costs less than serial packet replay.
+        run: nix develop -c uv run pytest tests/external/test_oracle_bmv2.py -n 4 --dist load --durations=20 -v
       - name: Check original and printed CRC known answers
         run: nix develop -c uv run pytest tests/unit/test_crc.py -k bmv2 -v
       - name: Check original firewall packets and complete register state
-        run: nix develop -c uv run pytest tests/programs/test_firewall.py -k bmv2 -v
+        run: nix develop -c uv run pytest tests/programs/test_firewall.py -k bmv2 -n 4 --dist load --durations=20 -v
       - name: Check original firewall truncation and persistence boundaries
-        run: nix develop -c uv run pytest tests/programs/test_firewall_boundaries.py -k bmv2 -v
+        run: nix develop -c uv run pytest tests/programs/test_firewall_boundaries.py -k bmv2 -n 4 --dist load --durations=20 -v
       - name: Check original firewall generated flow profiles
-        run: nix develop -c uv run pytest tests/programs/test_firewall_generated.py -k bmv2 -v
+        run: nix develop -c uv run pytest tests/programs/test_firewall_generated.py -k bmv2 -n 4 --dist load --durations=20 -v
       - name: Check forwarding overlap and default profiles
         run: |
           nix develop -c uv run python -c 'from tests.oracle.bmv2 import run; reason = run.unavailable(run.default_image()); assert reason is None, reason'

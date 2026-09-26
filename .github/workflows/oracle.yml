@@ -56,7 +56,8 @@ jobs:
       - name: Check original firewall sequences and mask discrepancy
         run: nix develop -c uv run pytest tests/programs/test_firewall.py -k spectec -v
       - name: Run generated programs and cases on the oracle
-        run: nix develop -c uv run pytest tests/external/test_oracle_generated.py -v
+        # Each case owns its tmp_path; the shared oracle checkout is read-only.
+        run: nix develop -c uv run pytest tests/external/test_oracle_generated.py -n 4 --dist load --durations=20 -v
       - name: Translate P4 source into IR through the IL bridge
         run: nix develop -c uv run pytest tests/external/test_frontend_spectec.py -v
         env:
