@@ -1,5 +1,9 @@
 # Codec tests
 
+A **codec** is an encoder/decoder pair: encode converts abstract IR to its
+wire representation, and decode reconstructs abstract IR from that representation.
+We use codec consistently for these components and their tests.
+
 Does the wire encoding carry every IR value there and back, and does the
 decoder reject what it must, with the diagnostic it names?
 

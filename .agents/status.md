@@ -2,6 +2,13 @@
 
 Last updated: 2026-09-26. **No active engineering work.**
 
+Terminology follow-up: retain codec for encoder/decoder pairs and encode/decode
+for their operations. The convention is recorded in AGENTS and the codec guide;
+stale pre-refactor test-layout wording in the decisions register is corrected.
+This is documentation-only; no code, test inventory or spec/ changes.
+Validation: required-Lean `scripts/check.sh` passed all 5,007 tests and its
+lint/type/schema/generation checks; no skips or expected failures.
+
 Test organization is complete on main `b89910353f783b7fa3bb0fa09a748fab0937538c`.
 Python package tests live beside the package at `impl/python/tests/`; root
 suites cover conformance, oracles, programs, repository checks and support.

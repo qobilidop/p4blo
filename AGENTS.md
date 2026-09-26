@@ -114,6 +114,9 @@ See `tests/README.md` for ownership and commands.
 - **Agent instructions live in `AGENTS.md` alone.** Never create `CLAUDE.md`
   or `CLAUDE.local.md`; Claude-specific notes belong in `.claude/rules/`.
   Keep this entry point current when the active scope or workflow changes.
+- **Use codec for an encoder/decoder pair**, with encode and decode for the
+  individual operations. Serialization describes a process or representation,
+  not an alternate name for codec components or test suites.
 - **Name the project P4-SpecTec.** SpecTec alone is a different project.
   Distinguish P4 program IR from the specification's IL, AL and SL when
   discussing interfaces or coverage. Preserve literal upstream names,

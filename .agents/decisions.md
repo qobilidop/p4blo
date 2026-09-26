@@ -84,17 +84,22 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   `validate`; `validator.typer` alone supplies expression types to interpreter, printer and
   STF (a top-level typer would cycle through diagnostic codes). The architecture-free
   printer has five binding hooks; `frontend` bridges P4-SpecTec IL. (2026-09-25)
-- **Tests group by question** in `tests/`: unit, codec, programs, drt, lean, external and
-  structure, with READMEs and pinned layout; data/drivers separate. Module stem or `bmv2` in
-  the name assigns the `oracle` marker. Shared verification belongs in `tests/`; public
-  applications in `examples/`, their checks in `tests/programs/examples/`. (assets 2026-09-23;
-  examples 2026-09-24; test grouping 2026-09-25)
+- **Public application sources stay in `examples/`**, with their verification assets
+  in `tests/programs/examples/`. Shared verification follows the responsibility and
+  explicit-marker policy above; the former root-unit layout and filename-based oracle
+  selection are superseded by that policy. This keeps public examples discoverable
+  without mixing them with verification machinery. (assets 2026-09-23;
+  examples 2026-09-24; test organization 2026-09-25; stale wording removed 2026-09-26)
 - **Public APIs may change for demonstrated usability gains.** Preserve semantic
   contracts/readability, separate authoring from meaning changes, and migrate callers with
   diagnostic and golden tests. (2026-09-23)
 
 ## IR and wire syntax
 
+- **Use codec consistently for an encoder/decoder pair**, and encode/decode for
+  the individual operations. Keep codec component and suite names; serialization
+  may describe the process or representation but is not a competing component
+  name. The user prefers the established term and consistent naming. (2026-09-26)
 - **`p4blo.v0` is deliberately pre-1.0:** except buf's version-suffix lint in `buf.yaml`,
   rather than rename to `v1alpha1`. (2026-09-22)
 - **One kind-tagged Block** avoids tripling shared machinery; **scoped-name references**
