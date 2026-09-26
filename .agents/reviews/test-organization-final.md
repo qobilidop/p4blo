@@ -33,3 +33,12 @@ then its stale local coverage probe was rebuilt and the fresh measurement
 passed (237 passes total). BMv2/p4c 70 passes/two exact xfails, no skips.
 Frozen assurance at 74a678f passed all 28 phases with unchanged three input
 hashes/six requests. Remote validation is recorded separately in status.
+
+Follow-up closure audit: three live mutation-recipe paths were stale. Independent
+review additionally found two retired metadata anchors (zero occurrences) while
+the remaining eleven anchors matched once. Integrator updated egress_spec forms
+and executed all thirteen faults in an isolated worktree; both interpreters
+rejected each intended behavior and all baselines/restored tests passed.
+Remote CI also exposed three Ruff import orderings cached before catalog.py
+existed locally. The follow-up pins tests as first-party and passes no-cache
+lint. See the next checkpoint for exact final remote evidence.

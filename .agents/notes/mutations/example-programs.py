@@ -54,8 +54,8 @@ FAULTS = {
             "",
         ),
         "wrong-route-port": (
-            "self.assign(self.meta.egress_port, port)",
-            "self.assign(self.meta.egress_port, 0)",
+            "self.assign(self.meta.egress_spec, port)",
+            "self.assign(self.meta.egress_spec, 0)",
         ),
     },
 }
@@ -76,7 +76,7 @@ def main() -> None:
 
     def run(label: str, failure: bool) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", f"tests/examples/{args.application}",
+            [sys.executable, "-m", "pytest", f"tests/programs/examples/{args.application}",
              "-k", "independent", "-q"],
             cwd=worktree, text=True, capture_output=True, timeout=120,
         )

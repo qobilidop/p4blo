@@ -12,7 +12,12 @@ Final implementation 74a678f passed independent review, the full required-Lean
 local gate (5,007 passes), Lean package gates, P4-SpecTec (237 passes/15 exact
 expected failures), BMv2/p4c (70 passes/two exact expected failures) and all
 28 frozen assurance phases. No checks skipped. spec/ and fixture answers remain
-unchanged. Next: integrate, verify exact-main remote CI, then close/compact.
+unchanged. Integrated main d095104 passed website deployment; Python CI found
+three import-order errors hidden by the local Ruff cache. Explicit first-party
+classification and a no-cache check fix them. Closure also repaired three live
+mutation-recipe paths and two stale metadata anchors; all 13 source faults
+were detected by Python/Lean and all baselines restored. Next: verify follow-up
+local/remote gates, then close/compact.
 [Final review](reviews/test-organization-final.md) records preserved case/input
 identities and the repaired pre-deselection guard finding.
 The completed implementation evidence below predates this refactor.

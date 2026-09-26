@@ -82,3 +82,19 @@ Lean CRC and paired codec/observer faults and restored baselines. Three input
 hashes and six requests remain exactly the baseline. Local evidence under
 .artifacts/test-organization and .artifacts/assurance/test-organization-final
 is convenience, not handoff state. Next: integrate and check exact-main CI.
+
+Post-integration follow-up: d095104 Python CI rejected three I001 import blocks.
+Ruff's local cache had classified tests.support.catalog before that module
+existed; adding tests to known-first-party and a clean no-cache check fixes
+classification independently of creation order. Three import orderings change.
+CI for Lean/oracles is still running; website deployment passed.
+
+Closure triage found three stale paths in live .agents/notes/mutations scripts
+(they had been excluded along with historical notes). Independent review also
+found two metadata anchors stale since architecture simplification. Both recipes
+now use current paths and egress_spec anchors. In isolated worktree d095104,
+all ten application source faults and three VLAN faults fail independent Python
+and real-Lean expectations; every baseline/restored run passes. The worktree
+is restored clean. No core/spec/fixture answers change. Full gate and exact-main
+remote CI will cover this follow-up; full assurance need not be repeated for
+import ordering and optional recipe edits.

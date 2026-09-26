@@ -17,11 +17,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-RELATIVE = Path("tests/corpus/vlan_gateway/vlan_gateway.py")
+RELATIVE = Path("tests/programs/corpus/vlan_gateway/vlan_gateway.py")
 FAULTS = (
     (
         "initial-drop",
-        "    def apply(self) -> None:\n        self.assign(self.meta.drop, True)\n",
+        "    def apply(self) -> None:\n        self.assign(self.meta.egress_spec, 511)\n",
         "    def apply(self) -> None:\n",
     ),
     ("tag-validity", "        self.set_invalid(self.hdr.vlan)\n", ""),
@@ -46,7 +46,7 @@ def main() -> None:
     target = worktree / RELATIVE
     original = target.read_text()
     assert original == (ROOT / RELATIVE).read_text()
-    command = [sys.executable, "-m", "pytest", str(worktree / "tests/programs/test_vlan_gateway.py"), "-q"]
+    command = [sys.executable, "-m", "pytest", str(worktree / "tests/programs/corpus/vlan_gateway/test_vlan_gateway.py"), "-q"]
     rows = []
 
     def run(name: str, fault: bool = False) -> subprocess.CompletedProcess[str]:
