@@ -43,8 +43,10 @@ pages hold the contracts; this register keeps choices, reasons and boundaries.
   main's build cache. The previous single runner spent 411 s in tests after
   a warm 50 s build. Its intended module groups never reached xdist in time;
   activating them would serialize unrelated tests, so remove them instead.
-  Confidence: high on coverage preservation, performance pending remote
-  measurement; revisit shard count if runner overhead dominates. (2026-09-25)
+  Final remote shards passed 1,509 + 1,536 cases; the slowest job took 256 s
+  versus 521 s before. Confidence: high on coverage preservation; timing is
+  one observed comparison. Revisit shard count if runner overhead dominates.
+  (2026-09-25)
 - **Proven prose-only changes skip specialist CI; Python/schema always run.**
   The user delegated this policy choice. A narrow regular-Markdown allowlist
   excludes parsed/executed docs; unknown paths, unavailable history, type/mode
