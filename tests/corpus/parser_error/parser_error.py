@@ -39,10 +39,10 @@ class parsed_packet_t(Struct):
 
 # The source's `local_metadata_t` is empty; the two intrinsic fields the
 # program uses join it under the contract's names: parser_error, which
-# the architecture provides, and egress_port, which it consumes.
+# the architecture provides, and egress_spec, which it consumes.
 class local_metadata_t(Struct):
     parser_error: Error
-    egress_port: bit9
+    egress_spec: bit9
 
 
 class parse(Parser[parsed_packet_t, local_metadata_t]):
@@ -59,7 +59,7 @@ class ingress(Control[parsed_packet_t, local_metadata_t]):
             self.assign(self.hdr.eth.type, 0)
             self.assign(self.hdr.eth.src, 0)
             self.assign(self.hdr.eth.dst, 0)
-        self.assign(self.meta.egress_port, 0)
+        self.assign(self.meta.egress_spec, 0)
 
 
 class deparser(Deparser[parsed_packet_t]):
@@ -73,7 +73,7 @@ def build() -> apb.BlockAssembly:
         name="parser_error",
         headers=parsed_packet_t,
         metadata=local_metadata_t,
-        exports={"parser": parse, "control": ingress, "deparser": deparser},
+        exports={"parser": parse, "ingress": ingress, "deparser": deparser},
     )
 
 

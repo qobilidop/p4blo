@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, stf
-from p4blo.arch import validator
+from p4blo import stf
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.builder import AssemblyBuilder
@@ -37,7 +37,7 @@ from p4blo.drt import (
 from p4blo.drt.coverage import parser_visits
 from p4blo.drt.run import parse_reply, python_outcome
 from p4blo.drt.state import snapshot
-from p4blo.edsl.core import bit, boolean
+from p4blo.edsl.core import bit
 from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus"
@@ -67,8 +67,7 @@ struct_types {
 struct_types {
   name: "M"
   fields { name: "ingress_port" type { bits: 9 } }
-  fields { name: "egress_port" type { bits: 9 } }
-  fields { name: "drop" type { boolean {} } }
+  fields { name: "egress_spec" type { bits: 9 } }
 }
 headers: "H"
 metadata: "M"
@@ -116,13 +115,13 @@ blocks {
   actions {
     name: "fwd"
     params { name: "port" type { bits: 9 } direction: DIRECTION_NONE }
-    body { assign { target { member { base { var: "meta" } field: "egress_port" } }
+    body { assign { target { member { base { var: "meta" } field: "egress_spec" } }
                     value { var: "port" } } }
   }
   actions {
     name: "drop"
-    body { assign { target { member { base { var: "meta" } field: "drop" } }
-                    value { literal { boolean: true } } } }
+    body { assign { target { member { base { var: "meta" } field: "egress_spec" } }
+                    value { literal { bits { width: 9 value: "511" } } } } }
   }
   tables {
     name: "t_exact"
@@ -161,7 +160,7 @@ blocks {
   body { emit { value { member { base { var: "hdr" } field: "x" } } } }
 }
 exports { role: "parser" block: "P" }
-exports { role: "control" block: "C" }
+exports { role: "ingress" block: "C" }
 exports { role: "deparser" block: "D" }
 """
 
@@ -195,13 +194,13 @@ def test_generation_is_deterministic_per_seed() -> None:
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)
 def test_every_generated_entries_installs_on_the_corpus(program_dir: Path) -> None:
-    loaded = arch.reference.load(golden(program_dir))
+    loaded = v1model.load(golden(program_dir))
     for case in generate(loaded.index, 3, 100):
         loaded.entries(case.entries)
 
 
 def test_every_generated_entries_installs_and_covers_every_kind() -> None:
-    loaded = arch.reference.load(mixed())
+    loaded = v1model.load(mixed())
     kinds: Counter[str] = Counter()
     defaults = 0
     for case in generate(loaded.index, 5, 200):
@@ -222,7 +221,7 @@ def test_every_generated_entries_installs_and_covers_every_kind() -> None:
 @pytest.mark.parametrize("name", ["forwarder", "stacks", "subparser_stack"])
 def test_packets_reach_every_parser_state(name: str) -> None:
     program = golden(CORPUS / name)
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     seen: set[tuple[str, str]] = set()
     outcomes: Counter[str] = Counter()
     for case in generate(loaded.index, 11, 300):
@@ -238,7 +237,7 @@ def test_packets_reach_every_parser_state(name: str) -> None:
 
 def test_packets_satisfy_masked_and_range_key_sets() -> None:
     program = mixed()
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     seen: set[tuple[str, str]] = set()
     outcomes: Counter[str] = Counter()
     for case in generate(loaded.index, 2, 200):
@@ -253,7 +252,7 @@ def test_packets_satisfy_masked_and_range_key_sets() -> None:
 
 def test_table_lookups_hit_and_miss() -> None:
     """Entries and packets draw key fields from one pool, so hits happen."""
-    loaded = arch.reference.load(golden(CORPUS / "forwarder"))
+    loaded = v1model.load(golden(CORPUS / "forwarder"))
     fates: Counter[str] = Counter()
     for case in generate(loaded.index, 13, 200):
         fates["forwarded" if run_python(loaded, case, PORTS) else "dropped"] += 1
@@ -357,7 +356,7 @@ def test_python_against_python_through_the_pipe_agrees(program_dir: Path) -> Non
 
 def test_a_flipped_byte_is_a_divergence_on_every_case_with_output() -> None:
     program_dir = CORPUS / "forwarder"
-    loaded = arch.reference.load(golden(program_dir))
+    loaded = v1model.load(golden(program_dir))
     cases = generate(loaded.index, 7, 60, PORTS)
     with_output = sum(1 for case in cases if run_python(loaded, case, PORTS))
     report = compare(program_dir, 7, 60, PORTS, [*FAKE, "--flip"])
@@ -378,7 +377,7 @@ def test_a_dead_process_is_a_protocol_error(tmp_path: Path) -> None:
 
 
 def test_an_error_on_one_side_diverges_and_on_both_sides_agrees() -> None:
-    loaded = arch.reference.load(golden(CORPUS / "forwarder"))
+    loaded = v1model.load(golden(CORPUS / "forwarder"))
     cases = generate(loaded.index, 1, 3)
     # An entry with no keys for a one-key table: Python fails to install it.
     bad = pb.Entries(
@@ -408,7 +407,7 @@ def test_an_error_on_one_side_diverges_and_on_both_sides_agrees() -> None:
 
 
 def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
-    loaded = arch.reference.load(golden(CORPUS / "forwarder"))
+    loaded = v1model.load(golden(CORPUS / "forwarder"))
     case = Case(pb.Entries(), 0, b"\x00")
     python = python_outcome(loaded, case, PORTS)
     assert python.diagnostic is None
@@ -416,7 +415,7 @@ def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
     report = compare_cases("forwarder", loaded, [case], PORTS, lambda _: same)
     assert report.divergences == []
     dropped = Outcome(
-        outputs=python.outputs, diagnostic="egress_port 9 is not a port", state=python.state
+        outputs=python.outputs, diagnostic="egress_spec 9 is not a port", state=python.state
     )
     report = compare_cases("forwarder", loaded, [case], PORTS, lambda _: dropped)
     assert [d.number for d in report.divergences] == [0]
@@ -429,7 +428,7 @@ def test_a_diagnostic_on_one_side_only_is_a_divergence() -> None:
 
 @pytest.mark.parametrize("program", ["forwarder", "mixed"])
 def test_case_to_stf_parses_and_replays_to_the_same_outputs(program: str) -> None:
-    loaded = arch.reference.load(mixed() if program == "mixed" else golden(CORPUS / program))
+    loaded = v1model.load(mixed() if program == "mixed" else golden(CORPUS / program))
     index = loaded.index
     gen = Generator(index, 21, PORTS)
     for case in gen.cases(40):
@@ -481,7 +480,7 @@ def lean_report(
     program: apb.BlockAssembly, cases: list[Case], lean_binary: Path, tmp_path: Path, ports: int = 4
 ) -> tuple[Outcome, ...]:
     """Every case on Python and on Lean; the report and the Lean outcomes."""
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     program_json = tmp_path / f"{program.name}.json"
     program_json.write_text(arch_wire.dump_json(program))
     seen: list[Outcome] = []
@@ -509,48 +508,52 @@ def test_lean_agrees_on_error_reasons(lean_binary: Path, tmp_path: Path) -> None
     lean = lean_report(program, cases, lean_binary, tmp_path)
     assert [o.error for o in lean] == [
         "prefix length 40 exceeds width 32",
-        "ingress_port 600 is not a port of this switch",
+        "ingress_port 600 is not a configured v1model port",
     ]
 
 
 def fate_program() -> apb.BlockAssembly:
-    """flood, drop and egress_port taken from the packet; the ingress port
-    written back into it."""
+    """Drop, unicast and an attempted egress redirection, echoing ingress."""
     p = AssemblyBuilder("fate")
-    h = p.header("h_t", flood=bit(8), drop=bit(8), port=bit(16))
+    h = p.header("h_t", redirect=bit(8), drop=bit(8), port=bit(16))
     p.headers = p.struct("headers", h=h)
-    p.metadata = p.struct(
-        "metadata", ingress_port=bit(9), egress_port=bit(9), drop=boolean, flood=boolean
-    )
+    p.metadata = p.struct("metadata", ingress_port=bit(9), egress_spec=bit(9))
     with p.parser("P") as ps:
         with ps.state("start") as s:
             s.extract(ps.hdr.h)
             s.accept()
     with p.control("C") as c:
         with c.body() as b:
-            b.assign(c.meta.flood, c.hdr.h.flood != 0)
-            b.assign(c.meta.drop, c.hdr.h.drop != 0)
-            b.assign(c.meta.egress_port, c.hdr.h.port.cast(bit(9)))
+            b.assign(c.meta.egress_spec, c.hdr.h.port.cast(bit(9)))
+            with b.if_(c.hdr.h.drop != 0):
+                b.assign(c.meta.egress_spec, 511)
             b.assign(c.hdr.h.port, c.meta.ingress_port.cast(bit(16)))
+    with p.control("E") as e:
+        with e.body() as b:
+            with b.if_(e.hdr.h.redirect != 0):
+                b.assign(e.meta.egress_spec, 1)
+    p.export("egress", "E")
     with p.deparser("D") as d:
         with d.body() as b:
             b.emit(d.hdr.h)
     p.export("parser", "P")
-    p.export("control", "C")
+    p.export("ingress", "C")
     p.export("deparser", "D")
     return p.build()
 
 
-def test_lean_agrees_on_flood_drop_and_the_port_rules(lean_binary: Path, tmp_path: Path) -> None:
+def test_lean_agrees_on_drop_redirection_and_the_port_rules(
+    lean_binary: Path, tmp_path: Path
+) -> None:
     program = fate_program()
     assert validator.validate(program) == []
     cases = [
-        Case(pb.Entries(), ingress, bytes([flood, drop, port >> 8, port & 0xFF]))
-        for ingress, flood, drop, port in [
-            (6, 1, 0, 0),  # flood from a middle port
+        Case(pb.Entries(), ingress, bytes([redirect, drop, port >> 8, port & 0xFF]))
+        for ingress, redirect, drop, port in [
+            (6, 1, 0, 0),  # egress assignment cannot redirect selected port0
             (0, 1, 0, 0),
-            (7, 1, 1, 3),  # drop wins
-            (0, 0, 0, 511),  # BMv2's drop port: out of range here
+            (7, 1, 1, 3),  # ingress drop suppresses egress
+            (0, 0, 0, 511),  # reserved drop port: no diagnostic
             (0, 0, 0, 9),  # beyond the count
             (0, 0, 0, 7),  # the last port
             (2, 0, 0, 4),
@@ -563,13 +566,13 @@ def test_lean_agrees_on_flood_drop_and_the_port_rules(lean_binary: Path, tmp_pat
         None,
         None,
         None,
-        "egress_port 511 is not a port of this switch",
-        "egress_port 9 is not a port of this switch",
+        None,
+        "egress_spec 9 is not a configured v1model port",
         None,
         None,
     ]
     assert lean[5].outputs == ((7, bytes([0, 0, 0, 0])),)
     assert [o.error for o in lean[7:]] == [
-        "ingress_port 300 is not a port of this switch",
-        "ingress_port 512 is not a port of this switch",
+        "ingress_port 300 is not a configured v1model port",
+        "ingress_port 512 is not a configured v1model port",
     ]

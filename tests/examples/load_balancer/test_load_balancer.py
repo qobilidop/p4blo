@@ -216,7 +216,9 @@ def sequence() -> tuple[list[Case], list[Outcome]]:
             outgoing if port < 4 else None,
             port,
             configured,
-            None if port < 4 else f"egress_port {port} is not a port of this switch",
+            None
+            if port < 4 or port == 511
+            else f"egress_spec {port} is not a configured v1model port",
         )
     add(incoming, entries=policy(SERVICE + "\nadd backends meta.group:1 meta.bucket:1 deny()"))
     add(

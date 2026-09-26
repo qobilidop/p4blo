@@ -46,12 +46,11 @@ def test_lean_agrees_with_fixture(path: Path, lean_binary: Path) -> None:
 
 
 def test_the_contract_is_exercised() -> None:
-    """Error replies and replies with several outputs are part of the
-    contract a third implementation must meet; the corpus holds both."""
+    """The scoped v1model endpoint covers errors, drop and one-port unicast."""
     replies = [s.reply for p in PATHS for s in conformance.load(p).steps]
     assert any("error" in r for r in replies)
     outputs = [r["outputs"] for r in replies if isinstance(r.get("outputs"), list)]
-    assert any(len(o) > 1 for o in outputs if isinstance(o, list))
+    assert {len(o) for o in outputs if isinstance(o, list)} == {0, 1}
     assert any("diagnostic" in r for r in replies)
 
 

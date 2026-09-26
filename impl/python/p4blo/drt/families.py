@@ -395,7 +395,7 @@ def template(name: str, stack: int) -> apb.BlockAssembly:
     )
     program.exports.extend(
         apb.Export(role=role, block=block)
-        for role, block in (("parser", "P"), ("control", "C"), ("deparser", "D"))
+        for role, block in (("parser", "P"), ("ingress", "C"), ("deparser", "D"))
     )
     return program
 

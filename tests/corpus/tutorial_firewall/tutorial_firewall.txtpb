@@ -237,16 +237,9 @@ struct_types {
     }
   }
   fields {
-    name: "egress_port"
+    name: "egress_spec"
     type {
       bits: 9
-    }
-  }
-  fields {
-    name: "drop"
-    type {
-      boolean {
-      }
     }
   }
 }
@@ -604,24 +597,7 @@ blocks {
             base {
               var: "meta"
             }
-            field: "drop"
-          }
-        }
-        value {
-          literal {
-            boolean: true
-          }
-        }
-      }
-    }
-    body {
-      assign {
-        target {
-          member {
-            base {
-              var: "meta"
-            }
-            field: "egress_port"
+            field: "egress_spec"
           }
         }
         value {
@@ -854,7 +830,7 @@ blocks {
             base {
               var: "meta"
             }
-            field: "egress_port"
+            field: "egress_spec"
           }
         }
         value {
@@ -1021,7 +997,7 @@ blocks {
           base {
             var: "meta"
           }
-          field: "egress_port"
+          field: "egress_spec"
         }
       }
       match_kind: MATCH_KIND_EXACT
@@ -1725,7 +1701,7 @@ exports {
   block: "MyParser"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "MyIngress"
 }
 exports {

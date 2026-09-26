@@ -54,4 +54,4 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.h)
 
 
-program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser), name="enums", headers=headers, metadata=metadata, exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser})
+program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser), name="enums", headers=headers, metadata=metadata, exports={"parser": MyParser, "ingress": MyIngress, "deparser": MyDeparser})

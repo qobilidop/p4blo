@@ -46,9 +46,9 @@ class Header_t(Struct):
     h: hdr
 
 
-# The source's `Meta_t` is empty; egress_port is `standard_meta.egress_spec`.
+# The source's `Meta_t` is empty; egress_spec is `standard_meta.egress_spec`.
 class Meta_t(Struct):
-    egress_port: bit9
+    egress_spec: bit9
 
 
 class p(Parser[Header_t, Meta_t]):
@@ -67,11 +67,11 @@ class ingress(Control[Header_t, Meta_t]):
 
     @action
     def a(self) -> None:
-        self.assign(self.meta.egress_port, 0)
+        self.assign(self.meta.egress_spec, 0)
 
     @action
     def a_with_control_params(self, x: bit9) -> None:
-        self.assign(self.meta.egress_port, x)
+        self.assign(self.meta.egress_spec, x)
 
     # The source's entries, in its order, with the priorities the language
     # specification gives them (larger wins). `@priority` is p4c's
@@ -105,7 +105,7 @@ def build() -> apb.BlockAssembly:
         name="priority",
         headers=Header_t,
         metadata=Meta_t,
-        exports={"parser": p, "control": ingress, "deparser": deparser},
+        exports={"parser": p, "ingress": ingress, "deparser": deparser},
     )
 
 

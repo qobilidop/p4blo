@@ -108,8 +108,7 @@
 
 <span class="syntax-keyword">class</span> <span class="syntax-function">Metadata</span>(p4.<span class="syntax-function">Struct</span>):
     ingress_port: p4.bit9
-    egress_port: p4.bit9
-    drop: p4.<span class="syntax-function">Bool</span>
+    egress_spec: p4.bit9
 
 
 </span><span class="code-step" id="step-parse" data-step="parse"><span class="syntax-keyword">class</span> <span class="syntax-function">Parse</span>(p4.<span class="syntax-function">Parser</span>[<span class="syntax-function">Headers</span>, <span class="syntax-function">Metadata</span>]):
@@ -134,15 +133,14 @@
 </span><span class="code-step" id="step-action" data-step="action"><span class="syntax-keyword">class</span> <span class="syntax-function">Gateway</span>(p4.<span class="syntax-function">Control</span>[<span class="syntax-function">Headers</span>, <span class="syntax-function">Metadata</span>]):
     @p4.action
     <span class="syntax-keyword">def</span> deny(self) -&gt; <span class="syntax-keyword">None</span>:
-        self.assign(self.meta.drop, <span class="syntax-keyword">True</span>)
+        self.assign(self.meta.egress_spec, <span class="syntax-number">511</span>)
 
     @p4.action
     <span class="syntax-keyword">def</span> deliver(self, port: p4.bit9) -&gt; <span class="syntax-keyword">None</span>:
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
         self.assign(self.hdr.ethernet.ether_type, self.hdr.vlan.ether_type)
         self.set_invalid(self.hdr.vlan)
         admissions.count(port.cast(p4.bit32))
-        self.assign(self.meta.drop, <span class="syntax-keyword">False</span>)
 
 </span><span class="code-step" id="step-policy" data-step="policy">    access = p4.<span class="syntax-function">Table</span>(
         keys=(
@@ -156,7 +154,7 @@
     )
 
 </span><span class="code-step" id="step-guard" data-step="guard">    <span class="syntax-keyword">def</span> apply(self) -&gt; <span class="syntax-keyword">None</span>:
-        self.assign(self.meta.drop, <span class="syntax-keyword">True</span>)
+        self.assign(self.meta.egress_spec, <span class="syntax-number">511</span>)
         vlan = self.hdr.vlan
         <span class="syntax-keyword">with</span> self.if_(
             vlan.is_valid()
@@ -180,7 +178,7 @@
         name=<span class="syntax-string">&quot;vlan_gateway&quot;</span>,
         headers=<span class="syntax-function">Headers</span>,
         metadata=<span class="syntax-function">Metadata</span>,
-        exports={<span class="syntax-string">&quot;parser&quot;</span>: <span class="syntax-function">Parse</span>, <span class="syntax-string">&quot;control&quot;</span>: <span class="syntax-function">Gateway</span>, <span class="syntax-string">&quot;deparser&quot;</span>: <span class="syntax-function">Emit</span>},
+        exports={<span class="syntax-string">&quot;parser&quot;</span>: <span class="syntax-function">Parse</span>, <span class="syntax-string">&quot;ingress&quot;</span>: <span class="syntax-function">Gateway</span>, <span class="syntax-string">&quot;deparser&quot;</span>: <span class="syntax-function">Emit</span>},
     )
 
 
@@ -192,14 +190,14 @@
   <aside class="note-panel" aria-label="Code walkthrough">
     <p class="eyebrow">Follow the packet</p>
     <article class="step-note" data-note="wire"><p class="step-count">01 / 09</p><h3>Describe the bytes on the wire.</h3><p>Ethernet comes first, then a four-byte VLAN tag. Field annotations carry exact bit widths: even the tag’s 3-bit priority and 12-bit VLAN ID are explicit. These Python classes describe packet headers, not ordinary Python records.</p><p class="step-caption">WIRE FORMAT · 14 BYTES + 4 BYTES</p></article>
-    <article class="step-note" data-note="contract"><p class="step-count">02 / 09</p><h3>Separate the packet from its context.</h3><p>Headers hold parsed packet data. Metadata connects the program to its architecture: the host supplies ingress_port; the program chooses egress_port and drop. The core doesn’t know about a particular device.</p><p class="step-caption">PACKET DATA + ARCHITECTURE CONTRACT</p></article>
+    <article class="step-note" data-note="contract"><p class="step-count">02 / 09</p><h3>Separate the packet from its context.</h3><p>Headers hold parsed packet data. Metadata connects the program to its architecture: the host supplies ingress_port; the program sets egress_spec to a port or 511 to drop. The core doesn’t know about a particular device.</p><p class="step-caption">PACKET DATA + ARCHITECTURE CONTRACT</p></article>
     <article class="step-note" data-note="parse"><p class="step-count">03 / 09</p><h3>Follow the tag.</h3><p>Extract Ethernet, then branch on EtherType. Only 0x8100 leads to the VLAN state. Extraction marks a complete header valid; a short packet leaves the tag invalid. The payload stays unread, ready to pass through unchanged.</p><p class="step-caption">ETHERNET → VLAN → PAYLOAD</p></article>
     <article class="step-note" data-note="state"><p class="step-count">04 / 09</p><h3>Remember more than one packet.</h3><p>This extern declares a persistent counter for every 9-bit port value. The program records a call; the runtime provides the counter implementation. Reusing one loaded program preserves those counts across packets.</p><p class="step-caption">PERSISTENT STATE · 512 COUNTERS</p></article>
-    <article class="step-note" data-note="action"><p class="step-count">05 / 09</p><h3>Admit. Untag. Account.</h3><p>The table supplies a port. Restore the encapsulated EtherType before invalidating the VLAN header, count the admission, then clear drop. The explicit cast widens the port to the counter’s 32-bit index. Admissions count decisions, not physical transmissions.</p><p class="step-caption">VLAN 42 → PORT 2 · ADMISSIONS[2] + 1</p></article>
+    <article class="step-note" data-note="action"><p class="step-count">05 / 09</p><h3>Admit. Untag. Account.</h3><p>The table supplies a port. Restore the encapsulated EtherType before invalidating the VLAN header and count the admission. Selecting a port replaces the drop request. The cast widens the port to the counter’s 32-bit index. Admissions count decisions, not physical transmissions.</p><p class="step-caption">VLAN 42 → PORT 2 · ADMISSIONS[2] + 1</p></article>
     <article class="step-note" data-note="policy"><p class="step-count">06 / 09</p><h3>Make permission an exact match.</h3><p>Three keys must match together: ingress port, VLAN ID and destination MAC. The host installs the entries; packet processing applies them. With the default policy shown here, a miss calls deny—even when the destination MAC is familiar.</p><p class="step-caption">(INGRESS 1, VLAN 42, …:02) → DELIVER(2)</p></article>
-    <article class="step-note" data-note="guard"><p class="step-count">07 / 09</p><h3>Start closed. Check before lookup.</h3><p>Controls still run after a failed parse, so drop starts true. Only a valid tag, a VLAN ID from 1 to 4094 and a non-nested EtherType reach the table. with self.if_ records a packet-time branch; a normal Python if would run while building the program.</p><p class="step-caption">UNTAGGED · TRUNCATED · NESTED → DROP</p></article>
-    <article class="step-note" data-note="emit"><p class="step-count">08 / 09</p><h3>A missing tag is the transformation.</h3><p>Emit writes valid headers in order. The admitted packet’s VLAN header is now invalid, so it contributes no bytes. The switch appends the untouched payload: a 38-byte input becomes a 34-byte output, with both MAC addresses preserved.</p><p class="step-caption">ETHERNET + PAYLOAD · FOUR BYTES SHORTER</p></article>
-    <article class="step-note" data-note="build"><p class="step-count">09 / 09</p><h3>Build once. Inspect every operation.</h3><p>Assemble the parser, control, deparser and extern into one architecture-free IR. Running this complete source prints that IR. The linked demo installs the policy and replays packets; tests compare independent expected bytes and counter states against both Python and Lean execution.</p><p class="step-caption">PYTHON eDSL → SHARED IR → EXECUTION</p></article>
+    <article class="step-note" data-note="guard"><p class="step-count">07 / 09</p><h3>Start closed. Check before lookup.</h3><p>Ingress still runs after a failed parse, so egress_spec starts at the drop port. Only a valid tag, a VLAN ID from 1 to 4094 and a non-nested EtherType reach the table. with self.if_ records a packet-time branch; a normal Python if would run while building the program.</p><p class="step-caption">UNTAGGED · TRUNCATED · NESTED → DROP</p></article>
+    <article class="step-note" data-note="emit"><p class="step-count">08 / 09</p><h3>A missing tag is the transformation.</h3><p>Emit writes valid headers in order. The admitted packet’s VLAN header is now invalid, so it contributes no bytes. The v1model runtime appends the untouched payload: a 38-byte input becomes a 34-byte output, with both MAC addresses preserved.</p><p class="step-caption">ETHERNET + PAYLOAD · FOUR BYTES SHORTER</p></article>
+    <article class="step-note" data-note="build"><p class="step-count">09 / 09</p><h3>Build once. Inspect every operation.</h3><p>Author independent core blocks, then bind parser, ingress and deparser to v1model. Running this complete source prints that IR. The linked demo installs the policy and replays packets; tests compare independent expected bytes and counter states against both Python and Lean execution.</p><p class="step-caption">PYTHON eDSL → SHARED IR → EXECUTION</p></article>
     <nav class="step-navigation" aria-label="Walkthrough steps" hidden><button type="button" data-go="wire" aria-label="Step 1: Describe the bytes on the wire." title="Describe the bytes on the wire."><span aria-hidden="true"></span></button><button type="button" data-go="contract" aria-label="Step 2: Separate the packet from its context." title="Separate the packet from its context."><span aria-hidden="true"></span></button><button type="button" data-go="parse" aria-label="Step 3: Follow the tag." title="Follow the tag."><span aria-hidden="true"></span></button><button type="button" data-go="state" aria-label="Step 4: Remember more than one packet." title="Remember more than one packet."><span aria-hidden="true"></span></button><button type="button" data-go="action" aria-label="Step 5: Admit. Untag. Account." title="Admit. Untag. Account."><span aria-hidden="true"></span></button><button type="button" data-go="policy" aria-label="Step 6: Make permission an exact match." title="Make permission an exact match."><span aria-hidden="true"></span></button><button type="button" data-go="guard" aria-label="Step 7: Start closed. Check before lookup." title="Start closed. Check before lookup."><span aria-hidden="true"></span></button><button type="button" data-go="emit" aria-label="Step 8: A missing tag is the transformation." title="A missing tag is the transformation."><span aria-hidden="true"></span></button><button type="button" data-go="build" aria-label="Step 9: Build once. Inspect every operation." title="Build once. Inspect every operation."><span aria-hidden="true"></span></button></nav>
   </aside>
 </div>

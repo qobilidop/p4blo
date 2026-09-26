@@ -29,8 +29,7 @@ class Headers(p4.Struct):
 
 class Metadata(p4.Struct):
     ingress_port: p4.bit9
-    egress_port: p4.bit9
-    drop: p4.Bool
+    egress_spec: p4.bit9
 
 
 class Parse(p4.Parser[Headers, Metadata]):
@@ -55,15 +54,14 @@ admissions = Counter("admissions", size=512)
 class Gateway(p4.Control[Headers, Metadata]):
     @p4.action
     def deny(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
 
     @p4.action
     def deliver(self, port: p4.bit9) -> None:
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
         self.assign(self.hdr.ethernet.ether_type, self.hdr.vlan.ether_type)
         self.set_invalid(self.hdr.vlan)
         admissions.count(port.cast(p4.bit32))
-        self.assign(self.meta.drop, False)
 
     access = p4.Table(
         keys=(
@@ -77,7 +75,7 @@ class Gateway(p4.Control[Headers, Metadata]):
     )
 
     def apply(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
         vlan = self.hdr.vlan
         with self.if_(
             vlan.is_valid()
@@ -101,7 +99,7 @@ def build() -> apb.BlockAssembly:
         name="vlan_gateway",
         headers=Headers,
         metadata=Metadata,
-        exports={"parser": Parse, "control": Gateway, "deparser": Emit},
+        exports={"parser": Parse, "ingress": Gateway, "deparser": Emit},
     )
 
 

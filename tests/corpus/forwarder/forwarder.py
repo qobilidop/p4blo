@@ -16,7 +16,6 @@ from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.edsl import (
     Bits,
     BlockLibrary,
-    Bool,
     Control,
     Deparser,
     Header,
@@ -64,12 +63,10 @@ class headers(Struct):
 
 
 class metadata(Struct):
-    """The metadata contract of the step-1 architecture: ingress_port is
-    provided, egress_port and drop are consumed."""
+    """v1model provides ingress_port; ingress selects egress_spec or drop port511."""
 
     ingress_port: bit9
-    egress_port: bit9
-    drop: Bool
+    egress_spec: bit9
 
 
 class EtherType(IntEnum):
@@ -106,11 +103,11 @@ class MyIngress(Control[headers, metadata]):
 
     @action
     def drop(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
 
     @action
     def ipv4_forward(self, dstAddr: bit48, port: bit9) -> None:
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
         self.assign(self.hdr.ethernet.srcAddr, self.hdr.ethernet.dstAddr)
         self.assign(self.hdr.ethernet.dstAddr, dstAddr)
         self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
@@ -157,7 +154,7 @@ def build() -> apb.BlockAssembly:
         name="forwarder",
         headers=headers,
         metadata=metadata,
-        exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser},
+        exports={"parser": MyParser, "ingress": MyIngress, "deparser": MyDeparser},
     )
 
 

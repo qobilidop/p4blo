@@ -14,7 +14,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch, stf
+from p4blo import stf
+from p4blo.arch import v1model
 from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, save
@@ -92,7 +93,7 @@ def entries(policy: Policy) -> pb.Entries:
     for ingress, egress, direction in [(1, 2, policy.outbound), (2, 1, policy.inbound)]:
         if direction is not None:
             lines.append(
-                f"add check_ports meta.ingress_port:{ingress} meta.egress_port:{egress} "
+                f"add check_ports meta.ingress_port:{ingress} meta.egress_spec:{egress} "
                 f"set_direction(dir:{direction})"
             )
     return stf.to_entries(BoundIndex.build(build()), stf.parse("\n".join(lines)))
@@ -142,7 +143,7 @@ def failure_path(report: Report, directory: Path) -> Path:
 
 
 def check_python(sequence: list[Step]) -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     for item in sequence:
         actual = python_outcome(loaded, item.case, 4)
         assert actual.error is None and actual.diagnostic is None

@@ -17,7 +17,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -154,9 +154,7 @@ def test_lean_agrees_on_faulting_unselected_branches(lean_binary: Path) -> None:
     for condition, expected_error in cases:
         program = parser_condition_program(condition, expected_error)
         check_program(program, lean_binary)
-        assert run_python(arch.reference.load(program), Case(pb.Entries(), 0, b""), 4) == [
-            (0, b"\x80")
-        ]
+        assert run_python(v1model.load(program), Case(pb.Entries(), 0, b""), 4) == [(0, b"\x80")]
 
 
 @pytest.mark.parametrize("width", [1, 7, 8, 9, 31, 32, 65])

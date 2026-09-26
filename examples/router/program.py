@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.arch import reference
+from p4blo.arch import v1model
 from p4blo.arch.externs.declarations import Checksum16
 from p4blo.arch.v0 import assembly_pb2 as apb
 
@@ -38,8 +38,7 @@ class Headers(p4.Struct):
 
 class Metadata(p4.Struct):
     ingress_port: p4.bit9
-    egress_port: p4.bit9
-    drop: p4.Bool
+    egress_spec: p4.bit9
     expected_checksum: p4.bit16
 
 
@@ -78,16 +77,15 @@ checksum = Checksum16[ChecksumWords]("checksum")
 class Route(p4.Control[Headers, Metadata]):
     @p4.action
     def deny(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
 
     @p4.action
     def forward(self, src_mac: p4.bit48, dst_mac: p4.bit48, port: p4.bit9) -> None:
         self.assign(self.hdr.ethernet.src, src_mac)
         self.assign(self.hdr.ethernet.dst, dst_mac)
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
         self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
         self.assign(self.hdr.ipv4.checksum, checksum.compute(checksum_data(self.hdr.ipv4)))
-        self.assign(self.meta.drop, False)
 
     routes = p4.Table(
         keys=(p4.lpm(Headers.ipv4.dst),),
@@ -98,7 +96,7 @@ class Route(p4.Control[Headers, Metadata]):
 
     def apply(self) -> None:
         # Controls also run after parser failure: begin with a closed gate.
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
         ip = self.hdr.ipv4
         supported_packet = (
             ip.is_valid()
@@ -125,14 +123,14 @@ blocks = p4.BlockLibrary(Parse, Route, Emit, externs=[checksum])
 
 
 def build() -> apb.BlockAssembly:
-    """Assemble the blocks for the supplied switch and its metadata contract."""
-    return reference.assemble(
+    """Bind the core blocks to the scoped v1model metadata contract."""
+    return v1model.assemble(
         blocks,
         name="example_router",
         headers=Headers,
         metadata=Metadata,
         parser=Parse,
-        control=Route,
+        ingress=Route,
         deparser=Emit,
     )
 

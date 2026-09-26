@@ -10,8 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
-from p4blo.arch import entry, validator
+from p4blo.arch import entry, v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -79,7 +78,7 @@ def persistence(length: int) -> list[Step]:
 
 @pytest.mark.parametrize("length", range(55))
 def test_atomic_parser_boundaries(length: int) -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     metadata = loaded.metadata.zero()
     loaded.metadata.write(metadata, "ingress_port", 1)
     result = entry.run_parser(
@@ -99,9 +98,9 @@ def test_atomic_parser_boundaries(length: int) -> None:
 
 @pytest.mark.parametrize("length", range(55))
 def test_unmodified_firewall_packet_and_state_boundaries(length: int) -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     item = truncated(length)
-    switch = arch.Switch(4)
+    switch = v1model.V1Model(4)
     assert (
         tuple(switch.run(loaded, loaded.entries(item.case.entries), 1, item.case.packet))
         == item.outputs
@@ -112,7 +111,7 @@ def test_unmodified_firewall_packet_and_state_boundaries(length: int) -> None:
 
 @pytest.mark.parametrize("length", range(54))
 def test_valid_malformed_valid_state_persists(length: int) -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     for item in persistence(length):
         assert tuple(run_python(loaded, item.case, 4)) == item.outputs
         assert snapshot(loaded) == item.state
@@ -206,7 +205,7 @@ def test_parser_observer_preserves_the_original_parser() -> None:
     assert [b for b in original.blocks if b.kind == pb.BLOCK_KIND_PARSER] == [
         b for b in observer.blocks if b.kind == pb.BLOCK_KIND_PARSER
     ]
-    loaded = arch.reference.load(observer)
+    loaded = v1model.load(observer)
     for length in range(55):
         assert run_python(loaded, Case(pb.Entries(), 1, FRAME[:length]), 4) == [
             (0, observer_output(length))

@@ -1,7 +1,3 @@
-# stateful: p4c's issue1097-2-bmv2, a register read and written across the
-# pipeline, in p4blo. Generated from stateful.py; see README.md beside this
-# file for what was elaborated away and what was added.
-
 name: "stateful"
 errors: "NoError"
 errors: "PacketTooShort"
@@ -460,7 +456,7 @@ exports {
   block: "p"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "pipeline"
 }
 exports {

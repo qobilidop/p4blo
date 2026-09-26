@@ -314,7 +314,7 @@ exports {
   block: "P"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "C"
 }
 exports {

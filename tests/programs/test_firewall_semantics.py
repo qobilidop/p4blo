@@ -14,7 +14,7 @@ import pytest
 from hypothesis import given, settings
 
 from p4blo import arch, stf
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
@@ -69,7 +69,7 @@ def check_sequence(program: apb.BlockAssembly, sequence: list[Step], lean_binary
     cases = [item.case for item in sequence]
     # Save real engine inconsistencies before asserting independent policy answers.
     compare_and_save(program, cases, lean_binary)
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     for expected in sequence:
         python = python_outcome(loaded, expected.case, 4)
         assert python.error is None
@@ -94,7 +94,7 @@ def test_lean_agrees_firewall_stf(
     assert cases
     compare_and_save(firewall, cases, lean_binary)
     stf.assert_replay(
-        index, statements, arch.stf_driver(arch.Switch(ports=4), arch.reference.load(firewall))
+        index, statements, arch.stf_driver(v1model.V1Model(ports=4), v1model.load(firewall))
     )
 
 

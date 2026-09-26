@@ -77,7 +77,7 @@ def build() -> apb.BlockAssembly:
         name="register_bounds",
         headers=headers,
         metadata=metadata,
-        exports={"parser": P, "control": C, "deparser": D},
+        exports={"parser": P, "ingress": C, "deparser": D},
     )
 
 

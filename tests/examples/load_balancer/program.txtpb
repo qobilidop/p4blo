@@ -159,16 +159,9 @@ struct_types {
     }
   }
   fields {
-    name: "egress_port"
+    name: "egress_spec"
     type {
       bits: 9
-    }
-  }
-  fields {
-    name: "drop"
-    type {
-      boolean {
-      }
     }
   }
   fields {
@@ -419,12 +412,15 @@ blocks {
             base {
               var: "meta"
             }
-            field: "drop"
+            field: "egress_spec"
           }
         }
         value {
           literal {
-            boolean: true
+            bits {
+              width: 9
+              value: "511"
+            }
           }
         }
       }
@@ -542,7 +538,7 @@ blocks {
             base {
               var: "meta"
             }
-            field: "egress_port"
+            field: "egress_spec"
           }
         }
         value {
@@ -807,23 +803,6 @@ blocks {
         }
       }
     }
-    body {
-      assign {
-        target {
-          member {
-            base {
-              var: "meta"
-            }
-            field: "drop"
-          }
-        }
-        value {
-          literal {
-            boolean: false
-          }
-        }
-      }
-    }
   }
   tables {
     name: "services"
@@ -904,12 +883,15 @@ blocks {
           base {
             var: "meta"
           }
-          field: "drop"
+          field: "egress_spec"
         }
       }
       value {
         literal {
-          boolean: true
+          bits {
+            width: 9
+            value: "511"
+          }
         }
       }
     }
@@ -1620,7 +1602,7 @@ exports {
   block: "Parse"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "Balance"
 }
 exports {

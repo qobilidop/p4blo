@@ -55,10 +55,10 @@ class packet_t(Struct):
     extra: Stack[extra_h, L[4]]
 
 
-# The source's `Meta` is empty; egress_port is `standard_metadata.egress_spec`,
+# The source's `Meta` is empty; egress_spec is `standard_metadata.egress_spec`,
 # the one intrinsic field the program writes, as the contract names it.
 class Meta(Struct):
-    egress_port: bit9
+    egress_spec: bit9
 
 
 class ExtraB2(IntEnum):
@@ -107,7 +107,7 @@ class ingress(Control[packet_t, Meta]):
     @action
     def setb1(self, port: bit9, val: bit8) -> None:
         self.assign(self.hdrs.data.b1, val)
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
 
     @action
     def noop(self) -> None:
@@ -201,7 +201,7 @@ def build() -> apb.BlockAssembly:
         name="acl",
         headers=packet_t,
         metadata=Meta,
-        exports={"parser": p, "control": ingress, "deparser": deparser},
+        exports={"parser": p, "ingress": ingress, "deparser": deparser},
     )
 
 

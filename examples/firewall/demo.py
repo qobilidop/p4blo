@@ -1,9 +1,8 @@
 """Run with: uv run python -m examples.firewall.demo."""
 
 from examples.firewall.program import build
-from p4blo import arch, stf
-from p4blo.arch import reference
-from p4blo.arch.externs import supplied_registry
+from p4blo import stf
+from p4blo.arch import v1model
 from p4blo.arch.externs.register import Register as RuntimeRegister
 
 # 10.0.0.1:40000 -> 192.0.2.1:443, followed by its SYN-ACK.
@@ -22,13 +21,13 @@ REPLY = bytes.fromhex(
 
 
 def main() -> None:
-    loaded = reference.load(build(), registry=supplied_registry())
+    loaded = v1model.load(build())
     policy = stf.to_entries(
         loaded.index,
         stf.parse("add services meta.server:0xc0000200/24 meta.server_port:443 allow()"),
     )
     entries = loaded.entries(policy)
-    switch = arch.Switch(ports=4)
+    switch = v1model.V1Model(ports=4)
     # This binding, like the loaded program, persists across the packet sequence.
     flows = loaded.externs["flows"]
     assert isinstance(flows, RuntimeRegister)

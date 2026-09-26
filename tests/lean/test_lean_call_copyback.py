@@ -16,8 +16,7 @@ from typing import Literal
 
 import pytest
 
-from p4blo import arch
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs.crc import crc16
 from p4blo.arch.v0 import assembly_pb2 as apb
@@ -151,7 +150,7 @@ blocks {{
 headers: "H"
 metadata: "M"
 exports {{ role: "parser" block: "P" }}
-exports {{ role: "control" block: "C" }}
+exports {{ role: "ingress" block: "C" }}
 exports {{ role: "deparser" block: "D" }}
 """
     return arch_wire.load_text(text)
@@ -170,7 +169,7 @@ def check(program: apb.BlockAssembly, case: Case, expected: bytes, lean_binary: 
     assert validator.validate(program) == []
     report = compare_program(program, [case], 4, [lean_binary])
     assert report.passed, report.summary()
-    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
+    assert run_python(v1model.load(program), case, 4) == [(0, expected)]
 
 
 @pytest.mark.parametrize("kind", ["action", "block"])
@@ -284,7 +283,7 @@ blocks {{
 headers: "H"
 metadata: "M"
 exports {{ role: "parser" block: "P" }}
-exports {{ role: "control" block: "C" }}
+exports {{ role: "ingress" block: "C" }}
 exports {{ role: "deparser" block: "D" }}
 """
     return arch_wire.load_text(text)

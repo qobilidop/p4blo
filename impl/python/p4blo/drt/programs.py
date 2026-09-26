@@ -79,7 +79,7 @@ blocks {
   body { emit { value { member { base { var: "hdr" } field: "result" } } } }
 }
 exports { role: "parser" block: "P" }
-exports { role: "control" block: "C" }
+exports { role: "ingress" block: "C" }
 exports { role: "deparser" block: "D" }
 """
 

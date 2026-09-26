@@ -72,7 +72,7 @@ def build() -> apb.BlockAssembly:
         name="csum16",
         headers=Parsed_packet,
         metadata=Metadata,
-        exports={"parser": parserI, "control": cIngress, "deparser": DeparserI},
+        exports={"parser": parserI, "ingress": cIngress, "deparser": DeparserI},
     )
 
 

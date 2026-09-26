@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from p4blo import arch, stf
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.drt import generate
@@ -35,23 +35,14 @@ def test_source_rebuilds_valid_golden(name: str) -> None:
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_vectors_and_filter_fate(name: str) -> None:
+def test_vectors(name: str) -> None:
     for vector in sorted((DATA / name).glob("*.stf")):
         program = build(name)
         statements = stf.parse(vector.read_text())
-        loaded = arch.reference.load(program)
-        stf.assert_replay(loaded.index, statements, arch.stf_driver(arch.Switch(4), loaded))
-        filters = arch.stf_driver(arch.Filter(), arch.reference.load(program))
-        switches = arch.stf_driver(arch.Switch(4), arch.reference.load(program))
-        installed: list[stf.Statement] = []
+        loaded = v1model.load(program)
+        stf.assert_replay(loaded.index, statements, arch.stf_driver(v1model.V1Model(4), loaded))
         for statement in statements:
-            if isinstance(statement, stf.Add | stf.SetDefault):
-                installed.append(statement)
-            elif isinstance(statement, stf.Packet):
-                entries = stf.to_entries(loaded.index, installed)
-                args = (entries, statement.port, statement.data)
-                assert [p for p, _ in switches(*args)] == [p for p, _ in filters(*args)]
-            elif isinstance(statement, stf.Expect):
+            if isinstance(statement, stf.Expect):
                 assert statement.exact, f"{vector}: public examples require exact output lengths"
 
 

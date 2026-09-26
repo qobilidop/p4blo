@@ -6,7 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from p4blo import arch, stf
+from p4blo import stf
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.drt.case import Case
@@ -64,8 +65,8 @@ def sequence() -> tuple[list[Case], list[Outcome]]:
         expected.append(
             Outcome(
                 outputs=() if output is None else ((port, output),),
-                diagnostic=f"egress_port {port} is not a port of this switch"
-                if admitted and port >= 4
+                diagnostic=f"egress_spec {port} is not a configured v1model port"
+                if admitted and 4 <= port < 511
                 else None,
                 state=(Observation("admissions", "counter", values=tuple(counts)),),
             )
@@ -101,7 +102,7 @@ def sequence() -> tuple[list[Case], list[Outcome]]:
 
 
 def test_gateway_independent_packets_and_persistent_admissions() -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     cases, expected = sequence()
     for number, (case, answer) in enumerate(zip(cases, expected, strict=True)):
         assert python_outcome(loaded, case, 4) == answer, number
@@ -124,7 +125,7 @@ def test_lean_agrees_gateway_packets_and_persistent_admissions(
             return answer
 
         try:
-            report = compare_cases(program.name, arch.reference.load(program), cases, 4, observe)
+            report = compare_cases(program.name, v1model.load(program), cases, 4, observe)
         except ProtocolError as error:
             if error.report is not None:
                 save(error.report, ROOT / ".artifacts/drt/vlan-gateway-protocol.json")

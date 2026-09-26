@@ -16,8 +16,7 @@ from types import ModuleType
 import pytest
 from google.protobuf import text_format
 
-from p4blo import arch
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.builder import AssemblyBuilder
 from p4blo.arch.externs import declarations as edsl_externs
@@ -193,12 +192,12 @@ def test_exports_and_default_signatures() -> None:
     p.control("C")
     p.deparser("D")
     p.export("parser", "P")
-    p.export("control", "C")
+    p.export("ingress", "C")
     p.export("deparser", "D")
     program = p.build()
     assert [(e.role, e.block) for e in program.exports] == [
         ("parser", "P"),
-        ("control", "C"),
+        ("ingress", "C"),
         ("deparser", "D"),
     ]
     assert program.blocks[0] == block(
@@ -1270,16 +1269,16 @@ def test_an_int_shift_amount_wider_than_the_left_operand_builds() -> None:
         with d.body() as b:
             b.emit(d.hdr.h)
     p.export("parser", "P")
-    p.export("control", "C")
+    p.export("ingress", "C")
     p.export("deparser", "D")
     program = p.build()
     assert validator.validate(program) == []
     shifts = [st.assign.value.binary.right.literal.bits for st in program.blocks[1].body]
     assert (shifts[0].width, shifts[0].value) == (3, "4")
     assert (shifts[1].width, shifts[1].value) == (6, "1")
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     # v = 0b11 << 4 is 0 in bit<2>; pad = 0b111111 >> 1 is 0b011111.
-    assert arch.Switch(2).run(loaded, loaded.entries(), 0, b"\xff") == [(0, b"\x1f")]
+    assert v1model.V1Model(2).run(loaded, loaded.entries(), 0, b"\xff") == [(0, b"\x1f")]
 
 
 def test_advance_takes_a_bit32_amount() -> None:

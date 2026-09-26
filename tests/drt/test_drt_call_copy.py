@@ -11,7 +11,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import binary, bits, scalar_program
@@ -130,7 +130,7 @@ def check_call(program: apb.BlockAssembly, expected: bytes, lean_binary: Path) -
         bundle = directory / f"call-copy-{digest}.json"
         save(report, bundle)
         pytest.fail(f"{report.summary()}; replay {bundle}; {report.protocol_error}")
-    assert run_python(arch.reference.load(program), case, 4) == [(0, expected + case.packet)]
+    assert run_python(v1model.load(program), case, 4) == [(0, expected + case.packet)]
 
 
 @pytest.mark.parametrize("kind", ["action", "block"])
@@ -174,7 +174,7 @@ def test_lean_agrees_call_copy_computed_index_generated(
     case = Case(pb.Entries(), 0, packet)
     report = compare_program(program, [case], 4, [lean_binary])
     assert report.passed, report.summary()
-    assert run_python(arch.reference.load(program), case, 4) == [
+    assert run_python(v1model.load(program), case, 4) == [
         (0, expected_copyback(first, packet, overlap))
     ]
 

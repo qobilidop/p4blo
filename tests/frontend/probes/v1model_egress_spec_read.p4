@@ -1,6 +1,6 @@
-// mark_to_drop followed by a write of a real port forwards the packet:
-// v1model decides the drop from egress_spec at the end of ingress.
-// The vector's expectations are P4-SpecTec's output.
+// Egress observes a fresh drop request and the selected destination.
+// BMv2 resets egress_spec to 0; P4-SpecTec retains ingress value 2.
+// The vector records the selected BMv2 target behavior.
 #include <core.p4>
 #include <v1model.p4>
 header h_t { bit<8> f; bit<8> g; }

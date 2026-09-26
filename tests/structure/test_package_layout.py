@@ -33,7 +33,9 @@ def test_lean_package_dependency_is_one_way() -> None:
     assert "p4blo-lean" not in {exe["name"] for exe in spec["lean_exe"]}
     assert {exe["name"]: exe["root"] for exe in arch["lean_exe"]}["p4blo-lean"] == "Main"
     assert not (ROOT / "spec/ir/P4bloIR/Switch.lean").exists()
-    assert (ROOT / "spec/arch/P4bloArch/Switch.lean").is_file()
+    assert not (ROOT / "spec/ir/P4bloIR/V1Model.lean").exists()
+    assert not (ROOT / "spec/arch/P4bloArch/Switch.lean").exists()
+    assert (ROOT / "spec/arch/P4bloArch/V1Model.lean").is_file()
     assert (ROOT / "spec/arch/P4bloArch/Externs.lean").is_file()
     assert (ROOT / "spec/ir/P4bloIR.lean").is_file()
     assert (ROOT / "spec/ir/P4bloIR/IR.lean").is_file()

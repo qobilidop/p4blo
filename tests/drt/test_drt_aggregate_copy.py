@@ -15,7 +15,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.programs import bits, scalar_program
@@ -137,7 +137,7 @@ def check_copy(program: apb.BlockAssembly, expected: bytes, lean_binary: Path) -
         bundle = directory / f"aggregate-copy-{digest}.json"
         save(report, bundle)
         pytest.fail(f"{report.summary()}; replay {bundle}; {report.protocol_error}")
-    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
+    assert run_python(v1model.load(program), case, 4) == [(0, expected)]
 
 
 @pytest.mark.parametrize("kind", ["header", "struct"])

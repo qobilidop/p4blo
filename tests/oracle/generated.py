@@ -305,7 +305,7 @@ FAMILIES: dict[str, Family] = {
     "aggregate_copy": aggregate_copy_family,
     "call_copy": call_copy_family,
     "corpus": corpus_family,
-    "control": shape_family("control"),
+    "ingress": shape_family("control"),
     "parser": shape_family("parser"),
 }
 
@@ -338,7 +338,7 @@ def vectors(generated: Generated, index: ir.Index) -> list[tuple[str, str]]:
     groups = [generated.cases] if generated.sequence else [(c,) for c in generated.cases]
     files: list[tuple[str, str]] = []
     for number, group in enumerate(groups):
-        loaded = arch.reference.load(generated.program)
+        loaded = v1model.load(generated.program)
         lines: list[str] = []
         for case in group:
             outcome = python_outcome(loaded, case, SWITCH_PORTS)
@@ -356,8 +356,10 @@ def vectors(generated: Generated, index: ir.Index) -> list[tuple[str, str]]:
 def self_check(program: apb.BlockAssembly, index: ir.Index, text: str) -> None:
     """The vector must replay on Python from fresh state: it says what
     Python did, and nothing else."""
-    loaded = arch.reference.load(program)
-    stf.assert_replay(index, stf.parse(text), arch.stf_driver(arch.Switch(SWITCH_PORTS), loaded))
+    loaded = v1model.load(program)
+    stf.assert_replay(
+        index, stf.parse(text), arch.stf_driver(v1model.V1Model(SWITCH_PORTS), loaded)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -504,14 +506,14 @@ def table_mask_model(
 def table_mask_control_agrees(program: apb.BlockAssembly, case: Case) -> bool:
     """Whether the table-mask rewrite with the real masks gives Python's real
     outputs under both tie orders."""
-    original = python_outcome(arch.reference.load(program), case, SWITCH_PORTS)
+    original = python_outcome(v1model.load(program), case, SWITCH_PORTS)
     try:
         for reverse in (False, True):
             model, entries = table_mask_model(
                 program, case.entries, reverse=reverse, real_masks=True
             )
             control = Case(entries, case.ingress_port, case.packet)
-            outcome = python_outcome(arch.reference.load(model), control, SWITCH_PORTS)
+            outcome = python_outcome(v1model.load(model), control, SWITCH_PORTS)
             if outcome.error is not None or outcome.outputs != original.outputs:
                 return False
     except ValueError:
@@ -654,7 +656,7 @@ def table_mask_changes_a_winner(program: apb.BlockAssembly, case: Case) -> bool:
     a model whose masks equal their values.
     """
     with recording_lookups() as lookups:
-        python_outcome(arch.reference.load(program), case, SWITCH_PORTS)
+        python_outcome(v1model.load(program), case, SWITCH_PORTS)
     changed = False
     for lookup in lookups:
         real = real_winner(lookup)
@@ -703,10 +705,10 @@ def explained_by_table_mask(
         for reverse in (False, True):
             model, entries = table_mask_model(program, case.entries, reverse=reverse)
             modelled = Case(entries, case.ingress_port, case.packet)
-            outcomes.append(python_outcome(arch.reference.load(model), modelled, SWITCH_PORTS))
+            outcomes.append(python_outcome(v1model.load(model), modelled, SWITCH_PORTS))
     except ValueError:
         return False
-    original = python_outcome(arch.reference.load(program), case, SWITCH_PORTS)
+    original = python_outcome(v1model.load(program), case, SWITCH_PORTS)
     outcome = outcomes[0]
     if (
         any(o.error is not None for o in outcomes)
@@ -792,7 +794,7 @@ def prepare(generated: Generated, directory: Path) -> Prepared:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "program.txtpb").write_text(arch_wire.dump_text(generated.program))
     index = BoundIndex.build(generated.program)
-    arch.reference.load(generated.program)  # validates; a generator mistake is an error
+    v1model.load(generated.program)  # validates; a generator mistake is an error
     p4 = directory / "program.p4"
     p4.write_text(v1model.print_program(assembly_of(index.program, index.bindings), index=index))
     paths: list[Path] = []

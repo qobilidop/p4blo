@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.builder import AssemblyBuilder
 from p4blo.arch.externs import declarations as externs
 from p4blo.arch.v0 import assembly_pb2 as apb
@@ -33,7 +33,7 @@ def family_program(suffix: str) -> apb.BlockAssembly:
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])
 def test_python_dispatches_existing_families(suffix: str) -> None:
-    assert set(arch.reference.load(family_program(suffix)).externs) == {"r", "c", "s"}
+    assert set(v1model.load(family_program(suffix)).externs) == {"r", "c", "s"}
 
 
 @pytest.mark.parametrize("suffix", ["", ".8", ".multiple.dots"])

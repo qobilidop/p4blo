@@ -127,7 +127,7 @@ def build(
         name="t",
         headers=headers,
         metadata=metadata,
-        exports={"parser": parser, "control": control, "deparser": deparser},
+        exports={"parser": parser, "ingress": control, "deparser": deparser},
     )
 
 
@@ -662,7 +662,7 @@ def test_program_assembly() -> None:
     assert program.enum_types[0] == pb.EnumType(name="Color", members=["RED", "GREEN"])
     assert [(e.role, e.block) for e in program.exports] == [
         ("parser", "P"),
-        ("control", "NoControl"),
+        ("ingress", "NoControl"),
         ("deparser", "NoDeparser"),
     ]
     start = program.blocks[0].states[0]

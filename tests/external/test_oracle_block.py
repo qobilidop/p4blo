@@ -13,7 +13,7 @@ counters. Extern state is carried from request to request in the
 simulator's own form, as the reference interpreter carries it in `Loaded`.
 
 The blocks' inputs are chained as the switch chains them
-(`p4blo.arch.Switch`): the parser gets zero metadata with `ingress_port`,
+(parser, ingress, deparser): the parser gets zero metadata with `ingress_port`,
 the control the parser's headers and metadata with `parser_error`, the
 deparser the control's headers. Unlike the switch, the harness runs all
 three blocks for every packet, even one the switch would drop before its
@@ -38,7 +38,7 @@ from unittest import mock
 import pytest
 
 from p4blo import arch, ir, stf
-from p4blo.arch import entry, spectec_block
+from p4blo.arch import entry, spectec_block, v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex, assembly_of
 from p4blo.arch.entry import deparser as interp_deparser
@@ -61,7 +61,7 @@ PROGRAMS = sorted({program_of(v) for v in VECTORS})
 
 
 def load(path: Path) -> arch.Loaded:
-    return arch.reference.load(arch_wire.load_text(path.read_text()))
+    return v1model.load(arch_wire.load_text(path.read_text()))
 
 
 @pytest.fixture(scope="module")
@@ -93,7 +93,7 @@ def test_block_printer_has_no_shim(path: Path) -> None:
     assert "#include <p4blo.p4>" in text
     assert "v1model" not in text
     assert "standard_metadata" not in text
-    parts = [loaded.block(role) for role in arch.reference.ROLES]
+    parts = [loaded.block(role) for role in ("parser", "ingress", "deparser")]
     assert text.rstrip().endswith(f"P4blo({', '.join(f'{p}()' for p in parts)}) main;")
 
 
@@ -106,7 +106,7 @@ def test_block_printer_supplies_missing_roles() -> None:
     for block in program.blocks:
         block.name = {"MyParser": "Parse", "MyDeparser": "Deparse"}.get(block.name, block.name)
     del program.exports[:]
-    program.exports.add(role="control", block="MyIngress")
+    program.exports.add(role="ingress", block="MyIngress")
     text = spectec_block.print_program(program)
     assert "parser MyParser(packet_in packet, out headers hdr, inout metadata meta)" in text
     assert "control MyDeparser(packet_out packet, in headers hdr)" in text
@@ -624,7 +624,7 @@ def _compare(runner: oracle_block.BlockRunner, vector: Path, loaded: arch.Loaded
         assert isinstance(m, Struct)
         meta.write(m, "parser_error", parsed.error)
         headers, m_out = entry.run_control(
-            index, loaded.block("control"), parsed.headers, m, tables, externs
+            index, loaded.block("ingress"), parsed.headers, m, tables, externs
         )
         spec = runner.run_block(
             index,

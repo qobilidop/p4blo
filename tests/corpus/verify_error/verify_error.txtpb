@@ -220,7 +220,7 @@ exports {
   block: "MyParser"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "MyIngress"
 }
 exports {

@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, stf
+from p4blo import stf
+from p4blo.arch import v1model
 from p4blo.edsl import EdslError, bit8
 from p4blo.interp.tables import InstallError
 from p4blo.v0 import p4blo_pb2 as pb
@@ -57,7 +58,7 @@ def test_lean_agrees_quickstart_sources_and_persistence(lean_binary: Path) -> No
 def test_python_quickstart_diagnostics() -> None:
     with pytest.raises(EdslError, match="no truth value"):
         bool(bit8(1) == bit8(1))
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     with pytest.raises(InstallError, match="no table 'missing'"):
         loaded.entries(
             pb.Entries(
@@ -74,6 +75,6 @@ def test_python_quickstart_diagnostics() -> None:
     entries = stf.to_entries(loaded.index, statements)
     entries.tables[0].entries[0].action.args[1].bits.value = "5"
     packet = next(statement for statement in statements if isinstance(statement, stf.Packet))
-    switch = arch.Switch(ports=4)
+    switch = v1model.V1Model(ports=4)
     assert switch.run(loaded, loaded.entries(entries), packet.port, packet.data) == []
-    assert switch.diagnostics == ["egress_port 5 is not a port of this switch"]
+    assert switch.diagnostics == ["egress_spec 5 is not a configured v1model port"]

@@ -88,7 +88,7 @@ def sequence() -> tuple[list[Case], list[Outcome]]:
     add(
         incoming,
         entries=policy("add routes hdr.ipv4.dst:0/0 forward(src_mac:1, dst_mac:2, port:4)"),
-        diagnostic="egress_port 4 is not a port of this switch",
+        diagnostic="egress_spec 4 is not a configured v1model port",
     )
     add(incoming, entries=policy(POLICY + "add routes hdr.ipv4.dst:0x0a000201/32 deny()"))
     return cases, answers

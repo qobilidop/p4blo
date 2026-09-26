@@ -15,7 +15,6 @@ from tests.oracle.bmv2 import run as bmv2
 
 CASES = Path(__file__).resolve().parents[1] / "oracle" / "discrepancies"
 NAMES = ("crc32_odd", "register_bounds", "table_mask", "const_priority")
-pytestmark = pytest.mark.oracle
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -30,6 +29,7 @@ def test_same_inputs_distinct_recorded_answers(name: str) -> None:
     assert any(line.startswith("packet ") for line in inputs[0])
 
 
+@pytest.mark.oracle
 @pytest.mark.parametrize("name", NAMES)
 def test_pinned_spectec_answer(name: str) -> None:
     oracle = spectec.find_oracle()
@@ -59,6 +59,7 @@ def test_pinned_spectec_answer(name: str) -> None:
     assert result.stdout.splitlines()[-1:] == ["passed"], result.stdout + result.stderr
 
 
+@pytest.mark.oracle
 @pytest.mark.parametrize("name", NAMES)
 def test_pinned_bmv2_answer(name: str) -> None:
     image = bmv2.default_image()

@@ -39,7 +39,7 @@ class Headers(Struct):
 
 class Meta(Struct):
     """The donor's `Meta` is empty. It declares no contract field, so the
-    switch reads egress_port as 0 and drop as false: every packet leaves
+    switch reads egress_spec as 0 and drop as false: every packet leaves
     on port 0, as the vectors expect."""
 
 
@@ -98,7 +98,7 @@ def build() -> apb.BlockAssembly:
         name="stateful",
         headers=Headers,
         metadata=Meta,
-        exports={"parser": p, "control": pipeline, "deparser": deparser},
+        exports={"parser": p, "ingress": pipeline, "deparser": deparser},
     )
 
 

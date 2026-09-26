@@ -195,16 +195,9 @@ struct_types {
     }
   }
   fields {
-    name: "egress_port"
+    name: "egress_spec"
     type {
       bits: 9
-    }
-  }
-  fields {
-    name: "drop"
-    type {
-      boolean {
-      }
     }
   }
   fields {
@@ -501,6 +494,12 @@ blocks {
     direction: DIRECTION_INOUT
   }
   locals {
+    name: "destination"
+    type {
+      bits: 9
+    }
+  }
+  locals {
     name: "expected_checksum"
     type {
       bits: 16
@@ -735,13 +734,11 @@ blocks {
                 base {
                   var: "meta"
                 }
-                field: "drop"
+                field: "egress_spec"
               }
             }
             value {
-              literal {
-                boolean: false
-              }
+              var: "destination"
             }
           }
         }
@@ -856,13 +853,11 @@ blocks {
                     base {
                       var: "meta"
                     }
-                    field: "drop"
+                    field: "egress_spec"
                   }
                 }
                 value {
-                  literal {
-                    boolean: false
-                  }
+                  var: "destination"
                 }
               }
             }
@@ -909,12 +904,15 @@ blocks {
           base {
             var: "meta"
           }
-          field: "drop"
+          field: "egress_spec"
         }
       }
       value {
         literal {
-          boolean: true
+          bits {
+            width: 9
+            value: "511"
+          }
         }
       }
     }
@@ -1554,12 +1552,7 @@ blocks {
               then {
                 assign {
                   target {
-                    member {
-                      base {
-                        var: "meta"
-                      }
-                      field: "egress_port"
-                    }
+                    var: "destination"
                   }
                   value {
                     literal {
@@ -1674,12 +1667,7 @@ blocks {
               otherwise {
                 assign {
                   target {
-                    member {
-                      base {
-                        var: "meta"
-                      }
-                      field: "egress_port"
-                    }
+                    var: "destination"
                   }
                   value {
                     literal {
@@ -1774,7 +1762,7 @@ exports {
   block: "Parse"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "Filter"
 }
 exports {

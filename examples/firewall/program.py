@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.arch import reference
+from p4blo.arch import v1model
 from p4blo.arch.externs.declarations import CRC16, Checksum16, Register
 from p4blo.arch.v0 import assembly_pb2 as apb
 
@@ -54,8 +54,7 @@ class Headers(p4.Struct):
 
 class Metadata(p4.Struct):
     ingress_port: p4.bit9
-    egress_port: p4.bit9
-    drop: p4.Bool
+    egress_spec: p4.bit9
     client: p4.bit32
     server: p4.bit32
     client_port: p4.bit16
@@ -104,6 +103,7 @@ flows = Register[FlowRecord]("flows", size=16)
 
 
 class Filter(p4.Control[Headers, Metadata]):
+    destination: p4.bit9
     expected_checksum: p4.bit16
     tuple_bits: p4.Var[p4.L[96]]
     record: FlowRecord
@@ -145,10 +145,10 @@ class Filter(p4.Control[Headers, Metadata]):
             & (self.resident == 0)
         )
         with self.if_(self.resident == self.record):
-            self.assign(self.meta.drop, False)
+            self.assign(self.meta.egress_spec, self.destination)
         with self.elif_(new_outbound_syn):
             flows.write(self.slot, self.record)
-            self.assign(self.meta.drop, False)
+            self.assign(self.meta.egress_spec, self.destination)
 
     def orient_flow(self) -> None:
         """Build the branches that give both directions one client/server tuple."""
@@ -158,16 +158,16 @@ class Filter(p4.Control[Headers, Metadata]):
             self.assign(self.meta.server, ip.dst)
             self.assign(self.meta.client_port, tcp.src)
             self.assign(self.meta.server_port, tcp.dst)
-            self.assign(self.meta.egress_port, 2)
+            self.assign(self.destination, 2)
         with self.else_():
             self.assign(self.meta.client, ip.dst)
             self.assign(self.meta.server, ip.src)
             self.assign(self.meta.client_port, tcp.dst)
             self.assign(self.meta.server_port, tcp.src)
-            self.assign(self.meta.egress_port, 1)
+            self.assign(self.destination, 1)
 
     def apply(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
         ip, tcp = self.hdr.ipv4, self.hdr.tcp
         supported_packet = (
             ip.is_valid()
@@ -200,14 +200,14 @@ blocks = p4.BlockLibrary(Parse, Filter, Emit, externs=[checksum, flow_hash, flow
 
 
 def build() -> apb.BlockAssembly:
-    """Assemble the blocks for the supplied switch and its metadata contract."""
-    return reference.assemble(
+    """Bind the core blocks to the scoped v1model metadata contract."""
+    return v1model.assemble(
         blocks,
         name="example_firewall",
         headers=Headers,
         metadata=Metadata,
         parser=Parse,
-        control=Filter,
+        ingress=Filter,
         deparser=Emit,
     )
 

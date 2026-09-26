@@ -167,7 +167,7 @@ def build() -> apb.BlockAssembly:
         name="subparser_stack",
         headers=headers,
         metadata=metadata,
-        exports={"parser": parserI, "control": cIngress, "deparser": DeparserI},
+        exports={"parser": parserI, "ingress": cIngress, "deparser": DeparserI},
     )
 
 

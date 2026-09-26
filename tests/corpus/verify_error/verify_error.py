@@ -45,7 +45,7 @@ class mystruct1_t(Struct):
 
 # The source's metadata, plus parser_error from standard_metadata under
 # the contract's name. The program never sets egress_spec, so no
-# egress_port: the architecture sends to port 0.
+# egress_spec: the architecture sends to port 0.
 class metadata(Struct):
     mystruct1: mystruct1_t
     parser_error: Error
@@ -91,7 +91,7 @@ def build() -> apb.BlockAssembly:
         name="verify_error",
         headers=headers,
         metadata=metadata,
-        exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser},
+        exports={"parser": MyParser, "ingress": MyIngress, "deparser": MyDeparser},
     )
 
 

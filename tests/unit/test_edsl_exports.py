@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from p4blo import arch
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.edsl import (
     BlockLibrary,
     Control,
@@ -177,19 +177,19 @@ def test_architecture_selects_named_exports_from_library() -> None:
 
 
 def test_reference_assembly_keeps_conventional_role_order() -> None:
-    program = arch.reference.assemble(
+    program = v1model.assemble(
         BlockLibrary(Parse, Apply, Emit),
         name="reference",
         headers=Headers,
         metadata=Metadata,
         parser=Parse,
-        control=Apply,
+        ingress=Apply,
         deparser=Emit,
     )
     validator.check(program)
     assert [(e.role, e.block) for e in program.exports] == [
         ("parser", "Parse"),
-        ("control", "Apply"),
+        ("ingress", "Apply"),
         ("deparser", "Emit"),
     ]
 

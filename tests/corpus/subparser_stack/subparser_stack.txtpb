@@ -1221,7 +1221,7 @@ exports {
   block: "parserI"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "cIngress"
 }
 exports {

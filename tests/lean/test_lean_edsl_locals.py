@@ -17,8 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
-from p4blo.arch import assemble, validator
+from p4blo.arch import assemble, v1model, validator
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
@@ -126,7 +125,7 @@ def statelocal() -> apb.BlockAssembly:
         name="edsl_statelocal",
         headers=headers,
         metadata=metadata,
-        exports={"parser": StateLocalParser, "control": PassControl, "deparser": Emit},
+        exports={"parser": StateLocalParser, "ingress": PassControl, "deparser": Emit},
     )
 
 
@@ -136,7 +135,7 @@ def actlocal() -> apb.BlockAssembly:
         name="edsl_actlocal",
         headers=headers,
         metadata=metadata,
-        exports={"parser": ExtractParser, "control": ActionLocalControl, "deparser": Emit},
+        exports={"parser": ExtractParser, "ingress": ActionLocalControl, "deparser": Emit},
     )
 
 
@@ -157,9 +156,7 @@ def test_the_programs_validate(name: str) -> None:
 @pytest.mark.parametrize("name", CASES)
 def test_python_sees_a_fresh_local_at_every_entry(name: str) -> None:
     program, packet, expected = CASES[name]
-    assert run_python(arch.reference.load(program), Case(pb.Entries(), 0, packet), 4) == [
-        (0, expected)
-    ]
+    assert run_python(v1model.load(program), Case(pb.Entries(), 0, packet), 4) == [(0, expected)]
 
 
 @pytest.mark.parametrize("name", CASES)
@@ -180,4 +177,4 @@ def test_lean_agrees_on_edsl_locals_at_every_entry(name: str, lean_binary: Path)
             f"{report.summary()}; replay {bundle}\n{report.divergences}\n{report.protocol_error}"
         )
     assert report.agreed == 1
-    assert run_python(arch.reference.load(program), case, 4) == [(0, expected)]
+    assert run_python(v1model.load(program), case, 4) == [(0, expected)]

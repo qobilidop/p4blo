@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def check_python(
     program: apb.BlockAssembly, cases: Sequence[Case], expected: Sequence[Outcome]
 ) -> None:
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     assert len(cases) == len(expected)
     for number, (case, answer) in enumerate(zip(cases, expected, strict=True)):
         actual = python_outcome(loaded, case, 4)
@@ -45,7 +45,7 @@ def check_lean(
             return answer
 
         try:
-            report = compare_cases(program.name, arch.reference.load(program), cases, 4, observe)
+            report = compare_cases(program.name, v1model.load(program), cases, 4, observe)
         except ProtocolError as error:
             if error.report is not None:
                 save(error.report, artifacts / f"{program.name}-protocol.json")

@@ -33,7 +33,8 @@ STEPS = (
         "class Headers(",
         "Separate the packet from its context.",
         "Headers hold parsed packet data. Metadata connects the program to its architecture: "
-        "the host supplies ingress_port; the program chooses egress_port and drop. The core "
+        "the host supplies ingress_port; the program sets egress_spec to a port or 511 to drop. "
+        "The core "
         "doesn’t know about a particular device.",
         "PACKET DATA + ARCHITECTURE CONTRACT",
     ),
@@ -60,7 +61,8 @@ STEPS = (
         "class Gateway(",
         "Admit. Untag. Account.",
         "The table supplies a port. Restore the encapsulated EtherType before invalidating "
-        "the VLAN header, count the admission, then clear drop. The explicit cast widens "
+        "the VLAN header and count the admission. Selecting a port replaces the drop request. "
+        "The cast widens "
         "the port to the counter’s 32-bit index. Admissions count decisions, not physical "
         "transmissions.",
         "VLAN 42 → PORT 2 · ADMISSIONS[2] + 1",
@@ -76,9 +78,10 @@ STEPS = (
     ),
     (
         "guard",
-        "    def apply(self) -> None:\n        self.assign(self.meta.drop, True)",
+        "    def apply(self) -> None:\n        self.assign(self.meta.egress_spec, 511)",
         "Start closed. Check before lookup.",
-        "Controls still run after a failed parse, so drop starts true. Only a valid tag, "
+        "Ingress still runs after a failed parse, so egress_spec starts at the drop port. "
+        "Only a valid tag, "
         "a VLAN ID from 1 to 4094 and a non-nested EtherType reach the table. "
         "with self.if_ records a packet-time branch; a normal Python if would run while "
         "building the program.",
@@ -89,7 +92,7 @@ STEPS = (
         "class Emit(",
         "A missing tag is the transformation.",
         "Emit writes valid headers in order. The admitted packet’s VLAN header is now "
-        "invalid, so it contributes no bytes. The switch appends the untouched payload: "
+        "invalid, so it contributes no bytes. The v1model runtime appends the untouched payload: "
         "a 38-byte input becomes a 34-byte output, with both MAC addresses preserved.",
         "ETHERNET + PAYLOAD · FOUR BYTES SHORTER",
     ),
@@ -97,7 +100,7 @@ STEPS = (
         "build",
         "def build() -> apb.BlockAssembly:",
         "Build once. Inspect every operation.",
-        "Assemble the parser, control, deparser and extern into one architecture-free IR. "
+        "Author independent core blocks, then bind parser, ingress and deparser to v1model. "
         "Running this complete source prints that IR. The linked demo installs the policy "
         "and replays packets; tests compare independent expected bytes and counter states "
         "against both Python and Lean execution.",

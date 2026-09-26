@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
 from p4blo.arch import assemble, externs, v1model
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.builder import AssemblyBuilder
@@ -171,12 +170,12 @@ def typed_program() -> apb.BlockAssembly:
         name="typed_crc",
         headers=TypedHeaders,
         metadata=TypedMetadata,
-        exports={"parser": TypedParser, "control": TypedControl, "deparser": TypedDeparser},
+        exports={"parser": TypedParser, "ingress": TypedControl, "deparser": TypedDeparser},
     )
 
 
 def test_typed_crc_authoring_executes() -> None:
-    assert run_python(arch.reference.load(typed_program()), Case(pb.Entries(), 0, b""), 4) == [
+    assert run_python(v1model.load(typed_program()), Case(pb.Entries(), 0, b""), 4) == [
         (0, bytes.fromhex("4040ff000000"))
     ]
 
@@ -217,7 +216,7 @@ def program(payloads: list[bytes]) -> apb.BlockAssembly:
         with deparser.body() as body:
             body.emit(deparser.hdr.result)
     p.export("parser", parser)
-    p.export("control", control)
+    p.export("ingress", control)
     p.export("deparser", deparser)
     return p.build()
 
@@ -260,7 +259,7 @@ def test_known_answers(data: bytes, c16: int, c32: int) -> None:
 
 
 def test_dynamic_authoring_execution_and_observation() -> None:
-    loaded = arch.reference.load(program([data for data, _, _ in KNOWN]))
+    loaded = v1model.load(program([data for data, _, _ in KNOWN]))
     before = state.snapshot(loaded)
     assert len(before) == 2 * len(KNOWN)
     assert {item.kind for item in before} == {"crc16", "crc32"}
@@ -289,7 +288,7 @@ def test_unsupported_input_widths_fail_binding_and_printing(width: int) -> None:
 
 @pytest.mark.parametrize("width", [16, 32])
 def test_wrong_bound_argument_width_is_not_padded(width: int) -> None:
-    loaded = arch.reference.load(program([b"x"]))
+    loaded = v1model.load(program([b"x"]))
     bound = loaded.externs[f"crc{width}_0"]
     with pytest.raises(InterpError, match="bound width"):
         bound.call("compute", [Bits(16, 1)])
@@ -319,7 +318,8 @@ def test_malformed_crc_shapes_are_rejected(bad: str) -> None:
         decl.methods[0].name = "not_compute"
     with pytest.raises(externs.BindError):
         externs.supplied_registry().bind(BoundIndex.build(p))
-    with pytest.raises(v1model.PrintError, match="wrong shape"):
+    message = "has no method" if bad == "method" else "wrong shape"
+    with pytest.raises(v1model.PrintError, match=message):
         v1model.print_program(p)
 
 

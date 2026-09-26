@@ -159,7 +159,7 @@ TERNARY = """
       }
       body { apply { table: "test1" } }
     }
-    exports { role: "control" block: "ingress" }
+    exports { role: "ingress" block: "ingress" }
 """
 
 
@@ -201,7 +201,7 @@ STACK_KEY = """
       }
       body { apply { table: "ex1" } }
     }
-    exports { role: "control" block: "ingress" }
+    exports { role: "ingress" block: "ingress" }
 """
 
 

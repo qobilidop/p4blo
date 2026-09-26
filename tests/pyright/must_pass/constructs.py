@@ -174,4 +174,4 @@ class MyDeparser(Deparser[headers]):
         self.emit(self.hdr.h2)
 
 
-program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser, externs=[r, pkts, csum]), name="constructs", headers=headers, metadata=metadata, exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser})
+program = assemble(BlockLibrary(MyParser, MyIngress, MyDeparser, externs=[r, pkts, csum]), name="constructs", headers=headers, metadata=metadata, exports={"parser": MyParser, "ingress": MyIngress, "deparser": MyDeparser})

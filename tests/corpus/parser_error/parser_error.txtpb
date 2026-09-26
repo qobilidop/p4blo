@@ -46,7 +46,7 @@ struct_types {
     }
   }
   fields {
-    name: "egress_port"
+    name: "egress_spec"
     type {
       bits: 9
     }
@@ -225,7 +225,7 @@ blocks {
           base {
             var: "meta"
           }
-          field: "egress_port"
+          field: "egress_spec"
         }
       }
       value {
@@ -264,7 +264,7 @@ exports {
   block: "parse"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "ingress"
 }
 exports {

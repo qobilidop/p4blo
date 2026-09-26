@@ -88,8 +88,7 @@ class headers(Struct):
 
 class metadata(Struct):
     ingress_port: bit9
-    egress_port: bit9
-    drop: Bool
+    egress_spec: bit9
 
 
 class MyParser(Parser[headers, metadata]):
@@ -137,8 +136,7 @@ class MyIngress(Control[headers, metadata]):
 
     @action
     def drop(self) -> None:
-        self.assign(self.meta.drop, True)
-        self.assign(self.meta.egress_port, 511)
+        self.assign(self.meta.egress_spec, 511)
 
     @action
     def compute_hashes(self, ipAddr1: bit32, ipAddr2: bit32, port1: bit16, port2: bit16) -> None:
@@ -150,7 +148,7 @@ class MyIngress(Control[headers, metadata]):
 
     @action
     def ipv4_forward(self, dstAddr: bit48, port: bit9) -> None:
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
         self.assign(self.hdr.ethernet.srcAddr, self.hdr.ethernet.dstAddr)
         self.assign(self.hdr.ethernet.dstAddr, dstAddr)
         self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
@@ -167,7 +165,7 @@ class MyIngress(Control[headers, metadata]):
         self.assign(self.direction, dir)
 
     check_ports = Table(
-        keys=(exact(metadata.ingress_port), exact(metadata.egress_port)),
+        keys=(exact(metadata.ingress_port), exact(metadata.egress_spec)),
         actions=[set_direction, NoAction],
         default=NoAction(),
         size=1024,
@@ -229,7 +227,7 @@ def build() -> apb.BlockAssembly:
         name="tutorial_firewall",
         headers=headers,
         metadata=metadata,
-        exports={"parser": MyParser, "control": MyIngress, "deparser": MyDeparser},
+        exports={"parser": MyParser, "ingress": MyIngress, "deparser": MyDeparser},
     )
 
 

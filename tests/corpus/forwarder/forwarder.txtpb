@@ -1,10 +1,3 @@
-# forwarder: the p4lang tutorial "basic" solution in p4blo. Generated from
-# forwarder.py; see README.md beside this file for what was elaborated away
-# and what is deferred. In short: typedefs are gone, MyComputeChecksum is a
-# checksum16 extern called at the end of the control, MyVerifyChecksum is
-# deferred, and standard_metadata is replaced by the three fields of
-# `metadata`, which are the metadata contract of the architectures.
-
 name: "forwarder"
 errors: "NoError"
 errors: "PacketTooShort"
@@ -133,16 +126,9 @@ struct_types {
     }
   }
   fields {
-    name: "egress_port"
+    name: "egress_spec"
     type {
       bits: 9
-    }
-  }
-  fields {
-    name: "drop"
-    type {
-      boolean {
-      }
     }
   }
 }
@@ -298,12 +284,15 @@ blocks {
             base {
               var: "meta"
             }
-            field: "drop"
+            field: "egress_spec"
           }
         }
         value {
           literal {
-            boolean: true
+            bits {
+              width: 9
+              value: "511"
+            }
           }
         }
       }
@@ -332,7 +321,7 @@ blocks {
             base {
               var: "meta"
             }
-            field: "egress_port"
+            field: "egress_spec"
           }
         }
         value {
@@ -754,7 +743,7 @@ exports {
   block: "MyParser"
 }
 exports {
-  role: "control"
+  role: "ingress"
   block: "MyIngress"
 }
 exports {

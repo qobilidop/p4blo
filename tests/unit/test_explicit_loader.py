@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from p4blo import arch
-from p4blo.arch import reference
+from p4blo.arch import v1model
 from p4blo.arch import validator as arch_validator
 from p4blo.arch.bindings import bindings_of, library_of
 from p4blo.arch.contract import Contract
@@ -138,8 +138,10 @@ def test_wrong_role_kind_is_reported_at_load() -> None:
         )
 
 
-def test_reference_loader_requires_its_switch_roles() -> None:
-    with pytest.raises(LoadError, match="exports no 'parser' block"):
-        reference.load(program())
-    with pytest.raises(LoadError, match="reference architecture has no 'policy' role"):
-        reference.load(program(), roles=("policy",))
+def test_v1model_loader_requires_its_pipeline_roles() -> None:
+    model = program()
+    with pytest.raises(LoadError, match="unsupported v1model roles: policy"):
+        v1model.load(model)
+    del model.exports[:]
+    with pytest.raises(LoadError, match="missing v1model roles: deparser, ingress, parser"):
+        v1model.load(model)

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch, stf
+from p4blo import stf
 from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
@@ -31,8 +31,8 @@ CORPUS = Path(__file__).parents[1] / "corpus/tutorial_firewall"
 CONFIGURATION = (
     "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000001/32 ipv4_forward(dstAddr:17, port:1)",
     "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000002/32 ipv4_forward(dstAddr:34, port:2)",
-    "add check_ports meta.ingress_port:1 meta.egress_port:2 set_direction(dir:0)",
-    "add check_ports meta.ingress_port:2 meta.egress_port:1 set_direction(dir:1)",
+    "add check_ports meta.ingress_port:1 meta.egress_spec:2 set_direction(dir:0)",
+    "add check_ports meta.ingress_port:2 meta.egress_spec:1 set_direction(dir:1)",
 )
 # Independently calculated using reflected polynomial 0xA001 and zlib CRC32,
 # then checked against the original BMv2 register arrays, not our interpreter.
@@ -224,7 +224,7 @@ def test_independent_crc_indices(port: int) -> None:
     ],
 )
 def test_known_packets_and_complete_state(sequence: list[Step]) -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     assert snapshot(loaded) == expected_state(set())
     for item in sequence:
         assert tuple(run_python(loaded, item.case, 4)) == item.outputs
@@ -574,7 +574,7 @@ def mutant(name: str) -> tuple[apb.BlockAssembly, list[Step]]:
 @pytest.mark.parametrize("name", MUTATIONS)
 def test_firewall_known_answers_kill_valid_semantic_mutations(name: str) -> None:
     program, sequence = mutant(name)
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     detected = False
     for item in sequence:
         outputs = tuple(run_python(loaded, item.case, 4))

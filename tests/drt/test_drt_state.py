@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs.counter import Counter
 from p4blo.arch.externs.register import Register
@@ -68,7 +68,7 @@ def test_missing_state_cannot_make_an_old_comparator_pass() -> None:
 
 
 def test_state_snapshot_is_not_aliased_to_live_cells() -> None:
-    loaded = arch.reference.load(
+    loaded = v1model.load(
         arch_wire.load_text(ROOT / "tests/corpus/register_bounds/register_bounds.txtpb")
     )
     before = snapshot(loaded)
@@ -81,7 +81,7 @@ def test_state_snapshot_is_not_aliased_to_live_cells() -> None:
 
 def test_silent_counter_mutation_is_a_divergence() -> None:
     program = arch_wire.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
-    loaded, mutant = arch.reference.load(program), arch.reference.load(program)
+    loaded, mutant = v1model.load(program), v1model.load(program)
 
     def corrupt(case: Case):
         outcome = python_outcome(mutant, case, 4)
@@ -99,7 +99,7 @@ def test_silent_counter_mutation_is_a_divergence() -> None:
 
 def test_state_difference_is_visible_even_when_errors_match() -> None:
     program = arch_wire.load_text(ROOT / "tests/corpus/stateful/stateful.txtpb")
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     outcome = python_outcome(loaded, Case(pb.Entries(), 99, b""), 4)
     assert outcome.error is not None
     assert not outcome.agrees_with(replace(outcome, state=()))
@@ -125,7 +125,7 @@ def wide_register_roundtrip(tmp_path: Path, command: list[str | Path]) -> None:
     program.extern_types[0].methods[0].params[0].type.bits = 16384
     program.extern_types[0].methods[1].params[1].type.bits = 16384
     program.blocks[1].locals[0].type.bits = 16384
-    loaded = arch.reference.load(program)  # Includes validation of the widened program.
+    loaded = v1model.load(program)  # Includes validation of the widened program.
     packet = bytes(2048) + b"\x80" + bytes(2047) + bytes(2048)
     program_json = tmp_path / "wide.json"
     program_json.write_text(arch_wire.dump_json(program))

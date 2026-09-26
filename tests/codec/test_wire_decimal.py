@@ -16,8 +16,7 @@ from typing import Any
 import pytest
 from google.protobuf import json_format
 
-from p4blo import arch
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -132,7 +131,7 @@ def test_lean_agrees_on_decimal_request_rejection_without_state_change(
     call = control.body.add().call_extern
     call.instance, call.method = "ticks", "count"
     call.args.add(expr=bits(32, 0))
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     valid = json_format.MessageToDict(entries, preserving_proto_field_name=True)
     malformed = json.loads(json.dumps(valid))
     key = malformed["tables"][0]["entries"][0]["keys"][0]

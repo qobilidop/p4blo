@@ -13,7 +13,7 @@ line from stdin and writes one per line to stdout:
 
 `diagnostic` is present when the architecture dropped the packet for a
 reason the program did not decide (a misaligned parse, an egress port the
-switch does not have); on the Python side it is `Switch.diagnostics`.
+profile does not have); Python records it in `V1Model.diagnostics`.
 Extern state persists across the requests of one process, as it does in
 one `Loaded` on the Python side, so both sides see the same case sequence
 from the same fresh state. Anything else on stdout, or a reply that does
@@ -59,6 +59,7 @@ from typing import IO
 from google.protobuf import json_format
 
 from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import assembly_of
 from p4blo.arch.v0 import assembly_pb2 as apb
@@ -193,12 +194,12 @@ class Report:
 
 def run_python(loaded: arch.Loaded, case: Case, ports: int) -> list[tuple[int, bytes]]:
     """One case through the switch on the reference interpreter."""
-    switch = arch.Switch(ports)
+    switch = v1model.V1Model(ports)
     return switch.run(loaded, loaded.entries(case.entries), case.ingress_port, case.packet)
 
 
 def python_outcome(loaded: arch.Loaded, case: Case, ports: int) -> Outcome:
-    switch = arch.Switch(ports)
+    switch = v1model.V1Model(ports)
     try:
         outputs = switch.run(loaded, loaded.entries(case.entries), case.ingress_port, case.packet)
     except Exception as e:  # noqa: BLE001 - any failure is this side's outcome
@@ -484,7 +485,7 @@ def compare(
     """`count` random cases of the corpus program in `program_dir`, on the
     Python reference and on `lean` (the executable and leading arguments)."""
     program = arch_wire.load_text(program_dir / f"{program_dir.name}.txtpb")
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     cases = generate(loaded.index, seed, count, ports)
     return compare_program(program, cases, ports, lean, seed)
 
@@ -497,7 +498,7 @@ def compare_program(
     seed: int = 0,
 ) -> Report:
     """Compare concrete inputs from fresh state, retaining every peer failure."""
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     with tempfile.TemporaryDirectory() as tmp:
         program_json = Path(tmp) / "program.json"
         program_json.write_text(arch_wire.dump_json(program))

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
@@ -256,7 +256,7 @@ def test_lean_agrees_overlapping_routes_packet(
         bundle.parent.mkdir(parents=True, exist_ok=True)
         save(report, bundle)
     assert report.passed and report.agreed == 1
-    assert run_python(arch.reference.load(program), packet_case(), 4) == packet_expected()
+    assert run_python(v1model.load(program), packet_case(), 4) == packet_expected()
 
 
 def test_lean_agrees_shortest_prefix_fault_replay(

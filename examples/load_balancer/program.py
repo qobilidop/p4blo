@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from p4blo import edsl as p4
-from p4blo.arch import reference
+from p4blo.arch import v1model
 from p4blo.arch.externs.declarations import CRC16, Checksum16
 from p4blo.arch.v0 import assembly_pb2 as apb
 
@@ -47,8 +47,7 @@ class Headers(p4.Struct):
 
 class Metadata(p4.Struct):
     ingress_port: p4.bit9
-    egress_port: p4.bit9
-    drop: p4.Bool
+    egress_spec: p4.bit9
     expected_checksum: p4.bit16
     group: p4.bit8
     service_found: p4.Bool
@@ -102,7 +101,7 @@ flow_hash = CRC16[FlowTuple]("flow_hash")
 class Balance(p4.Control[Headers, Metadata]):
     @p4.action
     def deny(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
 
     @p4.action
     def select_group(self, group: p4.bit8) -> None:
@@ -113,10 +112,9 @@ class Balance(p4.Control[Headers, Metadata]):
     def deliver(self, src_mac: p4.bit48, dst_mac: p4.bit48, port: p4.bit9) -> None:
         self.assign(self.hdr.ethernet.src, src_mac)
         self.assign(self.hdr.ethernet.dst, dst_mac)
-        self.assign(self.meta.egress_port, port)
+        self.assign(self.meta.egress_spec, port)
         self.assign(self.hdr.ipv4.ttl, self.hdr.ipv4.ttl - 1)
         self.assign(self.hdr.ipv4.checksum, checksum.compute(checksum_data(self.hdr.ipv4)))
-        self.assign(self.meta.drop, False)
 
     services = p4.Table(
         keys=(p4.exact(Headers.ipv4.dst), p4.exact(Headers.udp.dst_port)),
@@ -132,7 +130,7 @@ class Balance(p4.Control[Headers, Metadata]):
     )
 
     def apply(self) -> None:
-        self.assign(self.meta.drop, True)
+        self.assign(self.meta.egress_spec, 511)
         self.assign(self.meta.service_found, False)
         ip, udp = self.hdr.ipv4, self.hdr.udp
         supported_packet = (
@@ -170,14 +168,14 @@ blocks = p4.BlockLibrary(Parse, Balance, Emit, externs=[checksum, flow_hash])
 
 
 def build() -> apb.BlockAssembly:
-    """Assemble the blocks for the supplied switch and its metadata contract."""
-    return reference.assemble(
+    """Bind the core blocks to the scoped v1model metadata contract."""
+    return v1model.assemble(
         blocks,
         name="example_load_balancer",
         headers=Headers,
         metadata=Metadata,
         parser=Parse,
-        control=Balance,
+        ingress=Balance,
         deparser=Emit,
     )
 

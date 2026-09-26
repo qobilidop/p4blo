@@ -16,7 +16,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
 from p4blo.drt.replay import load, save
@@ -161,7 +161,7 @@ def test_lean_agrees_on_stateful_known_answer_sequence(lean_binary: Path) -> Non
     spec = StatefulSpec(8, 1, 1, pb.BINARY_OP_ADD)
     fields = [(0, 255), (0, 1), (1, 7), (0, 2)]
     check_sequence(spec, fields, lean_binary)
-    loaded = arch.reference.load(stateful_program(spec))
+    loaded = v1model.load(stateful_program(spec))
     outcomes = [python_outcome(loaded, case, 4) for case in cases_for(spec, fields)]
     assert [o.outputs for o in outcomes] == [
         ((0, b"\x00\xff\xff"),),

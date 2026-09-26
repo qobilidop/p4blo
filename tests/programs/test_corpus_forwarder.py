@@ -35,7 +35,7 @@ def test_errors_are_the_core_errors(program: apb.BlockAssembly) -> None:
 def test_exports_resolve_to_blocks_of_their_kind(index: BoundIndex) -> None:
     roles = {
         "parser": pb.BLOCK_KIND_PARSER,
-        "control": pb.BLOCK_KIND_CONTROL,
+        "ingress": pb.BLOCK_KIND_CONTROL,
         "deparser": pb.BLOCK_KIND_DEPARSER,
     }
     assert {e.role for e in index.bindings.exports} == set(roles)
@@ -48,10 +48,9 @@ def test_the_headers_and_metadata_types(index: BoundIndex) -> None:
     assert [f.name for f in index.fields(bindings.headers)] == ["ethernet", "ipv4"]
     metadata = {f.name: f.type for f in index.fields(bindings.metadata)}
     # The contract fields the forwarder uses (impl/python/p4blo/arch/contract.py).
-    assert set(metadata) == {"ingress_port", "egress_port", "drop"}
+    assert set(metadata) == {"ingress_port", "egress_spec"}
     assert metadata["ingress_port"].bits == 9
-    assert metadata["egress_port"].bits == 9
-    assert metadata["drop"].WhichOneof("kind") == "boolean"
+    assert metadata["egress_spec"].bits == 9
 
 
 def test_the_parser_states(index: BoundIndex) -> None:

@@ -27,7 +27,7 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.drt.state import encode, snapshot
 from p4blo.v0 import p4blo_pb2 as pb
@@ -46,8 +46,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.program is None:
         parser.error("run needs a program")
 
-    loaded = arch.reference.load(arch_wire.load_json(args.program.read_text()))
-    switch = arch.Switch(args.ports)
+    loaded = v1model.load(arch_wire.load_json(args.program.read_text()))
+    switch = v1model.V1Model(args.ports)
     for line in sys.stdin:
         if not line.strip():
             continue

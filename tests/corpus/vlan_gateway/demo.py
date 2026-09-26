@@ -1,12 +1,13 @@
 """Run from the repository: uv run python -m tests.corpus.vlan_gateway.demo."""
 
-from p4blo import arch, stf
+from p4blo import stf
+from p4blo.arch import v1model
 from p4blo.drt.state import snapshot
 from tests.corpus.vlan_gateway.vlan_gateway import build
 
 
 def main() -> None:
-    loaded = arch.reference.load(build())
+    loaded = v1model.load(build())
     policy = stf.to_entries(
         loaded.index,
         stf.parse(
@@ -15,7 +16,7 @@ def main() -> None:
         ),
     )
     entries = loaded.entries(policy)
-    switch = arch.Switch(ports=4)
+    switch = v1model.V1Model(ports=4)
     payload = bytes.fromhex("4500001400010000401166d60a0000010a000002")
     for vlan in (42, 43, 42):
         packet = bytes.fromhex("0000000000020000000000018100")

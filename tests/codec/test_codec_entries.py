@@ -15,7 +15,7 @@ from google.protobuf import json_format
 from google.protobuf.message import Message
 
 from p4blo import arch
-from p4blo.arch import entry, validator
+from p4blo.arch import entry, v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.externs import Registry
 from p4blo.arch.externs.counter import Counter
@@ -429,7 +429,7 @@ def expected_host_state(count: int) -> dict[str, object]:
 
 
 def observe_rejected_host(case: HostRejection) -> None:
-    loaded = arch.reference.load(host_program())
+    loaded = v1model.load(host_program())
     valid = json_format.ParseDict(host_wire(), pb.Entries())
     request = Case(valid, 0, b"\xab\xcd")
     assert run_python(loaded, request, 4) == [(0, b"\x2a\xab\xcd")]
@@ -577,7 +577,7 @@ def test_program_startup_rejection_before_binding(kind: str) -> None:
         with pytest.raises(
             json_format.ParseError if kind == "json-type" else validator.ValidationError
         ):
-            arch.reference.load(arch_wire.load_json(json.dumps(wire)))
+            v1model.load(arch_wire.load_json(json.dumps(wire)))
         assert binding.call_count == packet.call_count == 0
 
 
