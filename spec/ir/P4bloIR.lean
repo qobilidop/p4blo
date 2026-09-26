@@ -16,13 +16,8 @@ import P4bloIR.Theorems
 import P4bloIR.ScalarTyping
 import P4bloIR.ScalarStatements
 import P4bloIR.FieldLaws
-import P4bloIR.FieldTyping
 import P4bloIR.ScalarLaws
 import P4bloIR.DeviationLaws
-import P4bloIR.ExecutionCertificate
-import P4bloIR.FrameInitialization
-import P4bloIR.PlainCallEntry
-import P4bloIR.PlainCallReturn
 import P4bloIR.DeclarationCodecLaws
 import P4bloIR.TableCodecLaws
 import P4bloIR.ParserCodecLaws

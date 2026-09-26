@@ -7,14 +7,6 @@ import P4bloArch.Coverage
 /-!
 `p4blo-lean`: the pipe endpoint for differential testing.
 
-    p4blo-lean certificate-example-program
-        Export the fixed low-level register/counter example as protobuf JSON.
-
-    p4blo-lean check-example-certificate <artifact.json | ->
-        Check a bounded execution claim for that exact example. Exit 0 means
-        accepted, 1 means mismatch or exhaustion, and 2 means malformed input.
-        This is a compiled checker, not an exported kernel proof term.
-
     p4blo-lean coverage-inventory
         Print every rule tag of `P4bloIR.Coverage`, one per line, as the
         tag, a tab, and its docstring on one line.
@@ -188,18 +180,6 @@ def runMode (args : List String) : IO UInt32 := do
 
 def main (args : List String) : IO UInt32 := do
   match args with
-  | ["certificate-example-program"] =>
-    IO.println (Lean.toJson Certificate.Example.program).compress
-    return 0
-  | ["check-example-certificate", path] =>
-    let text ← if path == "-" then (← IO.getStdin).readToEnd else IO.FS.readFile path
-    match Lean.Json.parse text >>= CertificateWire.verify with
-    | .ok verdict =>
-      IO.println (Lean.Json.mkObj [("verdict", .str verdict)]).compress
-      return if verdict == "accepted" then 0 else 1
-    | .error message =>
-      IO.println (Lean.Json.mkObj [("error", .str message)]).compress
-      return 2
   | ["coverage-inventory"] =>
     for info in P4bloIR.Coverage.all do
       IO.println s!"{info.name}\t{info.doc}"
@@ -216,5 +196,5 @@ def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"error: {e}"
       return 1
   | _ =>
-    IO.eprintln "usage: p4blo-lean <program.json | -> | check <program.json | -> ... | run [--ports N] <program.json> | coverage-inventory | certificate-example-program | check-example-certificate <artifact.json | ->"
+    IO.eprintln "usage: p4blo-lean <program.json | -> | check <program.json | -> ... | run [--ports N] <program.json> | coverage-inventory"
     return 2

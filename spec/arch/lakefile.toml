@@ -1,10 +1,10 @@
 # The reference architecture specification: the metadata contract, the
-# switch, the extern families the supplied architectures provide, the
-# execution-certificate example and the p4blo-lean conformance endpoint.
+# switch, the extern families the supplied architectures provide, and the
+# p4blo-lean conformance endpoint.
 # Depends one way on the IR specification. Lean core only; no Mathlib.
 #
 # Layout: what a client may import lives under P4bloArch/; what only the
-# gate runs (tests, the proof audit, fixtures) lives under P4bloArchTest/.
+# gate runs (tests and fixtures) lives under P4bloArchTest/.
 name = "p4blo-arch"
 version = "0.1.0"
 defaultTargets = ["P4bloArch", "p4blo-lean", "P4bloArchTest", "codec-leaves"]
@@ -23,9 +23,7 @@ name = "P4bloArch"
 name = "p4blo-lean"
 root = "Main"
 
-# Every module under P4bloArchTest/, including the proof audit
-# P4bloArchTest.ArchProofAudit, whose `#guard_msgs` pins are checked
-# whenever this default target builds.
+# Every module under P4bloArchTest/ builds with this default target.
 [[lean_lib]]
 name = "P4bloArchTest"
 globs = ["P4bloArchTest.+"]

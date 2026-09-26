@@ -1,6 +1,6 @@
 # Authoritative IR syntax and semantics, wire adapter and scoped proofs.
-# Independent of the architecture and user-facing packages, which depend on
-# it. Lean core only; no Mathlib.
+# Independent of the executable architecture package, which depends on it.
+# Lean core only; no Mathlib.
 #
 # Layout: what a client may import lives under P4bloIR/; what only the gate
 # runs (tests, proof audits, fixtures) lives under P4bloIRTest/.

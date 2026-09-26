@@ -1,5 +1,5 @@
 import P4bloIR.Json
-import P4bloIR.Validity.Sound
+import P4bloIR.Validity.Check
 
 namespace P4bloArch
 open P4bloIR
@@ -84,46 +84,10 @@ def checkExports (p : BlockBindings) (idx : Index) (seen : List String) : Nat �
     ensure (signatureOk p b) .exportSignature path s!"'{b.name}' lacks the signature of its kind"
     checkExports p idx (seen ++ [e.role]) (i + 1) es
 
-theorem checkExports_ok (h : checkExports p idx seen i es = .ok u) :
-    (es.map (·.role)).Nodup ∧ (∀ e ∈ es, e.role ∉ seen) ∧
-      ∀ e ∈ es, ∃ b, idx.blocks[e.block]? = some b ∧ signatureOk p b = true := by
-  induction es generalizing seen i with
-  | nil => simp
-  | cons e es ih =>
-    simp only [checkExports, bind_ok, ensure_ok] at h
-    obtain ⟨_, hs, b, hb, _, hsig, hr⟩ := h
-    obtain ⟨h1, h2, h3⟩ := ih hr
-    have hs : e.role ∉ seen := by simpa using hs
-    refine ⟨?_, ?_, ?_⟩
-    · simp only [List.map_cons, List.nodup_cons]
-      refine ⟨fun hm => ?_, h1⟩
-      obtain ⟨x, hx, hxr⟩ := List.mem_map.mp hm
-      exact h2 x hx (by simp [hxr])
-    · intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact hs
-      · exact fun hm => h2 x hx (by simp [hm])
-    · intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact ⟨b, resolve_ok hb, hsig⟩
-      · exact h3 x hx
-
-structure Valid (p : BlockBindings) (idx : Index) : Prop where
-  headersType : idx.structTypes[p.headers]? ≠ none
-  metadataType : idx.structTypes[p.metadata]? ≠ none
-  exportRoles : (p.exports.map (·.role)).Nodup
-  exports : ∀ e ∈ p.exports, ∃ b, idx.blocks[e.block]? = some b ∧ signatureOk p b = true
-
 def check (p : BlockBindings) (idx : Index) : Chk Unit := do
   let _ ← resolve idx idx.structTypes[p.headers]? p.headers "struct type" "headers"
   let _ ← resolve idx idx.structTypes[p.metadata]? p.metadata "struct type" "metadata"
   checkExports p idx [] 0 p.exports
-
-theorem check_sound (h : check p idx = .ok u) : Valid p idx := by
-  simp only [check, bind_ok] at h
-  obtain ⟨hh, hhres, hm, hmres, he⟩ := h
-  obtain ⟨hr, -, hex⟩ := checkExports_ok he
-  exact ⟨by simp [resolve_ok hhres], by simp [resolve_ok hmres], hr, hex⟩
 
 end Bindings
 
@@ -131,12 +95,5 @@ def BlockAssembly.check (p : BlockAssembly) : Except Validity.Diagnostic Index :
   let idx ← Validity.check p.toBlockLibrary
   Bindings.check p.toBlockBindings idx
   pure idx
-
-/-- Assembly acceptance retains both the core and binding guarantees. -/
-theorem BlockAssembly.check_sound {p : BlockAssembly} (h : p.check = .ok idx) :
-    Validity.Valid p.toBlockLibrary idx ∧ Bindings.Valid p.toBlockBindings idx := by
-  simp only [BlockAssembly.check, Validity.bind_ok, Validity.pure_ok] at h
-  obtain ⟨idx', hc, _, hb, rfl⟩ := h
-  exact ⟨Validity.check_sound hc, Bindings.check_sound hb⟩
 
 end P4bloArch

@@ -282,8 +282,8 @@ theorem zeroHeader_eq (index : Index) (t : String) (decl : HeaderType)
 
 /-- An uninitialized `bit<N>` is `0` at width `N`.
 
-No premise. With `Frame.forBlock_initialized`, a fresh activation reads it
-there. It does not cover compound types beyond headers. -/
+No premise. This is a scalar zero-value law; it does not cover compound
+types beyond headers. -/
 theorem zero_bits (index : Index) (n : Nat) :
     Value.zero (.bits n) index = .ok (.bits (Bits.wrap n 0)) := rfl
 

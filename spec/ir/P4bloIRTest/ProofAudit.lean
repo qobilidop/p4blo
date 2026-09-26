@@ -3,58 +3,6 @@ import P4bloIR.ScalarStatements
 import P4bloIR.Validity.KindLaws
 import P4bloIRTest.ScalarStatements
 
-/-- info: 'P4bloIR.PlainCallReturn.copyBack_three' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.copyBack_three
-
-/-- info: 'P4bloIR.PlainCallReturn.dispatch_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.dispatch_return
-
-/-- info: 'P4bloIR.PlainCallReturn.return_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.return_steps
-
-/-- info: 'P4bloIR.PlainCallReturn.return_step' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.return_step
-
-/-- info: 'P4bloIR.PlainCallReturn.returned_lookup' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.returned_lookup
-
-/-- info: 'P4bloIR.PlainCallReturn.returned_preserves' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.returned_preserves
-
-/-- info: 'P4bloIR.PlainCallReturn.returned_scope' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.returned_scope
-
-/-- info: 'P4bloIR.PlainCallReturn.returned_blockFrame' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallReturn.returned_blockFrame
-
-
-/-- info: 'P4bloIR.PlainCallEntry.dispatch_entry' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallEntry.dispatch_entry
-
-/-- info: 'P4bloIR.PlainCallEntry.entry_steps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallEntry.entry_steps
-
-/-- info: 'P4bloIR.PlainCallEntry.argument_out' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallEntry.argument_out
-
-/-- info: 'P4bloIR.PlainCallEntry.unknown_block' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallEntry.unknown_block
-
-/-- info: 'P4bloIR.PlainCallEntry.wrong_arity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.PlainCallEntry.wrong_arity
 
 
 /-- info: 'P4bloIR.FieldLaws.Declared.fields_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
@@ -214,30 +162,6 @@ This does not prove that the statements express the intended P4 semantics.
 /-- info: 'P4bloIR.ScalarLaws.mux_false' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms P4bloIR.ScalarLaws.mux_false
-
-/-- info: 'P4bloIR.ExecutionCertificate.bounded_finishes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.ExecutionCertificate.bounded_finishes
-
-/-- info: 'P4bloIR.ExecutionCertificate.bounded_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.ExecutionCertificate.bounded_sound
-
-/-- info: 'P4bloIR.ExecutionCertificate.check_sound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.ExecutionCertificate.check_sound
-
-/-- info: 'P4bloIR.Frame.forBlock_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.Frame.forBlock_correct
-
-/-- info: 'P4bloIR.Frame.forBlock_initialized' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.Frame.forBlock_initialized
-
-/-- info: 'P4bloIR.Frame.forBlock_missing' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms P4bloIR.Frame.forBlock_missing
 
 /-- info: 'P4bloIR.DeviationLaws.header_equal_invalid' depends on axioms: [propext] -/
 #guard_msgs in

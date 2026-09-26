@@ -2,12 +2,8 @@ import P4bloIRTest.Check
 import P4bloIRTest.ScalarTyping
 import P4bloIRTest.ScalarStatements
 import P4bloIRTest.FieldLaws
-import P4bloIRTest.FieldTyping
 import P4bloIRTest.Execution
 import P4bloIRTest.CodecLaws
-import P4bloIRTest.FrameInitialization
-import P4bloIRTest.PlainCallEntry
-import P4bloIRTest.PlainCallReturn
 import P4bloIRTest.DeclarationCodec
 import P4bloIRTest.TableCodec
 import P4bloIRTest.ParserCodec
@@ -215,9 +211,6 @@ def main (args : List String) : IO UInt32 := do
     BlockCodecTests.tests
     ProgramCodecTests.tests
     EntriesCodecTests.tests
-    FrameInitializationTests.tests
-    PlainCallEntryTests.tests
-    PlainCallReturnTests.tests
     DeviationLawTests.tests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
