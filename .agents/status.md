@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-25. **No implementation scope is active.** The eDSL
 and CI-speed scopes are complete. Do not resume the roadmap without a new
-scope. If `work/edsl-closure` is not yet merged, finish its independent
-review, final-head remote CI and integration, then remove its worktrees.
+scope. If [PR #4](https://github.com/qobilidop/p4blo/pull/4) is not yet merged, finish
+its final-head remote CI and integration, then remove its branch.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.
@@ -77,7 +77,9 @@ state at `9bd5434` with the archive and separately approves cleanup `a31ff19`.
   [XDP](https://github.com/qobilidop/p4blo/actions/runs/36202637734).
   Local Lean and full gate passed with the same 5199/1/4 counts.
   Remote differential time was 428 s versus the prior 851 s; cold build
-  335 s. A restored-cache benefit was not yet measured at closure.
+  335 s. PR #4 at `c8e5b46` then completed the Lean build/audit/test stage
+  in 32 s after cache restore ([run](https://github.com/qobilidop/p4blo/actions/runs/36204465410));
+  this timing is stage evidence, not a claim that that whole run passed.
 - Fresh closure checks on the tree recorded by `9fc6c19`:
   `scripts/check-lean.sh` and `P4BLO_REQUIRE_LEAN=1 scripts/check.sh` exited
   0; 5199 passed, one optional XDP skip, four expected failures. A second
@@ -141,8 +143,8 @@ in the prior Codex session were not repository build failures.
   elaborations beyond the current IL bridge.
 - Nonblocking eDSL review observation: public library settings are reassignable
   and can bypass constructor checks; no runtime bug was demonstrated.
-- Nonblocking CI observations: module-cache benefit needs a restored run;
-  LRU eviction costs a cold build. The stdlib-only guard uses Python 3.13,
+- Nonblocking CI observations: cache eviction costs a cold build.
+  The stdlib-only guard uses Python 3.13,
   while Docker scripts use distro Python; current imports are compatible.
 
 ## Blocked
