@@ -1,0 +1,4 @@
+packet 0 01ff
+expect 0 01ff$
+packet 0 00ff
+expect 0 0000$

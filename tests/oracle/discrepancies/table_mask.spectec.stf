@@ -1,0 +1,5 @@
+add I.route 1 hdr.h.key:0x0a I.hit()
+packet 0 0a
+expect 1 0a$
+packet 0 0b
+expect 1 0b$
