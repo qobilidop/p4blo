@@ -303,6 +303,10 @@ in this repository for a day.
 
 ## Checkpoints and compaction
 
+For general repository upkeep, use the
+[`tend-repo` skill](.agents/skills/tend-repo/SKILL.md). It covers consistency,
+evidence-backed lessons and deciding when the compaction procedure below applies.
+
 At each checkpoint, update `.agents/status.md`, any changed decision, and
 this file when scope or navigation changes. Record the current iteration,
 unresolved findings, active branch or worktree, durable evidence and the

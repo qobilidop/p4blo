@@ -1,6 +1,17 @@
 # Status
 
-Last updated: 2026-09-26. **No active engineering work.**
+Last updated: 2026-09-26. **No active implementation work.**
+
+The [tend-repo skill](skills/tend-repo/SKILL.md) adapts p4-spectec-lean's
+maintenance procedure: reconcile implementation/docs/evidence, route compaction
+to the existing skill and preserve lessons with their topic owners. AGENTS
+links it for general upkeep. Creating it did not execute another cleanup.
+Independent [scenario review](reviews/tend-repo-skill.md) found no defects.
+Skill metadata validation passed; required-Lean `scripts/check.sh` passed
+5,007 tests in 97.50 seconds with no skips or expected failures, plus all
+lint/type/schema/generation/workflow checks. Runtime, schemas and test inputs
+are unchanged. The skill's publishing commit carries the applicable remote
+CI runs; verify that exact revision before treating publication as complete.
 
 The cleanup corrects stale test paths, selection guidance, the p4c gate
 command and the conformance fixture schema reference. Runtime code, schemas,
