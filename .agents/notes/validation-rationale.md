@@ -3,7 +3,7 @@
 [Assurance](../../docs/assurance.md) owns guarantees/exclusions,
 [workflows](../../docs/workflows.md) the gates, and
 [oracle discrepancies](../../docs/oracle-discrepancies.md) the case dispositions.
-These original reasons and constraints were consolidated on 2026-09-26; this
+These durable reasons and constraints were consolidated on 2026-09-26; this
 note authorizes no campaign and does not replace those contracts.
 
 ## Oracle interfaces

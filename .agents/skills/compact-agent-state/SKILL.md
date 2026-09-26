@@ -1,86 +1,71 @@
 ---
 name: compact-agent-state
-description: Compact the .agents/ working set at a milestone boundary. Records the archive commit, rewrites status and the decisions register to current truth, promotes artifact-describing notes into docs/, archives finished notes and reviews, and checks the invariants that make compaction safe. Use when a milestone closes or the resume read exceeds its budget.
+description: Compact the .agents working set at a closed milestone or oversized resume read. Preserve current choices, obligations and evidence, consolidate by topic, archive completed history in Git, and independently review against the recorded archive commit.
 ---
 
 # Compact agent state
 
-`.agents/` is a working set, not an archive: git already keeps every
-byte. Compaction rewrites the working set so a fresh agent reads only
-what is true now. It never changes a claim.
+Keep the resume path small and current. AGENTS owns policy and information
+ownership; this skill supplies the preservation procedure. Compaction changes
+no semantic claim, authorization or parked-work status.
 
 ## When
 
-- A finite scope (milestone, collection) has just been recorded complete
-  in `.agents/status.md`.
-- The resume read (`status.md`, `decisions.md`, `roadmap.md`, live notes)
-  exceeds roughly a thousand lines, or stale plans sit beside live ones.
-
-Do not compact in the middle of active work, and do not compact to make
-room for a new scope before the old one is recorded as closed.
+Use at a completed finite scope or when status, decisions, roadmap and live
+notes exceed roughly a thousand lines or contain stale plans. Do not compact
+in the middle of active engineering, or hide unfinished work to clear space.
+A specifically scoped documentation reorganization can consolidate the closed
+work it names while recording its own outstanding review and validation.
 
 ## Procedure
 
-1. **Record the archive point.** On a clean working tree, note the full
-   hash of the committed pre-compaction `HEAD`; it goes into `status.md`
-   as the archive commit and into the compaction commit's body. Follow
-   `AGENTS.md` for feature branches, direct commits or a required PR. No tag is
-   created: the repository does not tag commits (user's instruction,
-   2026-09-24). If status records an unfinished compaction, resume its
-   branch and archive point; a same-day archive date alone does not mean
-   compaction is still in progress.
-2. **Triage every file under `.agents/notes/` and `.agents/reviews/`**
-   with one question: does it describe the artifact or the work?
-   - A contract, design, survey or release-evidence document that tests,
-     source or `docs/` cite is documentation of the artifact. Promote it
-     into `docs/` with `git mv` and let links follow. Commit this move on
-     its own, before any deletion.
-   - A completed plan, step note, review whose findings are fixed, probe,
-     or campaign report is history. Delete it.
-   - A note that an open thread or a surviving note cites stays.
-3. **Rewrite `status.md`** to current state only: one table per finite
-   scope with result, revision and evidence; the claims with their status;
-   the last checked evidence with commit hashes and CI run links; open
-   threads that are parked or backlog; blocked. Target about 150 lines.
-4. **Rewrite `decisions.md`** as a topical register of decisions in
-   force. Keep each entry's original date. Merge entries that state one
-   rule in several increments; remove entries whose subject no longer
-   exists or that only sequenced work now landed. Target about 300 lines.
-5. **Trim `roadmap.md`** to landed/open per item; move landed detail to
-   `docs/assurance.md` if it is not already there.
-6. **Fix references.** Links into deleted files become plain mentions
-   marked archived; links into promoted files follow them. Path strings in
-   tests, docstrings and the website follow too. `scripts/relink.py` in
-   this skill does the mechanical part from a moves map and a deleted
-   list; it leaves link labels alone and does not see path fragments
-   without a slash, so grep for those and fix labels by hand, and restore
-   `.agents/reviews/` afterwards so review records keep the paths they
-   were written with. `docs/` must not link into `.agents/`;
-   `tests/repository/test_docs_links.py` checks both rules.
-7. **Commit** the compaction separately from the promotion and cite the
-   archive commit's hash in the body. Then run `scripts/check.sh`; Lean and oracle gates are
-   unaffected by documentation moves unless a path string in them changed.
-8. **Review.** An independent read-only agent compares the new `status.md`
-   and `decisions.md` against `git show <archive commit>:...`, claim
-   by claim, and reports anything dropped that is still in force or
-   reworded into something stronger. Fix findings before pushing. Keep the
-   review under `.agents/reviews/` until the next compaction.
-9. **Integrate following `AGENTS.md`.** Obtain independent review and run
-   the full local gate before pushing. Feature branches are optional;
-   integrate completed work into `main` and verify successful applicable
-   remote CI on that exact revision before completion.
-   Use a PR only when requested or required by repository protections;
-   its final revision must pass review and applicable CI before merge.
+1. **Record the archive point.** Start from a clean committed tree; record its
+   full HEAD in status, recovery notes and the compaction commit's body. Create
+   no tag. Resume an unfinished compaction from its recorded branch/archive;
+   a same-day date alone does not identify unfinished work.
+2. **Map content to owners before moving files.** Inventory hidden notes,
+   embedded/separate topic reviews, skills and checked data. Map each current
+   choice, open finding, recovery reference and evidence claim to its retained
+   destination. Do not merely relocate an accumulated archive.
+   - Promote durable artifact contracts/usage to their existing public owner
+     or code. Commit substantive promotions separately before removing sources.
+   - Consolidate detailed rationale and review evidence with its topic. Keep
+     current reason/date, uncertainty, reviewer identity, reviewed revision,
+     independence limits and later resolutions distinct.
+   - Archive completed plans and resolved reviews only after useful content is
+     preserved and every removed version is recoverable at the archive commit.
+   - Retain unresolved/paused work, recovery instructions and machine-consumed
+     recipes. Inspect consumers; a move needs a navigation benefit.
+3. **Rewrite the entry points.** Status holds the current scope, latest checked
+   evidence, immediate obligations and next action, not a milestone history or
+   duplicate assurance table. Decisions holds cross-cutting rationale and links
+   to topic choices; preserve original dates and supersede explicitly. Roadmap
+   holds deferred work and entry conditions. Detailed validation belongs beside
+   its topic, with a short reference from status. Prefer a few useful notes to
+   many fragments; start with one file per topic.
+4. **Repair navigation.** Update links and live references in the same change.
+   Use `scripts/relink.py` only when mechanical rewriting helps; it cannot find
+   slash-free fragments or path computations. Identify historical-review text
+   before running it and restore that text afterwards. Label archived
+   paths as historical rather than live links. Do not rewrite original verdicts.
+   Check public docs stay independent of `.agents/` and all live consumers still
+   resolve. Verify removed files and empty directories by listing their targets.
+5. **Validate preservation.** Compare against the archive, not recollection:
+   every binding decision/reason/date, current proof premise, open thread,
+   known discrepancy and recovery boundary must survive. Every evidence hash
+   must resolve; old success must not become a claim about a changed tree.
+   New structure must explain how to resume without ignored logs or transcripts.
+6. **Review and integrate.** Obtain independent read-only comparison against
+   the archive. Record findings and their resolutions beside the maintenance
+   topic; fix confirmed losses or stronger claims. Follow AGENTS for commits,
+   full local gate before push, and exact-main applicable CI before completion.
+   Keep compaction distinct from artifact promotion, cite the archive hash in
+   its commit body, and remove finished worktrees after integration checks.
 
 ## Invariants
 
-Compaction is correct only if all of these hold afterwards:
-
-1. Every decision still in force survives with its reason and date.
-2. Every claim of current evidence carries a commit hash that resolves.
-3. Open threads, parked work and known discrepancies with their reasoning
-   survive.
-4. Anything a test, source file or `docs/` file references still exists,
-   or the reference was updated in the same commit.
-5. No claim is stronger than before. Removing and reorganizing is allowed;
-   summarizing status into something the evidence does not say is not.
+- Every still-binding decision survives with reason/date and revisit conditions.
+- Evidence retains exact revision, outcome, scope and reviewer limitations.
+- Open obligations, parked work and known discrepancies retain their reasoning.
+- A removed source is recoverable and all live consumers are repaired.
+- No claim grows stronger; reorganization preserves meaning, not every sentence.

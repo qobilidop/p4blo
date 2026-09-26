@@ -15,7 +15,9 @@ The mechanized relation to P4-SpecTec is a joint milestone with
 this repository supplies the IR, the elaboration, the block contract
 `tests/oracles/p4blo.watsup` and the validation suite, and builds no
 rendering of SpecTec itself (`docs/design.md`, "Relation to
-p4-spectec-lean"; `decisions.md`, 2026-09-24).
+p4-spectec-lean"; `decisions.md`, 2026-09-24). The recorded Nano-P4 pin `8c8e0c6f`
+differs from this repository’s `2730cfd9`; reconcile them before claiming the
+joint comparison. Flood/multicast remains outside the architecture profile.
 
 ## Joint milestone with p4-spectec-lean
 
@@ -44,6 +46,25 @@ p4-spectec-lean"; `decisions.md`, 2026-09-24).
   snapshots across sequences: parser-error copyback and table-invoked
   actions. Landed: bounded copy-in/out, aggregate copies, computed
   indices.
+
+## Retained observations
+
+These are follow-ups, not confirmed defects or newly authorized work.
+
+- Printer declaration order: actions calling later declarations fail P4-SpecTec
+  typing; order by dependency or require that order during validation.
+- Two reachable P4-SpecTec rules remain unhit: `Expr_eval/non-default-abort`
+  and `Copy_in_arg/abort`; retain the coverage exclusions and their inputs.
+- Some Lean/Python module headers still name former semantics sections.
+- Unconfirmed: checksum16 padding for non-multiples of 16, `<block>_inst`
+  collisions, and error ordering when both entry and port are invalid. No oracle
+  ruling yet; preserve that uncertainty.
+- Reassignable public eDSL library settings can bypass constructor checks;
+  no runtime bug demonstrated.
+- Cache eviction makes builds cold; the stdlib guard uses Python 3.13 while
+  Docker uses distro Python, with compatible imports at the recorded checkpoint.
+- Retired proof drafts and local snapshots remain in [recovery](notes/recovery.md);
+  they predate current layout/externs and are not landed evidence.
 
 ## Interchange
 

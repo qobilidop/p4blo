@@ -1,344 +1,241 @@
 # AGENTS.md
 
-The entry point for anyone, human or agent, working in this repository.
-It is written so that work can be resumed without any memory of how it
-was done: everything needed is in the files named here.
+Repository policy and resume entry point for humans and agents. p4blo is P4's
+architecture-free semantic core as an IR, with independent Lean semantics
+validated against a runnable Python reference. [Design](docs/design.md) owns
+architecture; [assurance](docs/assurance.md) owns delivered guarantees and limits.
 
-## What this is
+## Where information belongs
 
-p4blo: P4's semantic core as an IR, architecture-free, with an
-independent Lean semantics validated against a runnable reference.
-
-## Where things live
-
-Documentation is split by what it describes, not by who reads it:
-
-- `docs/` describes the artifact: what p4blo is, what it means, what it
-  covers, how to use it, how to check and change it, and the evidence for
-  its claims. It is written for people and will be published on its own,
-  so nothing in it links into `.agents/` (a test enforces this).
-- `.agents/` describes the work: where it stands, what was decided and
-  why, what is parked, and the procedures agents follow. It is committed
-  narrative state, never runtime state; logs and artifacts stay in the
-  ignored `.artifacts/`.
-- Nothing dated goes into `docs/`: no checkpoint prose, no run
-  transcripts, no plans. A reference page cites a revision and links the
-  evidence; the run itself is recorded in `.agents/status.md` and git.
-
-| File | Holds |
+| Owner | Responsibility |
 |---|---|
-| `.agents/status.md` | current state, last checked evidence, open threads, next step |
-| `.agents/decisions.md` | the decisions in force, by topic, each with its reason and date |
-| `.agents/roadmap.md` | the research backlog beyond the completed scopes |
-| `.agents/notes/` | live working notes: parked-work inventories, plans they cite, campaign recipes |
-| `.agents/reviews/` | independent review reports for the current work, until the next compaction |
-| `.agents/skills/` | Agent Skills (`<name>/SKILL.md`), the cross-agent location; `.claude/skills` is a symlink to it, which Claude Code loads through but `claude plugin validate` does not, so validate the real path |
+| `README.md` | public introduction, current capability summary, setup and reading map |
+| `docs/` | artifact design, contracts, usage, assurance and development procedures |
+| `.agents/status.md` | current scope, checked revision, validation, obligations and next step |
+| `.agents/decisions.md` | cross-cutting choices, reasons, dates and revisit conditions |
+| `.agents/roadmap.md` | deferred research and its entry conditions, not execution authorization |
+| `.agents/notes/` | topic-specific rationale, investigations, plans and review evidence |
+| `.agents/notes/recovery.md` | archive commits, retired branches and local recovery boundaries |
+| `.agents/skills/` | maintained procedures; policy remains in this file |
 
-`.agents/` is a hidden directory. Searches with `rg`, `fd` and similar
-tools skip it unless told to include hidden files; `git grep` does not.
+Public docs must stand on their own and never link into `.agents/`. Keep
+checkpoint prose, dated run transcripts and plans in working state; reference
+pages cite immutable revisions and link evidence. Logs/builds belong in ignored
+`.artifacts/`, not committed narrative state. Checked recipes and skills are
+maintained artifacts, not disposable notes.
 
-Everything that was ever written is in git. `.agents/status.md` names
-the archive commit, the tree just before each compaction, so an archived
-note is one command away: `git show <archive commit>:.agents/notes/<name>.md`
-(`docs/notes/` at the first archive commit).
-The first compaction's archive commit is `9e8f7d47`. The repository
-creates no git tags.
+Organize notes by topic. Start with one file; add a topic directory only for
+independently useful supporting material. Each note says whether it is active,
+paused or durable and why it remains. Put reviews beside their topic, in a
+section or separate file as needed. Git history archives completed notes;
+create no tags or accumulating archive folders. Preserve live obligations and
+recovery instructions before deleting history from the working set.
 
-## Read first, in this order
+`.agents/` is hidden: use hidden-file searches or `git grep`. Skills live once
+in `.agents/skills/`; `.claude/skills` is its committed symlink. Claude Code
+loads through that link, but `claude plugin validate` does not; validate the
+real path. Never create `CLAUDE.md` or `CLAUDE.local.md`; Claude-specific notes
+belong in `.claude/rules/`. Keep this entry point current when navigation changes.
 
-1. `.agents/status.md`: where the work stands and what is open. Three
-   finite scopes, assurance milestone 1, the application collection and
-   the architecture-free IR semantics scope, are complete and frozen;
-   maintenance does not reopen parked proofs. The status file names any
-   active engineering work. The example-guided authoring and CI-efficiency
-   scopes, core-only assurance simplification and minimal architecture support
-   are complete. Retired
-   application/architecture proofs are historical, not continuation work. Independent blocks and optional BlockLibrary bundles are
-   documented in `docs/python-edsl.md`; architecture assembly stays separate.
-   Only scoped v1model is supplied for packet execution; core Parser, Control
-   and Deparser blocks remain independent. `docs/oracle-discrepancies.md` records
-   reduced reproductions, the selected behavior and its governing contract.
-   `docs/assurance.md`
-   states the claim, the input domain and exact evidence boundaries; do
-   not infer broader guarantees from counts.
-2. `.agents/decisions.md`: what is decided and why. Overrule an entry by
-   rewriting it in place with the new date and reason.
-3. `docs/design.md`: what the project is, the four claims, how each is
-   tested, what is out of scope.
-4. `docs/workflows.md`: the gates, where every external input is pinned,
-   and how to make each kind of change.
-5. `docs/ir-semantics.md` and `spec/ir/proto/p4blo/v0/p4blo.proto` when touching
-   meaning or syntax, `docs/arch-supports.md` when touching what an
-   architecture or extern family decides; `docs/p4-spec-coverage.md` for what P4 constructs are in.
+## Read first
 
-## Environment
+1. `.agents/status.md`: active scope and immediate obligations.
+2. `.agents/decisions.md`: current choices and pointers to detailed rationale.
+3. `docs/design.md` and `docs/assurance.md`: intended system versus actual claims.
+4. `docs/workflows.md`: applicable gates, pinned inputs and change procedures.
+5. For meaning/syntax changes, `docs/ir-semantics.md` and
+   `spec/ir/proto/p4blo/v0/p4blo.proto`; for architecture/extern behavior,
+   `docs/arch-supports.md`; for supported constructs, `docs/p4-spec-coverage.md`.
 
-Use the environment setup in `README.md#development`. Python examples work
-with `uv sync --locked`; `.python-version` selects Python 3.13. Additional
-schema, Lean and oracle tools are needed only for their respective gates.
-Write ordinary commands in current documentation. Keep optional environment
-setup centralized in the README instead of repeating wrappers or assuming a
-specific package manager. Preserve actual historical command transcripts.
+Follow links to the relevant topic, not every archived report. Resume from
+committed files, not chat history or temporary worktrees. If nothing is active,
+ask for a scope before starting one. Roadmap and retired proofs are not a queue.
 
-```
-scripts/check.sh                                   # every Python and schema check CI runs
-scripts/check-lean.sh                              # core proofs and executable adapter tests
-P4BLO_REQUIRE_LEAN=1 uv run pytest -m lean # Lean versus Python
-uv run python scripts/check-assurance.py           # finite adversarial acceptance, after Lean
-tests/oracles/build.sh                              # the P4-SpecTec oracle, once
-uv run pytest tests/oracles/test_oracle.py        # corpus vectors on that oracle
-docker build -t p4blo-bmv2 tests/oracles/bmv2       # the BMv2 oracle image, once
-uv run pytest tests/oracles/test_oracle_bmv2.py   # corpus vectors on BMv2
-```
+## Environment and validation
 
-Keep `main` green on all of them; check exit codes, not output. Four
-validation workflows run them in CI: Python and schema, Lean and two P4 oracles.
-Python/schema always run. Specialist jobs skip only proven narrative-only
-changes under `scripts/ci-scope.py`; executable/parsed docs and uncertain
-changes run full CI. The Lean differential collection is split into two
-complete, disjoint shards. See `docs/workflows.md` for applicability.
-Docker with the pinned p4c image also typechecks the printer's goldens
-when available and is skipped otherwise. `docs/workflows.md` has the
-full gates table, every pin, and the procedure for each kind of change.
-Build Lean before running differential tests; never rebuild its executable
-concurrently with tests in the same worktree. New real-Lean conformance
-tests use the shared `lean_binary` fixture and explicit `lean` marker. External
-checks declare `spectec`, `bmv2` or `p4c`; CI selects by dependency, independent
-of filenames. Package tests live in `impl/python/tests/`; cross-implementation,
-oracle, program and repository checks live under `tests/`. Shared inputs and
-expected-answer helpers live in `tests/support/`, never imported from test modules.
-See `tests/README.md` for ownership and commands.
+Use [README development setup](README.md#development); ordinary commands assume
+required tools on PATH. Keep optional setup there rather than repeating wrappers
+or requiring a package manager. Preserve historical command transcripts.
+`uv sync --locked` and `.python-version` select Python 3.13. No package dependency
+may ship native code, and nothing newer than Python 3.13 is used.
 
-## Conventions
+[Workflows](docs/workflows.md) owns the gate table, pins and change procedures;
+[the test guide](tests/README.md) owns test organization and selection commands.
+Run `scripts/check.sh` before pushing, plus applicable specialist gates. Check
+actual exit codes, not a log reader's result. Keep main green; record unavailable
+gates and skips accurately. Python/schema always run remotely; specialist jobs
+skip only changes proven narrative-only by `scripts/ci-scope.py`. Unknown or
+parsed/executed inputs require full CI. A skip is not a pass.
+If local disk capacity prevents a specialist gate, use a reviewed isolated-branch
+CI experiment and record the local gate as unavailable, never successful. Do not
+prune unrelated data to make it run.
 
-- **Agent instructions live in `AGENTS.md` alone.** Never create `CLAUDE.md`
-  or `CLAUDE.local.md`; Claude-specific notes belong in `.claude/rules/`.
-  Keep this entry point current when the active scope or workflow changes.
-- **Use codec for an encoder/decoder pair**, with encode and decode for the
-  individual operations. Serialization describes a process or representation,
-  not an alternate name for codec components or test suites.
-- **Name the project P4-SpecTec.** SpecTec alone is a different project.
-  Distinguish P4 program IR from the specification's IL, AL and SL when
-  discussing interfaces or coverage. Preserve literal upstream names,
-  protocol fields and historical records when they use older terminology.
-- **Make invariants executable at their boundary.** Prefer a small
-  structural check over another reminder when a mistake is mechanically
-  detectable. A checker needs a negative case showing that the forbidden
-  change fails. Preserve independent semantic implementations: copying
-  P4-SpecTec algorithms into both p4blo interpreters weakens the oracle.
-- **Pure Python.** No dependency of the `p4blo` package may ship
-  native code, and nothing newer than Python 3.13 is used.
-- **Generated code is committed.** `impl/python/p4blo/v0/*_pb2.py*` and
-  `impl/python/p4blo/arch/v0/*_pb2.py*` come from `buf generate`. Never edit
-  them; edit the schemas and regenerate.
-  CI checks a fresh generation's inventory and bytes against both the
-  index and working tree. Stage new deliverables before the full gate;
-  a clean diff of tracked files alone cannot detect omitted outputs.
-- **Keep generated artifacts small and reproducible.** Tracked files
-  must be at most 5 MiB in both the index and working tree, enforced by
-  `scripts/check-file-sizes.py` through the repository tests. No exceptions.
-  Prefer reproducible generation, small losslessly compressed snapshots
-  with raw-content checksums, or checksum-pinned external artifacts.
-  Consider history growth as well as checkout size; reducing size does
-  not authorize rewriting published history. Logs stay in `.artifacts/`.
-- **Lean owns abstract syntax and meaning; protobuf owns wire syntax.**
-  The IR spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`)
-  and holds nothing architectural: no ports, no packet fate, no concrete
-  externs. The executable architecture adapter `spec/arch/` (`p4blo-arch`,
-  imports `P4bloArch`) depends on it and supplies scoped v1model, the extern
-  families and the `p4blo-lean` endpoint. This adapter is tested, without
-  architecture-specific proof guarantees. Python is the authoring surface;
-  there is no separate Lean authoring/application package. In each package,
-  client imports live under `<Root>/`, gate-only tests/audits/fixtures under
-  `<Root>Test/` as one default-target library, and at the root only the root
-  module, Lake's files, `README.md` and at most one `Main.lean`, plus schemas
-  under `spec/ir/proto/` and `spec/arch/proto/` (`docs/design.md`, "The Lean
-  packages"). Core library validity is decided by a checker proved sound;
-  progress is proved under its explicit environment and machine premises.
-  The generic `ExternContract` remains an assumption, without a proof that
-  the supplied architecture discharges it. Termination and whole-library
-  codec composition remain open. Formal assurance is scoped to core IR;
-  do not revive application, architecture or typed-source proofs or the
-  retired execution-certificate experiment without a new user scope.
-  A closed behavior is written in `docs/ir-semantics.md` first (or `docs/arch-supports.md` when an
-  architecture or extern family owns it) and implemented in both
-  interpreters second.
-- **Corpus programs** live under `tests/programs/corpus/<name>/` with their eDSL
-  source, golden, README and STF vectors;
-  `tests/programs/test_corpus.py` picks new ones up by itself. Sources
-  are written in the typed eDSL (`p4blo.edsl`), are type-checked by
-  pyright in CI, and must rebuild their golden byte for byte.
-- **Public application examples** follow the application section of
-  `docs/workflows.md`, with canonical
-  Python source under `examples/` and verification assets under
-  `tests/programs/examples/`. Shared checks discover canonical sources and require
-  goldens, vectors and demos; both oracle catalogs include example vectors.
-  Wire new checks into CI explicitly. Preserve upstream regression programs
-  in `tests/programs/corpus/`.
-- **Every decision the design does not settle** goes in
-  `.agents/decisions.md`, under its topic, with its reason and date, and
-  with a confidence and revisit trigger when uncertain. Do not restate what
-  the design or semantics documents already settle.
-- **`.agents/status.md` is updated at every checkpoint**, including its
-  open threads: the exact checks run, skipped gates, remaining obligations
-  and the next concrete step. A fresh agent must be able to resume from the
-  repository alone; conversation history and temporary files are not
-  handoff documentation.
-- **Commits** follow the usual git conventions (Chris Beams' seven
-  rules; the kernel's "describe your changes"). One logical change per
-  commit: if the subject wants an "and" or a semicolon, split it. The
-  subject is imperative, capitalized, at most 50 characters, no final
-  period, and completes "If applied, this commit will ...". A blank
-  line, then a body wrapped at 72 columns that says what the diff
-  cannot: the problem, why this change and not another, and what a
-  reader must know afterwards. Do not restate the diff; omit the body
-  when the subject says it all. Agent commits end with a
-  `Co-Authored-By: <agent> <email>` trailer after a blank line.
-  Read recent commits before writing new ones and break work into
-  reasonably sized, independently understandable changes. For every
-  Codex-authored commit, immediately before committing run
-  `"${CODEX_HOME:-$HOME/.codex}/bin/coauthor"` in the active session and
-  append its output unchanged. If it fails, stop and report the failure;
-  never guess or hard-code the model.
-  Size commits by a coherent, independently reviewable outcome, not a line
-  quota or one file per commit. Include related tests and documentation;
-  separate mechanical moves and reusable API changes from application policy.
-  Once notes are archived, the commit log is the only narrative of how
-  the work went, so the body matters.
-- **PRs are optional during the personal-project phase.** The user
-  authorizes committing, pushing and integrating completed, checked work
-  autonomously, including substantive changes, without a PR. Use feature
-  branches and worktrees when useful for isolation, review or parked work;
-  direct commits to `main` are also allowed. Inspect the branch and remote,
-  preserve unrelated changes, and never force-push or bypass repository protections. Obtain independent
-  review of the final patch and run the full local gate before pushing;
-  record unavailable gates as such. After pushing, verify applicable remote
-  CI on the exact integrated `main` revision before declaring the work
-  complete. Feature-branch pushes may checkpoint unfinished work; they do
-  not replace validation of the integrated revision. Fix failures promptly
-  with follow-up commits. A local pass is not remote CI, and a skip is not
-  a pass. Use a PR when explicitly requested or
-  required by repository protections; then require final-head review and
-  applicable remote CI before merge, and re-check its head SHA.
-- **When a PR is used, write it for a reader without the conversation.**
-  Lead with the problem and resulting behavior, explain the approach and consequential
-  tradeoffs, then give validation commands/results and meaningful limits.
-  Link supporting evidence without making the links carry all context.
-  Scale detail to the diff; omit empty template sections and progress
-  diaries. Re-read the staged diff, commit message and final PR description
-  before submission; update the description when scope changes.
-  Include one short AI-disclosure sentence naming the authoring agent and
-  model verified by the active-session coauthor helper. Distinguish
-  AI-agent review from human review; never invent attribution.
-- **Preserve meaningful commits when merging.** Use a merge commit for
-  coherent commits whose rationale and identities are worth retaining;
-  squash WIP/fixup sequences with a considered final message preserving
-  rationale and coauthor attribution. Rebase-and-merge only with an explicit
-  linear-history preference. Choose per PR, and keep merge-strategy prose
-  out of the PR description unless requested. Do not bypass protections.
-- **Continue autonomously within the requested direction.** Make scoped
-  design decisions without waiting for feedback and record their reasons
-  for later review. Prefer reversible steps to waiting for feedback.
-  Complete the finite scope you were given, then stop; `.agents/roadmap.md`
-  is backlog, not a to-do list, and universal Python correctness and full
-  application/pipeline proofs are explicit non-goals.
-- **Challenge verification adversarially.** Introduce deliberate semantic
-  faults in isolated worktrees on both the Python and Lean sides. Record
-  which conformance tests kill each mutant, investigate survivors, and
-  improve coverage before repeating. A failure to build is not a test
-  that detected a semantic inconsistency. Never merge intentional faults.
+Build Lean before differential tests; never rebuild the executable while tests
+consume it in the same worktree. Use fresh caches after package moves; copied
+modules can shadow renamed source. At most two heavy local jobs run together.
+Real-Lean tests use the shared `lean_binary` fixture and `lean` marker; external
+checks declare `spectec`, `bmv2` or `p4c`. Shared inputs/answers belong in support
+modules, never imports from collected test modules. Preserve both complete,
+disjoint Lean CI shards when changing selection or organization.
 
-## Working with agents
+## Semantic and source conventions
 
-Each sub-agent gets its own git worktree (`git worktree add`), owns a
-disjoint set of files named in its brief, builds against an explicit
-committed base revision, and hands back with the checks that its
-change can affect green: lint and types, the test modules that cover its
-files, and the Lean gate when it touched a Lean package. It runs the
-full gate only when the change is cross-cutting (a path move, the wire
-or pipe protocol, a module many others import). The integrator combines
-reviewed commits in batches, integrates them into `main`, and runs the
-full gate once per batch before pushing. Verify applicable remote CI on
-the exact pushed revision before closing the work, then remove the
-worktrees. If a PR is required, follow the PR exception above.
-Before splitting a public API change, agree concrete caller examples and
-an acceptance case that would expose a false abstraction boundary. Follow
-that case through source, wire types, validation, execution and proof premises;
-a clean facade alone is not a boundary. Record cross-agent API signatures
-and commit dependencies in the working note.
-Before the first CI push, review the usage and design prose for universal
-claims that belonged only to the old adapter, as well as moved names and paths.
-When two slices depend on each other, hand off committed patches with
-explicit pending checks, then validate the integrated batch; do not have
-both agents wait for the other's green commit. Never amend a handed-off
-commit: corrections are follow-up commits.
-Spawn sub-agents when useful without waiting for permission; choose a
-model appropriate to the task; create the worktree before delegating and
-put its absolute path and file ownership in the brief. Sub-agents must
-not edit the integrator's working tree.
+- **Preserve independent implementations.** Make mechanically detectable
+  invariants executable at their boundary, with a negative case showing the
+  forbidden change fails. Copying P4-SpecTec algorithms into both interpreters
+  weakens the oracle.
+- **Use P4-SpecTec** for the project; SpecTec alone names a different project.
+  Distinguish P4 program IR from specification IL, AL and SL. Preserve literal
+  upstream names, protocol fields and historical records.
+- **Use codec** for an encoder/decoder pair and encode/decode for operations.
+  Serialization describes a process or representation, not alternate component
+  or test-suite names.
+- **Keep the core architecture-free.** Lean owns abstract syntax/meaning;
+  protobuf owns wire syntax. Do not put ports, packet fate or concrete externs
+  in `spec/ir/`. The supplied v1model adapter is tested executable code, not
+  an architecture proof. Formal assurance targets core IR; do not revive
+  application, architecture, typed-source proofs or execution certificates
+  without a new user scope. Read exact proof premises in assurance; do not
+  infer universal equivalence, termination or codec composition from counts.
+- **Specify closed behavior first** in `docs/ir-semantics.md`, or in
+  `docs/arch-supports.md` when architecture/extern contracts own it, then
+  implement independently in both interpreters. Preserve minimal discrepancy
+  reproducers and their contract-based rulings in `docs/oracle-discrepancies.md`.
+- **Keep Lean library boundaries explicit.** Client imports live under `<Root>/`;
+  gate-only tests/audits/fixtures under `<Root>Test/` as one default-target library.
+  Package roots contain the root module, Lake files, README and at most one Main,
+  plus the protobuf schema exceptions. Exact package names and dependencies are
+  in Design's “The Lean packages”; layout/boundary tests enforce them.
+- **Regenerate committed code.** `impl/python/p4blo/v0/*_pb2.py*` and
+  `impl/python/p4blo/arch/v0/*_pb2.py*` come from `buf generate`; edit schemas,
+  never generated files. Fresh generation must match inventory and bytes in
+  both index and working tree. Stage new deliverables before the full gate.
+- **Keep artifacts small and reproducible.** Every tracked file is at most
+  5 MiB in index and working tree, with no exceptions. Prefer reproducible
+  generation, compressed snapshots with raw checksums or pinned external data.
+  Consider history growth; size cleanup does not authorize published-history
+  rewriting. Such changes require explicit agreement on affected refs and
+  disruption; never bypass protections. Logs stay in `.artifacts/`.
+- **Corpus sources** under `tests/programs/corpus/` use the typed eDSL, pass
+  pyright and rebuild goldens byte for byte; shared checks discover programs.
+  Public application sources remain under `examples/`, verification assets
+  under `tests/programs/examples/`. Follow the application workflow, preserve
+  upstream regression inputs, and wire new checks into CI explicitly.
+- **Challenge verification adversarially** in scoped correctness work: inject
+  semantic faults on Python and Lean sides in isolated worktrees, record which
+  tests kill them, investigate survivors and improve coverage. Build failures
+  are not semantic detections. Never integrate deliberate faults. Retain
+  independent expected answers; agreement and roundtrips alone are insufficient.
 
-After each build step an independent, read-only review agent looks for
-confirmed defects with reproducers. Its report goes under
-`.agents/reviews/` and its findings are fixed on the working branch before
-integration. Record the reviewed revision or patch, commands and results,
-confirmed findings with reproducers, and any checks the reviewer could not
-run. Reviews stay there until the next compaction archives them.
+## Decisions, commits and publication
 
-Worktrees do not isolate external resources: use distinct Docker image
-tags and `P4BLO_BMV2_IMAGE` per implementation worktree, and never
-rebuild the shared oracle image while another agent's tests use it.
-Coordinate other mutable caches, ports and fixtures explicitly; immutable
-pinned caches may be shared. Freeze the entire tracked tree during a
-provenance-checked assurance experiment: its inventory includes documentation,
-so even a concurrent note edit invalidates the run.
+Record consequential unsettled choices with reason and date. Cross-cutting
+choices go in Decisions; detailed constraints with their topic evidence. Include
+confidence and a revisit trigger when uncertain. Supersede entries in place with
+the new date/reason, preserving still-binding rationale. Do not duplicate policy
+or settled design. Make reasonable scoped decisions autonomously, prefer
+reversible steps and finish the finite request; do not expand into backlog.
 
-Unfinished work is never left as an uncommitted worktree. Commit it to
-its branch as a work-in-progress commit whose message says what it holds
-and what it lacks, push the branch, and remove the worktree; the
-parked-proof inventory points at branches. Retain a branch only after
-comparing its content with `main`; a branch whose commits are merged or
-whose files are byte-identical to what `main` has is deleted, not kept
-"in case". Uncommitted drafts on one machine were the most fragile thing
-in this repository for a day.
+Commits follow Chris Beams' seven rules and Git's contribution guidance. Use a
+capitalized imperative subject of at most 50 characters, no final period; one
+logical outcome per commit. After a blank line, wrap prose at 72 columns and
+explain the problem, why this approach and consequential context; omit the body
+only when the subject suffices. Read recent commits and the staged diff first.
+Include related tests/docs, separate mechanical moves and reusable API changes
+from application policy, and size by reviewable outcome rather than line count.
+The log becomes the narrative after working notes are archived.
+
+Every Codex commit must end with the trailer returned unchanged by
+`"${CODEX_HOME:-$HOME/.codex}/bin/coauthor"`, run in the active session immediately
+before that commit. If it fails, stop and report; never guess a model. Other
+agent commits also require their `Co-Authored-By: <agent> <email>` trailer.
+
+PRs are optional during this personal-project phase. The user authorizes
+committing, pushing and integrating completed checked work autonomously,
+including direct main commits. Use branches/worktrees when isolation helps.
+Inspect branch/remote, preserve unrelated changes, never force-push or bypass
+protections. Independent final-patch review and the full local gate precede
+push; verify applicable remote CI on the exact integrated main SHA before
+completion. Local results or feature-branch runs do not replace that check.
+Fix failures with follow-up commits. WIP branch pushes checkpoint unfinished
+work and record what remains unvalidated; they do not declare it integrated.
+
+Use a PR when requested or required by protections. Require review and applicable
+CI on its final revision, rechecking head SHA before merge. Write for a reader
+without the conversation: problem/result, consequential approach/tradeoffs,
+validation and limits. Links support rather than replace context. Scale detail,
+omit boilerplate/progress diaries, and reread the description after scope changes.
+Include one short AI disclosure naming the agent/model verified by the session
+helper; distinguish AI-agent review from human review and never invent credit.
+
+Preserve meaningful commits: merge coherent history; squash WIP/fixups with a
+considered message preserving rationale and coauthors. Rebase-and-merge requires
+an explicit linear-history preference. Keep strategy prose out of PR descriptions
+unless requested. Never amend a handed-off commit; use a follow-up correction.
+
+## Agent work and reviews
+
+Spawn subagents when useful without waiting for permission; choose a suitable
+model. Create each agent's worktree before delegating, name its absolute path,
+explicit committed base and disjoint file ownership. Agents do not edit the
+integrator's tree. Authors run lint/types/affected tests and the Lean gate when
+changing Lean; full gates are needed for cross-cutting changes. The integrator
+combines reviewed commits in batches and runs the full gate once per batch before
+push, then checks exact-main CI and removes finished worktrees.
+
+Before splitting an API change, agree concrete callers and a case exposing a
+false boundary. Trace it through source, wire, validation, execution and proof
+premises. Record shared API signatures and commit dependencies in the topic note.
+For dependent slices, hand off committed patches with pending checks and validate
+the integrated batch; do not wait cyclically for each other's green commit.
+Before the first CI push, check usage/design prose for obsolete universal claims
+and moved names/paths, not merely a clean facade.
+
+After each build step, an independent read-only reviewer seeks confirmed defects
+with reproducers. Record review beside the topic, with reviewed revision/patch,
+reviewer identity and independence limits, commands/results, findings and checks
+not run. Fix findings before integration. Preserve original verdicts and keep
+later resolutions distinct. Archive only after preserving unresolved obligations.
+For application changes, include independent correctness and usability review
+after each build step: run the documented demo and try a small policy change in
+an isolated scratch copy or local configuration, without editing canonical sources.
+Record concrete authoring, configuration, inspection and diagnostic difficulties
+from the smallest runnable scenario. Application completion requires a reviewed
+contract, runnable demo, independent exact packet/fate/state expectations, exact
+golden reconstruction, Python/Lean and applicable oracle checks with exclusions,
+targeted source faults and fresh-reader review; Workflows owns the technical steps.
+
+Worktrees do not isolate caches, ports or Docker. Use distinct image tags and
+`P4BLO_BMV2_IMAGE` per implementation worktree; never rebuild an image while
+another test uses it. Own and verify each Docker check container; clean only
+task-owned artifacts and never prune globally. Coordinate mutable resources;
+pinned immutable caches may be shared. Freeze all tracked files during
+provenance-checked assurance runs:
+even a concurrent note edit changes their inventory.
+
+Never abandon unfinished work uncommitted. Commit WIP to its branch with what
+it holds/lacks, push the branch and remove the worktree; record recovery refs.
+Compare branches with main before retaining them: delete merged or byte-identical
+branches rather than keeping them “in case”. Preserve unique parked work and its
+known gaps; routine compaction does not authorize deleting recovery backups.
 
 ## Checkpoints and compaction
 
-For general repository upkeep, use the
-[`tend-repo` skill](.agents/skills/tend-repo/SKILL.md). It covers consistency,
-evidence-backed lessons and deciding when the compaction procedure below applies.
+Update Status at every checkpoint: scope, checked revision, exact validation and
+skips, unresolved obligations, active branch/worktree and next action. Topic notes
+hold detailed evidence; Decisions holds changed choices. Keep resume information
+in the repository, with local-only recovery limits explicitly distinguished from
+published evidence.
 
-At each checkpoint, update `.agents/status.md`, any changed decision, and
-this file when scope or navigation changes. Record the current iteration,
-unresolved findings, active branch or worktree, durable evidence and the
-next action.
+Use [tend-repo](.agents/skills/tend-repo/SKILL.md) for general upkeep. When a
+milestone closes or the resume read exceeds roughly a thousand lines, use
+[compact-agent-state](.agents/skills/compact-agent-state/SKILL.md). Record the
+pre-compaction archive commit, consolidate by topic, promote artifact knowledge
+to its public owner and preserve every current choice/reason/date, open thread,
+known discrepancy and evidence identity. Independently compare with the archive;
+compaction changes no claim. Current status is a checkpoint, not a milestone log.
 
-Two rules learned the hard way. First, the full gate runs before a step
-is pushed, not a subset: the structural and link tests passed on the day
-the codec tests looked for their endpoint in the wrong package, and only
-`scripts/check.sh` found it. Second, when directories move, search for
-the path in every spelling, not only with a slash: `"ir"` in a
-`git ls-files` call, `-d lean` in a command, and `parents[N]` in a path
-computation all broke silently after a move, and
-`tests/repository/test_package_layout.py` and
-`tests/repository/test_boundaries.py` exist to pin the paths and the
-import graph a gate depends on. Historical records under `.agents/reviews/`
-keep the paths they were written with; exclude them from rewrites.
-
-When a milestone closes, or when the resume read (status, decisions,
-roadmap and live notes) grows past roughly a thousand lines, compact
-`.agents/` with the `compact-agent-state` skill in `.agents/skills/`.
-Compaction removes history and keeps truth: every decision still in
-force with its reason and date, the current evidence with commit hashes
-that still resolve, open threads and known discrepancies, and anything a
-test or a `docs/` file references. It changes no claim. The previous
-tree's commit is recorded first, the compaction is reviewed
-independently against that commit, and notes that turn out to describe the
-artifact rather than the work are promoted into `docs/` instead of
-being archived.
-
-## Resuming
-
-Read the files above in order. Nothing needed to continue the work lives
-outside the repository; local worktrees and `.artifacts/` are convenience,
-not evidence. If `.agents/status.md` says nothing is active, ask for a
-scope before starting one.
+When moving paths, search every spelling, including fragments without slashes
+and path computations (`parents[N]`). Existing layout and boundary tests protect
+gate dependencies. Historical review records retain original paths; exclude their
+text from rewrites or label archived identifiers explicitly.

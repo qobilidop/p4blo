@@ -12,10 +12,11 @@ deleted files become plain text marked archived, and links inside moved
 files are re-based on their new directory. Link labels are left alone,
 so a label that names the old file must be fixed by hand afterwards.
 
-Restore historical records afterwards, for example
-`git checkout -- .agents/reviews`: a review must keep the paths it was
-written with. Path fragments without a slash (`"ir"`, `-d lean`,
-`parents[N]`) are not found by this script; grep for them separately.
+Restore historical review text afterwards using an explicitly inspected list
+of topic files: original verdicts keep the paths they were written with.
+Do not restore entire notes blindly when they also hold current navigation.
+Path fragments without a slash (`"ir"`, `-d lean`, `parents[N]`) are not found
+by this script; search for them separately.
 """
 import json
 import os

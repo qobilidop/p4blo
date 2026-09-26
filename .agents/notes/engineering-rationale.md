@@ -3,7 +3,7 @@
 [AGENTS](../../AGENTS.md) owns policy, [workflows](../../docs/workflows.md)
 commands/pins, [design](../../docs/design.md) package layout and
 [tests](../../tests/README.md) test ownership. These are original reasons and
-revisit points, consolidated on 2026-09-26, not duplicate specifications.
+revisit points, retained as durable rationale and consolidated on 2026-09-26, not duplicate specifications.
 
 ## Environment and layout
 

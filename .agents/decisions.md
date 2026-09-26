@@ -4,7 +4,7 @@ Current cross-cutting choices and reasons. Rules belong in [AGENTS](../AGENTS.md
 contracts in the public documents, and detailed rationale in the linked topic
 notes. Dates below are the original decisions; supersede them in place with the
 new reason/date. The pre-reorganization register is recoverable at
-`de6aa7d9437ffc65c413b0adda7d3f8c558f84f6`; [status](status.md) owns archive navigation.
+`de6aa7d9437ffc65c413b0adda7d3f8c558f84f6`; [recovery](notes/recovery.md) owns archive navigation.
 
 ## Scope and assurance
 

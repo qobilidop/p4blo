@@ -1,6 +1,6 @@
 # IR design rationale
 
-Reasons and still-binding tradeoffs, consolidated from the register on 2026-09-26.
+Durable reasons and still-binding tradeoffs, consolidated from the register on 2026-09-26.
 [Design](../../docs/design.md), [semantics](../../docs/ir-semantics.md),
 [coverage](../../docs/p4-spec-coverage.md) and [authoring](../../docs/python-edsl.md)
 own the contracts; this note preserves their decision dates and unique rationale.

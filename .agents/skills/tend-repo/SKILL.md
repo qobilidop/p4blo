@@ -74,6 +74,8 @@ When due, use [compact-agent-state](../compact-agent-state/SKILL.md) for the
 archive point, promotion, reconciliation, review and integration procedure.
 Keep that procedure in one place rather than reimplementing it here.
 
+Consolidate working knowledge by topic before moving files. Keep reviews beside
+their topic, preserving original verdicts and distinguishing later resolutions.
 Preserve open obligations, uncertainty, current decision reasons/dates and
 recovery instructions. Skills and machine-consumed recipes are maintained
 artifacts, not disposable completed notes. Before removing a redundant source,
