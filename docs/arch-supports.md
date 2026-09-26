@@ -36,6 +36,32 @@ The generic loader can also take a compiled library and explicit
 definitions without the supplied pipeline defaults. See
 [Python authoring](python-edsl.md) for the public API and a custom extern.
 
+## Minimal v1model profile
+
+The supported packet architecture is being narrowed to v1model. Its adapter
+uses the existing H/M block convention with separate parser, verify_checksum,
+ingress, egress, compute_checksum and deparser roles. Omitted checksum/egress
+roles are empty stages. Core blocks retain arbitrary typed parameters; this
+calling convention belongs only to the adapter.
+
+The profile reserves ingress_port (bit9), parser_error (error), egress_spec
+(bit9) and egress_port (bit9) in M for standard metadata. Only ingress and
+egress write egress_spec; ingress_port/parser_error/egress_port are read-only
+program inputs. Other native metadata and unsupported services are rejected.
+The verify_checksum intrinsic is unsupported; checksum stages can contain
+ordinary core code and existing checksum16 calls.
+
+Parser rejection supplies parser_error and continues. After ingress,
+egress_spec511 drops without running egress/compute/deparser. Otherwise the
+selected port becomes egress_port and egress runs; egress_spec511 then drops
+without compute/deparser. Other egress_spec writes cannot redirect the selected
+port. Successful output is deparser bytes followed by unconsumed payload.
+A later egress_spec assignment can undo mark-to-drop in the same stage.
+Architectural behavior is tested, not formally proved.
+
+The following legacy description records the adapter being migrated; it will
+be replaced by the final supported profile when implementation lands.
+
 ## The metadata contract
 
 The supplied filter and switch communicate their host policy through the

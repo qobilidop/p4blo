@@ -1,10 +1,15 @@
 # Status
 
-Last updated: 2026-09-25. **No active work.** Core-only assurance
+Last updated: 2026-09-25. **Active: minimal architectures.**
+The user authorized core block execution plus scoped v1model, retiring the
+custom Filter/Switch. Branch `work/minimal-arch`, base `14e6f44`.
+[Scope and shared contract](notes/minimal-architectures.md).
+
+Core-only assurance
 simplification is complete and integrated into `main` at
 `090fb6813600cbd56bc375a6ff6cdc81b893bb4d`; all applicable remote CI passed.
-The next action is a new user-scoped task. The roadmap is backlog, and
-retired application/architecture proofs are not a continuation queue.
+The roadmap remains backlog; retired application/architecture proofs are not
+a continuation queue. The current scope changes tested adapters only.
 
 Formal assurance now targets the architecture-free core IR. Python supplies
 public authoring, examples, validation, interpretation and the P4 importer.
@@ -150,4 +155,4 @@ found no unresolved issues; implementation evidence above is unchanged.
 
 ## Blocked
 
-Nothing. Ask for a new scope; do not reopen retired proofs or roadmap work.
+Nothing. Implement and validate the minimal-architecture scope above.
