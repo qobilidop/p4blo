@@ -71,3 +71,14 @@ Initial P4-SpecTec run: 236 passed/15 expected failures; the fresh coverage
 check required rebuilding its stale probe after the path move. That rebuild,
 coverage rerun and all BMv2/p4c comparisons are in progress. Frozen assurance,
 final independent review, exact-main remote CI and closure remain pending.
+
+Final implementation 74a678f: independent review approved all source/test changes
+([report](../reviews/test-organization-final.md)). Local gates complete:
+5,007 required-Lean Python/schema passes; unchanged Lean packages passed;
+237 P4-SpecTec passes/15 exact expected failures (fresh measurement after probe
+rebuild); 70 BMv2/p4c passes/two exact expected failures. No skipped cases.
+Frozen assurance at 74a678f passed all 28 phases, including ten Python faults,
+Lean CRC and paired codec/observer faults and restored baselines. Three input
+hashes and six requests remain exactly the baseline. Local evidence under
+.artifacts/test-organization and .artifacts/assurance/test-organization-final
+is convenience, not handoff state. Next: integrate and check exact-main CI.

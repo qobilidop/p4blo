@@ -8,10 +8,13 @@ preserve test responsibilities and reorganize Python, conformance, oracle,
 program and repository checks. Ownership, shared helpers and explicit dependency selection are implemented.
 All 5,320 original cases remain; six printer compile cases and five boundary
 checks bring collection to 5,331. All 310 validator input identities survive.
-The full required-Lean local gate passes 5,007 tests, without skips; the Lean
-package gate passes. Final oracle runs, frozen assurance, independent review,
-exact-main remote CI and closure remain outstanding. See the scope note for
-selection counts and the fixed pre-deselection guard finding.
+Final implementation 74a678f passed independent review, the full required-Lean
+local gate (5,007 passes), Lean package gates, P4-SpecTec (237 passes/15 exact
+expected failures), BMv2/p4c (70 passes/two exact expected failures) and all
+28 frozen assurance phases. No checks skipped. spec/ and fixture answers remain
+unchanged. Next: integrate, verify exact-main remote CI, then close/compact.
+[Final review](reviews/test-organization-final.md) records preserved case/input
+identities and the repaired pre-deselection guard finding.
 The completed implementation evidence below predates this refactor.
 
 Minimal architectures and the discrepancy catalogue are complete on main
