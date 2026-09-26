@@ -113,6 +113,9 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     apply {
+        meta.ingress_port = standard_metadata.ingress_port;
+        meta.parser_error = standard_metadata.parser_error;
+        standard_metadata.egress_spec = standard_metadata.egress_port;
     }
 }
 

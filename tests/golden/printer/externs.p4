@@ -13,7 +13,7 @@ struct headers {
 }
 
 struct metadata {
-    bit<9> egress_port;
+    bit<9> egress_spec;
     bit<32> idx;
     bit<16> sum;
 }
@@ -37,14 +37,15 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
     register<bit<16>>(32w16) last_seen;
     Count() Count_inst;
     apply {
+        meta.egress_spec = standard_metadata.egress_spec;
         last_seen.read(meta.sum, meta.idx);
         meta.sum = meta.sum + 16w1;
         last_seen.write(meta.idx, meta.sum);
         pkts.count(32w0);
         Count_inst.apply(meta.idx);
         hash(meta.sum, HashAlgorithm.csum16, 16w0, { hdr.eth.dst ++ hdr.eth.src }, 32w65536);
-        meta.egress_port = 9w1;
-        standard_metadata.egress_spec = meta.egress_port;
+        meta.egress_spec = 9w1;
+        standard_metadata.egress_spec = meta.egress_spec;
     }
 }
 
@@ -61,6 +62,8 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     apply {
+        meta.egress_spec = 0;
+        standard_metadata.egress_spec = (meta.egress_spec == 9w511 ? 9w511 : standard_metadata.egress_port);
     }
 }
 

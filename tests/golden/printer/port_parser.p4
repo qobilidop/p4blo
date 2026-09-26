@@ -12,8 +12,8 @@ struct H {
 
 struct M {
     bit<9> ingress_port;
-    bit<9> egress_port;
-    bool drop;
+    bit<9> egress_spec;
+    bool drop_requested;
 }
 
 parser P(packet_in packet, out H hdr, inout M meta, inout standard_metadata_t standard_metadata) {
@@ -26,7 +26,7 @@ parser P(packet_in packet, out H hdr, inout M meta, inout standard_metadata_t st
         }
     }
     state from_one {
-        meta.drop = true;
+        meta.drop_requested = true;
         transition accept;
     }
 }
@@ -34,9 +34,12 @@ parser P(packet_in packet, out H hdr, inout M meta, inout standard_metadata_t st
 control C(inout H hdr, inout M meta, inout standard_metadata_t standard_metadata) {
     apply {
         meta.ingress_port = standard_metadata.ingress_port;
-        meta.egress_port = 9w2;
-        standard_metadata.egress_spec = meta.egress_port;
-        if (meta.drop) { mark_to_drop(standard_metadata); }
+        meta.egress_spec = standard_metadata.egress_spec;
+        meta.egress_spec = 9w2;
+        if (meta.drop_requested) {
+            meta.egress_spec = 9w511;
+        }
+        standard_metadata.egress_spec = meta.egress_spec;
     }
 }
 
@@ -53,6 +56,9 @@ control MyVerifyChecksum(inout H hdr, inout M meta) {
 
 control MyEgress(inout H hdr, inout M meta, inout standard_metadata_t standard_metadata) {
     apply {
+        meta.ingress_port = standard_metadata.ingress_port;
+        meta.egress_spec = 0;
+        standard_metadata.egress_spec = (meta.egress_spec == 9w511 ? 9w511 : standard_metadata.egress_port);
     }
 }
 

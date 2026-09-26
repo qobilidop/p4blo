@@ -29,8 +29,7 @@ struct headers {
 struct metadata {
     bit<9> ingress_port;
     error parser_error;
-    bit<9> egress_port;
-    bool drop;
+    bit<9> egress_spec;
     Color color;
     bool flag;
     bit<32> scratch;
@@ -60,10 +59,10 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
     error e = error.NoError;
     tag_t spare;
     action drop() {
-        meta.drop = true;
+        meta.egress_spec = 9w511;
     }
     action forward(bit<48> dst, bit<9> port) {
-        meta.egress_port = port;
+        meta.egress_spec = port;
         hdr.eth.dst = dst;
     }
     action set_ttl(in bit<8> ttl) {
@@ -115,6 +114,7 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
     apply {
         meta.ingress_port = standard_metadata.ingress_port;
         meta.parser_error = standard_metadata.parser_error;
+        meta.egress_spec = standard_metadata.egress_spec;
         matched = ipv4_lpm.apply().hit;
         if (matched) {
             acl.apply();
@@ -144,8 +144,7 @@ control MainIngress(inout headers hdr, inout metadata meta, inout standard_metad
         if (hdr.ipv4.isValid() && (c == Color.RED)) {
             forward(48w2, 9w2);
         }
-        standard_metadata.egress_spec = meta.egress_port;
-        if (meta.drop) { mark_to_drop(standard_metadata); }
+        standard_metadata.egress_spec = meta.egress_spec;
     }
 }
 
@@ -175,6 +174,10 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     apply {
+        meta.ingress_port = standard_metadata.ingress_port;
+        meta.parser_error = standard_metadata.parser_error;
+        meta.egress_spec = 0;
+        standard_metadata.egress_spec = (meta.egress_spec == 9w511 ? 9w511 : standard_metadata.egress_port);
     }
 }
 

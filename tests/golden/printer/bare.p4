@@ -16,27 +16,28 @@ parser P(packet_in packet, out H h, inout M m, inout standard_metadata_t standar
     }
 }
 
-control MyIngress(inout H hdr, inout M meta, inout standard_metadata_t standard_metadata) {
-    apply {
-    }
-}
-
-control MyDeparser(packet_out packet, in H hdr) {
-    apply {
-    }
-}
-
 control MyVerifyChecksum(inout H hdr, inout M meta) {
+    apply {
+    }
+}
+
+control MyIngress(inout H hdr, inout M meta, inout standard_metadata_t standard_metadata) {
     apply {
     }
 }
 
 control MyEgress(inout H hdr, inout M meta, inout standard_metadata_t standard_metadata) {
     apply {
+        standard_metadata.egress_spec = standard_metadata.egress_port;
     }
 }
 
 control MyComputeChecksum(inout H hdr, inout M meta) {
+    apply {
+    }
+}
+
+control MyDeparser(packet_out packet, in H hdr) {
     apply {
     }
 }

@@ -30,8 +30,7 @@ struct headers {
 
 struct metadata {
     bit<9> ingress_port;
-    bit<9> egress_port;
-    bool drop;
+    bit<9> egress_spec;
 }
 
 parser MyParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
@@ -54,10 +53,10 @@ parser MyParser(packet_in packet, out headers hdr, inout metadata meta, inout st
 
 control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     action drop() {
-        meta.drop = true;
+        meta.egress_spec = 9w511;
     }
     action ipv4_forward(bit<48> dstAddr, bit<9> port) {
-        meta.egress_port = port;
+        meta.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 8w1;
@@ -76,14 +75,14 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
     }
     apply {
         meta.ingress_port = standard_metadata.ingress_port;
+        meta.egress_spec = standard_metadata.egress_spec;
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         }
         if (hdr.ipv4.isValid()) {
             hash(hdr.ipv4.hdrChecksum, HashAlgorithm.csum16, 16w0, { (((((((((hdr.ipv4.version ++ hdr.ipv4.ihl) ++ hdr.ipv4.diffserv) ++ hdr.ipv4.totalLen) ++ hdr.ipv4.identification) ++ hdr.ipv4.flags) ++ hdr.ipv4.fragOffset) ++ hdr.ipv4.ttl) ++ hdr.ipv4.protocol) ++ hdr.ipv4.srcAddr) ++ hdr.ipv4.dstAddr }, 32w65536);
         }
-        standard_metadata.egress_spec = meta.egress_port;
-        if (meta.drop) { mark_to_drop(standard_metadata); }
+        standard_metadata.egress_spec = meta.egress_spec;
     }
 }
 
@@ -101,6 +100,9 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     apply {
+        meta.ingress_port = standard_metadata.ingress_port;
+        meta.egress_spec = 0;
+        standard_metadata.egress_spec = (meta.egress_spec == 9w511 ? 9w511 : standard_metadata.egress_port);
     }
 }
 

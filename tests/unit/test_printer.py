@@ -286,7 +286,7 @@ blocks {{
 }}
 
 exports {{ role: "parser" block: "TopParser" }}
-exports {{ role: "control" block: "TopIngress" }}
+exports {{ role: "ingress" block: "TopIngress" }}
 exports {{ role: "deparser" block: "TopDeparser" }}
 """
 
@@ -320,8 +320,7 @@ struct_types {{
   name: "metadata"
   fields {{ name: "ingress_port" type {{ bits: 9 }} }}
   fields {{ name: "parser_error" type {{ error {{}} }} }}
-  fields {{ name: "egress_port" type {{ bits: 9 }} }}
-  fields {{ name: "drop" type {{ boolean {{}} }} }}
+  fields {{ name: "egress_spec" type {{ bits: 9 }} }}
   fields {{ name: "color" type {{ enum_type: "Color" }} }}
   fields {{ name: "flag" type {{ boolean {{}} }} }}
   fields {{ name: "scratch" type {{ bits: 32 }} }}
@@ -357,13 +356,13 @@ blocks {{
   actions {{ name: "NoAction" }}
   actions {{
     name: "drop"
-    body {{ assign {{ target {{ <meta.drop> }} value {{ literal {{ boolean: true }} }} }} }}
+    body {{ assign {{ target {{ <meta.egress_spec> }} value {{ <9w511> }} }} }}
   }}
   actions {{
     name: "forward"
     params {{ name: "dst" type {{ bits: 48 }} direction: DIRECTION_NONE }}
     params {{ name: "port" type {{ bits: 9 }} direction: DIRECTION_NONE }}
-    body {{ assign {{ target {{ <meta.egress_port> }} value {{ var: "port" }} }} }}
+    body {{ assign {{ target {{ <meta.egress_spec> }} value {{ var: "port" }} }} }}
     body {{ assign {{ target {{ <hdr.eth.dst> }} value {{ var: "dst" }} }} }}
   }}
   actions {{
@@ -669,7 +668,7 @@ blocks {{
 }}
 
 exports {{ role: "parser" block: "EthParser" }}
-exports {{ role: "control" block: "MainIngress" }}
+exports {{ role: "ingress" block: "MainIngress" }}
 exports {{ role: "deparser" block: "MainDeparser" }}
 """
 
@@ -686,7 +685,7 @@ struct_types {{
 }}
 struct_types {{
   name: "metadata"
-  fields {{ name: "egress_port" type {{ bits: 9 }} }}
+  fields {{ name: "egress_spec" type {{ bits: 9 }} }}
   fields {{ name: "idx" type {{ bits: 32 }} }}
   fields {{ name: "sum" type {{ bits: 16 }} }}
 }}
@@ -785,7 +784,7 @@ blocks {{
       result {{ <meta.sum> }}
     }}
   }}
-  body {{ assign {{ target {{ <meta.egress_port> }} value {{ <9w1> }} }} }}
+  body {{ assign {{ target {{ <meta.egress_spec> }} value {{ <9w1> }} }} }}
 }}
 
 blocks {{
@@ -796,7 +795,7 @@ blocks {{
 }}
 
 exports {{ role: "parser" block: "EthParser" }}
-exports {{ role: "control" block: "MainIngress" }}
+exports {{ role: "ingress" block: "MainIngress" }}
 exports {{ role: "deparser" block: "MainDeparser" }}
 """
 
@@ -1129,10 +1128,10 @@ def test_standard_metadata_binding_is_by_name() -> None:
     assert prologue == [
         "m.ingress_port = standard_metadata.ingress_port;",
         "m.parser_error = standard_metadata.parser_error;",
+        "m.egress_spec = standard_metadata.egress_spec;",
     ]
     assert epilogue == [
-        "standard_metadata.egress_spec = m.egress_port;",
-        "if (m.drop) { mark_to_drop(standard_metadata); }",
+        "standard_metadata.egress_spec = m.egress_spec;",
     ]
     # The parser gets the field the architectures write before it runs, and
     # only that one: parser_error is set after the parser, and nothing is
@@ -1144,13 +1143,14 @@ def test_standard_metadata_binding_is_by_name() -> None:
     index = BoundIndex.build(golden_program("bare"))
     assert v1model.standard_metadata_binding(index, "m") == ([], [])
     assert v1model.standard_metadata_binding(index, "m", "parser") == ([], [])
-    with pytest.raises(PrintError, match="deparser"):
-        v1model.standard_metadata_binding(index, "m", "deparser")
+    assert v1model.standard_metadata_binding(index, "m", "deparser") == ([], [])
+    with pytest.raises(PrintError, match="unknown"):
+        v1model.standard_metadata_binding(index, "m", "unknown")
 
 
-# A parser that decides on `meta.ingress_port`: packets from port 1 are
-# marked for drop by the parser itself. The architectures provide the port
-# before the parser runs, so the printed parser must see it too.
+# A parser that decides on `meta.ingress_port`: packets from port 1
+# request a drop through ordinary user metadata, which ingress applies.
+# v1model provides the port before the parser runs, so its printer must too.
 PORT_PARSER = """
 name: "port_parser"
 errors: "NoError" errors: "PacketTooShort" errors: "NoMatch" errors: "StackOutOfBounds"
@@ -1160,8 +1160,8 @@ struct_types { name: "H" fields { name: "h" type { header: "h_t" } } }
 struct_types {
   name: "M"
   fields { name: "ingress_port" type { bits: 9 } }
-  fields { name: "egress_port" type { bits: 9 } }
-  fields { name: "drop" type { boolean {} } }
+  fields { name: "egress_spec" type { bits: 9 } }
+  fields { name: "drop_requested" type { boolean {} } }
 }
 headers: "H"
 metadata: "M"
@@ -1181,7 +1181,7 @@ blocks {
   }
   states {
     name: "from_one"
-    body { assign { target { <meta.drop> } value { literal { boolean: true } } } }
+    body { assign { target { <meta.drop_requested> } value { literal { boolean: true } } } }
     transition { direct { accept {} } }
   }
 }
@@ -1189,7 +1189,11 @@ blocks {
   name: "C" kind: BLOCK_KIND_CONTROL
   params { name: "hdr" type { struct: "H" } direction: DIRECTION_INOUT }
   params { name: "meta" type { struct: "M" } direction: DIRECTION_INOUT }
-  body { assign { target { <meta.egress_port> } value { <9w2> } } }
+  body { assign { target { <meta.egress_spec> } value { <9w2> } } }
+  body { conditional {
+    condition { <meta.drop_requested> }
+    then { assign { target { <meta.egress_spec> } value { <9w511> } } }
+  } }
 }
 blocks {
   name: "D" kind: BLOCK_KIND_DEPARSER
@@ -1197,7 +1201,7 @@ blocks {
   body { emit { value { <hdr.h> } } }
 }
 exports { role: "parser" block: "P" }
-exports { role: "control" block: "C" }
+exports { role: "ingress" block: "C" }
 exports { role: "deparser" block: "D" }
 """
 
@@ -1210,7 +1214,7 @@ def test_the_parser_is_provided_ingress_port_before_it_runs(start: str) -> None:
     assert validator.validate(p) == []
     text = v1model.print_program(p)
     parser_text = text[text.index("parser P(") : text.index("control C(")]
-    control_text = text[text.index("control C(") :]
+    control_text = text[text.index("control C(") : text.index("control D(")]
     copy = "meta.ingress_port = standard_metadata.ingress_port;"
     # In the parser the copy is the first statement of `start`, so a
     # select on the port in the start state already sees it; the control
@@ -1220,13 +1224,17 @@ def test_the_parser_is_provided_ingress_port_before_it_runs(start: str) -> None:
     assert "transition select(meta.ingress_port)" in parser_text
     assert control_text.count(copy) == 1
     assert "parser_error" not in parser_text
+    loaded = v1model.load(p)
+    pipeline = v1model.V1Model(ports=4)
+    assert pipeline.run(loaded, loaded.entries(), 1, b"\x2apayload") == []
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x2apayload") == [(2, b"\x2apayload")]
 
 
 def test_contract_field_with_the_wrong_type_is_refused() -> None:
     p = golden_program("control_features")
-    drop = next(f for f in p.struct_types[1].fields if f.name == "drop")
-    drop.type.CopyFrom(pb.Type(bits=1))
-    with pytest.raises(PrintError, match="drop"):
+    egress_spec = next(f for f in p.struct_types[1].fields if f.name == "egress_spec")
+    egress_spec.type.CopyFrom(pb.Type(bits=1))
+    with pytest.raises(PrintError, match="egress_spec"):
         v1model.print_program(p)
 
 
@@ -1245,7 +1253,7 @@ def test_a_noaction_with_a_body_is_refused() -> None:
     control = p.blocks[1]
     no_action = next(a for a in control.actions if a.name == "NoAction")
     assert "action NoAction" not in v1model.print_program(p)
-    no_action.body.add().CopyFrom(control.actions[1].body[0])  # meta.drop = true
+    no_action.body.add().CopyFrom(control.actions[1].body[0])  # meta.egress_spec = 511
     with pytest.raises(PrintError, match="NoAction with a body"):
         v1model.print_program(p)
     del no_action.body[:]
