@@ -30,6 +30,7 @@ import pytest
 
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
+from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -141,6 +142,32 @@ def image() -> str:
 # ---------------------------------------------------------------------------
 # The translation, which needs no oracle
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("field", ["flood", "drop"])
+def test_retired_metadata_is_an_error_before_docker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], field: str
+) -> None:
+    program = arch_wire.load_text(CORPUS / "forwarder/forwarder.txtpb")
+    metadata = next(t for t in program.struct_types if t.name == program.metadata)
+    metadata.fields.add(name=field, type=pb.Type(boolean=pb.BoolType()))
+    source = tmp_path / "unsupported.txtpb"
+    source.write_text(arch_wire.dump_text(program))
+    vector = tmp_path / "unused.stf"
+
+    def no_docker(*args: object, **kwargs: object) -> None:
+        pytest.fail("unsupported metadata reached Docker")
+
+    monkeypatch.setattr(bmv2_run, "compile_program", no_docker)
+    monkeypatch.setattr(bmv2_run, "unavailable", no_docker)
+    (verdict,) = bmv2_run.run("unused-image", source, [vector])
+    assert verdict.status == "error"
+    assert verdict.detail == f"unsupported v1model metadata fields: {field}"
+    assert verdict.command == ()
+    assert bmv2_run.main([str(source), str(vector)]) == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == f"invalid v1model program: {verdict.detail}\n"
 
 
 def test_use_last_rewrites_the_printed_last_index_form() -> None:
@@ -266,8 +293,6 @@ def test_vector_passes_on_bmv2(image: str, vector: Path) -> None:
         pytest.fail(f"DIVERGENCE: BMv2 disagrees on {where}\n{verdict.detail}")
     if verdict.status == "error":
         pytest.fail(f"ORACLE ERROR (not a divergence): could not judge {where}\n{verdict.detail}")
-    if verdict.status == "skip":
-        pytest.skip(verdict.detail)
     assert verdict.status == "pass", verdict
 
 

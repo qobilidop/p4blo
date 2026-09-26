@@ -39,10 +39,10 @@ programmers actually run, and the two disagree in useful ways.
 
 ## What it cannot check
 
-- **`flood`.** The metadata contract's `flood` has no v1model mapping
-  (`printer.standard_metadata_binding`), so a program that declares it
-  is skipped with that reason. No corpus program declares one today, so
-  nothing is skipped in practice.
+- **Unsupported architectures and metadata.** The scoped v1model profile
+  rejects retired `flood` and `drop` metadata fields before Docker is used.
+  These are invalid programs, not skipped oracle comparisons; use
+  `egress_spec = 511` for an ordinary drop. Multicast is outside the profile.
 - **Which input packet an output came from.** This BMv2 build has its
   logging macros compiled out, so there are no per-packet log lines to
   correlate with; the judge compares each port's outputs, in order,
@@ -54,10 +54,14 @@ programmers actually run, and the two disagree in useful ways.
   can only be installed before a run's packets, so such a vector takes
   several `simple_switch` runs (below) and a program with registers or
   counters is refused rather than replayed on a fresh switch.
-- **Checksums.** The same gap as the first oracle: the shim prints
-  empty `MyVerifyChecksum` and `MyComputeChecksum`, so a deliberately
-  wrong IPv4 checksum is carried through unchanged
-  (`tests/corpus/forwarder/README.md`).
+- **Checksum stages.** The supplied checksum16 family is compared with
+  native csum16 computation. Canonical forwarder/firewall examples compute
+  their checksum at the end of ingress; their optional checksum stages are
+  empty. Source import preserves separate stages and explicitly rejects
+  `verify_checksum` until `checksum_error` is supported. BMv2 permits fewer
+  operations in checksum/deparser stages than the serial core interpreter;
+  a compile rejection supplies no oracle agreement. See the
+  [profile](../../../docs/arch-supports.md#p4-printing-and-import).
 
 ## The pins
 
@@ -95,10 +99,12 @@ replays every vector against that compilation. `--image` or
 `$P4BLO_BMV2_IMAGE` names another image. The verdicts are the first
 oracle's: **pass**, **fail** (a divergence), **error** (the oracle could
 not judge: the compiler rejected the program, a CLI command was refused,
-the switch crashed or timed out, Docker failed) and **skip** (`flood`).
+the switch crashed or timed out, Docker failed, or the program violates
+its v1model profile). Unsupported metadata is rejected before probing Docker.
 The process exits non-zero on any fail or error and prints the exact
-`docker run` for the first vector that did not pass. `-v` prints a note
-for every line the runner translated and the CLI's output.
+`docker run` for a failed external comparison. Missing Docker or its image
+remains an explicit unavailable-oracle result; pytest skips those comparisons.
+`-v` prints a note for every translated line and the CLI's output.
 
 Nothing is bind-mounted: the program, the vector and the packets cross
 into the container as JSON on stdin and the outputs come back as JSON on

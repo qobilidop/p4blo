@@ -16,7 +16,7 @@ OCaml toolchain is heavy and only the oracle needs it.
 | Pinned commit | `2730cfd9e74048bb5439da0f8afcef124079a064` (2026-09-22, "Merge pull request #320 from kaist-plrg/fix-batch-1") |
 | Its p4c submodule | `6b7ec98e77dfc71c6e1309d9a76183cb31f35a8a`, of which only `p4include/` is fetched |
 | Toolchain | OCaml 5.1.0 through opam, the package set at the top of `build.sh` |
-| Architecture | `v1model`; the shim is `printer.standard_metadata_binding` |
+| Architecture | scoped `v1model`; the binding is `p4blo.arch.v1model.standard_metadata_binding` |
 
 The pin lives in one place, `P4_SPECTEC_COMMIT` in `build.sh`; the CI
 cache key reads it from there. `spectec-rules.json` beside this file is
@@ -539,15 +539,15 @@ about three minutes.
 
 ## Known gaps of the shim and the simulator
 
-- **Checksums.** The forwarder's vectors carry an IPv4 header checksum
-  that is deliberately wrong (the checksum extern is deferred;
-  `tests/corpus/forwarder/README.md`). The shim prints empty
-  `MyVerifyChecksum` and `MyComputeChecksum` controls, so the simulator
-  neither checks nor recomputes it: it carried the field through
-  unchanged and matched the expected output, exactly as the reference
-  interpreter does. It did not drop or reject the packets, so nothing
-  about the vectors has to change on the oracle's account; when the
-  checksum extern lands, both sides will change together.
+- **Checksum verification and stage coverage.** The supplied checksum16
+  family computes the Internet checksum and is compared with native csum16
+  calls. The authored forwarder, firewall and csum16 programs perform their
+  stateless computation in ingress, with empty optional checksum stages;
+  their vectors do not establish source-identical scheduling. Source import
+  preserves separate checksum stages, and `verify_checksum` is explicitly
+  rejected because its `checksum_error` metadata is unsupported. The
+  [architecture profile](../../docs/arch-supports.md#p4-printing-and-import)
+  describes stage binding and the BMv2 backend's narrower stage restrictions.
 - **Const lpm entries.** The printer writes a table's `const entries`
   for an lpm key as `value &&& mask` without priorities. Given the
   tie-breaking above, a packet that matches two such entries would make
@@ -555,8 +555,9 @@ about three minutes.
   program has const lpm entries yet; when one does, the printer will
   have to print `priority = <prefix length>` on them (the printer is
   outside this directory's scope).
-- **Flood.** The metadata contract's `flood` has no v1model mapping and
-  is not checked by the oracle (design.md, "Risks").
+- **Multicast.** The supported packet architecture is single-pass v1model
+  unicast/drop. Retired `flood` and `drop` metadata fields are rejected by
+  profile checking, not ignored or skipped by the oracles.
 - **Registers from STF.** The simulator's v1model backend rejects
   `register_read`, `register_write` and `register_reset` ("not
   implemented for the v1model simulator"); p4blo's dialect has none, so

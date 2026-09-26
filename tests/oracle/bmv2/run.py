@@ -3,7 +3,7 @@
     uv run python tests/oracle/bmv2/run.py <program.txtpb> <vectors.stf>
 
 The program is printed with `p4blo.arch.v1model.print_program` under the v1model
-shim, rewritten for BMv2's parser (see `use_last`) and compiled once with
+profile, rewritten for BMv2's parser (see `use_last`) and compiled once with
 `p4c-bm2-ss prog.p4 -o prog.json` inside the `p4blo-bmv2` Docker image
 (tests/oracle/bmv2/Dockerfile). Each vector is then
 translated (see `translate`) into runs of simple_switch: `add` and
@@ -19,8 +19,7 @@ The verdict per vector is one of
             packet never came, or an unexpected one did;
     error   the oracle could not judge: p4c-bm2-ss rejected the program, a
             CLI command was refused, the switch crashed or timed out, Docker
-            failed;
-    skip    the vector's program uses `flood`, which the shim cannot express.
+            failed, or the program violates the supported v1model profile.
 
 The process exits non-zero on any fail or error. The image is named by
 `$P4BLO_BMV2_IMAGE`, default `p4blo-bmv2`.
@@ -68,7 +67,6 @@ __all__ = [
     "translate",
     "unavailable",
     "use_last",
-    "uses_flood",
 ]
 
 DEFAULT_IMAGE = "p4blo-bmv2"
@@ -355,13 +353,6 @@ def use_last(p4: str) -> tuple[str, list[str]]:
     return "".join(lines), notes
 
 
-def uses_flood(index: BoundIndex) -> bool:
-    """Whether the program's metadata contract has `flood`, which the v1model
-    shim leaves unmapped (v1model.standard_metadata_binding), so BMv2 would
-    not see the decision."""
-    return any(f.name == "flood" for f in index.fields(index.bindings.metadata))
-
-
 def translate(index: ir.Index, statements: Sequence[stf.Statement], compiled: Compiled) -> Plan:
     """Cut a vector into simple_switch runs.
 
@@ -520,21 +511,33 @@ def run_vector(
     return Verdict(vector, status, detail, command, notes)
 
 
-def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
-    """Print and compile the program once and run every vector against it."""
+def _print_program(program: Path) -> tuple[BoundIndex, str, list[str]]:
+    """Check the supported profile before any Docker operation."""
     index = BoundIndex.build(arch_wire.load_text(program))
-    if uses_flood(index):
-        detail = "the program uses flood, which the v1model shim cannot express for BMv2"
-        return [Verdict(vector, "skip", detail, ()) for vector in vectors]
     p4, notes = use_last(
         v1model.print_program(assembly_of(index.program, index.bindings), index=index)
     )
+    return index, p4, notes
+
+
+def _run_printed(
+    image: str, index: BoundIndex, p4: str, notes: list[str], vectors: list[Path]
+) -> list[Verdict]:
     command = _docker_command(image, "compile")
     try:
         compiled = compile_program(image, p4)
     except OracleError as e:
         return [Verdict(vector, "error", str(e), command, tuple(notes)) for vector in vectors]
     return [run_vector(image, index, compiled, vector, notes) for vector in vectors]
+
+
+def run(image: str, program: Path, vectors: list[Path]) -> list[Verdict]:
+    """Print and compile the program once and run every vector against it."""
+    try:
+        index, p4, notes = _print_program(program)
+    except v1model.PrintError as error:
+        return [Verdict(vector, "error", str(error), ()) for vector in vectors]
+    return _run_printed(image, index, p4, notes, vectors)
 
 
 # ---------------------------------------------------------------------------
@@ -554,12 +557,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    try:
+        index, p4, notes = _print_program(args.program)
+    except v1model.PrintError as error:
+        print(f"invalid v1model program: {error}", file=sys.stderr)
+        return 1
+
     reason = unavailable(args.image)
     if reason is not None:
         print(reason, file=sys.stderr)
         return 2
 
-    verdicts = run(args.image, args.program, list(args.vectors))
+    verdicts = _run_printed(args.image, index, p4, notes, list(args.vectors))
     for verdict in verdicts:
         print(verdict)
         if args.verbose:
@@ -568,12 +577,11 @@ def main(argv: list[str] | None = None) -> int:
             if verdict.status == "pass" and verdict.detail:
                 print(_indent(verdict.detail))
     failed = [v for v in verdicts if v.status in ("fail", "error")]
-    skipped = [v for v in verdicts if v.status == "skip"]
     if failed:
         print(f"\n{len(failed)} of {len(verdicts)} vector(s) did not pass; the command was")
         print(f"    {shlex.join(failed[0].command)}")
         return 1
-    print(f"\nall {len(verdicts) - len(skipped)} vector(s) passed, {len(skipped)} skipped")
+    print(f"\nall {len(verdicts)} vector(s) passed")
     return 0
 
 
