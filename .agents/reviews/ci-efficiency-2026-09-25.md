@@ -51,7 +51,22 @@ The root integrator separately verified that actual Lean collection partitions
 as 1,509 + 1,536 = 3,045 with an exact disjoint union. Oracle author measurements
 preserved JUnit identities/statuses across 15 serial/2/4-worker runs; the
 reviewer inspected fixture isolation but did not repeat these heavy benchmarks.
-The full required-Lean local gate before the guard fix passed 5,284 tests,
-with one optional XDP-image skip and four expected failures. The integrator
-must rerun the full gate on the final patch and obtain successful applicable
-remote CI before merging. No remote performance result is claimed here.
+The reviewer subsequently approved exact final head
+`e4c1d759549dfa3c8518184e2a9b4818993071fd`, including explicit parameter IDs
+that keep all workflow guard checks in the local non-oracle gate and the
+corrected distinction between the scheduling experiment and source inference.
+The integrator's final required-Lean gate passed 5,289 tests with one optional
+XDP-image skip and four expected failures. All eight validation jobs and four
+scope jobs passed remotely on that head before merge `967e0a3`. The
+[working note](../notes/ci-efficiency.md) records observed timings and limits.
+These final gate results are integrator evidence, not independent reruns.
+
+## Closing prose checkpoint
+
+Reviewed independently against merge `967e0a3`. The reviewer queried all five
+linked final-head workflow runs directly: all twelve jobs succeeded on
+`e4c1d75`, and reported job timings match their timestamps. Completion,
+timing variability and prospective prose-route acceptance are accurately
+distinguished. No new implementation or semantic claim; no confirmed defects.
+`git diff --check` passed. Local gate results and per-suite counts remain
+integrator evidence.

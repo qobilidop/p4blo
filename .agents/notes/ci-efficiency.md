@@ -1,6 +1,10 @@
 # CI efficiency
 
-Active branch: `work/ci-efficiency`, base `5de0d9e` (PR #4).
+Complete: [PR #5](https://github.com/qobilidop/p4blo/pull/5), merged as
+`967e0a35bf1d0939c26eb4c8b4636259e886b14b`, based on `5de0d9e` (PR #4).
+The implementation branch and both author worktrees are removed after checking
+that their changes were integrated. The review worktree is temporary and is
+removed after the closing documentation check.
 The user asked to reduce CI time and delegated the choice of prose-only checks.
 This scope preserves every existing semantic case and strict expected failure.
 
@@ -60,7 +64,8 @@ and outcomes:
 | BMv2 boundaries | 98.74 / 53.87 / 28.30 | 20 passed |
 | BMv2 generated | 27.31 / 16.00 / 13.67 | 3 passed |
 
-Local host has 16 CPUs; Docker has 12. Remote measurements remain necessary.
+Local host has 16 CPUs; Docker has 12. Remote measurements below differ from
+these local speedups, so local ratios are not projected onto the full workflow.
 The real Lean collection has 3,045 cases: shards contain 1,509 and 1,536;
 independent collection verifies no overlap and an exact union. Classifier
 independent review at `771f9d0` found no confirmed defect (69 tests passed).
@@ -75,7 +80,31 @@ Independent [review](../reviews/ci-efficiency-2026-09-25.md) approved the
 classifier, shards and integration after one guard correction: a failed scope
 job cannot authorize a skip even if it already emitted `full=false`. Five
 workflow-boundary tests cover the corrected guard and reject the unsafe form.
-The first full required-Lean gate passed 5,284 tests, one optional local XDP
-skip and four expected failures; a final full run including the guard regression
-is required before push. All applicable remote checks and timing comparison
-remain pending. No new CI result or fast-path run is claimed yet.
+The final full required-Lean gate passed 5,289 tests, one optional local XDP
+skip and four expected failures. Explicit workflow-test parameter IDs keep all
+five guard checks out of the existing external-oracle name filter. Independent
+review approved exact final head `e4c1d759549dfa3c8518184e2a9b4818993071fd`.
+All eight validation jobs and four scope jobs passed on that head before merge.
+
+## Remote result and limits
+
+| Job | Baseline seconds | Final seconds | Final run |
+|---|---:|---:|---|
+| Lean, slowest shard after | 521 | 256 | [Lean](https://github.com/qobilidop/p4blo/actions/runs/36207118970) |
+| BMv2 | 393 | 252 | [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36207118971) |
+| P4-SpecTec | 643 | 556 | [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36207118915) |
+
+These are job times, excluding the preceding 4–7 s scope job and queue time.
+Lean differential stages took 171 and 142 s, with all 1,509/1,536 cases passing.
+P4-SpecTec generated execution fell from 325 to 169 s (179 passes, four expected
+failures), but unchanged serial stages ran slower on this runner: corpus 49 s,
+blocks 81 s, frontend 98 s and coverage 55 s. It remains the critical path.
+This is one observed comparison; machine and cache variability prevent a
+latency guarantee. Serial-stage profiling is a possible later scope, not active
+work. No case, seed or strict expected failure was removed.
+
+The closing prose-only checkpoint exercises the policy's other route remotely:
+Python/schema must pass, scope must succeed with `full=false`, and specialist
+jobs must be explicitly skipped. Its attached CI is routing evidence, not an
+additional execution of those specialist suites. The code-changing PR above
+already proved that all specialist jobs still run for executable changes.

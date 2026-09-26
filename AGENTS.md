@@ -50,9 +50,8 @@ creates no git tags.
    finite scopes, assurance milestone 1, the application collection and
    the architecture-free IR semantics scope, are complete and frozen;
    maintenance does not reopen parked proofs. The status file names any
-   active engineering work. The example-guided authoring and first CI-speed
-   scopes are complete; the CI-efficiency follow-up is in
-   `.agents/notes/ci-efficiency.md`. Independent blocks and optional BlockLibrary bundles are
+   active engineering work. The example-guided authoring and CI-efficiency
+   scopes are complete. Independent blocks and optional BlockLibrary bundles are
    documented in `docs/python-edsl.md`; architecture assembly stays separate.
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do

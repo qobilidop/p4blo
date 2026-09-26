@@ -1,17 +1,12 @@
 # Status
 
-Last updated: 2026-09-25. **CI efficiency is active** on `work/ci-efficiency`,
-based on `5de0d9e` (merged [PR #4](https://github.com/qobilidop/p4blo/pull/4)).
-The eDSL and first CI-speed scopes are complete. The user authorized the next
-optimization and delegated the prose-only policy choice. See
-[the working note](notes/ci-efficiency.md) for measurements, ownership and gates.
-No semantic scope or parked proof is reopened; XDP removal remains a separate
-proposal, not an implemented change.
-Implementation is independently reviewed, including a corrected failed-scope
-guard and regression. The initial full required-Lean gate passed 5,284/1/4
-(pass/optional XDP skip/expected failure); repeat with the five added guard
-checks, then push and measure final-head remote CI. Review and measurement
-records are linked from the working note.
+Last updated: 2026-09-25. **No implementation scope is active.** The eDSL,
+closure and CI-efficiency scopes are complete. [PR #5](https://github.com/qobilidop/p4blo/pull/5)
+merged as `967e0a35bf1d0939c26eb4c8b4636259e886b14b` after independent review
+and all final-head checks passed. [Measurements and limits](notes/ci-efficiency.md)
+record the result. No semantic scope or parked proof was reopened. XDP removal
+remains a separate proposal, not an implemented change. Ask for a new scope;
+the roadmap is backlog.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.
@@ -31,6 +26,7 @@ Logs in `.artifacts/` are conveniences, not portable evidence.
 | Engineering practices | merged, `264fd63`, PR #1 | [workflows](../docs/workflows.md); archived engineering-practices note/review |
 | Example-guided eDSL / library boundary | merged, `f6c3a6e`, PR #2 | [authoring guide](../docs/python-edsl.md); archived reflection and library-boundary review |
 | CI speed | merged, `fffbac7`, PR #3 | [workflow](../.github/workflows/lean.yml); archived ci-speed and ci-speed-final reviews |
+| CI efficiency | merged, `967e0a3`, PR #5 | [measurements](notes/ci-efficiency.md), [independent review](reviews/ci-efficiency-2026-09-25.md) |
 
 The three semantic scopes remain frozen. Maintenance does not reopen proofs.
 The eDSL scope supplies architecture-free Python/protobuf/Lean BlockLibrary,
@@ -57,6 +53,20 @@ All hashes below resolve. Earlier reviews are available at the archive point;
 AI-agent review is independent of the author, not human review.
 The [closure review](reviews/closure-2026-09-25.md) compares the compacted
 state at `9bd5434` with the archive and separately approves cleanup `a31ff19`.
+
+- CI-efficiency final head `e4c1d759549dfa3c8518184e2a9b4818993071fd`:
+  independent review approved; all eight validation jobs and four scope jobs
+  passed remotely: [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36207118848),
+  [Lean](https://github.com/qobilidop/p4blo/actions/runs/36207118970),
+  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36207118915),
+  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36207118971),
+  [XDP](https://github.com/qobilidop/p4blo/actions/runs/36207118925).
+  Full required-Lean local gate exited 0: 5,289 passed, one optional local XDP
+  skip, four expected failures. Remote Lean shards passed 1,509 + 1,536 cases.
+  Observed job times: Lean maximum 521 to 256 s, BMv2 393 to 252 s,
+  P4-SpecTec 643 to 556 s. These are individual run comparisons, not latency
+  guarantees. Python/schema always run; only proven narrative-only changes
+  skip specialist jobs. XDP's remote compile pass is not kernel execution.
 
 - Closure follow-up `a31ff19`: the post-merge macOS
   [run](https://github.com/qobilidop/p4blo/actions/runs/36203599815) exposed a
@@ -159,5 +169,4 @@ in the prior Codex session were not repository build failures.
 
 ## Blocked
 
-Nothing. Finish the CI-efficiency implementation, independent review, full local
-gate and final-head remote checks before integration.
+Nothing. Ask for a new scope before starting more implementation.
