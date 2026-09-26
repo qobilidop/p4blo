@@ -27,8 +27,10 @@ in this repository and runs in CI.
 | The semantics is mechanized and agrees with the reference | a proof-visible Lean interpreter, scalar soundness and value laws, corpus and generated-program comparison against Python | [`spec/ir/`](spec/ir/), `impl/python/p4blo/drt/` |
 
 Status per claim, with what is green and what is pending, is in
-[`.agents/status.md`](.agents/status.md). Not claimed: performance, running
-existing P4 source, P4Runtime, hardware, or a replacement for any tool.
+[`.agents/status.md`](.agents/status.md). The P4 frontend covers the pinned
+subset described in [spec coverage](docs/p4-spec-coverage.md); it is not a
+general P4 compiler.
+Not claimed: performance, P4Runtime, hardware, or a replacement for any tool.
 The first thing a community version would build is a p4c backend;
 [4ward](https://github.com/4ward-p4/4ward) shows the route.
 
@@ -78,9 +80,10 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
    [`tests/corpus/`](tests/corpus/), each with its own provenance and contract.
 4. [`impl/python/p4blo/interp/`](impl/python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
-5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR/): the same semantics in Lean, normative
-   for meaning. The independent [Lean user library](impl/lean/README.md) imports
-   this specification and exposes verified scalar authoring and execution:
+5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR/): the independent executable Lean
+   semantics, checked against P4-SpecTec. The independent
+   [Lean user library](impl/lean/README.md) imports this specification and
+   exposes verified scalar authoring and execution:
    `import P4blo` for users, `import P4bloIR` for the IR contract.
 6. [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.

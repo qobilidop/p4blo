@@ -1,7 +1,8 @@
 # eDSL engineering reflection
 
 Scope: example-guided authoring and architecture separation, 2026-09-25.
-The final review and remote integration evidence will be recorded in status.
+The final implementation merged through PR #2 as `f6c3a6e`, after all seven
+remote checks passed on `26d3f38`. The closure evidence is recorded in status.
 
 ## What improved the result
 
@@ -77,3 +78,29 @@ closure audit found older paragraphs still presenting the supplied H/M and
 STF conventions as mandatory after the code and newer guide had separated
 them. Correcting those late required additional final-head CI runs. Review
 caller workflows and conceptual claims together with the implementation.
+
+## Closure and recovery
+
+The interrupted Codex run ended in a responses-endpoint authentication error,
+not a repository failure. A later session preserved and reviewed the remaining
+prose edits, repaired the bare-interpreter coverage build, passed the full
+local gate and all seven final-head remote checks, and merged PR #2. Exact
+local evidence is 5,199 passed, one optional XDP-image skip and four expected
+failures; the skip is not a local XDP pass. The final remote XDP job passed.
+
+The coverage-build failure exposed a boundary outside the ordinary local
+Python environment: CI invokes some scripts with bare Python. The structural
+import test now guards all four such scripts, including XDP's container
+entrypoint. Checking the command's real execution environment is a durable
+lesson; adding imports that pass inside uv is insufficient evidence.
+
+Recovery also found that status still said PR #2 was open after it merged.
+Keep the integration result and next action in the repository checkpoint,
+not only in a final chat message. The closure commit and subsequent compaction
+retain final-head evidence, archived reviews and the parked-work inventory.
+The README and design sweep removes older overstatements: Lean is
+independently checked against P4-SpecTec, and the frontend supports a
+documented subset.
+
+No semantic scope was reopened. The outstanding termination, codec composition
+and application proofs remain backlog with their existing limits.

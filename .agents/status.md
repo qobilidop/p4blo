@@ -4,9 +4,25 @@ Current truth and resumable work. Earlier history is archived at
 `26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25), and previously at
 `9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24).
 
-Last updated: 2026-09-25. **Active: example-guided Python eDSL ergonomics.**
-Branch `work/edsl-ergonomics`, original base `80eba84`; [PR #2](https://github.com/qobilidop/p4blo/pull/2)
-is open. Pushed head `03c35e7` failed only CI's P4-SpecTec job: `ea1ef89`
+Last updated: 2026-09-25. **The eDSL implementation is complete and merged.**
+The CI-speed scope is also complete at `fffbac7`. The remaining closure is
+state compaction on `work/edsl-closure`; no implementation scope is active
+and no semantic or proof backlog is reopened.
+
+[PR #2](https://github.com/qobilidop/p4blo/pull/2) merged as `f6c3a6e` after
+all seven checks passed on its final head `26d3f38`:
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36201014298),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36201014346),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36201014311),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36201014332),
+[XDP](https://github.com/qobilidop/p4blo/actions/runs/36201014286).
+Integrated eDSL worktrees/branches were removed after checking their content;
+`work/ci-speed` and the three parked-proof branches remain. The final
+[reflection](notes/edsl-reflection.md) records the bare-interpreter regression,
+recovery and handoff lessons as well as the design/process lessons.
+
+Historical implementation checkpoint (original base `80eba84`):
+pushed head `03c35e7` failed only CI's P4-SpecTec job: `ea1ef89`
 put p4blo imports at module level in `tests/oracle/coverage.py`, whose
 `build` step CI runs with a bare `python3`. Fixed at `a6fb0ef` and pinned
 by a structural test of the bare-interpreter scripts (`b43147d` adds the
@@ -63,9 +79,22 @@ metadata head `33215d2`; its full local gate exited 0 with the same counts.
 Library source settings remain reassignable; bypassing constructor checks by
 assignment is a nonblocking consistency observation, not a shown runtime bug.
 
-Next: push, update PR #2, pass all remote CI on its exact head and merge. Then
-close the scope, finalize the [reflection](notes/edsl-reflection.md), compact
-state and remove integrated worktrees/branches. Do not resume roadmap work.
+[PR #3](https://github.com/qobilidop/p4blo/pull/3) merged as `fffbac7` after
+all seven checks passed on independently reviewed head `30c567c`:
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36202637770),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36202637944),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36202637833),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36202637772),
+[XDP](https://github.com/qobilidop/p4blo/actions/runs/36202637734).
+Its full local gate passed (5199 passed, one optional XDP skip, four expected
+failures). The remote differential step took 428 s versus the prior 851 s;
+its cold build took 335 s. A restored-cache benefit has not yet been measured.
+Next: compact state in a reviewed PR, then remove integrated CI and closure
+worktrees/branches. Do not resume roadmap work.
+The closure tree also passed fresh `scripts/check-lean.sh` and
+`P4BLO_REQUIRE_LEAN=1 scripts/check.sh` (5199 passed, one optional local XDP
+skip, four expected failures); no semantic inputs changed. The local oracle
+and assurance experiments were not repeated for these prose-only corrections.
 The prior successful assurance at `58275b8` covered the pre-extension API;
 it is not evidence for this final split. Its first attempt was invalidated
 by concurrent tracked documentation edits and never counted as a pass.
