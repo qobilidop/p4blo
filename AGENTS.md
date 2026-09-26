@@ -50,8 +50,9 @@ creates no git tags.
    finite scopes, assurance milestone 1, the application collection and
    the architecture-free IR semantics scope, are complete and frozen;
    maintenance does not reopen parked proofs. The status file names any
-   active engineering work. The example-guided authoring and CI-speed scopes are
-   complete. Independent blocks and optional BlockLibrary bundles are
+   active engineering work. The example-guided authoring and first CI-speed
+   scopes are complete; the CI-efficiency follow-up is in
+   `.agents/notes/ci-efficiency.md`. Independent blocks and optional BlockLibrary bundles are
    documented in `docs/python-edsl.md`; architecture assembly stays separate.
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
@@ -92,6 +93,10 @@ Keep `main` green on all of them; check exit codes, not output. Five
 workflows run them in CI: Python and schema, Lean, two P4 oracles and the
 compile-only XDP profile. The latter is not a kernel execution oracle.
 Its missing local image is an explicit skip; its dedicated CI requires it.
+Python/schema always run. Specialist jobs skip only proven narrative-only
+changes under `scripts/ci-scope.py`; executable/parsed docs and uncertain
+changes run full CI. The Lean differential collection is split into two
+complete, disjoint shards. See `docs/workflows.md` for applicability.
 Docker with the pinned p4c image also typechecks the printer's goldens
 when available and is skipped otherwise. `docs/workflows.md` has the
 full gates table, every pin, and the procedure for each kind of change.

@@ -8,12 +8,24 @@ tools listed there. `uv` does not install those external tools.
 
 ## Gates
 
-`main` is green when all of these pass. Five validation workflows run on
-pull requests and pushes to `main`: Python and schema, Lean, two P4
-oracles and compile-only XDP. Run the full local gate before pushing,
-plus the specialist gates affected by the change; record unavailable
-tools and skipped checks explicitly. Remote CI must pass for the final
-PR revision before merge. Check exit codes, not output.
+`main` is green when all applicable gates pass. Five validation workflows
+run on pull requests and pushes to `main`: Python and schema, Lean, two P4
+oracles and compile-only XDP. Python and schema always run. The specialist
+jobs skip only when `scripts/ci-scope.py` proves the complete change is
+narrative Markdown: root README/AGENTS, direct `docs/` Markdown, agent state,
+notes or reviews. Quickstart, IR semantics and P4-spec coverage remain full
+because specialist tests execute or parse them. Code, tests, schemas,
+workflows, tools, unknown paths, mode changes and unavailable history all
+require full CI. A skipped specialist job is not a specialist test pass.
+
+Pull requests are classified from their merge base to the complete head;
+a prose follow-up does not hide earlier code changes. Pushes compare the
+before and after revisions. A failed classifier stays red and cannot skip
+specialist jobs. Superseded PR runs cancel; pushes to `main` do not.
+Run the full local gate before pushing, plus specialist gates affected by
+the change; record unavailable tools and skipped checks explicitly. Remote
+CI must pass for the final PR revision before merge. Check exit codes,
+not output.
 
 | Gate | Command | Expected |
 |---|---|---|
@@ -22,7 +34,7 @@ PR revision before merge. Check exit codes, not output.
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/external/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/external/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
-| Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs the rest with `-n auto`; the oracle suites share one simulator and are run in series) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
+| Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs tests with `-n auto`; dedicated oracle jobs bound their worker count and keep coverage measurement serial) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
 | Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
 | Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py tests/programs/test_firewall_boundaries.py tests/programs/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
 | Forwarding application BMv2 profile | `uv run pytest tests/lean/test_lean_forwarder_apply.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
@@ -60,12 +72,22 @@ location, verify their absence, rebuild the packages, and rerun required
 DRT. Never move a source directory or shared toolchain as cache cleanup.
 New real-Lean tests use the shared `lean_binary` fixture and names beginning
 with `test_lean_agrees`; CI discovers them across the complete test tree.
+Two Lean jobs split this collection by a stable hash of the full test node ID
+(`--ci-shard 1/2` and `--ci-shard 2/2`), then use pytest's load scheduler within
+each runner. Their disjoint union is the full selection; no seed or case count
+is reduced. Both jobs build and audit all packages before testing; only the
+first saves main's compiled-module cache. Omit `--ci-shard` for the complete
+local collection. Each shard retains its own failure replays.
 In authored-program gates, retain differential failure bundles before a
 Python-only known-answer assertion can exit. Keep independent known answers
 after comparison: agreement alone misses valid-but-unintended source terms.
 New external-oracle tests must also be selected by the job that builds that
 oracle; ordinary Python CI can skip unavailable tools. Rebuild the BMv2 image
-after driver changes. In concurrent worktrees use distinct image tags and
+after driver changes. CI runs the generated P4-SpecTec suite and the BMv2
+corpus/firewall/boundary/generated suites with four workers and load scheduling.
+Each simulator input uses a private temporary directory, each BMv2 invocation
+a separate container. The coverage probe and its measurement remain serial.
+In concurrent worktrees use distinct image tags and
 `P4BLO_BMV2_IMAGE`, never replace an image while another gate is using it.
 For XDP build `docker build -t p4blo-xdp-build tests/oracle/xdp`; concurrent
 trees use distinct tags and `P4BLO_XDP_BUILD_IMAGE`. This is compilation and

@@ -13,12 +13,20 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   actions: write # both caches below store their state in the Actions cache
 
 jobs:
+  scope:
+    uses: ./.github/workflows/ci-scope.yml
   bmv2:
+    needs: scope
+    if: ${{ always() && !cancelled() && needs.scope.outputs.full != 'false' }}
     name: simple_switch
     runs-on: ubuntu-latest
     timeout-minutes: 60

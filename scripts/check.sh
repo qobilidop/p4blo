@@ -11,9 +11,7 @@ uv run pyright
 # quarter of an hour on a built local oracle and have their own workflows.
 # The rest run in parallel: about two minutes on eight cores against nine
 # in series, with the same result (2026-09-25).
-# --dist loadgroup keeps the modules tests/conftest.py groups on one worker
-# each, so an expensive module fixture runs once, and spreads the rest.
-if [ "${P4BLO_ALL_TESTS:-}" = "1" ]; then uv run pytest -q -n auto --dist loadgroup; else uv run pytest -q -m "not oracle" -n auto --dist loadgroup; fi
+if [ "${P4BLO_ALL_TESTS:-}" = "1" ]; then uv run pytest -q -n auto --dist load; else uv run pytest -q -m "not oracle" -n auto --dist load; fi
 buf lint
 uv run python scripts/check-generated.py
 actionlint

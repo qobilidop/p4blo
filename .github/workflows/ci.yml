@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   actions: write # cache-nix-action stores the Nix store in the Actions cache
@@ -35,7 +39,7 @@ jobs:
       - name: Type check
         run: nix develop -c uv run pyright
       - name: Test
-        run: nix develop -c uv run pytest -n auto --dist loadgroup
+        run: nix develop -c uv run pytest -n auto --dist load --durations=20
 
   schema:
     name: Schema

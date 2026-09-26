@@ -37,9 +37,22 @@ pages hold the contracts; this register keeps choices, reasons and boundaries.
   saves.** Cold builds cost 346 s of 21 minutes. `lake build` rejects deleted
   source imports despite stale `.olean`s (`P4bloIR/Coverage.lean` removal probe,
   2026-09-25). Revisit if gates query outside `lake build`/`lake test`.
-  **Parallel differential CI** uses `-n auto --dist loadgroup`, like the
-  local gate: 3,045 tests took 259 s serially versus 86 s on four local
-  workers, and 851 s serially in CI. (2026-09-25)
+  **Parallel differential CI** uses two deterministic node-ID hash shards
+  with `-n auto --dist load` inside each. Every selected case runs once across
+  the pair, each runner builds/audits before testing, and only shard 1 saves
+  main's build cache. The previous single runner spent 411 s in tests after
+  a warm 50 s build. Its intended module groups never reached xdist in time;
+  activating them would serialize unrelated tests, so remove them instead.
+  Confidence: high on coverage preservation, performance pending remote
+  measurement; revisit shard count if runner overhead dominates. (2026-09-25)
+- **Proven prose-only changes skip specialist CI; Python/schema always run.**
+  The user delegated this policy choice. A narrow regular-Markdown allowlist
+  excludes parsed/executed docs; unknown paths, unavailable history, type/mode
+  changes and classifier failure request full CI. PR scope covers the whole
+  branch diff, not just its latest commit. Superseded PR runs cancel, main
+  runs do not. This saves repeated oracle/Lean work without reducing cases
+  for executable changes. Revisit the allowlist when a heavy gate gains a
+  documentation input. (2026-09-25)
 - **Docker disk pressure authorizes only own-artifact cleanup**, never
   unrelated images.
   (2026-09-23)
@@ -375,8 +388,8 @@ and the audit files; these entries record choices and limits.
   failures. Builders run lint/types/affected tests plus Lean if touched, full
   gate for cross-cutting work; integrator gates each batch once, then final
   remote CI. This avoids redundant gates without losing integration coverage.
-  `scripts/check.sh` parallelizes non-oracle suites with fixture-heavy modules
-  grouped; oracle workflows cover the rest. At most two heavy local jobs.
+  `scripts/check.sh` parallelizes non-oracle suites with load scheduling;
+  oracle workflows cover the rest. At most two heavy local jobs.
   (2026-09-24, 2026-09-25)
 - **Docs split by subject:** public artifact in `docs/`, resumable work in
   `.agents/`, sole entry point `AGENTS.md`; `test_docs_links.py` forbids docs
