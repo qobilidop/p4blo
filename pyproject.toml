@@ -30,7 +30,6 @@ module-root = "impl/python"
 testpaths = ["tests"]
 markers = [
     "oracle: drives the P4-SpecTec simulator or BMv2; the oracle workflows run these, the local gate deselects them",
-    "xdist_group: pytest-xdist's group marker, set by conftest.py for modules with an expensive module fixture",
 ]
 
 [tool.ruff]
