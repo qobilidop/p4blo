@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from p4blo import conformance
-from p4blo.arch import switch
+from p4blo.arch import v1model
 from p4blo.arch.externs import counter
 from p4blo.interp import expr, tables
 from p4blo.interp.values import Bits, Value
@@ -52,17 +52,13 @@ def _count_twice(original: Callable[..., object]) -> Callable[..., object]:
     return call
 
 
-def _flood_to_ingress(
+def _unicast_to_ingress(
     original: Callable[..., list[tuple[int, bytes]]],
 ) -> Callable[..., list[tuple[int, bytes]]]:
     def run(
-        self: switch.Switch, loaded: object, entries: object, ingress: int, packet: bytes
+        self: v1model.V1Model, loaded: object, entries: object, ingress: int, packet: bytes
     ) -> list[tuple[int, bytes]]:
-        outputs = original(self, loaded, entries, ingress, packet)
-        # Only a flood sends to every port but one.
-        if len(outputs) == self.ports - 1 > 1 and ingress not in [p for p, _ in outputs]:
-            outputs = sorted([*outputs, (ingress, outputs[0][1])])
-        return outputs
+        return [(ingress, data) for _, data in original(self, loaded, entries, ingress, packet)]
 
     return run
 
@@ -80,8 +76,11 @@ MUTANTS: dict[str, Mutant] = {
         "bit<N> subtraction subtracts one more", expr, "bits_binary", _sub_off_by_one
     ),
     "count-twice": Mutant("a counter's count adds two", counter.Counter, "call", _count_twice),
-    "flood-to-ingress": Mutant(
-        "a flood also leaves on the ingress port", switch.Switch, "run", _flood_to_ingress
+    "unicast-to-ingress": Mutant(
+        "unicast leaves on ingress instead of selected egress",
+        v1model.V1Model,
+        "run",
+        _unicast_to_ingress,
     ),
     "lpm-unchecked": Mutant(
         "an LPM key value is installed without checking its prefix",

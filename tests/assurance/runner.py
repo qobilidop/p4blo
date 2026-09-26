@@ -20,7 +20,7 @@ from pathlib import Path
 
 from google.protobuf.json_format import MessageToDict
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
@@ -41,9 +41,9 @@ NODES = (
 EXPECTED_TESTS = 10
 # Canonical complete inputs, not report metadata or interpreter-generated answers.
 INPUT_HASHES = {
-    "empty-default": "f3c078924462e5a2f0772f765e043a05acf2c4525a7f4714590121f0cfe7ffe2",
-    "overlapping-lpm": "5bba09916c247a4498f17717f1190e306f8c2a36d7f13737738915870ecb1c39",
-    "firewall-connection": "0978d83374dfda732b9fc57718d19e4c47e294b9ebcb95a953cf081f01ddfaf7",
+    "empty-default": "03bf23839a5dc321ee6637908623158c84680dcffbfe4564e40a08001328bb42",
+    "overlapping-lpm": "ce08cdb85970f91c94fec2ce89966df61128ca2917dfc621213f74175a4e745d",
+    "firewall-connection": "1eaecb4b3bcd3430cb8ae4031f652e9784544cb198eae537e007c768063c6f7c",
 }
 CRC_OLD = "  fullCRC 32 0x04c11db7 0xffffffff 0xffffffff dataWidth value"
 CRC_NEW = "  (fullCRC 32 0x04c11db7 0xffffffff 0xffffffff dataWidth value) ^^^ 1"
@@ -330,7 +330,7 @@ def baseline_known_answers(selected: tuple[Input, ...]) -> None:
     from tests.programs.test_forwarder_tables_semantics import packet_expected
 
     for item in selected:
-        loaded = arch.reference.load(item.program)
+        loaded = v1model.load(item.program)
         if item.name == "firewall-connection":
             for case, step in zip(item.cases, connection(), strict=True):
                 actual = python_outcome(loaded, case, 4)

@@ -63,8 +63,7 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import arch
-from p4blo.arch import wire
+from p4blo.arch import v1model, wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt._json import loads as strict_json_loads
 from p4blo.drt.case import Case
@@ -805,7 +804,7 @@ def check_python_fixture(path: Path) -> list[str]:
     except (ValueError, ProtocolError) as e:
         return [*problems, f"{fixture.name}: {e}"]
     try:
-        loaded = arch.reference.load(program)
+        loaded = v1model.load(program)
     # Validation, the metadata contract and extern binding each raise their
     # own class; any of them means the recorded program does not load.
     except Exception as e:  # noqa: BLE001

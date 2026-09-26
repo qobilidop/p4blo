@@ -13,8 +13,7 @@ fixture's `source` header:
   at fixed seeds, through its `materialize`, with the switch it uses there.
 - `contract`: hand-written requests for the parts of the reply contract
   the other kinds never reach: installs the host rejects, an ingress port
-  the switch does not have (both error replies), and a flood (a reply
-  with several outputs), with drop and the egress-port rules beside it.
+  the switch does not have (both error replies), drop, unicast, and egress redirection attempts.
 
 The fixtures hold the concrete programs and requests, so a later change to
 a generator changes no check; it changes what the next export writes.
@@ -34,7 +33,7 @@ from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.conformance import Input
 from p4blo.drt.case import Case
 from p4blo.drt.generate import generate
-from p4blo.edsl.core import bit, boolean
+from p4blo.edsl.core import bit
 from p4blo.v0 import p4blo_pb2 as pb
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -147,31 +146,35 @@ _TO_10_0_2_2 = bytes.fromhex(
 
 
 def fate_program() -> apb.BlockAssembly:
-    """The packet names its own fate: flood, drop and the egress port are
-    read from its first four bytes, and the ingress port is written back
-    in place of the egress port, so every fate rule of the switch can be
-    asked for directly."""
+    """A packet selects unicast/drop and a later attempted redirection.
+
+    The output echoes ingress so the selected destination is independently
+    visible alongside the packet bytes.
+    """
     p = AssemblyBuilder("fate")
-    h = p.header("h_t", flood=bit(8), drop=bit(8), port=bit(16))
+    h = p.header("h_t", redirect=bit(8), drop=bit(8), port=bit(16))
     p.headers = p.struct("headers", h=h)
-    p.metadata = p.struct(
-        "metadata", ingress_port=bit(9), egress_port=bit(9), drop=boolean, flood=boolean
-    )
+    p.metadata = p.struct("metadata", ingress_port=bit(9), egress_spec=bit(9))
     with p.parser("P") as ps:
         with ps.state("start") as s:
             s.extract(ps.hdr.h)
             s.accept()
     with p.control("C") as c:
         with c.body() as b:
-            b.assign(c.meta.flood, c.hdr.h.flood != 0)
-            b.assign(c.meta.drop, c.hdr.h.drop != 0)
-            b.assign(c.meta.egress_port, c.hdr.h.port.cast(bit(9)))
+            b.assign(c.meta.egress_spec, c.hdr.h.port.cast(bit(9)))
+            with b.if_(c.hdr.h.drop != 0):
+                b.assign(c.meta.egress_spec, 511)
             b.assign(c.hdr.h.port, c.meta.ingress_port.cast(bit(16)))
+    with p.control("E") as e:
+        with e.body() as b:
+            with b.if_(e.hdr.h.redirect != 0):
+                b.assign(e.meta.egress_spec, 1)
+    p.export("egress", "E")
     with p.deparser("D") as d:
         with d.body() as b:
             b.emit(d.hdr.h)
     p.export("parser", "P")
-    p.export("control", "C")
+    p.export("ingress", "C")
     p.export("deparser", "D")
     return p.build()
 
@@ -192,14 +195,14 @@ def contract_inputs() -> list[Input]:
     )
     fate_ports = 8
     fate = tuple(
-        Case(pb.Entries(), ingress, bytes([flood, drop, port >> 8, port & 0xFF]) + b"payload")
-        for ingress, flood, drop, port in [
-            (6, 1, 0, 0),  # flood from a middle port: seven outputs
-            (0, 1, 0, 5),  # flood from port 0 ignores the egress port
-            (7, 1, 1, 3),  # drop wins over flood
+        Case(pb.Entries(), ingress, bytes([redirect, drop, port >> 8, port & 0xFF]) + b"payload")
+        for ingress, redirect, drop, port in [
+            (6, 1, 0, 0),  # egress assignment cannot redirect selected port0
+            (0, 1, 0, 5),  # egress assignment cannot redirect selected port5
+            (7, 1, 1, 3),  # ingress drop suppresses egress
             (2, 0, 0, 4),  # unicast
             (0, 0, 0, 7),  # the last port
-            (0, 0, 0, 511),  # BMv2's drop port is out of range here: a diagnostic
+            (0, 0, 0, 511),  # reserved drop port: no diagnostic
             (0, 0, 0, 8),  # one beyond the count: a diagnostic
             (300, 0, 0, 1),  # an ingress port beyond the count: an error
             (512, 0, 0, 1),  # an ingress port beyond bit<9>: an error
@@ -223,7 +226,7 @@ def contract_inputs() -> list[Input]:
             {
                 "kind": "contract",
                 "program": "tests/conformance/inputs.py fate_program",
-                "description": "flood, drop, unicast and the egress and ingress port rules",
+                "description": "drop, unicast, redirection attempts and port rules",
             },
             fate_program(),
             fate,

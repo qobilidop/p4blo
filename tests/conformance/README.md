@@ -27,7 +27,7 @@ A fixture is a JSON object with exactly these fields,
   `sources`, a SHA-256 digest of the semantics sources; `commit`, the last
   commit that touched them; `binary`, a SHA-256 digest of the
   `p4blo-lean` executable.
-- `ports`: the switch's port count.
+- `ports`: the v1model profile's configured port count (1–511).
 - `program`: the program in the protobuf JSON wire profile
   (`spec/ir/proto/p4blo/v0/p4blo.proto`, proto field names).
 - `steps`: a nonempty array, one `{"request": ..., "reply": ...}` per
@@ -41,7 +41,7 @@ A reply has exactly the fields `outputs`, `state` and `coverage`, plus
 `diagnostic` when there is one, or exactly `error`, `state` and `coverage`:
 
 - `outputs`: the packets that left, in order, each `[port, "<hex>"]`.
-  Several outputs come from a flood, in increasing port order.
+  The supported profile emits zero or one output; multicast is excluded.
 - `diagnostic`: present when the switch dropped the packet for a reason
   the program did not decide (a parse that ends off a byte boundary, an
   egress port the switch does not have); a string whose text is not part
@@ -79,16 +79,14 @@ a check can compare bytes.
 
 ## Consuming it
 
-For each fixture, load the program under the switch architecture with
+For each fixture, load the program under the scoped v1model architecture with
 `ports` ports and fresh extern state, zero in every cell. Then for each
 step in order, install the request's entries (each request replaces the
 previous entries: the program's const entries and defaults first, then the
 request's; extern state persists across requests, errors included) and run
-the packet arriving on `ingress_port`. The switch's rules, including when
-a packet is dropped and where a flood goes, are in
-[`docs/arch-supports.md`](../../docs/arch-supports.md) ("The metadata
-contract", "Rules every supplied architecture follows", "The switch"),
-and the extern families' behavior is in its "Extern families" section.
+the packet arriving on `ingress_port`. The stage, metadata, port and drop rules are in
+[`docs/arch-supports.md`](../../docs/arch-supports.md), together with the
+extern families' behavior.
 
 A step agrees when the extern states are equal cell for cell, and either
 
@@ -170,19 +168,17 @@ the per-fixture pytest checks do not repeat it.
 Deliberate faults the corpus catches. The Python ones are in `mutants.py`
 (`uv run python -m tests.conformance.mutants`), each applied in-process
 to one function of the reference interpreter, and
-`tests/drt/test_conformance.py` requires each to be caught. Recorded at the
-export that added the contract fixtures:
+`tests/drt/test_conformance.py` requires each to be caught. The current fixtures kill all four Python faults:
 
 | Mutant | Fault | Caught by |
 |---|---|---|
-| `sub-off-by-one` | `bit<N>` subtraction subtracts one more (`p4blo.interp.expr.bits_binary`) | 8 fixtures, among them `stf-corpus-forwarder-forward` and `family-seed08` |
-| `count-twice` | a counter's `count` adds two (`Counter.call`) | 11 fixtures, among them `stf-corpus-stateful-persist`, on state alone |
-| `flood-to-ingress` | a flood also leaves on the ingress port (`Switch.run`) | `contract-fate` only |
+| `sub-off-by-one` | `bit<N>` subtraction subtracts one more (`p4blo.interp.expr.bits_binary`) | 8 fixtures, including `stf-corpus-forwarder-forward` and `family-seed21` |
+| `count-twice` | a counter's `count` adds two (`Counter.call`) | 10 fixtures, among them `stf-corpus-stateful-persist`, on state alone |
+| `unicast-to-ingress` | unicast leaves on ingress instead of selected egress (`V1Model.run`) | 69 fixtures, including `contract-fate` |
 | `lpm-unchecked` | an LPM value with bits outside its prefix installs (`tables.check_key_value`) | `contract-forwarder-install` only |
-| Lean `flood-to-ingress` | in `spec/arch/P4bloArch/Switch.lean`, `(List.range sw.ports).filter (· != ingress)` becomes `(List.range sw.ports)` | `contract-fate`, requests 0 and 1 |
 
-The Lean mutant is run by hand on a copy, never in a checkout: copy
-`spec/` with its `.lake` to a scratch directory, make the edit there, run
-`lake build p4blo-lean` in the copy's `arch`, and run
-`check-lean --lean <copy>/arch/.lake/build/bin/p4blo-lean`, which exits 1
-naming the requests above.
+The former flood mutant belongs to the retired custom architecture. Its
+record and source remain in revision `14e6f44`; it is not a current gate.
+Current isolated Python and Lean architecture faults test six-stage ordering
+against independently expected bytes, alongside the core/codec/observer faults
+described in [assurance](../../docs/assurance.md#adversarial-checks).
