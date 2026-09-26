@@ -134,5 +134,7 @@ correctness or a latency guarantee.
 ## Blocked / next action
 
 Nothing is blocked or active. The three unique pushed parked branches remain;
-implementation and recipe worktrees are removed. Finish the narrative compaction
-review/local gate/remote CI, remove its review worktree, then wait for a new scope.
+implementation, recipe and review worktrees are removed. The compaction was
+independently reviewed with no findings; its required-Lean full local gate passed
+5,007 tests. See [review](reviews/test-organization-compaction.md). Wait for a new
+scope; parked work is not an instruction to resume.
