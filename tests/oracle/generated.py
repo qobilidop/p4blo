@@ -305,7 +305,7 @@ FAMILIES: dict[str, Family] = {
     "aggregate_copy": aggregate_copy_family,
     "call_copy": call_copy_family,
     "corpus": corpus_family,
-    "ingress": shape_family("control"),
+    "control": shape_family("control"),
     "parser": shape_family("parser"),
 }
 
