@@ -1,29 +1,21 @@
-"""The IL bridge on real P4: P4 source through P4-SpecTec into p4blo IR.
+"""The IL bridge on real P4, with explicit v1model stage boundaries.
 
-`p4blo.frontend` translates what P4-SpecTec's typing and instantiation make
-of a P4 program (the `il-export` command of tests/oracle/patches/). Four
-questions, each against P4 nobody wrote for p4blo:
+Pinned original sources retain normalized core-structure comparisons after
+checked empty-stage projection and documented golden-only stage splits.
+Their vectors compare packet behavior, except the unchanged checksum source
+now explicitly rejected for unsupported verify_checksum/checksum_error.
 
-1. **The corpus from its original sources.** Each corpus program with a
-   P4 original (tests/frontend/catalog.py) is translated and compared with
-   its golden: byte for byte, or after `normalize`, or after the golden is
-   adjusted by exactly the differences documented below; its vectors then
-   run on both and must agree packet by packet.
-2. **The printer inverted.** Every corpus and example golden is printed
-   through the v1model shim, translated back, and must equal the golden up
-   to `normalize`: the bridge reads back what the printer writes.
-3. **Excluded rows.** A program using a construct docs/p4-spec-coverage.md
-   excludes is refused with an error naming the row; every row the bridge
-   can name is a row of the page.
-4. **New programs.** Five p4c programs the corpus does not include run from
-   source on the Python interpreter against p4c's own STF vectors.
-5. **Probes.** Small programs written for what the corpus misses (the
-   bridge review's defects and the rows no corpus program reaches) pass a
-   vector of P4-SpecTec's exact outputs, on its simulator and translated.
+Printer round trips preserve six distinct stages, declarations, table/action
+interfaces, packet outcomes and complete extern state on every STF request
+and deterministic generated requests. Native standard metadata stays separate
+from printed user metadata; byte-identical round trips are not claimed.
 
-Without a P4-SpecTec checkout that has `il-export` every test that needs
-it skips, as tests/external/test_oracle.py does, unless `P4BLO_REQUIRE_IL_EXPORT=1`
-makes it fail; the pins and the page check run regardless.
+Excluded constructs retain named rejection tests. Additional upstream programs
+run their original STF vectors, and source probes compare with P4-SpecTec,
+including narrowly classified target-policy disagreements.
+
+Missing il-export skips oracle-dependent cases unless
+P4BLO_REQUIRE_IL_EXPORT=1 requires the configured oracle.
 """
 
 from __future__ import annotations
@@ -35,6 +27,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Callable
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -44,10 +37,14 @@ from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
+from p4blo.drt.case import Case
+from p4blo.drt.generate import generate
+from p4blo.drt.run import python_outcome
 from p4blo.frontend import Excluded, NotTranslated, Translation, translate
 from p4blo.frontend.export import Exporter, find_exporter
 from p4blo.frontend.normalize import normalize
 from p4blo.v0 import p4blo_pb2 as pb
+from tests.oracle.v1model_disagreements import ACTUAL, KnownV1ModelDisagreement, known
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -154,10 +151,6 @@ def test_normalize_does_not_rename_a_local_into_an_action_parameter() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _body_without(stmts: list[pb.Stmt], drop: Callable[[pb.Stmt], bool]) -> list[pb.Stmt]:
-    return [s for s in stmts if not drop(s)]
-
-
 def _documented_acl(g: apb.BlockAssembly) -> None:
     """The acl README's choices the bridge does not make. Key names: the
     golden uses p4c's STF names (`data.f1`, `extra[0].h`), the bridge P4's
@@ -173,36 +166,39 @@ def _documented_acl(g: apb.BlockAssembly) -> None:
     del setbyte.body[-1]
 
 
-def _mark_to_drop_as_v1model(g: apb.BlockAssembly, block: str) -> None:
-    """The golden's `drop` action sets the contract's `drop`, and in the
-    firewall also the port 511; v1model's `mark_to_drop` writes only the
-    port 511, whose packet p4blo's switch then drops as sent to no port
-    (docs of p4blo.frontend.v1model). So the action writes the port alone
-    and `M` has no `drop`, which nothing else writes."""
-    meta = next(s for s in g.struct_types if s.name == g.metadata)
-    fields = [f for f in meta.fields if f.name != "drop"]
-    del meta.fields[:]
-    meta.fields.extend(fields)
-    drop = next(a for a in next(b for b in g.blocks if b.name == block).actions if a.name == "drop")
-    port = pb.LValue(member=pb.LMember(base=pb.LValue(var="meta"), field="egress_port"))
-    value = pb.Expr(literal=pb.Literal(bits=pb.BitsLiteral(width=9, value="511")))
-    del drop.body[:]
-    drop.body.append(pb.Stmt(assign=pb.Assign(target=port, value=value)))
+def _split_checksum_stage(g: apb.BlockAssembly) -> None:
+    """The canonical examples calculate the checksum at the ingress tail;
+    their original P4 places that exact computation in ComputeChecksum.
+    Split the expected golden only, leaving the imported stage boundary intact.
+    """
+    ingress = next(b for b in g.blocks if b.name == "MyIngress")
+    checksum = deepcopy(ingress.body[-1])
+    assert checksum.HasField("conditional")
+    assert len(checksum.conditional.then) == 1
+    call = checksum.conditional.then[0].call_extern
+    assert call.instance == "csum" and call.method == "compute"
+    del ingress.body[-1]
+    g.blocks.add(
+        name="MyComputeChecksum",
+        kind=pb.BLOCK_KIND_CONTROL,
+        params=ingress.params,
+        body=[checksum],
+    )
+    g.exports.add(role="compute_checksum", block="MyComputeChecksum")
 
 
 def _documented_forwarder(g: apb.BlockAssembly) -> None:
-    """The golden declares the contract's `ingress_port`, which the source
-    never reads; and `mark_to_drop` is v1model's (above)."""
+    """The golden additionally declares unused ingress_port and keeps its
+    checksum computation in ingress rather than the source's checksum stage."""
     meta = next(s for s in g.struct_types if s.name == g.metadata)
-    fields = [f for f in meta.fields if f.name != "ingress_port"]
-    del meta.fields[:]
-    meta.fields.extend(fields)
-    _mark_to_drop_as_v1model(g, "MyIngress")
+    assert [f.name for f in meta.fields] == ["ingress_port", "egress_spec"]
+    del meta.fields[0]
+    _split_checksum_stage(g)
 
 
 def _documented_tutorial_firewall(g: apb.BlockAssembly) -> None:
-    """`mark_to_drop` is v1model's (above)."""
-    _mark_to_drop_as_v1model(g, "MyIngress")
+    """Expose the original P4's checksum boundary in the expected golden."""
+    _split_checksum_stage(g)
 
 
 def _documented_stateful(g: apb.BlockAssembly) -> None:
@@ -230,6 +226,30 @@ def _documented_stateful(g: apb.BlockAssembly) -> None:
     for e in g.exports:
         if e.block == "pipeline":
             e.block = "ingress"
+    # The source's ingress reads and seeds the register; egress reads, adds,
+    # writes and publishes it. The canonical example deliberately combines them.
+    assert len(block.body) == 6
+    assert [v.name for v in block.locals] == ["x", "tmp"]
+    assert [s.WhichOneof("kind") for s in block.body] == [
+        "call_extern",
+        "call_extern",
+        "call_extern",
+        "assign",
+        "call_extern",
+        "assign",
+    ]
+    egress_body = [deepcopy(stmt) for stmt in block.body[2:]]
+    egress_local = deepcopy(block.locals[1])
+    del block.body[2:]
+    del block.locals[1]
+    g.blocks.add(
+        name="egress",
+        kind=pb.BLOCK_KIND_CONTROL,
+        params=block.params,
+        locals=[egress_local],
+        body=egress_body,
+    )
+    g.exports.add(role="egress", block="egress")
 
 
 DOCUMENTED: dict[str, Callable[[apb.BlockAssembly], None]] = {
@@ -246,26 +266,81 @@ DISAGREEING_VECTORS: dict[str, str] = {
 }
 
 
+STAGES = {
+    "parser": pb.BLOCK_KIND_PARSER,
+    "verify_checksum": pb.BLOCK_KIND_CONTROL,
+    "ingress": pb.BLOCK_KIND_CONTROL,
+    "egress": pb.BLOCK_KIND_CONTROL,
+    "compute_checksum": pb.BLOCK_KIND_CONTROL,
+    "deparser": pb.BLOCK_KIND_DEPARSER,
+}
+
+
+def _assert_six_stages(program: apb.BlockAssembly) -> None:
+    roles = {e.role: e.block for e in program.exports}
+    assert set(roles) == set(STAGES)
+    assert len(program.exports) == len(set(roles.values())) == 6
+    blocks = {b.name: b for b in program.blocks}
+    for role, name in roles.items():
+        assert blocks[name].kind == STAGES[role]
+
+
+def _without_empty_stages(program: apb.BlockAssembly) -> apb.BlockAssembly:
+    """Comparison projection: remove only proven empty optional controls.
+
+    Retain every nonempty stage, declaration and statement. Required entry
+    blocks and arbitrary non-exported blocks are never removed.
+    """
+    result = deepcopy(program)
+    optional = {
+        e.block
+        for e in result.exports
+        if e.role in {"verify_checksum", "egress", "compute_checksum"}
+    }
+    empty: set[str] = set()
+    for block in result.blocks:
+        if block.name not in optional or block.body:
+            continue
+        assert block.kind == pb.BLOCK_KIND_CONTROL
+        assert not (block.locals or block.actions or block.tables or block.states)
+        assert not block.start_state
+        assert [(p.direction, p.type.struct) for p in block.params] == [
+            (pb.DIRECTION_INOUT, result.headers),
+            (pb.DIRECTION_INOUT, result.metadata),
+        ]
+        empty.add(block.name)
+    blocks = [b for b in result.blocks if b.name not in empty]
+    exports = sorted((e for e in result.exports if e.block not in empty), key=lambda e: e.role)
+    del result.blocks[:]
+    result.blocks.extend(blocks)
+    del result.exports[:]
+    result.exports.extend(exports)
+    return normalize(result)
+
+
+def _unsupported_checksum_source(exporter: Exporter, entry: catalog.CorpusSource) -> None:
+    assert entry.program == "csum16"
+    with pytest.raises(
+        Excluded, match="verify_checksum requires unsupported checksum_error metadata"
+    ) as error:
+        _translated(exporter, entry.source, entry.program)
+    assert error.value.row == "externFunctionDeclarationIR: an architecture's functions"
+
+
 @pytest.mark.parametrize("entry", catalog.CORPUS, ids=lambda e: e.program)
 def test_corpus_program_from_its_original_source(
     exporter: Exporter, entry: catalog.CorpusSource
 ) -> None:
+    if entry.status == "excluded":
+        _unsupported_checksum_source(exporter, entry)
+        return
+    assert entry.status == "projected"
     got = _translated(exporter, entry.source, entry.program).program
+    _assert_six_stages(got)
     want = golden(entry.program)
-    match entry.status:
-        case "identical":
-            assert arch_wire.dump_text(got) == arch_wire.dump_text(want)
-        case "normalized":
-            assert arch_wire.dump_text(got) != arch_wire.dump_text(want), (
-                "now identical: update the catalog"
-            )
-            assert arch_wire.dump_text(normalize(got)) == arch_wire.dump_text(normalize(want))
-        case "documented":
-            assert arch_wire.dump_text(normalize(got)) != arch_wire.dump_text(normalize(want))
-            DOCUMENTED[entry.program](want)
-            assert arch_wire.dump_text(normalize(got)) == arch_wire.dump_text(normalize(want))
-        case _:
-            raise AssertionError(entry.status)
+    if entry.program in DOCUMENTED:
+        DOCUMENTED[entry.program](want)
+    assert _without_empty_stages(got) == _without_empty_stages(want)
 
 
 def _outputs(
@@ -273,8 +348,8 @@ def _outputs(
 ) -> list[tuple[int, list[tuple[int, bytes]]]]:
     """Every packet's outputs, entries resolved against `entries_of` (the
     golden's names, which vectors use) and installed by position."""
-    loaded = arch.reference.load(program)
-    run = arch.stf_driver(arch.Switch(ports=4), loaded)
+    loaded = v1model.load(program)
+    run = arch.stf_driver(v1model.V1Model(ports=4), loaded)
     roles = {e.role: e.block for e in program.exports}
     golden_roles = {e.block: e.role for e in entries_of.bindings.exports}
     installed: list[stf.Add | stf.SetDefault] = []
@@ -305,6 +380,9 @@ CORPUS_VECTORS = [
 def test_corpus_vectors_agree_with_the_golden(
     exporter: Exporter, entry: catalog.CorpusSource, vector: Path
 ) -> None:
+    if entry.status == "excluded":
+        _unsupported_checksum_source(exporter, entry)
+        return
     got = _translated(exporter, entry.source, entry.program).program
     want = golden(entry.program)
     index = BoundIndex.build(want)
@@ -349,12 +427,12 @@ ROUND_TRIP = [
 # refuses priorities on const entries and a `@priority` annotation is
 # p4c's, not the language's; the IR has const entries only, and mutable
 # entries are a row the coverage page excludes by scope. The priority
-# program's own source is translated byte for byte instead (question 1).
+# program's original source retains projected structural equality (question 1).
 ROUND_TRIP_EXCLUDED = {"priority": "tableEntriesPropertyIR without const, and a per-entry constIR"}
 
 
 @pytest.mark.parametrize(("name", "path"), ROUND_TRIP, ids=[n for n, _ in ROUND_TRIP])
-def test_printed_golden_translates_back_to_itself(
+def test_printed_golden_preserves_stages_and_behavior(
     exporter: Exporter, tmp_path: Path, name: str, path: Path
 ) -> None:
     program = arch_wire.load_text(path)
@@ -366,7 +444,55 @@ def test_printed_golden_translates_back_to_itself(
         assert e.value.row == ROUND_TRIP_EXCLUDED[name]
         return
     got = translate(exporter.export(source), program.name).program
-    assert arch_wire.dump_text(normalize(got)) == arch_wire.dump_text(normalize(program))
+    _assert_six_stages(got)
+    before, after = normalize(program), normalize(got)
+    assert before.header_types == after.header_types
+    assert before.enum_types == after.enum_types
+    original_roles = {e.role: e.block for e in before.exports}
+    returned_roles = {e.role: e.block for e in after.exports}
+    assert all(returned_roles[role] == block for role, block in original_roles.items())
+    returned = {block.name: block for block in after.blocks}
+    for block in before.blocks:
+        other = returned[block.name]
+        assert block.kind == other.kind
+        assert [(a.name, list(a.params)) for a in block.actions] == [
+            (a.name, list(a.params)) for a in other.actions
+        ]
+        assert [
+            (
+                t.name,
+                list(t.actions),
+                list(t.const_entries),
+                t.default_action,
+                t.const_default_action,
+                t.size,
+                [k.match_kind for k in t.keys],
+            )
+            for t in block.tables
+        ] == [
+            (
+                t.name,
+                list(t.actions),
+                list(t.const_entries),
+                t.default_action,
+                t.const_default_action,
+                t.size,
+                [k.match_kind for k in t.keys],
+            )
+            for t in other.tables
+        ]
+    # Native standard metadata and its printed user-M copies stay distinct, so
+    # byte identity is not the round-trip contract. Check all packet outputs,
+    # diagnostics/errors and complete extern observations after every request.
+    index = BoundIndex.build(program)
+    vectors = sorted(path.parent.glob("*.stf"))
+    assert vectors
+    for vector in vectors:
+        assert _outcomes(after, _vector_cases(index, vector)) == _outcomes(
+            before, _vector_cases(index, vector)
+        ), vector.name
+    cases = generate(index, seed=0x413, count=24, ports=4)
+    assert _outcomes(after, cases) == _outcomes(before, cases)
 
 
 @pytest.mark.parametrize("name", catalog.NO_SOURCE)
@@ -382,6 +508,23 @@ def test_edsl_only_program_runs_the_same_after_the_round_trip(
     index = BoundIndex.build(want)
     for vector in sorted((CORPUS / name).glob("*.stf")):
         assert _outputs(got, vector, index) == _outputs(want, vector, index), vector.name
+
+
+def _vector_cases(index: BoundIndex, vector: Path) -> list[Case]:
+    installed: list[stf.Add | stf.SetDefault] = []
+    cases: list[Case] = []
+    for statement in stf.parse(vector.read_text()):
+        if isinstance(statement, stf.Add | stf.SetDefault):
+            installed.append(statement)
+        elif isinstance(statement, stf.Packet):
+            cases.append(Case(stf.to_entries(index, installed), statement.port, statement.data))
+    assert cases, vector.name
+    return cases
+
+
+def _outcomes(program: apb.BlockAssembly, cases: list[Case]) -> list[object]:
+    loaded = v1model.load(program)
+    return [python_outcome(loaded, case, 4) for case in cases]
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +666,22 @@ def test_new_p4c_program_passes_its_own_vectors(exporter: Exporter, name: str) -
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", sorted(p.stem for p in PROBES.glob("*.p4")))
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param(
+            name,
+            marks=pytest.mark.xfail(
+                strict=True,
+                raises=KnownV1ModelDisagreement,
+                reason="Pinned P4-SpecTec egress behavior; docs/oracle-discrepancies.md",
+            ),
+        )
+        if name in ACTUAL
+        else name
+        for name in sorted(p.stem for p in PROBES.glob("*.p4"))
+    ],
+)
 def test_probe_agrees_with_spectec(exporter: Exporter, name: str) -> None:
     """Each probe says in its first lines what it checks. Its vector's
     expectations are exact bytes: P4-SpecTec's simulator must pass it, on
@@ -535,22 +693,43 @@ def test_probe_agrees_with_spectec(exporter: Exporter, name: str) -> None:
     done = subprocess.run(
         command, cwd=exporter.root, capture_output=True, text=True, timeout=300, check=False
     )
-    assert done.returncode == 0, f"P4-SpecTec fails the vector:\n{done.stderr[-2000:]}"
     program = _translated(exporter, source, name).program
     assert p4c_stf.replay(program, vector.read_text()) == []
+    if known(name, done):
+        raise KnownV1ModelDisagreement(done.stderr)
+    assert done.returncode == 0, f"P4-SpecTec fails the vector:\n{done.stderr[-2000:]}"
 
 
-def test_fields_synchronized_as_the_printer_does_are_the_contract_fields(
+def test_user_metadata_stays_distinct_from_native_standard_metadata(
     exporter: Exporter,
 ) -> None:
-    """The shimsync probe copies its M's contract-named fields to and from
-    standard_metadata exactly as the printer does, so the translation reads
-    them as the contract fields, with no copies left; collide and dropflag,
-    which do not, keep them renamed."""
+    """Recognizing a synchronization pattern must not alias two P4 stores."""
     got = _translated(exporter, PROBES / "shimsync.p4", "shimsync")
     meta = next(s for s in got.program.struct_types if s.name == got.program.metadata)
-    assert [f.name for f in meta.fields] == ["ingress_port", "parser_error", "egress_port", "drop"]
-    assert sum("is the contract field" in n for n in got.notes) == 4
-    for name in ("collide", "dropflag"):
+    assert [f.name for f in meta.fields] == [
+        "ingress_port_",
+        "parser_error_",
+        "egress_port_",
+        "drop_",
+        "ingress_port",
+        "parser_error",
+        "egress_spec",
+    ]
+    assert got.notes == [
+        f"M.{name} renamed {name}_: user metadata, not the contract field"
+        for name in ["ingress_port", "parser_error", "egress_port", "drop"]
+    ]
+    parser = next(block for block in got.program.blocks if block.kind == pb.BLOCK_KIND_PARSER)
+    metadata = parser.params[1].name
+    copy = parser.states[0].body[0].assign
+    assert copy.target == pb.LValue(
+        member=pb.LMember(base=pb.LValue(var=metadata), field="ingress_port_")
+    )
+    assert copy.value == pb.Expr(member=pb.Member(base=pb.Expr(var=metadata), field="ingress_port"))
+    for name, user_field in [("collide", "egress_port_"), ("dropflag", "drop_")]:
         other = _translated(exporter, PROBES / f"{name}.p4", name)
-        assert any("renamed" in n and "user metadata" in n for n in other.notes)
+        metadata_type = next(
+            t for t in other.program.struct_types if t.name == other.program.metadata
+        )
+        assert [field.name for field in metadata_type.fields] == [user_field, "egress_spec"]
+        assert any("renamed" in note and "user metadata" in note for note in other.notes)

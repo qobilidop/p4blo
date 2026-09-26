@@ -70,13 +70,12 @@ class CorpusSource:
     with the golden written in the eDSL.
 
     `status` is one of:
-      - "identical": the translation's text format is the golden's, byte
-        for byte;
-      - "normalized": equal once `p4blo.frontend.normalize` has put both in
-        canonical form (declaration order, block-local names);
-      - "documented": equal once the golden is adjusted by the differences
-        its README or the bridge documents, which
-        tests/external/test_frontend_spectec.py spells out one by one.
+      - "projected": normalized equality after removing only empty optional
+        stages and making explicitly checked source/golden adjustments.
+        The checksum and stateful goldens are split at their known original
+        stage boundaries; imported stages are never merged.
+      - "excluded": the unchanged source requires an unsupported v1model
+        facility, tested by its specific exclusion rather than packet replay.
     """
 
     program: str
@@ -85,16 +84,16 @@ class CorpusSource:
 
 
 CORPUS: tuple[CorpusSource, ...] = (
-    CorpusSource("acl", HERE / "p4c/ternary2-bmv2.p4", "documented"),
-    CorpusSource("csum16", HERE / "p4c/issue655-bmv2.p4", "identical"),
-    CorpusSource("forwarder", HERE / "tutorials/basic.p4", "documented"),
-    CorpusSource("parser_error", HERE / "p4c/parser_error-bmv2.p4", "identical"),
-    CorpusSource("priority", HERE / "p4c/table-entries-priority-bmv2.p4", "identical"),
-    CorpusSource("stacks", HERE / "p4c/header-stack-ops-bmv2.p4", "identical"),
-    CorpusSource("stateful", HERE / "p4c/issue1097-2-bmv2.p4", "documented"),
-    CorpusSource("subparser_stack", HERE / "p4c/subparser-with-header-stack-bmv2.p4", "identical"),
-    CorpusSource("tutorial_firewall", ROOT / "tests/oracle/firewall.p4", "documented"),
-    CorpusSource("verify_error", HERE / "p4c/issue1824-bmv2.p4", "identical"),
+    CorpusSource("acl", HERE / "p4c/ternary2-bmv2.p4", "projected"),
+    CorpusSource("csum16", HERE / "p4c/issue655-bmv2.p4", "excluded"),
+    CorpusSource("forwarder", HERE / "tutorials/basic.p4", "projected"),
+    CorpusSource("parser_error", HERE / "p4c/parser_error-bmv2.p4", "projected"),
+    CorpusSource("priority", HERE / "p4c/table-entries-priority-bmv2.p4", "projected"),
+    CorpusSource("stacks", HERE / "p4c/header-stack-ops-bmv2.p4", "projected"),
+    CorpusSource("stateful", HERE / "p4c/issue1097-2-bmv2.p4", "projected"),
+    CorpusSource("subparser_stack", HERE / "p4c/subparser-with-header-stack-bmv2.p4", "projected"),
+    CorpusSource("tutorial_firewall", ROOT / "tests/oracle/firewall.p4", "projected"),
+    CorpusSource("verify_error", HERE / "p4c/issue1824-bmv2.p4", "projected"),
 )
 
 # Corpus programs authored in the eDSL with no P4 original; they are
