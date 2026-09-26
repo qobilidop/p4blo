@@ -1,517 +1,389 @@
 # Decisions
 
-The decisions in force, grouped by topic, each with its reason and the
-date it was made. This is a register, not a diary: an entry that is
-superseded is rewritten in place with the new date and reason, and an
-entry whose subject no longer exists is removed. The chronological log
-is in git: `docs/decisions.md` at the first archive commit
-`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24), and this file
-at the second, `26c93485861bc5442076a1060fcc8d1743952702` (2026-09-25).
-A decision the design document already settles is not repeated here.
+Decisions in force, grouped by topic, with reasons and original dates. Rewrite
+superseded entries in place with the new date/reason; remove only subjects that
+no longer exist. The
+chronological log is `docs/decisions.md` at archive
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6` (2026-09-24). Earlier registers are
+this path at `26c93485861bc5442076a1060fcc8d1743952702` and
+`9fc6c19febf839fa56873be10788b515c4e29ae9` (2026-09-25). Design and semantics
+pages hold the contracts; this register keeps choices, reasons and boundaries.
 
 ## Environment and tooling
 
-- **Ordinary commands are the documented default; pinned tools are
-  optional.** `uv sync --locked` installs the Python environment and
-  `.python-version` selects Python 3.13. `flake.nix`/`flake.lock` provide
-  the same tools pinned, entered with `nix develop` or direnv, and CI uses
-  them; the documentation does not assume them. Lean comes from elan, not
-  nixpkgs, which lags Lean releases. The OCaml toolchain for the
-  P4-SpecTec oracle lives in `devShells.oracle`, not the default shell.
-  Historical command transcripts are preserved as written. (2026-09-24)
-- **No devcontainer**; the uv-only tier serves people who avoid Nix.
-  Revisit for a Windows contributor without WSL2. (2026-09-22)
-- **Python 3.13, pure Python.** No native code in the `p4blo` package.
-  (2026-09-22)
-- **p4c and BMv2 come from `github.com/qobilidop/p4lang-builds`**, native
-  amd64/arm64 images of p4c 1.2.5.15 and BMv2 1.15.4 with immutable tags,
-  because the official p4c image is amd64 only and crashed under
-  emulation on ARM; p4c is pinned by index digest, and p4c through Docker
-  is an optional local check of the printer's goldens, skipped without
-  Docker, since building p4c is out of proportion. (2026-09-22)
-- **Every external input is pinned, and the pins are listed** in
-  `docs/workflows.md`: images by digest, GitHub Actions by commit, the
-  oracle's opam repository by commit, sources by SHA-256. (2026-09-22)
-- **Fresh Lean caches across package moves; build before testing.** A
-  copied build cache once shadowed renamed modules. Rebuild from empty
-  build directories after a move, and never rebuild Lean while a test in
-  the same worktree runs the executable. (2026-09-23)
-- **CI's Lean job restores main's compiled Lean modules** (`lib`, `ir`,
-  never `bin`) and saves only from main, because the from-scratch build
-  was 346 s of a 21-minute job. The shadowing risk is standalone queries,
-  which no gate runs; `lake build` rejects an import of a deleted source
-  even with its stale `.olean` restored (checked 2026-09-25 by removing
-  `P4bloIR/Coverage.lean`: "bad import"). Revisit if a gate starts
-  querying Lean outside `lake build` and `lake test`. (2026-09-25)
-- **CI runs the Lean differential suite with `-n auto --dist loadgroup`**,
-  as the local gate does: 3,045 tests took 259 s serially and 86 s on four
-  workers locally, and were 851 s serial in CI. (2026-09-25)
-- **Local Docker disk pressure is not permission to delete unrelated
-  images**; remove only own artifacts. (2026-09-23)
+- **Ordinary commands by default; pinned tools optional.** `uv sync --locked`
+  and `.python-version` select Python 3.13. `flake.nix`/`flake.lock` pin the
+  same tools for `nix develop`, direnv and CI; docs do not require them. Lean
+  comes from elan because nixpkgs lags; oracle-only OCaml lives in
+  `devShells.oracle`. Preserve historical command transcripts. (2026-09-24)
+- **No devcontainer:** uv serves contributors avoiding Nix; a non-flake
+  container would drift. Revisit for Windows without WSL2.
+  **Python 3.13, pure Python:** no native code in the package; imposing this
+  now is free, reopening it later is not. (2026-09-22)
+- **p4c/BMv2 from `github.com/qobilidop/p4lang-builds`:** native amd64/arm64
+  p4c 1.2.5.15/BMv2 1.15.4 images with immutable tags; the official amd64-only
+  p4c image crashed under ARM emulation. Pin p4c by index digest. Docker
+  golden typechecking is optional locally, skipped without Docker, because
+  building p4c is disproportionate. (2026-09-22)
+- **Pin every external input for reproducibility.** `docs/workflows.md`
+  lists image digests, Actions commits, opam repository commit and source
+  SHA-256s. (2026-09-22)
+- **Fresh Lean caches after package moves; build before testing.** Copied
+  caches shadowed renamed modules in standalone queries; rebuild from empty
+  build directories after a move. Never rebuild while the worktree's tests
+  consume the executable.
+  (2026-09-23)
+- **CI restores main's compiled Lean `lib`/`ir`, never `bin`; only main
+  saves.** Cold builds cost 346 s of 21 minutes. `lake build` rejects deleted
+  source imports despite stale `.olean`s (`P4bloIR/Coverage.lean` removal probe,
+  2026-09-25). Revisit if gates query outside `lake build`/`lake test`.
+  **Parallel differential CI** uses `-n auto --dist loadgroup`, like the
+  local gate: 3,045 tests took 259 s serially versus 86 s on four local
+  workers, and 851 s serially in CI. (2026-09-25)
+- **Docker disk pressure authorizes only own-artifact cleanup**, never
+  unrelated images.
+  (2026-09-23)
 
-## Repository layout and ownership
+## Layout and ownership
 
-- **Lean owns the abstract IR, validity and meaning; protobuf owns the
-  encoding.** Conversion between them is an explicit obligation with its
-  own proofs. (2026-09-23)
-- **Three Lake packages, specifications under `spec/` and implementations
-  under `impl/`.** `spec/ir/` is `P4bloIR` (package `p4blo-ir`) with the
-  wire schema beside it and nothing architectural in it; `spec/arch/` is
-  `P4bloArch` (package `p4blo-arch`): the switch, the extern families, the
-  certificate example and the `p4blo-lean` endpoint; `impl/lean/` is the
-  user library `P4blo` (package `p4blo`); the Python package is
-  `impl/python/`. (2026-09-24)
-- **Lean package roots follow the Mathlib and Batteries layout.** Under
-  `<Root>/` if a client may import it; under `<Root>Test/` if only the
-  gate runs it (tests, proof audits and probes), as one `lean_lib` named
-  `<Root>Test`, singular, because Lake module names are global across a
-  workspace and a bare `Tests` in two packages collides; at the root only
-  what Lake requires, with `spec/ir/proto/`, `spec/arch/proto/` and
-  `impl/lean/ASSURANCE.md` as the named exceptions. The user package's
-  executables are subcommands of one `p4blo` binary. Acronyms stay
-  capitalized (`P4bloIR`, as Lean core's `Lean.Compiler.IR`).
-  `tests/structure/test_package_layout.py` pins the roots. (2026-09-24;
-  architecture schema exception added 2026-09-25)
-- **The IR carries extern state as data and takes the model as a
-  function.** `ExternState` is a kind name with optional width, cells and
-  private configuration; the architecture supplies the `ExternModel` at
-  load. This keeps `Run` unparameterized and state first-order. A closure
-  in the instance and a type parameter through every theorem were both
-  rejected. Confidence medium in the representation; revisit if a family
-  needs structured state that cells cannot carry. (2026-09-24)
-- **Generated protobuf code is committed** at `impl/python/p4blo/v0/` and
-  `impl/python/p4blo/arch/v0/`; CI regenerates and fails on drift.
-  (2026-09-22; architecture path added 2026-09-25)
-- **The Python package is organized by concern**: `p4blo.validator` is a
-  package by rule category with one public `validate`; expression types
-  come from `p4blo.validator.typer` alone, which the interpreter, the
-  printer and the STF reader call (a top-level module would need the
-  diagnostic codes and create an import cycle); `p4blo.printer` prints P4
-  with no architecture of its own and the architectures bind it through
-  five hooks; `p4blo.frontend` is the bridge from SpecTec's IL.
-  (2026-09-25)
-- **Tests are grouped by the question they answer** under
-  `tests/{unit,codec,programs,drt,lean,external,structure}/`, each with
-  a README; data and drivers stay in their own directories; the layout is
-  pinned. The `oracle` marker, assigned by module stem or by `bmv2` in
-  the name, marks what drives an external oracle. (2026-09-25)
-- **Shared verification assets live under `tests/`**; public applications
-  under `examples/` with their verification under `tests/examples/`.
-  (2026-09-23, 2026-09-24)
-- **Existing public APIs may change for demonstrated usability gains.**
-  Preserve the semantic contract and readable examples; keep authoring
-  changes separate from semantics changes; migrate callers with
-  diagnostic and golden tests. (2026-09-23)
+- **Lean owns abstract syntax, validity and meaning; protobuf owns wire
+  syntax.** Conversion has separate proof obligations. `spec/ir/` is
+  `P4bloIR`/`p4blo-ir`, schema beside it, nothing architectural;
+  `spec/arch/` is `P4bloArch`/`p4blo-arch`, depending on IR and supplying
+  switch, externs, certificate example and `p4blo-lean`; `impl/lean/` is
+  `P4blo`/`p4blo`, depending on both. Python lives in `impl/python/`.
+  (ownership 2026-09-23; three-package layout 2026-09-24)
+- **Lean follows Mathlib/Batteries layout:** client imports under `<Root>/`,
+  gate-only tests/audits/probes in one singular `<Root>Test` library; bare
+  `Tests` collides across packages. Roots contain only Lake's required files,
+  README and at most one Main, except `spec/ir/proto/`, `spec/arch/proto/`
+  and `impl/lean/ASSURANCE.md`. One `p4blo` binary has user subcommands;
+  acronyms remain capitalized. `test_package_layout.py` pins this, replacing
+  flat packages with unregistered probes and sixteen executable roots.
+  (2026-09-24; architecture-schema exception 2026-09-25)
+- **Extern state is first-order data; its model is a function.**
+  `ExternState` carries kind, optional width, cells and private configuration;
+  the architecture supplies `ExternModel` at load, keeping `Run`
+  unparameterized and cells inspectable. Closure state threading lacked a
+  total Lean definition; a type parameter through all theorems was invasive
+  with no expressive gain. Confidence medium in the representation; revisit
+  if cells cannot carry a family's structured state.
+  (2026-09-24)
+- **Commit generated protobuf code** in `impl/python/p4blo/v0/` and
+  `impl/python/p4blo/arch/v0/`; CI regenerates and rejects drift.
+  (2026-09-22; architecture path 2026-09-25)
+- **Python is organized by concern.** `validator` groups rule categories
+  behind one `validate`; `validator.typer` alone supplies expression types
+  to interpreter, printer and STF (a top-level typer would cycle through
+  diagnostic codes). The architecture-free printer has five binding hooks;
+  `frontend` bridges P4-SpecTec IL. (2026-09-25)
+- **Tests group by question** in `tests/`: unit, codec, programs, drt, lean,
+  external and structure, with READMEs and pinned layout; data/drivers separate.
+  Module stem or `bmv2` in the name assigns the `oracle` marker. Shared
+  verification belongs in `tests/`; public applications in `examples/`,
+  their checks in `tests/examples/`. (assets 2026-09-23; examples 2026-09-24;
+  test grouping 2026-09-25)
+- **Public APIs may change for demonstrated usability gains.** Preserve
+  semantic contracts/readability, separate authoring from meaning changes,
+  and migrate callers with diagnostic and golden tests. (2026-09-23)
 
 ## IR and wire syntax
 
-- **Proto package `p4blo.v0`**, pre-1.0 by design; buf's version-suffix
-  lint rule is excepted in `buf.yaml` rather than renaming to `v1alpha1`.
-  (2026-09-22)
-- **One `Block` message with a kind tag**; **references by scoped name,
-  not integer id**; **typed oneofs, not a generic node**; **no type
-  annotations on expressions** (leaves are typed, values carry widths,
-  the validator computes every type once); **dedicated nodes for packet
-  and header operations**, so "externs" means declared externs only;
-  **expressions and lvalues stay separate messages**; **field numbers 100
-  and above are reserved for annotations**; **fields named after Python
-  keywords are renamed**; **table `size` is informative**. (2026-09-22)
-- **`int<N>` is out of scope for v0**; additive when wanted. (2026-09-22)
-- **Elaborations, named in the coverage table.** A slice as an lvalue is
-  a read-modify-write of the whole field; `switch` on `action_run` is a
-  block local each action assigns plus an if-chain; P4 `type` is
-  elaborated like `typedef`; functions are inlined; constructor
-  parameters give one block per instantiation. Out by scope, each
-  additive if wanted: `string`, non-header arrays, `packet_in.length()`,
-  static extern methods, mutable initial entries and per-entry `const`,
-  object initializers, abstract methods. Out by thesis: `range`,
-  `optional` and `..` in entries, since core.p4 declares only exact,
-  ternary and lpm. The bridge performs the rewrites the page's Bridge
-  column marks and refuses excluded rows by name. (2026-09-22, performed
-  2026-09-24)
-- **Entry priority: larger wins, everywhere in the IR, and const entries
-  take the language specification's numbering.** With the default
-  `largest_priority_wins`, an entry written with `priority = n` keeps `n`
-  and an entry without one takes the previous priority minus
-  `priority_delta`, the first starting at `(k - 1) * delta + 1`, so the
-  first listed entry ranks highest; p4c's `@priority` annotation is not
-  part of the language and the specification ignores it. p4c's BMv2
-  backend numbers with a running counter that BMv2 reads smaller-wins,
-  inverting the order; the `priority` corpus program follows the
-  specification and BMv2's answer is a strict classified disagreement.
-  The printer writes explicit `priority = n` with
-  `largest_priority_wins = true`, which both oracles honor. Reason: the
-  reference for what P4 means is the specification's mechanization, not
-  the reference compiler's backend. (2026-09-24)
-- **Decimal strings are always emitted, including zero, and a missing
-  one is rejected, never read as zero.** (2026-09-23)
-- **The tested canonical wire domain is stated; arbitrary ProtoJSON parity
-  is not promised.** Unknown fields, enum numbers and camelCase aliases
-  differ between the two parsers and are documented outside interchange
-  parity. The differential harness rejects ambiguous JSON before any
-  information is lost; semantically invalid IR stays representable for
-  experiments. (2026-09-23)
+- **`p4blo.v0` is deliberately pre-1.0:** except buf's version-suffix lint
+  in `buf.yaml`, rather than rename to `v1alpha1`. (2026-09-22)
+- **One kind-tagged Block** avoids tripling shared machinery; **scoped-name
+  references** make goldens read like programs; **typed oneofs** describe
+  about twenty fixed operators; **no expression annotations**, since typed
+  leaves, value widths and one validator inference suffice and annotations
+  double goldens. **Dedicated packet/header nodes** reverse directly in the
+  printer, leaving externs to mean declared externs. **Separate expressions
+  and lvalues:** dotted-path sugar is a second syntax unable to express
+  indices. **Annotation fields start at 100** to separate metadata;
+  **rename Python-keyword fields** to avoid `getattr`; **table size is
+  informative** for printer roundtrips. (2026-09-22)
+- **`int<N>` is outside v0:** no corpus need, twice the arithmetic rules;
+  additive when wanted. **Elaborations:** slice lvalues become whole-field
+  read-modify-write; `switch(action_run)` becomes an action-assigned local
+  and if-chain; `type` like `typedef`; inline functions; instantiate a block
+  per constructor arguments. Out by scope, additive: `string`, non-header
+  arrays, `packet_in.length()`, static extern methods, mutable initial
+  entries/per-entry `const`, object initializers, abstract methods. Out by
+  thesis: `range`, `optional`, `..` in entries, since core.p4 declares only
+  exact/ternary/lpm. The bridge performs coverage-table rewrites and refuses
+  excluded rows by name. (2026-09-22; bridge 2026-09-24)
+- **Larger entry priority wins; const numbering follows the specification.**
+  Default `largest_priority_wins` preserves explicit `priority = n`; implicit
+  entries decrement the preceding priority by `priority_delta`, beginning at
+  `(k - 1) * delta + 1`. P4 ignores p4c's non-language `@priority`; p4c's
+  BMv2 counter and smaller-wins ranking invert specification order. The
+  `priority` corpus follows the specification and classifies the source's
+  BMv2 disagreement strictly. Printed explicit priorities with
+  `largest_priority_wins = true` pass both oracles. Reason: P4's mechanization,
+  not a compiler backend, defines the reference meaning. (2026-09-24)
+- **Emit decimal strings including zero; reject missing strings.** Protobuf
+  defaults to empty and Lean's absent-as-zero decoder hid the defect.
+  **Canonical interchange only:** unknown
+  fields, enum numbers and camelCase differ between parsers. Reject ambiguous
+  JSON before information is lost, without validating away invalid IR needed
+  for experiments. (2026-09-23)
 
 ## Python eDSL
 
-- **Blocks are the public authoring unit; an optional `BlockLibrary` is
-  not a complete program.** It bundles block definitions and shared type,
-  error and extern declarations, with no global H/M roots, export roles,
-  ports or packet-fate policy. Independent compilation produces a core
-  library that can be validated without a complete architecture program.
-  The protobuf and Lean core use BlockLibrary too. Architecture BlockBindings
-  selects H/M roots and exports; core validity and progress concern libraries,
-  while architecture binding checks and entry theorems retain their guarantees.
-  Reason: the user rejected `p4.Program` as conflating core authoring with
-  architecture composition; arbitrary export names alone do not remove the
-  wire envelope's H/M calling convention. (2026-09-25)
-- **Architecture assembly recompiles a library in one shared context.**
-  It does not link independently compiled protobuf fragments. This preserves
-  declaration order and shared type, sub-block and extern identities without
-  introducing a linker. Core protobuf libraries exclude binding fields; an
-  explicitly architecture-owned flat BlockAssembly adapter preserves existing
-  payload fields/bytes. Descriptor names and generated APIs change intentionally.
-  Reason: keep old corpus transports without putting binding choices back into
-  the core or claiming that an assembly is a complete program. (2026-09-25)
-- **Concrete extern declarations are architecture support; registration is
-  explicit and local.** `edsl.Extern` is generic; supplied typed families and
-  dynamic helpers live in `arch.externs.declarations`. A Registry binds
-  independently described implementation Shapes through per-instance
-  factories. Generic loading requires registry, contract and role kinds;
-  `arch.reference` explicitly selects the supplied environment. Python
-  registration provides neither Lean semantics nor printer support.
-  Reason: core language constructs must not appear to include a built-in
-  switch or a fixed set of stateful services. (2026-09-25)
-- **Example readability precedes new syntax.** The router, firewall and
-  load balancer use domain type aliases, symbolic predicates and ordinary
-  build-time helpers, retaining explicit assignments and runtime branches.
-  Their unchanged IR goldens and independent packet/state tests are the
-  acceptance anchors. Keep each example self-contained; extract a shared
-  library only for a demonstrated authoring gain. (2026-09-25)
-
-- **The typed eDSL is type-safe by construction where pyright allows and
-  run-time checked where it does not**, deviating from its design note in
-  four places the type checker forced: width aliases and typed literals
-  type as places, so a literal used as a target is caught at run time
-  only; `Bool`, `Enum` and `Error` targets have no static place split;
-  extern `in` parameters accept any value with the width checked at run
-  time; sub-block call arguments are run-time checked. `assign` is
-  overloaded over target kinds, so pyright reports a failed assignment as
-  `reportCallIssue`, and the must-fail fixtures say so.
-  `tests/unit/test_pyright.py` guards the static rules. (2026-09-22)
-- **A local declared without an initializer inside a parser state or an
-  action is re-zeroed at every entry** by the eDSL, as the bridge does
-  (see Semantics rulings; the ruling is of 2026-09-24, the eDSL followed
-  on 2026-09-25).
+- **Blocks are the authoring unit; optional BlockLibrary is not a program.**
+  It bundles blocks/shared type, error and extern declarations, without H/M
+  roots, roles, ports or fate. Independently compiled core libraries validate
+  without architecture programs; protobuf/Lean core also use BlockLibrary.
+  Architecture BlockBindings selects H/M/exports. Core validity/progress and
+  architecture binding/entry guarantees stay separate. Reason: the user
+  rejected `p4.Program` conflating authoring with composition; arbitrary
+  export names alone leave the wire H/M convention intact. (2026-09-25)
+- **Assembly recompiles in one shared context, without a fragment linker.**
+  This preserves declaration order and type/sub-block/extern identity. Core
+  libraries exclude bindings; architecture's flat BlockAssembly adapter keeps
+  old payload fields/bytes, intentionally changing descriptors/generated APIs.
+  It preserves corpus transports without making assembly a complete program
+  or returning binding choices to core. (2026-09-25)
+- **Concrete externs belong to architecture support; registration is local
+  and explicit.** Generic `edsl.Extern`; typed families/dynamic helpers in
+  `arch.externs.declarations`; Registry binds independent Shapes through
+  per-instance factories. Generic loading requires registry, contract and
+  role kinds; `arch.reference` chooses the supplied environment. Python
+  registration supplies neither Lean meaning nor printer support. Reason:
+  core language must not imply a built-in switch or fixed services.
+  (2026-09-25)
+- **Readability before syntax.** Router/firewall/load-balancer examples use
+  domain aliases, symbolic predicates and build-time helpers, with explicit
+  assignments/runtime branches. Unchanged IR goldens and independent packet/
+  state tests anchor acceptance. Keep examples self-contained; share code only
+  for demonstrated authoring gains. (2026-09-25)
+- **Four pyright-forced deviations from static type safety:** width aliases
+  and typed literals type as places (literal targets fail at runtime);
+  Bool/Enum/Error have no static place split; extern `in` accepts values with
+  runtime width checks; sub-block arguments are runtime-checked. Overloaded
+  `assign` failures are `reportCallIssue`; must-fail fixtures and
+  `tests/unit/test_pyright.py` pin static rules. (2026-09-22)
 
 ## Semantics rulings
 
-Rulings on behavior P4 leaves open are written in `docs/ir-semantics.md`,
-or in `docs/arch-supports.md` when an architecture or extern family
-decides them; these entries record why.
-
-- **`docs/ir-semantics.md` is a deviation ledger and the contract for
-  "equivalent to P4-SpecTec up to elaboration and known deviation".**
-  Every closed behavior has a fixed template (P4 section, SpecTec rule
-  at the pin, Lean definitions and theorems, Python function, tests) and
-  a class: same, refines undefined, deviates, not representable; the
-  classes are pinned in `tests/ledger-classes.json` and
-  `docs/ledger-xref.md` is generated from the entries. An unlisted
-  difference from SpecTec is a bug on one side, never a ruling made in a
-  fix. Reason: "up to known deviation" must be a checkable list.
-  (2026-09-24)
-- **The Lean definitions are "executable and proved, checked against
-  SpecTec", never "normative".** p4blo is an independent P4-inspired
-  project; the reference for what P4 means is SpecTec's elaborated IL.
-  (2026-09-24)
-- **A local declared without an initializer inside a parser state, an
-  action or an inlined function is re-zeroed at every entry by the
-  elaboration**, because SpecTec enters a fresh scope per state and per
-  call and the IR has only block locals. Reason: the bridge review showed
-  both interpreters and SpecTec disagreeing on validated programs.
-  (2026-09-24)
-- **The parser loop bound is the no-consumption revisit rule**, not fuel.
-  (2026-09-22)
-- **Metadata contract fields are fixed** as the design's table; fate as
-  booleans so the forwarder runs unchanged under the switch; byte-aligned
-  parsing required; the control runs after a parser rejection. **Port
-  rules**: ports are `0` to `ports - 1`; an out-of-range `egress_port`
-  drops with a diagnostic; an out-of-range `ingress_port` is the caller's
-  error before anything runs; the filter has no port count; BMv2's drop
-  port 511 is an out-of-range port here. **Architecture rules the design
-  left open**: a parse ending off a byte boundary drops the packet; an
-  undeclared contract field reads as zero and swallows writes;
-  `parser_error` is written after the parser's own `inout` writes and
-  before the control; the filter forwards the original bytes, so its
-  tests rewrite expectations to the input bytes. (2026-09-22)
-- **An out-of-range register read yields zero, diverging from BMv2
-  knowingly.** BMv2 leaves the destination untouched; P4 leaves this
-  implementation-defined; a strict xfail on the one vector, not resolved.
-  Revisit only if a corpus program depends on it. (2026-09-22)
-- **CRC16/CRC32 are stateless extern families with exact byte-aligned
-  widths**, full results and no padding; the contract is in
+- **`docs/ir-semantics.md` is the deviation ledger** for equivalence up to
+  elaboration/known deviation; architecture choices go in
+  `docs/arch-supports.md`. Each entry has P4 section, pinned P4-SpecTec rule,
+  Lean definitions/theorems, Python function and tests, classified same,
+  refines undefined, deviates or not representable. `tests/ledger-classes.json`
+  pins classes; `docs/ledger-xref.md` is generated. Unlisted differences are
+  bugs, not rulings invented during fixes: the deviation list must be checkable.
+  **Lean is executable and proved, checked against P4-SpecTec, never normative**:
+  that would claim authority the evidence does not give this independent
+  P4-inspired project; the reference is P4-SpecTec's elaborated IL. (2026-09-24)
+- **Re-zero uninitialized parser-state/action/inlined-function locals on
+  every entry.** P4-SpecTec enters fresh scopes; IR block locals retain values.
+  Bridge review exposed validated disagreements, requiring elaboration resets.
+  (2026-09-24; eDSL followed 2026-09-25)
+- **Parser bound is no-consumption revisit, not fuel:** fuel makes meaning
+  depend on an unspecified number; revisit agrees with BMv2. (2026-09-22)
+- **Metadata/architecture rules:** design fixes fields; fate booleans let the
+  forwarder run unchanged under switch. Require byte alignment; off-byte
+  parsing drops; control runs after parser rejection. Undeclared contract
+  fields read zero/swallow writes; `parser_error` follows parser `inout`
+  writes and precedes control. Filter forwards original bytes, so its expected
+  vectors use input bytes. **Port rules:** `0..ports-1`; invalid egress drops
+  with diagnostic, invalid ingress is caller error before execution; filter
+  has no port count. BMv2 drop port 511 is out of range here. (2026-09-22)
+- **Out-of-range register reads yield zero**, unlike BMv2's unchanged target;
+  P4 leaves this implementation-defined. Keep the exact vector's strict xfail;
+  revisit only if a corpus program depends on it. (2026-09-22)
+- **CRC16/CRC32 are stateless, exact byte-aligned widths, full results,
+  no padding/range reduction.** Independent answers exposed P4-SpecTec's
+  odd-byte defect; BMv2 confirms standard behavior. Contract:
   `docs/assurance.md`. (2026-09-23)
-- **Statement execution uses an explicit continuation machine.** A total
-  step function performs one operation and the interpreter drives it
-  through a proof-visible fixpoint, so finite traces imply the driver's
-  result. (2026-09-23)
+- **Statements use an explicit continuation machine:** total single-operation
+  steps and a proof-visible fixpoint connect finite traces to results;
+  termination for validated programs remains separate. (2026-09-23)
 
-## Vectors, oracles and corpus
+## Oracles and corpus
 
-- **P4-SpecTec is the primary oracle for the IR's meaning; BMv2 is the
-  tie-breaker where SpecTec is known wrong** (odd-byte CRC32 padding, mask
-  construction) and for what the simulator cannot judge (real longest
-  prefix, const-entry and runtime ternary priorities; shift amounts above
-  2048, which its builtins refuse).
-  Reason: SpecTec is the mechanization of P4 itself. Comparison happens
-  at three levels: printed P4 through the v1model shim, block by block on
-  the patched simulator, and at the IL level through the bridge.
+- **P4-SpecTec is primary for IR meaning; BMv2 breaks known defects**
+  (odd-byte CRC32 padding, masks) and judges simulator limits (real lpm,
+  const/runtime ternary priorities, shifts above its builtin limit of 2048).
+  Reason: P4-SpecTec mechanizes P4. Compare printed P4 through v1model, blocks
+  through patched simulation, and IL through the bridge. (2026-09-24)
+- **Block simulation uses the minimal `p4blo` architecture** in
+  `tests/oracle/p4blo.watsup` and OCaml patch `0001`, on given headers,
+  metadata, entries and extern state. Build stamp/cache key include patch
+  digest. Families use v1model implementations; refuse entries needing its
+  STF name maps (no corpus need yet). Accept differences only via checked
+  models of the exact defect, never tags. Reason: pipeline observations hid
+  register cells. Offer upstream when stable; both patches may move to
+  `p4-spectec-lean`, which already forks P4-SpecTec. (2026-09-24)
+- **The IL bridge is the P4 frontend, not verified.** Patch `0002` exports
+  instantiated IL JSON. Translate coverage-table constructs; merge v1model
+  verify/ingress/egress/compute, skipping egress after drop. Map standard
+  metadata to contract fields; rename colliding user fields, restoring names
+  only where synchronization matches the printer shim. Drop follows
+  `egress_spec == 511` at ingress end, written explicitly only when egress
+  needs it; metadata parameter is `meta`. Fold only what IR cannot hold;
+  name table-action copies like p4c. Corpus comparison encodes each documented
+  difference explicitly so new differences fail. (2026-09-24)
+- **P4-SpecTec's Lean rendering belongs to `p4-spectec-lean`.** p4blo owns IR,
+  meaning, elaboration and validation; no duplicate rendering/interpreter,
+  trace-localized N+1 testing, new simulator patches
+  beyond the two, or bridge census beyond corpus. Freeze oracle machinery as
+  the rendering's test bed and keep bridge small for the eventual theorem.
+  `docs/design.md` gives consumed interfaces. Reason: duplicate rendering
+  wastes effort and splits trust. (2026-09-24)
+- **Conformance corpus is fixed Lean answers in `tests/conformance/`.**
+  Canonical one-line answer diffs; `refresh` reanswers tracked inputs, never
+  generates; `export` adds inputs. Record semantics/binary digests and reject
+  stale binaries via `lake build --no-build`, time comparison fallback.
+  Format 2 has only nonzero cells; two contract fixtures cover rejected
+  installs/flood/drop/invalid ports. State changed semantics before refreshing.
   (2026-09-24)
-- **Block-level comparison runs on a patched simulator.** A minimal
-  `p4blo` architecture, whose SpecTec-language definition is the tracked
-  file `tests/oracle/p4blo.watsup` and whose OCaml is patch `0001`, runs
-  one block on the given headers, metadata, entries and extern state;
-  the build stamp and the CI cache key include the patch digest. Extern
-  families run on v1model's OCaml implementations; entries needing
-  v1model's STF name rewrites are refused rather than rewritten. Known
-  differences are accepted only through checked models of the exact
-  defect, never by tag. Reason: through the pipeline the simulator could
-  never show its register cells. Offer the patch upstream when it
-  stabilizes; both patches are candidates to move to `p4-spectec-lean`,
-  which forks SpecTec anyway. (2026-09-24)
-- **The IL bridge is the frontend from P4 source.** Patch `0002` exports
-  the instantiated IL structurally as JSON and `p4blo.frontend`
-  translates it as the coverage page prescribes. v1model in reverse:
-  verify, ingress, egress and compute merge into one control whose egress
-  part runs only when the packet is not dropped; `standard_metadata`
-  fields become the contract fields, every user field named like one is
-  renamed and the contract name is given back only where the program
-  synchronizes the field exactly as the printer's shim does; the drop is
-  translated as v1model decides it, from `egress_spec` being 511 at the
-  end of ingress, written out only where an egress part needs it; the
-  metadata parameter is `meta`; constant folding is kept to what the IR
-  cannot hold; per-table action copies are named as p4c names them.
-  Corpus goldens are compared with the bridge's output and every
-  documented difference is an explicit change in the test. Not a
-  verified frontend. (2026-09-24)
-- **SpecTec is rendered into Lean elsewhere; this repository builds the
-  IR, its meaning, the elaboration and the validation suite.** The user's
-  project `p4-spectec-lean` compiles P4-SpecTec's elaborated spec into
-  Lean and verifies that compiler. p4blo builds no Lean rendering or
-  interpreter of SpecTec's rules, no trace-localized N+1 testing, no
-  simulator patch beyond the two that exist, and no bridge census beyond
-  the corpus; it freezes the oracle machinery as the rendering's test bed
-  and keeps the bridge small as the elaboration side of the eventual
-  theorem. The interfaces that project consumes are in `docs/design.md`.
-  Reason: building the rendering twice wastes the effort and splits the
-  trust. (2026-09-24)
-- **The conformance corpus is Lean's answers on fixed inputs, tracked as
-  data** under `tests/conformance/`, canonical so a changed answer is a
-  one-line diff; `refresh` re-answers tracked requests and never runs a
-  generator, `export` adds inputs; a fixture records the digest of the
-  semantics sources and of the binary, and a stale binary is refused by
-  asking Lake (`lake build --no-build`), with a time comparison as the
-  fallback; format 2 lists only nonzero cells; two contract fixtures
-  cover rejected installs, floods, drops and out-of-range ports. A changed
-  answer is refreshed only after the semantics page states the changed
-  behavior. (2026-09-24)
-- **The SpecTec coverage scope is the rules and functions of 8-dynamic
-  and the functions of 3-operations, builtins included**, measured over
-  the corpus, the examples and a fixed greedy set of generated seeds;
-  functions outside those sections are reported as `called_in_scope` but
-  not enforced (eight exclusions' worth); the rule inventory at the pin is
-  the tracked fixture `tests/oracle/spectec-rules.json`, regenerated at a
-  pin bump. (2026-09-24)
-- **STF is the vector format.** Dialect conventions are recorded in
-  `impl/python/p4blo/stf.py`. The simulator has no longest-prefix rule, so
-  `tests/oracle/run.py` supplies prefix lengths as priorities; BMv2
-  decides real lpm, const-entry and runtime ternary priorities; printed
-  ternary entries are not const, since p4c 1.2.5 refuses priorities on
-  them. Known gap: printed const lpm entries carry no priorities, so a
-  program whose const lpm entries overlap fails on SpecTec until the
-  printer adds them. (2026-09-22)
-- **Corpus programs come from p4c's test suite** where STF vectors exist,
-  plus programs of our own. **The original tutorial firewall is an
-  independent oracle input**, its state observed through a scoped BMv2
-  barrier reading all 8192 cells; valid for the pinned single-ingress
-  FIFO implementation, revisit before recirculation or asynchronous
-  externs. (2026-09-22, 2026-09-23)
-- **An original-program oracle is evidence to challenge, not a definition
-  to copy**: strict discrepancy tests with passing controls record pinned
-  SpecTec's defects; inputs are never adapted to manufacture agreement;
-  strict XPASS prevents stale exceptions; a BMv2 expected failure names
-  the exact vector, status and mismatch. (2026-09-23)
-- **Conformance suites are discovered, not enumerated**: required Lean CI
-  selects `test_lean_agrees` tests across the tree. (2026-09-23)
-- **Every Docker check container is owned and verified**; never prune
-  globally. (2026-09-23)
-- **XDP is a compile-only preflight** with pinned sources and no kernel
-  load or behavioral-equivalence claim. (2026-09-23)
-
-## Verification method
-
-- **Verification follows Cedar's method**: an executable formal model,
-  property proofs, typed generators and component-level differential
-  testing; universal Python-Lean equivalence is not claimed, and the
-  models share wire syntax only. (2026-09-23)
-- **The adequacy criterion for generated testing is coverage of the
-  semantics' rules, not test counts.** The Lean machine reports the rules
-  each case exercises; witness pairs pin each rule's condition; the
-  retained campaigns' hits are recorded per part under
-  `tests/drt-coverage-parts/` and their union must cover the inventory
-  except `tests/drt-unhit-tags.json`, which may only shrink; SpecTec's
-  rules are measured over p4blo's inputs and every unhit in-scope rule is
-  excluded with a reason. Guidance toward unhit rules is kept only where
-  measured to help; the pair-rewarding term was measured and removed.
-  (2026-09-24, 2026-09-25)
-- **Replay the whole experiment**: a differential failure is a versioned
-  bundle with the program and the complete request sequence. **Observe
-  logical extern state after every request**, as hexadecimal strings;
-  missing state fails. (2026-09-23)
-- **Adversarial verification is recurring work**: mutants on both sides
-  in isolated worktrees, survivors become tests; a build failure is not a
-  semantic kill. `scripts/check-assurance.py` replays a finite, reviewed
-  catalogue from tracked fixtures. (2026-09-23)
-- **Mutation survivors drive generated-program coverage**: systematic
-  scalar boundaries, recursively typed generated expressions, generated
-  stateful programs with independent register and counter bounds, and
-  generated host policy changes; shrinking preserves types; invalid
-  generated programs fail rather than being filtered; failed programs
-  are retained under `.artifacts/drt/`. Host changes within one sequence
-  are Python/Lean-only evidence: the original BMv2 protocol cannot
-  replace rules mid-sequence, so revisit that limitation before claiming
-  original-oracle coverage of host changes. (2026-09-23)
-- **Proof trust is a build gate.** The gate builds with
-  `lake build --wfail`, so a warning fails the build without rewriting
-  the severities `#guard_msgs` tests observe (adopted from
-  `p4-spectec-lean`, 2026-09-25); the audit modules of the `<Root>Test`
-  libraries check advertised theorems' transitive axioms. (2026-09-23)
-- **Execution certificates are bounded reexecution of the actual
-  machine**, not a faster verifier or a proof term. (2026-09-23)
-- **Observers are reviewed as adversarially as evaluators**, and
-  **independent anchors accompany every roundtrip proof and observer**,
-  since paired faults preserve every law. (2026-09-23)
-- **Decoders are total through well-founded recursion over finite JSON**,
-  with no proof-only duplicate decoder. (2026-09-23)
-- **Fixed-application evidence is kept separate from generic IR replay**,
-  and exact state and numeric contracts beside packet equivalence; a
-  named malformed profile is exhausted before broad random traffic.
+- **P4-SpecTec coverage:** 8-dynamic rules/functions and 3-operations functions,
+  builtins included; corpus, examples and fixed greedy seeds. Outside calls
+  report `called_in_scope` without enforcement, avoiding eight exclusions for
+  unions, compound assignment and overload helpers. Regenerate the inventory
+  `tests/oracle/spectec-rules.json` at each pin bump.
+  (2026-09-24)
+- **STF vectors** use the dialect in `impl/python/p4blo/stf.py`. The simulator
+  lacks longest-prefix selection, so `tests/oracle/run.py` supplies prefix
+  priorities; BMv2 judges real lpm/const/runtime ternary priority. Printed
+  ternary entries are non-const because p4c 1.2.5 refuses const priorities.
+  Known gap: printed const lpm entries lack priorities; overlaps fail on
+  P4-SpecTec until the printer adds them. (2026-09-22)
+- **Corpus uses STF-bearing p4c tests plus own programs.** The unchanged
+  tutorial firewall is independent input; a scoped BMv2 barrier reads all
+  8192 cells. Valid only for pinned single-ingress FIFO; revisit before
+  recirculation/asynchronous externs. (2026-09-22, 2026-09-23)
+- **Challenge original-program oracles; do not copy them.** Strict pinned
+  discrepancy tests have passing controls; never adapt inputs for agreement.
+  Strict XPASS rejects stale exceptions; BMv2 xfails name exact vector/status/
+  mismatch. Discover Lean `test_lean_agrees` tests across the tree. (2026-09-23)
+- **Own and verify every Docker check container; never prune globally.**
+  **XDP is pinned compile-only preflight**, no kernel or equivalence claim.
   (2026-09-23)
 
-## Lean authoring and proof boundaries
+## Verification and proof boundaries
 
-The exact theorem statements are in `impl/lean/ASSURANCE.md` and the
-audit files; these entries record the shape.
+Exact theorem statements and premises remain in `impl/lean/ASSURANCE.md`
+and the audit files; these entries record choices and limits.
 
-- **The first sound validity boundary is the closed scalar fragment**;
-  exact frame agreement is distinct from declaration validity; aggregate
-  shape, nominal coherence and write permission are separate obligations;
-  initialization is discharged in bounded layers; call laws are proved
-  operationally against the actual machine. (2026-09-23)
-- **Core library validity is defined over the index and decided by a
-  checker proved sound; completeness is not claimed.** `Valid p idx`
-  states the library contract, `Validity.check` decides it in the Python
-  validator's order with its codes, `Validity.check_sound` is proved.
-  Architecture H/M roots and exports are checked separately by
-  `P4bloArch.Bindings.check`, with `P4bloArch.Bindings.check_sound`. Progress
-  takes two premises: `ExternContract`, proved for the five reference
-  families (`P4bloArch.Contract.bind_contract`), and that the run fits
-  the block kind; `InstalledOk` is discharged from the real
-  `Installed.build`; a kernel-checked instance on csum16 shows the
-  premises are inhabited. Wire-shape problems are `DECODE` on the Lean
-  side. Termination and completeness stay open. (2026-09-24, 2026-09-25)
-- **Deviation theorems cover the run-time closed behaviors only**; the
-  entries that belong to installation, binding or the architecture have
-  no theorem, because their meaning lives outside the IR's evaluator.
-  (2026-09-24)
-- **Applications are separately named policies with independent
-  anchors.** A proved state mapping is still anchored by a hand-built
-  asymmetric known answer, because a paired relabeling preserves the
-  proofs. Further readback and ingress proofs are parked. (2026-09-23)
-- **No new application or typed-source-language theorems until the
-  simulation theorem with the SpecTec rendering exists.** The theorems so
-  far establish p4blo's internal consistency; the IL bridge landed on
-  2026-09-24, and the claim about P4 now waits on `p4-spectec-lean`.
-  Proof effort goes to termination and codec composition. (2026-09-24,
-  reason updated 2026-09-25)
-- **One shared operator AST and one command AST**; custom notation waits
-  for a real application. **Codec laws are composed in baseline-first
-  slices.** (2026-09-23)
+- **Follow Cedar:** executable formal model, property proofs, typed generators,
+  component differential testing; implementations share only wire syntax,
+  with no universal Python/Lean equivalence claim. (2026-09-23)
+- **Adequacy means rule coverage, not counts.** Lean witness pairs pin rule
+  conditions; retained `tests/drt-coverage-parts/` union covers inventory except
+  shrinking-only `tests/drt-unhit-tags.json`. Every unhit in-scope P4-SpecTec
+  rule needs a reason. Keep guidance only when measured useful; the pair-reward
+  term was measured and removed. (2026-09-24, 2026-09-25)
+- **Replay complete experiments:** versioned program/request sequences from
+  fresh state; observe logical extern state after every request as hex strings.
+  Missing state fails. **Mutate both sides**
+  in isolated worktrees; survivors become tests, build failures are
+  not semantic kills. `scripts/check-assurance.py` replays a finite reviewed
+  catalogue, not a mutation-score guarantee. (2026-09-23)
+- **Survivors drive generation:** scalar boundaries, recursively typed
+  expressions, stateful programs with independent register/counter bounds,
+  host changes; type-preserving shrinking, invalid programs fail rather than
+  filter, failures saved in `.artifacts/drt/`. Host changes within sequences
+  are Python/Lean-only: original BMv2 cannot replace rules mid-sequence.
+  Revisit before claiming original-oracle host-change coverage. (2026-09-23)
+- **Proof trust is gated** with `lake build --wfail`: warnings fail the build
+  while preserving severities
+  observed by `#guard_msgs` (adopted 2026-09-25 from `p4-spectec-lean`).
+  `<Root>Test` audits advertised theorems' transitive axioms, catching imported
+  axioms/native shortcuts; intended theorem meaning still requires review.
+  (2026-09-23)
+- **Certificates are bounded actual-machine reexecution**, neither a faster
+  verifier nor a proof term. (2026-09-23)
+- **Review observers adversarially; anchor every roundtrip independently.**
+  Paired faults preserve laws. Independent known answers and constructor
+  observations reject them.
+  (2026-09-23)
+- **Total decoders recurse well-foundedly over finite JSON**, no proof-only
+  duplicate. **Fixed-application evidence is separate
+  from generic replay:** exact state/numeric contracts accompany packets;
+  exhaust named malformed profiles before random traffic. (2026-09-23)
+- **First validity boundary is closed scalar.** Exact frames differ from
+  declaration validity; aggregate shape, nominal coherence and write permission
+  are separate; initialization uses bounded layers; call laws concern actual
+  execution. (2026-09-23)
+- **Core library validity is over the index:** `Valid p idx`, checked in Python
+  validator order/codes by `Validity.check`, proved by `Validity.check_sound`;
+  no completeness claim. Architecture H/M/
+  exports use `P4bloArch.Bindings.check_sound`. Progress needs `ExternContract`
+  (five reference families via `P4bloArch.Contract.bind_contract`) and a Run
+  fitting block kind; `InstalledOk` follows real `Installed.build`; csum16
+  inhabits premises by kernel check. Wire-shape errors are Lean `DECODE`.
+  Termination/completeness remain open. (2026-09-24; library split 2026-09-25)
+- **Deviation theorems cover runtime closed behavior only.** Installation,
+  binding and architecture entries have no theorem because their meaning is
+  outside the IR evaluator. (2026-09-24)
+- **Applications are named policies with asymmetric known-answer anchors**:
+  paired relabeling preserves proofs; readback/ingress proofs stay parked.
+  **One shared operator AST and one command AST; notation waits for a real
+  application. Codec proofs proceed baseline
+  first.** (2026-09-23)
+- **No new application/typed-source theorems until simulation with the
+  P4-SpecTec rendering.** Existing proofs give internal consistency; IL bridge
+  landed 2026-09-24 and the P4 claim now awaits `p4-spectec-lean`. Proof effort
+  goes to termination/codec composition. (2026-09-24; reason 2026-09-25)
 
-## Scope and milestones
+## Scope and process
 
 - **Full architecture-independent P4 is a north star, not a deliverable.**
-  (2026-09-23)
-- **Three finite scopes are complete and frozen**: assurance milestone 1
-  (`3148a52`, 2026-09-23), the application collection of router, stateful
-  firewall and load balancer (`c94336d`, 2026-09-24), and the
-  architecture-free IR semantics scope (`26c9348`, 2026-09-25).
-  Architectures, applications, XDP and claim 3 are kept green, not
-  extended. The playground is out; the p4c backend is deferred behind
-  verification. (2026-09-22 to 2026-09-25)
-- **The website is static and dependency-free**, published from
-  `website/` through GitHub Pages; its walkthrough is generated from the
-  tested VLAN gateway source. (2026-09-24)
-
-## Process
-
-- **Independent review after each step**, filed under `.agents/reviews/`,
-  with the reviewed revision or patch, reproducible findings, checks and
-  limitations; findings fixed on the working branch before integration.
-  Reason: review must cover what is merged, and a report is evidence only
-  when a later reader can identify its subject. (2026-09-25)
-- **PRs are the default for substantive changes; final-revision CI gates
-  merging.** Trivial non-behavioral maintenance may go directly to `main`.
-  Authorized work includes autonomous commits, pushes and merges, without
-  bypassing protections. Integrate sub-agent commits on the PR branch,
-  keep review and local/remote evidence distinct, and verify the final
-  head SHA before merging. Preserve coherent commits with a merge commit;
-  squash WIP/fixups with their rationale and attribution retained; rebase
-  only for an explicit linear-history preference. Reason: adopt the
-  user's p4-spectec-lean workflow so defects are caught before main changes,
-  while preserving independently useful history. (2026-09-25)
-- **PR descriptions carry durable rationale and concise AI disclosure.**
-  Explain the problem, outcome, tradeoffs, validation and relevant limits
-  without conversation context. Re-read against the final diff. Name the
-  authoring agent/model from active-session evidence in one sentence;
-  agent review is not human review. Reason: apply the user's practices in
-  p4-spectec-lean and Git/Google/GitHub contribution guidance without a
-  boilerplate template. Sources and adoption boundaries are in
-  `notes/engineering-practices.md`. (2026-09-25)
-- **Generated-file checks compare inventory and bytes with both index
-  and working tree from a clean temporary generation.** An in-place
-  `buf generate` followed by `git diff` misses untracked new outputs and
-  can leave stale outputs behind. One script serves local and schema CI
-  gates; negative tests challenge the guard. (2026-09-25)
-- **A tracked file may not exceed 5 MiB in index or working tree.**
-  Stage new deliverables before the gate. Prefer reproducible generation,
-  small losslessly compressed snapshots with raw checksums, or pinned
-  external artifacts; never rewrite published history without explicit
-  scope. Reason: adopt p4-spectec-lean's preventive artifact budget while
-  every current file fits without migration (largest about 0.5 MiB).
-  This is a project budget, not a hosting limit. (2026-09-25)
-- **Uncertain choices record a confidence and a revisit trigger.**
-  (2026-09-23)
-- **Unfinished work is parked as a pushed branch, never as an uncommitted
-  worktree**; a merged or byte-identical branch is deleted; obsolete
-  worktrees are archived before removal. (2026-09-24)
-- **Gates.** The full gate runs before a push, gated on the recorded exit
-  status and never on a command that reads the log (a `tail` once pushed
-  a red main). A builder hands back with lint, types, the tests covering
-  its files and the Lean gate when it touched Lean, and the full gate
-  only for a cross-cutting change; the integrator combines changes on the
-  PR branch in batches and gates once per batch before push, with final
-  remote CI before merge. `scripts/check.sh` deselects the oracle suites and runs the
-  rest in parallel with fixture-heavy modules pinned to one worker, under
-  a minute in all; the oracle workflows run the rest. At most two heavy
-  jobs share the machine at once. (2026-09-24, 2026-09-25)
-- **Documentation is split by subject.** `docs/` describes the artifact
-  for people and never links into `.agents/`; `.agents/` is the resumable
-  state; `AGENTS.md` is the single entry point. (2026-09-24)
-- **`.agents/` is compacted at milestone boundaries; git is the archive.**
-  The tree's commit is recorded as the archive commit in `status.md`; no
-  git tags are created (user's instruction, 2026-09-24; the one earlier
-  tag was deleted). Notes that describe the artifact are promoted into
-  `docs/`. (2026-09-24)
-- **Skills live in `.agents/skills/`**, with `.claude/skills` a committed
-  symlink to it. (2026-09-24)
+  (2026-09-23) **Three complete, frozen scopes:** assurance milestone 1 at `3148a52`
+  (2026-09-23), router/firewall/load-balancer collection at `c94336d`
+  (2026-09-24), architecture-free semantics at `26c9348` (2026-09-25).
+  Architecture/applications/XDP/claim 3 stay green, not extended: value is
+  the IR and meaning. Playground out; p4c backend deferred behind verification,
+  the community version's first job. (2026-09-22 to 2026-09-25)
+- **Website is static/dependency-free**, GitHub Pages from `website/`, with
+  walkthrough generated from tested VLAN gateway. (2026-09-24)
+- **Review independently after each step**, report revision/patch, reproducers,
+  checks/limits in `.agents/reviews/`; fix findings on the working branch before
+  integration so the
+  report identifies the work actually merged. (2026-09-25)
+- **Substantive work uses PRs; trivial nonbehavioral maintenance may use main.**
+  Autonomous commits/pushes/merges are authorized, never protection bypasses.
+  Integrate sub-agent commits on PR branches; distinguish review/local/remote
+  evidence, require final-head remote CI, recheck SHA. Merge coherent commits;
+  squash WIP preserving rationale/attribution; rebase only on explicit linear
+  preference. Reason: adopt the user's p4-spectec-lean practice to protect main
+  while keeping useful history. (2026-09-25)
+- **PRs explain problem, result, tradeoffs, validation/limits without chat
+  context.** Re-read final diff; one AI-disclosure sentence names the verified
+  session agent/model; agent review is not human review. Adopt Git/Google/
+  GitHub and p4-spectec-lean guidance without boilerplate. Sources/boundaries:
+  archived `.agents/notes/engineering-practices.md` at
+  `9fc6c19febf839fa56873be10788b515c4e29ae9`. (2026-09-25)
+- **Generated-file gates compare inventory and bytes to index and working
+  tree** from clean temporary generation, with negative tests and one local/CI
+  script: in-place regeneration plus diff misses new/untracked/stale outputs.
+  **Tracked files max 5 MiB in either tree:** stage deliverables before gates;
+  prefer reproducible generation, small losslessly compressed snapshots/raw
+  checksums or pinned
+  artifacts; no published-history rewrites without scope. Adopt p4-spectec-lean's
+  preventive budget while files fit (~0.5 MiB largest), not a hosting limit.
+  (2026-09-25)
+- **Record uncertainty's confidence/revisit trigger.** (2026-09-23)
+  **Park unfinished work as pushed WIP branches, never uncommitted worktrees;**
+  compare to main, delete merged/identical branches, archive obsolete worktrees
+  before removal. Fragile untracked drafts and falsely unique branches prompted
+  this. (2026-09-24)
+- **Full gate before push, recorded exit status rather than log-reader exit:**
+  `tail` once pushed red main; structural smoke checks once missed codec path
+  failures. Builders run lint/types/affected tests plus Lean if touched, full
+  gate for cross-cutting work; integrator gates each batch once, then final
+  remote CI. This avoids redundant gates without losing integration coverage.
+  `scripts/check.sh` parallelizes non-oracle suites with fixture-heavy modules
+  grouped; oracle workflows cover the rest. At most two heavy local jobs.
+  (2026-09-24, 2026-09-25)
+- **Docs split by subject:** public artifact in `docs/`, resumable work in
+  `.agents/`, sole entry point `AGENTS.md`; `test_docs_links.py` forbids docs
+  links into agent state. **Compact at milestones; git is archive:** record
+  tree hash in `status.md` first, promote artifact notes, remove completed
+  history, preserve
+  claims, review against archive. No tags (user instruction; earlier tag
+  deleted). Reason: stale diary/plan growth, with every byte already in git.
+  **Skills live once in `.agents/skills/`**, reached by Claude's committed
+  `.claude/skills` symlink. (2026-09-24)
