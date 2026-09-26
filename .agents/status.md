@@ -5,16 +5,28 @@ The user authorized core block execution plus scoped v1model, retiring the
 custom Filter/Switch. Branch `work/minimal-arch`, base `14e6f44`.
 [Scope and shared contract](notes/minimal-architectures.md).
 
-Current iteration: implementations integrated through `7cb3ce7`, printer
-regressions through `d3b9e95`; caller/golden/conformance migration remains
-uncommitted on the integrator branch. Python profile indexing and Lean
+Current iteration: implementations and binding integrated through `562e571`,
+docs through `8e80f65`, frontend tests `999c35e`, callers `c87d64a` and
+conformance `4fbe19d`. Python profile indexing and Lean
 whole-metadata validation findings are repaired. The six-stage witness passes
 Python and P4-SpecTec; the portable checksum/deparser witness passes both
 external oracles. Two native egress discrepancies are precisely classified;
 [the catalog](../docs/oracle-discrepancies.md) states adopted behavior and reason.
-All 89 conformance fixtures have been deliberately re-exported after role,
-metadata and fate changes. Required integrated full gates, final independent
-review, frozen assurance, commits/push and exact-main CI are still outstanding.
+All 89 conformance fixtures pass Python and Lean after deliberate re-export: all
+514 requests and every extern-state answer survive; two former flood outputs,
+118 coverage observations and 13 diagnostics change. Both independent stage-order
+faults were semantically killed and restored; [review](reviews/minimal-architecture-2026-09-25.md).
+The first required-Lean Python run had 4,791 passes, four xfails and three stale
+path/diagnostic expectations, fixed in c87d64a. The full script initially found
+one Markdown code formatting issue, fixed in the current tree. A repeat full
+gate passed: 4,798 tests, four xfails, no skips; all format/lint/types/schema/
+generation/workflow checks passed. The remaining oracle batch passed 340 with
+eight xfails and exposed two failures: a core generator-family key accidentally
+renamed to ingress, and stale coverage call/vector counts (both fixed at
+cd1e06e; focused replay 10 passed). Fresh measurement preserves all 2,296 items
+and every hit/instruction count. Independent review also found a retired BMv2
+flood skip being repaired with an explicit rejection test. Final full gate,
+frozen assurance, commits/push and exact-main CI remain outstanding.
 The evidence below describes the preceding completed scope, not this work.
 
 

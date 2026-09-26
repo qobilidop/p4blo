@@ -48,7 +48,7 @@ Design and semantics pages hold contracts; this register keeps choices and bound
 - **Lean owns abstract syntax, validity and meaning; protobuf owns wire syntax.** Conversion
   has separate proof obligations. `spec/ir/` is `P4bloIR`/`p4blo-ir`, schema beside it,
   nothing architectural; `spec/arch/` is `P4bloArch`/`p4blo-arch`, depending on IR and
-  supplying tested switch/extern adapters and `p4blo-lean`, without architecture-proof
+  supplying tested v1model/extern adapters and `p4blo-lean`, without architecture-proof
   guarantees. Python in `impl/python/` is the authoring surface. Retire the separate
   `impl/lean/` typed-source/application package to focus limited resources on the core IR.
   (ownership 2026-09-23; simplification 2026-09-25)
@@ -131,7 +131,7 @@ Design and semantics pages hold contracts; this register keeps choices and bound
 - **Concrete externs belong to architecture support; registration is local and explicit.**
   Generic `edsl.Extern`; typed families/dynamic helpers in `arch.externs.declarations`;
   Registry binds independent Shapes through per-instance factories. Generic loading requires
-  registry, contract and role kinds; `arch.reference` chooses the supplied environment.
+  registry, contract and role kinds; `arch.v1model` chooses the supplied environment.
   Python registration supplies neither Lean meaning nor printer support. Reason: core
   language must not imply a built-in switch or fixed services. (2026-09-25)
 - **Readability before syntax.** Router/firewall/load-balancer examples use domain aliases,
@@ -161,13 +161,20 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   2026-09-25)
 - **Parser bound is no-consumption revisit, not fuel:** fuel makes meaning depend on an
   unspecified number; revisit agrees with BMv2. (2026-09-22)
-- **Metadata/architecture rules:** design fixes fields; fate booleans let the forwarder run
-  unchanged under switch. Require byte alignment; off-byte parsing drops; control runs after
-  parser rejection. Undeclared contract fields read zero/swallow writes; `parser_error`
-  follows parser `inout` writes and precedes control. Filter forwards original bytes, so its
-  expected vectors use input bytes. **Port rules:** `0..ports-1`; invalid egress drops with
-  diagnostic, invalid ingress is caller error before execution; filter has no port count.
-  BMv2 drop port 511 is out of range here. (2026-09-22)
+- **Minimal architecture support is core blocks plus scoped v1model.** Parser,
+  Control and Deparser remain kinds of one core Block; P4bloParser/P4bloControl/
+  P4bloDeparser name the oracle interface. Retire Filter/custom Switch/flood.
+  Six independent pipeline roles preserve drop/state boundaries; unsupported
+  native services reject explicitly. Only core IR is formally verified.
+  Reason: focus limited resources on useful behavior with independent oracles.
+  Profile details live in docs/arch-supports.md. (2026-09-25)
+- **Judge discrepancies against the applicable contract, not an oracle vote.**
+  docs/oracle-discrepancies.md owns paired minimal cases, pins and dispositions.
+  BMv2's selected destination and pre-egress zero request define our target
+  profile; P4-SpecTec's different native outputs are exact regressions. Where
+  the language leaves behavior unspecified, label our deterministic policy.
+  Reason: independent implementations can share defects or implement different
+  extensions; agreement alone cannot define correctness. (2026-09-25)
 - **Out-of-range register reads yield zero**, unlike BMv2's unchanged target; P4 leaves this
   implementation-defined. Keep the exact vector's strict xfail; revisit only if a corpus
   program depends on it. (2026-09-22)
@@ -192,14 +199,13 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   of the exact defect, never tags. Reason: pipeline observations hid register cells. Offer
   upstream when stable; both patches may move to `p4-spectec-lean`, which already forks
   P4-SpecTec. (2026-09-24)
-- **The IL bridge is the P4 frontend, not verified.** Patch `0002` exports instantiated IL
-  JSON. Translate coverage-table constructs; merge v1model verify/ingress/egress/compute,
-  skipping egress after drop. Map standard metadata to contract fields; rename colliding
-  user fields, restoring names only where synchronization matches the printer shim. Drop
-  follows `egress_spec == 511` at ingress end, written explicitly only when egress needs it;
-  metadata parameter is `meta`. Fold only what IR cannot hold; name table-action copies like
-  p4c. Corpus comparison encodes each documented difference explicitly so new differences
-  fail. (2026-09-24)
+- **The IL bridge is the P4 frontend, not verified.** Patch0002 exports
+  instantiated P4 program IR. Preserve all six v1model roles without merging;
+  rename colliding user fields instead of equating them to intrinsic fields.
+  Reject native verify_checksum until checksum_error is supported. Original
+  source comparisons account for explicit authored schedule choices; round
+  trips check stage structure and packet/extern state rather than byte identity.
+  Reason: fused controls hid architecture boundaries. (2026-09-25)
 - **P4-SpecTec's Lean rendering belongs to `p4-spectec-lean`.** p4blo owns IR, meaning,
   elaboration and validation; no duplicate rendering/interpreter, trace-localized N+1
   testing, new simulator patches beyond the two, or bridge census beyond corpus. Freeze
@@ -210,7 +216,7 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   answer diffs; `refresh` reanswers tracked inputs, never generates; `export` adds inputs.
   Record semantics/binary digests and reject stale binaries via `lake build --no-build`,
   time comparison fallback. Format 2 has only nonzero cells; two contract fixtures cover
-  rejected installs/flood/drop/invalid ports. State changed semantics before refreshing.
+  rejected installs/unicast/drop/invalid ports and egress redirection attempts. State changed semantics before refreshing.
   (2026-09-24)
 - **P4-SpecTec coverage:** 8-dynamic rules/functions and 3-operations functions, builtins
   included; corpus, examples and fixed greedy seeds. Outside calls report `called_in_scope`

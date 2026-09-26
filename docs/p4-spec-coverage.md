@@ -278,7 +278,7 @@ Productions from `4.0-ir-syntax.watsup`; operator sets from
 
 | IL construct (production) | Status | p4blo form or elaboration | Note | Bridge |
 |---|---|---|---|---|
-| `annotationList` (on every declaration, field, key, entry, block) | excluded, by scope | none; field numbers 100 and above are reserved for them | Decision: annotations never mix with semantics. Three annotations have semantic residue and are rows above: `@name` on a key (`Key.name`), `@name` on an action reference (the copy's name), `@priority` on a const entry (`Entry.priority`). | ignored; `@priority` reaches the IR through the typed IL's entry priorities |
+| `annotationList` (on every declaration, field, key, entry, block) | excluded, by scope | none; field numbers 100 and above are reserved for them | Decision: annotations never mix with semantics. Two uses of `@name` have semantic residue and are rows above: on a key (`Key.name`) and on an action reference (the copy's name). | other annotations are ignored; the nonstandard `@priority` annotation is ignored by the pinned frontend, while language entry priorities and default source ordering reach `Entry.priority` through typed IL |
 | `nameIR`, `prefixedNameIR`, `nameListIR` | in | scoped `string` names | Schema: program, block, action, field, member, error and method namespaces. | translated |
 | `namedValueIR`, `namedValueListIR` | elaborated | with serializable enums | | performed |
 | `namedExpressionIR`, `namedExpressionListIR` | excluded, by elaboration | with record expressions | | partial: in record initializers of headers and structs |

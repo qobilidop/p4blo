@@ -54,6 +54,9 @@ creates no git tags.
    scopes and core-only assurance simplification are complete. Retired
    application/architecture proofs are historical, not continuation work. Independent blocks and optional BlockLibrary bundles are
    documented in `docs/python-edsl.md`; architecture assembly stays separate.
+   Only scoped v1model is supplied for packet execution; core Parser, Control
+   and Deparser blocks remain independent. `docs/oracle-discrepancies.md` records
+   reduced reproductions, the selected behavior and its governing contract.
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do
    not infer broader guarantees from counts.
@@ -134,7 +137,7 @@ so the required CI gate discovers them without a hand-maintained file list.
   The IR spec is the `spec/ir/` Lake package (`p4blo-ir`, imports `P4bloIR`)
   and holds nothing architectural: no ports, no packet fate, no concrete
   externs. The executable architecture adapter `spec/arch/` (`p4blo-arch`,
-  imports `P4bloArch`) depends on it and supplies the switch, the extern
+  imports `P4bloArch`) depends on it and supplies scoped v1model, the extern
   families and the `p4blo-lean` endpoint. This adapter is tested, without
   architecture-specific proof guarantees. Python is the authoring surface;
   there is no separate Lean authoring/application package. In each package,

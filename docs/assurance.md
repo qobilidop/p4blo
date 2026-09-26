@@ -68,7 +68,7 @@ their own model and evidence; the extensible Python registry does not
 verify arbitrary plugins.
 
 The IR is architecture-free. End-to-end regression uses the supplied
-switch and filter adapters and their declared metadata and port rules, not
+scoped v1model adapter and its declared metadata and port rules, not
 every P4 architecture. The twelve-program corpus includes Python ports of
 the forwarder and persistent tutorial Bloom firewall, which admits Bloom
 false positives and is not exact connection tracking. The corpus and the
@@ -247,7 +247,7 @@ Python unit suites are not automatically differential tests.
 | Packet, parser, deparser | `tests/unit/test_interp_parser.py`, `tests/unit/test_interp_deparser.py`, `spec/arch/P4bloArchTest/Interp.lean`; corpus DRT, masked and range select in `tests/drt/test_drt.py`, byte cuts and persistent sequences in `tests/programs/test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
 | Tables, actions, host installation | `tests/unit/test_interp_tables.py`, generated configurations in `tests/drt/test_drt.py`, `tests/programs/test_forwarder_tables_semantics.py`, `tests/programs/test_forwarder_action_semantics.py`, `tests/programs/test_forwarder_apply_semantics.py`; strict configuration, full-state and default-hit observations | Core lookup laws; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family or a forwarding proof. |
 | Persistent extern state | `tests/drt/test_drt_stateful_programs.py` shrinking sequences, `tests/drt/test_drt_state.py`, `tests/unit/test_externs.py`, `tests/unit/test_extern_families.py`, `tests/unit/test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Original BMv2 checks packets and complete arrays. Concrete externs and firewall behavior are tested, not proved. |
-| Architecture outcomes and errors | `tests/drt/test_drt.py` drop, flood, ports and error reasons; `tests/drt/test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
+| Architecture outcomes and errors | `tests/drt/test_drt.py` drop, unicast, ports and error reasons; `tests/programs/test_v1model.py` six-stage/drop/state witnesses; `tests/drt/test_drt_replay.py` matching-error policy; corpus v1model vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
 | Serialization and observation | `tests/codec/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `tests/codec/test_wire_decimal.py`; `tests/drt/test_drt_protocol.py`, `tests/drt/test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete library, architecture export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
 | Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `tests/programs/test_forwarder*_semantics.py` and `tests/programs/test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Python-authored examples execute on both interpreters. Application construction and behavior are tested, with no application or whole-pipeline proof. |
 
@@ -349,7 +349,7 @@ answers kept as data: one fixture per input, each a program, an ordered request
 sequence from fresh extern state and the reply Lean gave to each request,
 with outputs, diagnostic or error, complete extern state and rule tags.
 The inputs are every corpus program and example with its STF vectors, two
-contract fixtures that record rejected installs, floods, drops and
+contract fixtures that record rejected installs, unicast, drops, redirection attempts and
 out-of-range ports, the
 DRT's generated entries and packets at two seeds per program, and 36
 seeds of the generated program families. `tests/drt/test_conformance.py`
@@ -400,7 +400,7 @@ the tutorial firewall's Bloom filter cells that the pipeline comparison
 cannot see; and the stored fields and index a stack keeps after
 `push_front` and `pop_front`, the ledger's *deviates* entry, which no
 deparser emits. The blocks' inputs are chosen by chaining them as the
-switch does, so the comparison covers what the vectors reach, not every
+parser/ingress/deparser projection does, so the comparison covers what the vectors reach, not every
 input a block accepts; entries for a table name two blocks declare, or a
 `$valid$` key name, are refused rather than resolved differently.
 Table installation is still the STF runner's encoding on both runs, and
@@ -408,47 +408,55 @@ the extern families run on the simulator's V1Model implementations; the
 block runner compares block semantics, not an architecture or the wire
 format.
 
-The IL bridge makes the corpus's elaborations code: `p4blo.frontend`
-translates the IL P4-SpecTec's own typing and instantiation produce from a
-P4 program ([tests/oracle/README.md](../tests/oracle/README.md#the-il-export)),
-and each row of [p4-spec-coverage.md](p4-spec-coverage.md) says what it
-does with the construct. `tests/external/test_frontend_spectec.py` establishes, at
-the pin, that six corpus goldens (csum16, parser_error, priority, stacks,
-subparser_stack, verify_error) are reproduced byte for byte from their P4
-originals; that the other four differ only as the test spells out, with
-their vectors agreeing packet by packet except where the difference
-shows; that every
-corpus and example golden the v1model printer prints translates back to
-itself up to declaration order and the names of block locals and stateless
-extern instances, priority excepted since the printer writes mutable
-entries; that excluded constructs are refused by their row;
-that five p4c programs outside the corpus pass their own STF vectors on
-the Python interpreter; and that fourteen probe programs written for what
-the corpus misses pass vectors of P4-SpecTec's exact output, on its
-simulator and translated. The priority program is reproduced because its
-golden numbers const entries as the specification does, which is how
-P4-SpecTec's typed IL numbers them; p4c's own vector for it expects
-BMv2's inverted order, and the corpus copy carries the specification's
-answer instead. This is evidence on these programs, not a verified frontend: the
-bridge's elaborations are not proved to preserve meaning, P4-SpecTec's
-typing is trusted as the reference for what the source means, and
-v1model's drop is translated as v1model decides it, from `egress_spec`
-being 511 at the end of ingress, relying on 511 being no port of p4blo's
-switch wherever no egress part needs the decision written out.
+The IL bridge translates the instantiated P4 program IR exported by
+P4-SpecTec, using the supported rows of [p4-spec-coverage.md](p4-spec-coverage.md).
+It retains six distinct v1model stages, with explicit exclusions for unsupported
+standard metadata and services such as the native `verify_checksum` intrinsic.
+Core parser `verify` remains supported. The original checksum donor that uses
+that intrinsic is now an explicit exclusion test, rather than a silently
+ignored verification step.
+
+Original-source comparisons preserve stage boundaries and account for the
+canonical examples' documented authoring choices. In particular, some authored
+examples compute stateless checksums in ingress while their donors use the
+checksum stage. The printer/importer round trip checks stage structure and
+packet/extern-state observations; it does not claim byte-identical IR because
+user metadata and native standard metadata remain distinct. Nine supported originals retain exact normalized IR equality after the
+checked projections spelled out in the tests. Fourteen accepted round trips
+check all 100 STF requests and 336 generated requests; the priority round trip
+remains excluded. Original P4/STF sources remain pinned and unchanged. These
+are finite tests, not a verified frontend or a general P4 compiler claim.
+
+The six-stage acceptance witness tests noncommuting mutations, payload,
+ingress/egress drop suppression and persistent late-stage state on Python,
+Lean and P4-SpecTec. BMv2 rejects arbitrary checksum-control operations and
+stateful deparser operations, so a separate portable witness uses an empty
+VerifyChecksum stage, native checksum update, and header-only emission. It
+checks exact output bytes and same-stage egress state on both oracles. The
+runtime serializes packets; this does not model BMv2's cross-pipeline scheduling.
 
 ## Known disagreements with the oracles
 
-Every known disagreement is a strict expected failure restricted to a
-dedicated exception that matches the exact vector, status and observed
-mismatch. An oracle error, an unrelated mismatch or a corrected oracle
-fails the test instead of hiding behind the exception. No adapter changes
-an input to manufacture agreement.
+The [discrepancy catalog](oracle-discrepancies.md) gives minimal paired
+reproductions, exact pins, observed results, and the adopted behavior with its
+reason. Correctness suites use strict expected failures restricted to the
+observed mismatch; the separate characterization suite asserts each oracle's
+complete distinct answer. Unrelated errors or corrected behavior fail the
+classification. Native source probes are never rewritten to agree. Printed
+programs explicitly bind the documented architecture profile, including the
+local egress drop request and preserved output destination.
+
+For egress destination and initialization, p4blo follows the documented/pinned
+BMv2 profile: destination is selected before egress; egress starts with a zero
+drop request; non-drop egress assignments cannot redirect the output. The two
+minimal native probes expose P4-SpecTec's differing behavior independently.
+
 
 **BMv2: an out-of-range register read.** p4blo's closed behavior is that a
 read at or beyond a register's size yields zero and a write there is
 ignored. BMv2 agrees about the write but leaves the read's destination
 untouched, so a field keeps its parsed value. P4 leaves this
-implementation-defined; the difference is documented, not resolved, and
+unspecified; zero is p4blo's deterministic refinement, not evidence that BMv2 is wrong, and
 shows on exactly the two `register_bounds` packets whose out-of-range read
 destination is non-zero. The [BMv2 adapter README](../tests/oracle/bmv2/README.md)
 has the diagnosis.
@@ -522,7 +530,7 @@ observe this on the unchanged original firewall and on the printed IR.
 The first oracle also lacks a longest-prefix rule; the translation in
 `tests/oracle/run.py` supplies prefix lengths as priorities, so SpecTec
 confirms outputs while BMv2 independently decides longest prefix, const
-entries and runtime ternary priorities. Neither oracle can observe `flood`.
+entries and runtime ternary priorities. Flood/multicast is outside the supported profile.
 
 ## Adversarial checks
 
