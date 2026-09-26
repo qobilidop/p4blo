@@ -20,7 +20,7 @@ def assert_scope_boundary(source: str) -> None:
     assert source.count("    " + REQUIRED_GUARD + "\n") == 1
 
 
-@pytest.mark.parametrize("name", SPECIALIST_WORKFLOWS)
+@pytest.mark.parametrize("name", SPECIALIST_WORKFLOWS, ids=("lean", "spectec", "switch", "xdp"))
 def test_specialist_job_requires_successful_scope_before_skipping(name: str) -> None:
     assert_scope_boundary((WORKFLOWS / name).read_text())
 

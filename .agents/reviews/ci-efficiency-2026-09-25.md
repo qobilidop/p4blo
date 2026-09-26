@@ -21,8 +21,9 @@ remains unresolved.
 The initial investigation also confirmed that existing module grouping was
 ineffective: xdist consumed markers before the ordinary project hook added
 them. A real two-worker experiment showed absent group suffixes and duplicated
-fixture execution; prioritizing the hook activated groups but serialized cases
-that did not consume those fixtures. Removing that grouping preserves the
+fixture execution; prioritizing the hook activated groups. Source inspection
+showed that applying this to the existing policy would serialize cases that
+did not consume those fixtures. Removing that grouping preserves the
 observed scheduling rather than activating an unmeasured policy.
 
 ## Independently checked evidence
