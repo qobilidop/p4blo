@@ -1,0 +1,260 @@
+[
+  {
+    "name": "forward",
+    "runs": [
+      {
+        "entries": {
+          "tables": [
+            {
+              "block": "MyIngress",
+              "table": "ipv4_lpm",
+              "entries": [
+                {
+                  "keys": [
+                    {
+                      "lpm": {
+                        "value": "167772672",
+                        "prefix_len": 24
+                      }
+                    }
+                  ],
+                  "action": {
+                    "action": "ipv4_forward",
+                    "args": [
+                      {
+                        "bits": {
+                          "width": 48,
+                          "value": "514"
+                        }
+                      },
+                      {
+                        "bits": {
+                          "width": 9,
+                          "value": "2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "port": 0,
+        "packet": "00000000010100000000000108004500001a00010000401100000a0001010a000202deadbeefcafe",
+        "expects": [
+          {
+            "port": 2,
+            "data": "00000000020200000000010108004500001a000100003f1164d00a0001010a000202deadbeefcafe",
+            "mask": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "exact": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "lpm_precedence",
+    "runs": [
+      {
+        "entries": {
+          "tables": [
+            {
+              "block": "MyIngress",
+              "table": "ipv4_lpm",
+              "entries": [
+                {
+                  "keys": [
+                    {
+                      "lpm": {
+                        "value": "167772160",
+                        "prefix_len": 16
+                      }
+                    }
+                  ],
+                  "action": {
+                    "action": "ipv4_forward",
+                    "args": [
+                      {
+                        "bits": {
+                          "width": 48,
+                          "value": "65296"
+                        }
+                      },
+                      {
+                        "bits": {
+                          "width": 9,
+                          "value": "1"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "keys": [
+                    {
+                      "lpm": {
+                        "value": "167772672",
+                        "prefix_len": 24
+                      }
+                    }
+                  ],
+                  "action": {
+                    "action": "ipv4_forward",
+                    "args": [
+                      {
+                        "bits": {
+                          "width": 48,
+                          "value": "65304"
+                        }
+                      },
+                      {
+                        "bits": {
+                          "width": 9,
+                          "value": "2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "port": 0,
+        "packet": "00000000010100000000000108004500001a00010000401100000a0001010a000202deadbeefcafe",
+        "expects": [
+          {
+            "port": 2,
+            "data": "00000000ff1800000000010108004500001a000100003f1164d00a0001010a000202deadbeefcafe",
+            "mask": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "exact": false
+          }
+        ]
+      },
+      {
+        "entries": {
+          "tables": [
+            {
+              "block": "MyIngress",
+              "table": "ipv4_lpm",
+              "entries": [
+                {
+                  "keys": [
+                    {
+                      "lpm": {
+                        "value": "167772160",
+                        "prefix_len": 16
+                      }
+                    }
+                  ],
+                  "action": {
+                    "action": "ipv4_forward",
+                    "args": [
+                      {
+                        "bits": {
+                          "width": 48,
+                          "value": "65296"
+                        }
+                      },
+                      {
+                        "bits": {
+                          "width": 9,
+                          "value": "1"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "keys": [
+                    {
+                      "lpm": {
+                        "value": "167772672",
+                        "prefix_len": 24
+                      }
+                    }
+                  ],
+                  "action": {
+                    "action": "ipv4_forward",
+                    "args": [
+                      {
+                        "bits": {
+                          "width": 48,
+                          "value": "65304"
+                        }
+                      },
+                      {
+                        "bits": {
+                          "width": 9,
+                          "value": "2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "port": 0,
+        "packet": "00000000010100000000000108004500001a00020000401100000a0001010a000909deadbeefcafe",
+        "expects": [
+          {
+            "port": 1,
+            "data": "00000000ff1000000000010108004500001a000200003f115dc80a0001010a000909deadbeefcafe",
+            "mask": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "exact": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "miss",
+    "runs": [
+      {
+        "entries": {},
+        "port": 0,
+        "packet": "00000000010100000000000108004500001a00010000401100000a0001010a000202deadbeefcafe",
+        "expects": []
+      }
+    ]
+  },
+  {
+    "name": "non_ipv4",
+    "runs": [
+      {
+        "entries": {},
+        "port": 0,
+        "packet": "ffffffffffff000000000001080600010800060400010000000000010a0001010000000000000a000202",
+        "expects": [
+          {
+            "port": 0,
+            "data": "ffffffffffff000000000001080600010800060400010000000000010a0001010000000000000a000202",
+            "mask": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "exact": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "too_short",
+    "runs": [
+      {
+        "entries": {},
+        "port": 0,
+        "packet": "00000000010100000000000108004500001a",
+        "expects": [
+          {
+            "port": 0,
+            "data": "00000000010100000000000108004500001a",
+            "mask": "ffffffffffffffffffffffffffffffffffff",
+            "exact": false
+          }
+        ]
+      }
+    ]
+  }
+]

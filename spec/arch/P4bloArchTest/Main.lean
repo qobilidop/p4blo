@@ -8,6 +8,7 @@ import P4bloArchTest.Externs
 import P4bloArchTest.CRC
 import P4bloArchTest.ExternFamilies
 import P4bloArchTest.HostTrap
+import P4bloArchTest.V1Model
 import P4bloArchTest.Coverage
 
 /-!
@@ -17,19 +18,19 @@ gate runs: the test modules this driver imports and the fixtures under
 elaborates every module;
 `lake test` then runs this driver. `scripts/check-lean.sh` does both.
 
-Tests for the reference architecture: the forwarder's vectors replayed under
-the switch, the extern families, binding validation and assembly codecs.
+Tests for v1model: ordered stages, packet fate, the forwarder's vectors,
+extern families, binding validation and assembly codecs.
 Run by `lake test` from the `spec/arch/` directory; the fixture paths may also be given as
-arguments (the program JSON, then the vectors JSON), and default to the IR
-specification's copies. The coverage witness table is read from
+arguments (the program JSON, then the vectors JSON), and default to this
+architecture package's copies. The coverage witness table is read from
 `P4bloArchTest/fixtures/witnesses.json`.
 -/
 
 open P4bloArch P4bloIR
 
 def main (args : List String) : IO UInt32 := do
-  let fixture := args.head?.getD "../ir/P4bloIRTest/forwarder.json"
-  let vectors := (args.drop 1).head?.getD "../ir/P4bloIRTest/forwarder_vectors.json"
+  let fixture := args.head?.getD "P4bloArchTest/fixtures/forwarder.json"
+  let vectors := (args.drop 1).head?.getD "P4bloArchTest/fixtures/forwarder_vectors.json"
   let text ← IO.FS.readFile fixture
   let vectorsText ← IO.FS.readFile vectors
   let ((), failures) ← (do
@@ -37,10 +38,10 @@ def main (args : List String) : IO UInt32 := do
     | .ok p =>
       check "fixture decodes" true
       check "headers and metadata" (p.headers == "headers" && p.metadata == "metadata")
-      check "three exports" (p.exports.map Export.role == ["parser", "control", "deparser"])
+      check "three exports" (p.exports.map Export.role == ["parser", "ingress", "deparser"])
       check "exported control" ((do
         let idx ← (Index.build p).toOption
-        (p.toBlockBindings.exported? idx "control").map Block.name) == some "MyIngress")
+        (p.toBlockBindings.exported? idx "ingress").map Block.name) == some "MyIngress")
       forwarderReplayTests p vectorsText
       CoverageTests.tests p
       CoverageTests.witnessTests "P4bloArchTest/fixtures/witnesses.json"
@@ -53,7 +54,8 @@ def main (args : List String) : IO UInt32 := do
     ExternTests.tests
     CRCTests.tests
     ExternFamiliesTests.tests
-    HostTrapTests.tests).run []
+    HostTrapTests.tests
+    V1ModelTests.tests).run []
   if failures.isEmpty then
     IO.println "all tests passed"
     return 0

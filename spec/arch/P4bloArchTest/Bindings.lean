@@ -35,10 +35,10 @@ def tests : T Unit := do
       let idx ← Validity.check scalar
       Bindings.check bindings idx
       pure ()) matches .error { code := .exportSignature, path := _, message := _ })
-  check "the switch rejects scalar bindings before execution"
+  check "v1model rejects scalar bindings before execution"
     ((do
       let idx ← Index.build scalar
-      let _ ← Switch.load idx bindings 4
+      let _ ← V1Model.load idx bindings 4
       pure ()) matches .error _)
   let conventional := { scalar with blocks :=
     [{ (default : Block) with
@@ -54,7 +54,7 @@ def tests : T Unit := do
       matches .error { code := .exportDuplicate, path := _, message := _ })
     check "unresolved exports fail" (Bindings.check { bindings with exports := [⟨"control", "Missing"⟩] } idx
       matches .error { code := .refUnresolved, path := _, message := _ })
-    check "switch rejects a valid signature bound to the wrong role kind"
-      (Switch.load idx { bindings with exports := [⟨"parser", "C"⟩] } 4 matches .error _)
+    check "v1model rejects a valid signature bound to the wrong role kind"
+      (V1Model.load idx { bindings with exports := [⟨"parser", "C"⟩] } 4 matches .error _)
 
 end BindingTests

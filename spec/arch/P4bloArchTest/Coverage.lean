@@ -24,12 +24,12 @@ namespace CoverageTests
 /-- A small program with a select, a stack push past the size and a shift
 past the width, as protobuf JSON. Generated once from its text form with
 `p4blo.ir.dump_json` and checked by the Python validator. -/
-def program : String := "{\"name\":\"coverage\",\"errors\":[\"NoError\",\"PacketTooShort\",\"NoMatch\",\"StackOutOfBounds\",\"HeaderTooShort\",\"ParserTimeout\",\"ParserInvalidArgument\"],\"header_types\":[{\"name\":\"h_t\",\"fields\":[{\"name\":\"a\",\"type\":{\"bits\":8}}]}],\"struct_types\":[{\"name\":\"H\",\"fields\":[{\"name\":\"h\",\"type\":{\"header\":\"h_t\"}},{\"name\":\"s\",\"type\":{\"stack\":{\"header\":\"h_t\",\"size\":2}}}]},{\"name\":\"M\"}],\"blocks\":[{\"name\":\"P\",\"kind\":\"BLOCK_KIND_PARSER\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_OUT\"},{\"name\":\"meta\",\"type\":{\"struct\":\"M\"},\"direction\":\"DIRECTION_INOUT\"}],\"states\":[{\"name\":\"start\",\"body\":[{\"extract\":{\"target\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}}}}],\"transition\":{\"select\":{\"keys\":[{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}}],\"cases\":[{\"sets\":[{\"exact\":{\"bits\":{\"width\":8,\"value\":\"1\"}}}],\"target\":{\"reject\":{}}},{\"sets\":[{\"dont_care\":{}}],\"target\":{\"accept\":{}}}]}}}],\"start_state\":\"start\"},{\"name\":\"C\",\"kind\":\"BLOCK_KIND_CONTROL\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_INOUT\"},{\"name\":\"meta\",\"type\":{\"struct\":\"M\"},\"direction\":\"DIRECTION_INOUT\"}],\"body\":[{\"push\":{\"stack\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"s\"}},\"count\":3}},{\"assign\":{\"target\":{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}},\"value\":{\"binary\":{\"op\":\"BINARY_OP_SHL\",\"left\":{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}},\"right\":{\"literal\":{\"bits\":{\"width\":8,\"value\":\"9\"}}}}}}}]},{\"name\":\"D\",\"kind\":\"BLOCK_KIND_DEPARSER\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_IN\"}],\"body\":[{\"emit\":{\"value\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}}}},{\"emit\":{\"value\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"s\"}}}}]}],\"headers\":\"H\",\"metadata\":\"M\",\"exports\":[{\"role\":\"parser\",\"block\":\"P\"},{\"role\":\"control\",\"block\":\"C\"},{\"role\":\"deparser\",\"block\":\"D\"}]}"
+def program : String := "{\"name\":\"coverage\",\"errors\":[\"NoError\",\"PacketTooShort\",\"NoMatch\",\"StackOutOfBounds\",\"HeaderTooShort\",\"ParserTimeout\",\"ParserInvalidArgument\"],\"header_types\":[{\"name\":\"h_t\",\"fields\":[{\"name\":\"a\",\"type\":{\"bits\":8}}]}],\"struct_types\":[{\"name\":\"H\",\"fields\":[{\"name\":\"h\",\"type\":{\"header\":\"h_t\"}},{\"name\":\"s\",\"type\":{\"stack\":{\"header\":\"h_t\",\"size\":2}}}]},{\"name\":\"M\"}],\"blocks\":[{\"name\":\"P\",\"kind\":\"BLOCK_KIND_PARSER\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_OUT\"},{\"name\":\"meta\",\"type\":{\"struct\":\"M\"},\"direction\":\"DIRECTION_INOUT\"}],\"states\":[{\"name\":\"start\",\"body\":[{\"extract\":{\"target\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}}}}],\"transition\":{\"select\":{\"keys\":[{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}}],\"cases\":[{\"sets\":[{\"exact\":{\"bits\":{\"width\":8,\"value\":\"1\"}}}],\"target\":{\"reject\":{}}},{\"sets\":[{\"dont_care\":{}}],\"target\":{\"accept\":{}}}]}}}],\"start_state\":\"start\"},{\"name\":\"C\",\"kind\":\"BLOCK_KIND_CONTROL\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_INOUT\"},{\"name\":\"meta\",\"type\":{\"struct\":\"M\"},\"direction\":\"DIRECTION_INOUT\"}],\"body\":[{\"push\":{\"stack\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"s\"}},\"count\":3}},{\"assign\":{\"target\":{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}},\"value\":{\"binary\":{\"op\":\"BINARY_OP_SHL\",\"left\":{\"member\":{\"base\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}},\"field\":\"a\"}},\"right\":{\"literal\":{\"bits\":{\"width\":8,\"value\":\"9\"}}}}}}}]},{\"name\":\"D\",\"kind\":\"BLOCK_KIND_DEPARSER\",\"params\":[{\"name\":\"hdr\",\"type\":{\"struct\":\"H\"},\"direction\":\"DIRECTION_IN\"}],\"body\":[{\"emit\":{\"value\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"h\"}}}},{\"emit\":{\"value\":{\"member\":{\"base\":{\"var\":\"hdr\"},\"field\":\"s\"}}}}]}],\"headers\":\"H\",\"metadata\":\"M\",\"exports\":[{\"role\":\"parser\",\"block\":\"P\"},{\"role\":\"ingress\",\"block\":\"C\"},{\"role\":\"deparser\",\"block\":\"D\"}]}"
 
 /-- The tags one request reports, or the load error. -/
 def tagsOf (p : BlockAssembly) (host : Entries) (packet : ByteArray) : Except String (List String) := do
   let index ← Index.build p
-  let sw ← Switch.load index p.toBlockBindings 4
+  let sw ← V1Model.load index p.toBlockBindings 4
   let externs ← P4bloArch.bind index
   pure (Coverage.run sw externs host 0 packet).sorted
 
@@ -39,7 +39,7 @@ error, cursor and headers, then the same headers and metadata, then the same
 bytes. -/
 def tracesAgree (p : BlockAssembly) (host : Entries) (packet : ByteArray) : Except String Bool := do
   let index ← Index.build p
-  let sw ← Switch.load index p.toBlockBindings 4
+  let sw ← V1Model.load index p.toBlockBindings 4
   let externs ← P4bloArch.bind index
   let installed ← Installed.build index (some host)
   let metadata ← Value.zero (.struct sw.metadataType) index
@@ -55,11 +55,11 @@ def tracesAgree (p : BlockAssembly) (host : Entries) (packet : ByteArray) : Exce
   let parserAgrees := accepted == parsed.accepted && error == parsed.error &&
     (run.packet.map (·.cursor)) == some parsed.consumedBits &&
     run.frame.vars[headersName]? == some parsed.headers
-  let (headers, metadataAfter, _) ← runControl index sw.control parsed.headers parsed.metadata installed externs
+  let (headers, metadataAfter, _) ← runControl index sw.ingress parsed.headers parsed.metadata installed externs
   let some (cResult, cRun) :=
-      (Coverage.traceControl index sw.control parsed.headers parsed.metadata installed externs).1
+      (Coverage.traceControl index sw.ingress parsed.headers parsed.metadata installed externs).1
     | throw "the control was not traced"
-  let some cDecl := index.blocks[sw.control]? | throw "no control"
+  let some cDecl := index.blocks[sw.ingress]? | throw "no control"
   let controlAgrees := match cResult, cDecl.params with
     | .ok (), [h, m] => cRun.frame.vars[h.name]? == some headers && cRun.frame.vars[m.name]? == some metadataAfter
     | _, _ => false
@@ -93,7 +93,7 @@ structure Witness where
   hits : List String
   /-- Tags the request must not report. -/
   misses : List String
-  /-- The reply `Switch.run` gives, as `replyJson` renders it. -/
+  /-- The reply `V1Model.run` gives, as `replyJson` renders it. -/
   reply : Lean.Json
 
 /-- A witness row from its JSON object. -/
@@ -105,9 +105,9 @@ def Witness.decode (j : Lean.Json) : Except String Witness := do
          misses := ← j.getObjValAs? (List String) "misses",
          reply := ← j.getObjVal? "reply" }
 
-/-- The reply of `Switch.run` as the witness table records it: the outputs
+/-- The reply of `V1Model.run` as the witness table records it: the outputs
 with the diagnostic when there is one, or the error. -/
-def replyJson : Except String SwitchResult → Lean.Json
+def replyJson : Except String V1ModelResult → Lean.Json
   | .error e => Lean.Json.mkObj [("error", .str e)]
   | .ok r =>
     let outputs := r.outputs.map fun ((port, bytes) : Nat × ByteArray) =>
@@ -118,7 +118,7 @@ def replyJson : Except String SwitchResult → Lean.Json
 /-- The tags and the reply of one witness request, from fresh extern state. -/
 def runWitness (p : BlockAssembly) (w : Witness) : Except String (List String × Lean.Json) := do
   let index ← Index.build p
-  let sw ← Switch.load index p.toBlockBindings 4
+  let sw ← V1Model.load index p.toBlockBindings 4
   let externs ← P4bloArch.bind index
   let tags := (Coverage.run sw externs w.entries 0 w.packet).sorted
   pure (tags, replyJson ((sw.run externs w.entries 0 w.packet).map (·.1)))
@@ -199,7 +199,7 @@ def tests (forwarder : BlockAssembly) : T Unit := do
   checkOk "a request that cannot run reports no tags"
     (do
       let index ← Index.build forwarder
-      let sw ← Switch.load index forwarder.toBlockBindings 4
+      let sw ← V1Model.load index forwarder.toBlockBindings 4
       let externs ← P4bloArch.bind index
       pure (Coverage.run sw externs ⟨[]⟩ 9 (bytes [0])).sorted)
     (·.isEmpty)
@@ -223,7 +223,7 @@ def tests (forwarder : BlockAssembly) : T Unit := do
     let extra : Param := { name := "extra", type := .bits 8, direction := .«in» }
     let widened := { p with blocks := p.blocks.map fun b =>
       if b.name == "P" then { b with params := b.params ++ [extra] } else b }
-    checkError "the switch refuses an incompatible parser before tracing"
+    checkError "v1model refuses an incompatible parser before tracing"
       (tagsOf widened ⟨[]⟩ (bytes [5])) "EXPORT_SIGNATURE"
     for packet in [bytes [5], bytes [1], ByteArray.empty] do
       checkOk s!"traced blocks agree with the entry points on {packet.size} bytes"

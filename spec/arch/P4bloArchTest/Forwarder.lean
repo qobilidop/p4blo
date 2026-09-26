@@ -2,11 +2,11 @@ import P4bloArch.Assembly
 import P4bloArchTest.Check
 
 /-!
-End-to-end replay of the forwarder's five STF vectors under the switch
-architecture (`P4bloArch.Switch`), the same rules the Python driver in
+End-to-end replay of the forwarder's five STF vectors under v1model
+architecture (`P4bloArch.V1Model`), the same rules the Python driver in
 `tests/programs/test_corpus_forwarder.py` implements.
 
-`../ir/P4bloIRTest/forwarder_vectors.json` holds, per vector file, one run per `packet`
+`P4bloArchTest/fixtures/forwarder_vectors.json` holds, per vector file, one run per `packet`
 line: the entries installed before it, the ingress port, the packet, and
 the `expect` lines that follow it, each with its per-nibble mask and
 whether it ended in `$`. It was generated once from the repository root
@@ -33,10 +33,13 @@ with
                     runs[-1]["expects"].append({"port": s.port, "data": s.data.hex(),
                                                 "mask": s.mask.hex(), "exact": s.exact})
         vectors.append({"name": path.stem, "runs": runs})
-    Path("spec/ir/P4bloIRTest/forwarder_vectors.json").write_text(json.dumps(vectors, indent=2) + "\n")
+    Path("spec/arch/P4bloArchTest/fixtures/forwarder_vectors.json").write_text(json.dumps(vectors, indent=2) + "\n")
     EOF
 
-and must be regenerated whenever the STF files change.
+and must be regenerated whenever the STF files change. The program fixture
+`P4bloArchTest/fixtures/forwarder.json` is the canonical corpus program
+serialized with `p4blo.arch.wire.dump_json`. The core package keeps its
+older standalone-language fixture independently; it is not a v1model input.
 -/
 
 open P4bloIR P4bloArch
@@ -90,7 +93,7 @@ def StfVector.decodeAll (text : String) : Except String (List StfVector) := do
 
 /-- Replay one vector file: the outputs of each run must be exactly, and in
 order, what its `expect` lines claim. -/
-def replay (sw : Switch) (v : StfVector) : T Unit := do
+def replay (sw : V1Model) (v : StfVector) : T Unit := do
   let mut externs ← match P4bloArch.bind sw.index with
     | .ok e => pure e
     | .error e => do
@@ -117,19 +120,19 @@ def replay (sw : Switch) (v : StfVector) : T Unit := do
       check name ok
 
 /-- The port rules of .agents/decisions.md, as `tests/unit/test_arch.py` checks them
-on the Python switch: an ingress port outside `[0, ports)` is the caller's
+on Python v1model: an ingress port outside `[0, ports)` is the caller's
 error before anything runs, an egress port outside it drops the packet with
-a diagnostic, and 511 is just such a port. -/
-def portRuleTests (sw : Switch) : T Unit := do
+a diagnostic; egress_spec 511 instead drops without a diagnostic. -/
+def portRuleTests (sw : V1Model) : T Unit := do
   let some externs := (P4bloArch.bind sw.index).toOption | check "port rules: externs bind" false
   let some packet := hexToBytes? "0000000001010000000000010800\
     4500001a00010000401100000a0001010a000202deadbeefcafe" |>.toOption
     | check "port rules: packet decodes" false
   let noEntries : Entries := { tables := [] }
   checkError "ingress port beyond the count" (sw.run externs noEntries 4 packet)
-    "ingress_port 4 is not a port of this switch"
+    "ingress_port 4 is not a port of this v1model"
   checkError "ingress port beyond bit<9>" (sw.run externs noEntries 600 packet)
-    "ingress_port 600 is not a port of this switch"
+    "ingress_port 600 is not a port of this v1model"
   -- Forward every packet to `port`; the fate is the output ports and the
   -- diagnostic.
   let fate (port : Nat) : Except String (List Nat × Option String) :=
@@ -139,15 +142,15 @@ def portRuleTests (sw : Switch) : T Unit := do
                                              args := [.bits 48 0, .bits 9 port] } }] }
     (sw.run externs host 0 packet).map fun (r, _) => (r.outputs.map (·.1), r.diagnostic)
   checkOk "egress port beyond the count drops with a diagnostic" (fate 7)
-    (· == ([], some "egress_port 7 is not a port of this switch"))
-  checkOk "egress port 511 is out of range" (fate 511)
-    (· == ([], some "egress_port 511 is not a port of this switch"))
+    (· == ([], some "egress_spec 7 is not a port of this v1model"))
+  checkOk "egress spec 511 is the drop sentinel" (fate 511)
+    (· == ([], none))
   checkOk "the last port is a port" (fate 3) (· == ([3], none))
 
 def forwarderReplayTests (program : BlockAssembly) (vectorsText : String) : T Unit := do
   let loaded := do
     let index ← Index.build program
-    let sw ← Switch.load index program.toBlockBindings 4
+    let sw ← V1Model.load index program.toBlockBindings 4
     let vectors ← StfVector.decodeAll vectorsText
     pure (sw, vectors)
   match loaded with

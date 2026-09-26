@@ -14,10 +14,10 @@ def tests : T Unit := do
   match indexed with
   | .error _ => check "host trap index builds" false
   | .ok index => do
-    let sw : Switch := {
-      index, parser := "PacketEntryTrap", control := "", deparser := ""
+    let sw : V1Model := {
+      index, parser := "PacketEntryTrap", ingress := "", deparser := ""
       metadataType := "M", ingressPort := none, parserError := none
-      egressPort := none, drop := none, flood := none, ports := 4 }
+      egressPort := none, egressSpec := none, ports := 4 }
     let externs := P4bloArch.externs (Std.HashMap.ofList [("sentinel", .counter #[7, 0, 19])])
     check "host trap control reaches actual packet entry"
       (sw.run externs ⟨[]⟩ 0 ByteArray.empty matches .error "unknown block 'PacketEntryTrap'")

@@ -38,7 +38,8 @@ from pathlib import Path
 
 from google.protobuf import json_format
 
-from p4blo import arch, ir
+from p4blo import ir
+from p4blo.arch import v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -422,7 +423,7 @@ def build(name: str, spec: Spec) -> apb.BlockAssembly:
     program.exports.extend(
         [
             apb.Export(role="parser", block="P"),
-            apb.Export(role="control", block="C"),
+            apb.Export(role="ingress", block="C"),
             apb.Export(role="deparser", block="D"),
         ]
     )
@@ -1492,7 +1493,7 @@ def generate() -> dict[str, object]:
     remaining_cases()
     cases: list[dict[str, object]] = []
     for w in WITNESSES:
-        loaded = arch.reference.load(PROGRAMS[w.program])
+        loaded = v1model.load(PROGRAMS[w.program])
         outcome = python_outcome(loaded, Case(w.entries, 0, w.packet), PORTS)
         assert outcome.error is None and outcome.diagnostic is None, (w.program, outcome)
         assert outcome.outputs is not None

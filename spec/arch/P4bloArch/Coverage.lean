@@ -1,8 +1,8 @@
 import P4bloIR.Coverage
-import P4bloArch.Switch
+import P4bloArch.V1Model
 
 /-!
-# The coverage observer: rule tags of one request under the switch
+# The coverage observer: rule tags of one request under v1model
 
 Runs the IR's step machine itself, one `Execution.step` at a time, and asks
 `P4bloIR.Coverage.classify` before each step which rules the step is about
@@ -10,13 +10,13 @@ to exercise. `Execution.Finishes.sound` is what makes this an observer and
 not a second interpreter: a finite trace of `step` determines exactly the
 outcome of `Execution.drive`, which is what the real entry points run. The
 observer's outcome is nevertheless discarded; the reply of `p4blo-lean
-run` comes from `Switch.run`, and this module only reports tags.
+run` comes from `V1Model.run`, and this module only reports tags.
 
-`run` follows `Switch.run` (docs/arch-supports.md, "The switch") so that
+`run` follows `V1Model.run` (docs/arch-supports.md, "v1model") so that
 each block is traced from the configuration the real entry point starts
 from. It calls the real `runParser` and `runControl` for the values the
 next block needs and traces each block beside them, so the flow between
-blocks is the switch's own. The initial configurations are rebuilt here as
+blocks is the v1model's own. The initial configurations are rebuilt here as
 `P4bloArch.Interp` builds them; the architecture tests check that the traced
 outcomes and the real ones agree.
 -/
@@ -108,17 +108,17 @@ def traceDeparser (index : Index) (name : String) (headers : Value) (externs : E
       let (outcome, tags) := trace ctx { work := [.statements decl.body], run } {}
       (some outcome, tags)
 
-/-- The struct `m` with field `position` set, as `Switch` sets its contract
+/-- The struct `m` with field `position` set, as `V1Model` sets its contract
 fields. -/
 private def setField (m : Value) (position : Nat) (v : Value) : Except String Value := do
   let (t, fields) ← m.expectStruct
   pure (.struct t (fields.set position v))
 
-/-- The tags of one packet through the switch: every block that `Switch.run`
+/-- The tags of one packet through v1model: every block that `V1Model.run`
 runs for these inputs, traced from the configuration it starts from. Tags
 gathered before a failure are kept, so an error reply reports how far the
 request got. -/
-def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat)
+def run (sw : V1Model) (externs : Externs) (host : Entries) (ingress : Nat)
     (packet : ByteArray) : Tags := Id.run do
   if ingress ≥ sw.ports || ingress ≥ 2 ^ 9 then return {}
   let .ok installed := Installed.build sw.index (some host) | return {}
@@ -140,12 +140,38 @@ def run (sw : Switch) (externs : Externs) (host : Entries) (ingress : Nat)
     | some f => pure (setField parsed.metadata f.position (.error parsed.error))
     | none => pure (.ok parsed.metadata)
   let .ok provided := provided | return tags
-  let (_, controlTags) :=
-    traceControl sw.index sw.control parsed.headers provided installed parsed.externs ctx
-  let tags := tags.union controlTags
-  let .ok (headers, _, externs) :=
-    runControl sw.index sw.control parsed.headers provided installed parsed.externs
-    | return tags
+  let mut tags := tags
+  let mut headers := parsed.headers
+  let mut metadata := provided
+  let mut externs := parsed.externs
+  for stage in [sw.verifyChecksum, some sw.ingress] do
+    if let some name := stage then
+      let (_, nextTags) := traceControl sw.index name headers metadata installed externs ctx
+      tags := tags.union nextTags
+      let .ok (h, m, e) := runControl sw.index name headers metadata installed externs | return tags
+      headers := h
+      metadata := m
+      externs := e
+  let .ok destination := V1Model.portField metadata sw.egressSpec | return tags
+  if destination == 511 || destination ≥ sw.ports then return tags
+  if let some field := sw.egressPort then
+    let .ok m := setField metadata field.position (.bits (Bits.wrap 9 destination)) | return tags
+    metadata := m
+  if let some name := sw.egress then
+    let (_, nextTags) := traceControl sw.index name headers metadata installed externs ctx
+    tags := tags.union nextTags
+    let .ok (h, m, e) := runControl sw.index name headers metadata installed externs | return tags
+    headers := h
+    metadata := m
+    externs := e
+  let .ok fate := V1Model.portField metadata sw.egressSpec | return tags
+  if fate == 511 then return tags
+  if let some name := sw.computeChecksum then
+    let (_, nextTags) := traceControl sw.index name headers metadata installed externs ctx
+    tags := tags.union nextTags
+    let .ok (h, _, e) := runControl sw.index name headers metadata installed externs | return tags
+    headers := h
+    externs := e
   let (_, deparserTags) := traceDeparser sw.index sw.deparser headers externs ctx
   tags.union deparserTags
 

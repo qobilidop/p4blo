@@ -28,7 +28,7 @@ import P4bloArch.Coverage
         code 1.
 
     p4blo-lean run [--ports N] <program.json>
-        Load the program under the switch architecture (`P4bloArch.Switch`)
+        Load the program under the v1model architecture (`P4bloArch.V1Model`)
         with the reference extern families (`P4bloArch.Externs`)
         and answer requests read from stdin, one JSON object per line:
 
@@ -43,7 +43,7 @@ import P4bloArch.Coverage
         `entries` is the host's `Entries` message in the protobuf JSON
         mapping and may be omitted; `ingress_port` defaults to 0. Extern
         state persists across requests. `--ports N` (default 4) is the
-        number of ports a flood reaches.
+        number of configured physical ports.
         Every reply also carries `state`, the abstract extern observations
         from `P4bloIR.Observe`, including when the request cannot run, and
         `coverage`, the sorted names of the rule tags the request exercised
@@ -115,7 +115,7 @@ def Request.decode (line : String) : Except String Request := do
   pure { entries, ingressPort, packet }
 
 /-- The JSON line answering a request, with the rule tags it exercised. -/
-def answer (r : Except String SwitchResult) (externs : Externs) (coverage : List String) :
+def answer (r : Except String V1ModelResult) (externs : Externs) (coverage : List String) :
     String :=
   let tags := ("coverage", Lean.Json.arr (coverage.map Lean.Json.str).toArray)
   let j := match r with
@@ -128,7 +128,7 @@ def answer (r : Except String SwitchResult) (externs : Externs) (coverage : List
   j.compress
 
 /-- Answer requests from stdin until it ends, threading the extern state. -/
-partial def serve (sw : Switch) (externs : Externs) : IO Unit := do
+partial def serve (sw : V1Model) (externs : Externs) : IO Unit := do
   let stdin ← IO.getStdin
   let stdout ← IO.getStdout
   let mut externs := externs
@@ -170,7 +170,7 @@ def runMode (args : List String) : IO UInt32 := do
     IO.eprintln s!"error: {e}"
     return 1
   | .ok (program, index) =>
-    match Switch.load index program.toBlockBindings ports, P4bloArch.bind index with
+    match V1Model.load index program.toBlockBindings ports, P4bloArch.bind index with
     | .ok sw, .ok externs =>
       serve sw externs
       return 0
