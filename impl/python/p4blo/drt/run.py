@@ -377,7 +377,13 @@ class LeanRunner:
             # if a hostile descendant escaped the owned process group.
             if self.worker is None or not self.worker.is_alive():
                 if self.process.stdin is not None:
-                    self.process.stdin.close()
+                    try:
+                        self.process.stdin.close()
+                    except BrokenPipeError:
+                        # A failed flush leaves buffered input for close() to
+                        # retry. The dead peer must not mask the protocol error
+                        # or prevent closing the remaining streams.
+                        pass
                 if self.process.stdout is not None:
                     self.process.stdout.close()
             self.process = None

@@ -46,9 +46,8 @@ Goals:
 - Define a small, post-elaboration IR for P4's semantic core, with a
   Lean definition of its syntax and meaning, a protobuf encoding, a
   validator and a readable text form.
-- Give it two independent semantics, a Lean interpreter that is
-  normative and a Python interpreter that is the runnable reference, and
-  show that they agree.
+- Give it two independent executable semantics, in Lean and Python,
+  checked against P4-SpecTec and each other.
 - Show that a P4 block is a function and that an architecture is
   ordinary code outside the IR, by running one corpus under two
   architectures unchanged.
