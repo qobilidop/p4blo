@@ -50,6 +50,24 @@ def test_coverage_is_optional_and_never_part_of_agreement() -> None:
     assert error.coverage == frozenset()
 
 
+def test_dead_peer_buffered_write_preserves_error_and_closes_streams(tmp_path: Path) -> None:
+    with LeanRunner(
+        [sys.executable, "-c", "import sys; sys.exit(3)"], tmp_path / "unused.json", 4
+    ) as runner:
+        process, stderr, worker = runner.process, runner.stderr, runner.worker
+        assert process is not None and stderr is not None and worker is not None
+        assert process.stdin is not None and process.stdout is not None
+        # Force the peer to exit before the small request enters the real
+        # buffered pipe. Both flush() and close() then encounter the broken pipe.
+        assert process.wait(timeout=5) == 3
+        with pytest.raises(ProtocolError, match="exit 3"):
+            runner.run(Case(pb.Entries(), 0, b"x"))
+        assert process.stdin.closed and process.stdout.closed and stderr.closed
+        assert not worker.is_alive()
+        assert runner.process is None and runner.stderr is None
+        runner.close()  # Cleanup remains safe to repeat, including on context exit.
+
+
 @pytest.mark.parametrize("packet_size", [1, 1_000_000])
 def test_unresponsive_peer_times_out_even_when_it_does_not_read(
     tmp_path: Path, packet_size: int
