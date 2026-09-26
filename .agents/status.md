@@ -145,6 +145,9 @@ latency estimate.
   while Docker scripts use distro Python; current imports are compatible.
 
 
+[Independent compaction review](reviews/simplification-compaction-2026-09-25.md)
+found no unresolved issues; implementation evidence above is unchanged.
+
 ## Blocked
 
 Nothing. Ask for a new scope; do not reopen retired proofs or roadmap work.
