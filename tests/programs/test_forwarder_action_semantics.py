@@ -46,7 +46,7 @@ def destinations(name: str) -> tuple[int, int]:
 
 
 def values(name: str, *, final: bool = False) -> dict[str, Value]:
-    ev, iv, drop, ttl, _ = PROFILES[name]
+    ev, iv, sentinel, ttl, _ = PROFILES[name]
     dst, port = destinations(name)
     return {
         "hdr": Struct(
@@ -81,7 +81,8 @@ def values(name: str, *, final: bool = False) -> dict[str, Value]:
                 ),
             ],
         ),
-        "meta": Struct("metadata", [Bits(9, 3), Bits(9, port if final else 7), drop]),
+        "meta": Struct("metadata", [Bits(9, 3), Bits(9, port if final else 7)]),
+        "untouched_flag": sentinel,
         "untouched": Bits(8, 165),
         "dstAddr": Bits(48, 99),
         "port": Bits(9, 77),
@@ -173,7 +174,7 @@ def selected_action(program: apb.BlockAssembly) -> pb.Action:
             pb.Param(name="port", type=pb.Type(bits=9), direction=pb.DIRECTION_NONE),
         ],
         body=[
-            assign(("meta", "egress_port"), pb.Expr(var="port")),
+            assign(("meta", "egress_spec"), pb.Expr(var="port")),
             assign(("hdr", "ethernet", "srcAddr"), member("hdr", "ethernet", "dstAddr")),
             assign(("hdr", "ethernet", "dstAddr"), pb.Expr(var="dstAddr")),
             assign(

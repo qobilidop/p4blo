@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
 from p4blo.drt.case import Case
@@ -114,7 +114,7 @@ def expected_runs(program: apb.BlockAssembly, name: str) -> dict[str, Env]:
         ipv4.fields[7] = Bits(8, {0: 255, 1: 0, 255: 254}[ttl])
         meta.fields[1] = Bits(9, port)
     elif selected.action == "drop":
-        meta.fields[2] = True
+        meta.fields[1] = Bits(9, 511)
     else:
         assert selected.action == "NoAction"
     return {
@@ -137,8 +137,10 @@ def body(program: apb.BlockAssembly, name: str) -> list[pb.Stmt]:
             body=[
                 pb.Stmt(
                     assign=pb.Assign(
-                        target=target("meta", "drop"),
-                        value=pb.Expr(literal=pb.Literal(boolean=True)),
+                        target=target("meta", "egress_spec"),
+                        value=pb.Expr(
+                            literal=pb.Literal(bits=pb.BitsLiteral(width=9, value="511"))
+                        ),
                     )
                 )
             ],
@@ -331,11 +333,14 @@ def test_python_apply_hit_and_error_controls(
     program = checked
     env = environment(program, name, actual_entries=True)
     env.entries = InstalledEntries.build(env.index)
+    # Hit is an ordinary boolean target, separate from v1model's bit<9> fate.
+    env.vars["hit"] = True
     pending, after = deepcopy(env), deepcopy(env)
-    for state, value in [(pending, True), (after, False)]:
+    for state in (pending, after):
         meta = state.vars["meta"]
         assert isinstance(meta, Struct)
-        meta.fields[2] = value
+        meta.fields[1] = Bits(9, 511)
+    after.vars["hit"] = False
     frozen_pending, frozen_after = freeze(pending), freeze(after)
     action_call, write = stmt.run_action_call, writer()
     counts = {"action": 0, "hit": 0}
@@ -349,7 +354,7 @@ def test_python_apply_hit_and_error_controls(
     def hit_write(lvalue: pb.LValue, value: Value, current: Env) -> None:
         if current is env:
             assert counts == {"action": 1, "hit": 0}, "hit timing/count"
-            assert lvalue == target("meta", "drop") and freeze(value) == freeze(False)
+            assert lvalue == target("hit") and freeze(value) == freeze(False)
             assert freeze(current) == frozen_pending
             assert write(lvalue, value, current) is None
             assert freeze(current) == frozen_after
@@ -360,7 +365,7 @@ def test_python_apply_hit_and_error_controls(
     with monkeypatch.context() as hooks:
         hooks.setattr(stmt, "run_action_call", returned)
         hooks.setattr(stmt, "write_lvalue", hit_write)
-        assert stmt.apply(pb.Apply(table="ipv4_lpm", hit=target("meta", "drop")), env) is None
+        assert stmt.apply(pb.Apply(table="ipv4_lpm", hit=target("hit")), env) is None
     assert counts == {"action": 1, "hit": 1} and freeze(env) == frozen_after
 
     # These raw operational maps are NOT accepted original-program host configurations.
@@ -380,11 +385,12 @@ def test_python_apply_hit_and_error_controls(
     bad.entries = InstalledEntries(
         bad.index, {REF: []}, {REF: pb.ActionCall(action="ipv4_forward")}
     )
+    bad.vars["hit"] = True
     bad_before = freeze(bad)
     with monkeypatch.context() as hooks:
         hooks.setattr(stmt, "write_lvalue", forbidden)
         with pytest.raises(InterpError, match="action 'ipv4_forward' takes 2 arguments"):
-            stmt.apply(pb.Apply(table="ipv4_lpm", hit=target("meta", "drop")), bad)
+            stmt.apply(pb.Apply(table="ipv4_lpm", hit=target("hit")), bad)
     assert freeze(bad) == bad_before
 
 
@@ -445,7 +451,7 @@ def test_lean_agrees_apply_packets(
         bundle.parent.mkdir(parents=True, exist_ok=True)
         save(report, bundle)
     assert report.passed and report.agreed == 1
-    assert run_python(arch.reference.load(program), case, 4) == application_output(name)
+    assert run_python(v1model.load(program), case, 4) == application_output(name)
 
 
 def test_lean_agrees_skip_default_packet_replay(

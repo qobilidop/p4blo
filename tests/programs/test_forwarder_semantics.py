@@ -16,7 +16,7 @@ import pytest
 from google.protobuf.message import Message
 
 from p4blo import arch, stf
-from p4blo.arch import validator
+from p4blo.arch import v1model, validator
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
@@ -90,8 +90,8 @@ def test_lean_agrees_forwarder_stf(
     stf.replay(index, statements, collect)
     assert cases, f"forwarder vector has no packet requests: {vector.name}"
     compare_and_save(forwarder, cases, lean_binary, vector.stem)
-    loaded = arch.reference.load(forwarder)
-    stf.assert_replay(index, statements, arch.stf_driver(arch.Switch(ports=4), loaded))
+    loaded = v1model.load(forwarder)
+    stf.assert_replay(index, statements, arch.stf_driver(v1model.V1Model(ports=4), loaded))
 
 
 def edge_case(ttl: int) -> tuple[Case, list[tuple[int, bytes]]]:
@@ -118,7 +118,7 @@ def test_lean_agrees_forwarder_wrapping_ttl(
 ) -> None:
     case, expected = edge_case(ttl)
     compare_and_save(forwarder, [case], lean_binary, f"ttl-{ttl}")
-    assert run_python(arch.reference.load(forwarder), case, 4) == expected
+    assert run_python(v1model.load(forwarder), case, 4) == expected
 
 
 def test_lean_agrees_forwarder_detects_saturating_python_subtraction(
@@ -165,7 +165,7 @@ def test_lean_agrees_forwarder_checksum_after_drop(
     Retain a scoped execution observation, separately from packet agreement.
     """
     original = stmt.call_extern
-    observed: list[tuple[bool, int]] = []
+    observed: list[tuple[int, int]] = []
 
     def observe(call: pb.CallExtern, env: Env) -> None:
         original(call, env)
@@ -174,7 +174,7 @@ def test_lean_agrees_forwarder_checksum_after_drop(
             headers = expr.expect_struct(env.read("hdr"))
             ipv4 = expr.expect_header(headers.fields[1])
             observed.append(
-                (expr.expect_bool(metadata.fields[2]), expr.expect_bits(ipv4.fields[9]).value)
+                (expr.expect_bits(metadata.fields[1]).value, expr.expect_bits(ipv4.fields[9]).value)
             )
 
     case, _ = edge_case(0)
@@ -182,7 +182,7 @@ def test_lean_agrees_forwarder_checksum_after_drop(
     with monkeypatch.context() as spy:
         spy.setattr(stmt, "call_extern", observe)
         compare_and_save(forwarder, [case], lean_binary, "drop-checksum")
-    assert observed == [(True, 0xA3D0)]
+    assert observed == [(511, 0xA3D0)]
 
 
 def freeze(value: Any) -> object:
@@ -222,8 +222,10 @@ def freeze(value: Any) -> object:
     raise TypeError(f"unobserved runtime value {kind}")
 
 
-def invalid_env(program: apb.BlockAssembly, valid: bool, drop: bool, port: int, ttl: int) -> Env:
-    loaded = arch.reference.load(program)
+def invalid_env(
+    program: apb.BlockAssembly, valid: bool, sentinel: bool, port: int, ttl: int
+) -> Env:
+    loaded = v1model.load(program)
     installed = loaded.entries(edge_case(0)[0].entries)
     installed.default_actions[("MyIngress", "ipv4_lpm")] = pb.ActionCall(action="NoAction")
     loaded.externs["sentinel"] = Register(2, 8)
@@ -265,7 +267,9 @@ def invalid_env(program: apb.BlockAssembly, valid: bool, drop: bool, port: int, 
             ),
         ],
     )
-    env.vars["meta"] = Struct("metadata", [Bits(9, 3), Bits(9, port), drop])
+    env.vars["meta"] = Struct("metadata", [Bits(9, 3), Bits(9, port)])
+    # Retain unrelated boolean-state coverage independently of packet fate.
+    env.vars["untouched_flag"] = sentinel
     return env
 
 
@@ -276,14 +280,14 @@ def observe_invalid_control(env: Env) -> None:
 
 
 @pytest.mark.parametrize(
-    "valid,drop,port,ttl",
+    "valid,sentinel,port,ttl",
     list(itertools.product([False, True], [False, True], [0, 3], [0, 1, 255])),
 )
 def test_python_forwarder_invalid_python_state(
-    forwarder: apb.BlockAssembly, valid: bool, drop: bool, port: int, ttl: int
+    forwarder: apb.BlockAssembly, valid: bool, sentinel: bool, port: int, ttl: int
 ) -> None:
     """Complete-state known answers for invalid IPv4 profiles."""
-    observe_invalid_control(invalid_env(forwarder, valid, drop, port, ttl))
+    observe_invalid_control(invalid_env(forwarder, valid, sentinel, port, ttl))
 
 
 @pytest.mark.parametrize("fault", ["ingress", "cursor-type", "entries", "index", "scope", "extern"])
@@ -332,7 +336,7 @@ def test_lean_agrees_forwarder_invalid_observer_kills_hidden_effect(
             case = Case(pb.Entries(), 0, arp)
             report = compare_program(forwarder, [case], 4, [lean_binary])
             assert hits == 1 and report.passed and report.agreed == 1
-            assert run_python(arch.reference.load(forwarder), case, 4) == [(0, arp)] and hits == 2
+            assert run_python(v1model.load(forwarder), case, 4) == [(0, arp)] and hits == 2
         prior = hits
         with pytest.raises(AssertionError, match="complete Python control state"):
             observe_invalid_control(invalid_env(forwarder, True, False, 3, 0))

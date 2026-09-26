@@ -8,7 +8,7 @@ from typing import Any, cast
 
 import pytest
 
-from p4blo import arch
+from p4blo.arch import v1model
 from p4blo.arch.externs.register import Register
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
@@ -44,7 +44,7 @@ def expected_vars() -> dict[str, Value]:
                 ),
             ],
         ),
-        "meta": Struct("metadata", [Bits(9, 0), Bits(9, 0), False]),
+        "meta": Struct("metadata", [Bits(9, 0), Bits(9, 0)]),
         "reg_pos_one": Bits(32, 0),
         "reg_pos_two": Bits(32, 0),
         "reg_val_one": Bits(1, 0),
@@ -56,9 +56,9 @@ def expected_vars() -> dict[str, Value]:
 
 
 def invalid_env(
-    program: apb.BlockAssembly, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
+    program: apb.BlockAssembly, ev: bool, sentinel: bool, overlay: bool, dirty: bool, tcp_shape: int
 ) -> Env:
-    loaded = arch.reference.load(program)
+    loaded = v1model.load(program)
     installed = loaded.entries(connection()[0].case.entries)
     packet = Packet(bytes.fromhex("deadbeef"))
     packet.cursor = 3
@@ -69,9 +69,9 @@ def invalid_env(
         register = loaded.externs[name]
         assert isinstance(register, Register)
         register.cells[:] = [Bits(1, v) for v in values]
-    sentinel = Register(2, 8)
-    sentinel.cells[:] = [Bits(8, 7), Bits(8, 9)]
-    loaded.externs["sentinel"] = sentinel
+    sentinel_register = Register(2, 8)
+    sentinel_register.cells[:] = [Bits(8, 7), Bits(8, 9)]
+    loaded.externs["sentinel"] = sentinel_register
     env = Env.for_block(
         loaded.index,
         loaded.index.blocks["MyIngress"],
@@ -95,7 +95,9 @@ def invalid_env(
         ],
     )
     env.vars["hdr"] = headers
-    env.vars["meta"] = Struct("metadata", [Bits(9, 3), Bits(9, 511), drop])
+    env.vars["meta"] = Struct("metadata", [Bits(9, 3), Bits(9, 511)])
+    # This operational sentinel keeps the independent boolean-state boundary.
+    env.vars["untouched_flag"] = sentinel
     if dirty:
         env.vars.update(
             reg_pos_one=Bits(32, 0xFFFFFFFF),
@@ -121,7 +123,7 @@ def observe_body(env: Env) -> None:
 
 
 def test_python_firewall_actual_initialization(firewall: apb.BlockAssembly) -> None:
-    loaded = arch.reference.load(firewall)
+    loaded = v1model.load(firewall)
     frame = Env.for_block(loaded.index, loaded.index.blocks["MyIngress"], loaded.externs)
     assert freeze(frame.vars) == freeze(expected_vars())
     assert frame.action is None and frame.action_vars is None
@@ -129,13 +131,18 @@ def test_python_firewall_actual_initialization(firewall: apb.BlockAssembly) -> N
 
 
 @pytest.mark.parametrize(
-    "ev,drop,overlay,dirty,tcp_shape",
+    "ev,sentinel,overlay,dirty,tcp_shape",
     list(itertools.product([False, True], [False, True], [False, True], [False, True], range(3))),
 )
 def test_python_firewall_invalid_body(
-    firewall: apb.BlockAssembly, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
+    firewall: apb.BlockAssembly,
+    ev: bool,
+    sentinel: bool,
+    overlay: bool,
+    dirty: bool,
+    tcp_shape: int,
 ) -> None:
-    observe_body(invalid_env(firewall, ev, drop, overlay, dirty, tcp_shape))
+    observe_body(invalid_env(firewall, ev, sentinel, overlay, dirty, tcp_shape))
 
 
 @pytest.mark.parametrize(
