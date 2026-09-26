@@ -148,7 +148,7 @@ neither followed nor digested, since it changes no answer. A file of
 imports alone, such as the `P4bloIR.lean` umbrella, is followed but not
 digested, so adding a proof module to it is no change either. Each
 package's `lean-toolchain` is digested. The proof-support modules the
-umbrella imports under other names (typing, certificates) stay in: a
+umbrella imports under other names (such as typing) stay in: a
 change there costs a needless note, never a missed one.
 
 The header is informative; the byte comparison is the check. When the

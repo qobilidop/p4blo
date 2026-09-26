@@ -321,7 +321,7 @@ does not show that a vector executes a branch; use the current
 
 | Corpus program | Principal exercised boundary |
 |---|---|
-| [forwarder](../tests/corpus/forwarder/README.md) | IPv4 parsing, LPM actions/defaults, TTL rewrite, checksum and deparse; complete independent Python/Lean sources |
+| [forwarder](../tests/corpus/forwarder/README.md) | IPv4 parsing, LPM actions/defaults, TTL rewrite, checksum and deparse; Python-authored IR executed on Python and Lean |
 | [stacks](../tests/corpus/stacks/README.md) | Header stacks, next/last/index, validity, push/pop, slice elaboration and inout block calls |
 | [subparser_stack](../tests/corpus/subparser_stack/README.md) | Parser-scoped locals and next extraction through sub-parser inout arguments |
 | [stateful](../tests/corpus/stateful/README.md) | Persistent register/counter instances, extern results and arithmetic |
@@ -331,7 +331,7 @@ does not show that a vector executes a branch; use the current
 | [parser_error](../tests/corpus/parser_error/README.md) | Atomic short extraction and controls after parser rejection |
 | [verify_error](../tests/corpus/verify_error/README.md) | User errors, verify failure and parser-error observation |
 | [register_bounds](../tests/corpus/register_bounds/README.md) | Persistent read/write, wrapping and explicit out-of-bounds policy |
-| [tutorial_firewall](../tests/corpus/tutorial_firewall/README.md) | Direction/default policies, action calls, CRC16/32 and two persistent Bloom arrays; complete independent Python/Lean sources |
+| [tutorial_firewall](../tests/corpus/tutorial_firewall/README.md) | Direction/default policies, action calls, CRC16/32 and two persistent Bloom arrays; Python-authored IR executed on Python and Lean |
 | [vlan_gateway](../tests/corpus/vlan_gateway/README.md) | Single-tag VLAN parsing, exact match/action policy, header invalidation, a counter extern and deparsing; complete Python source with an independent packet/state sequence |
 
 Operators and execution paths not exercised by these fixed vectors have

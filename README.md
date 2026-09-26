@@ -38,10 +38,10 @@ What is claimed for which programs, what is proved, what is tested
 against which oracle, and which deliberate faults the tests catch, is in
 one place: [assurance](docs/assurance.md). The tests compare persistent
 extern state as well as packets, recorded mutation campaigns challenge
-both implementations, and a fixed execution-claim experiment checks a
-production Python run with a Lean checker whose acceptance theorem is
-proved. These are layered evidence, not a proof of universal Python–Lean
-equivalence or whole-program type safety.
+both implementations. Formal verification is limited to the architecture-free
+core IR; architecture adapters and applications are tested executable code.
+Core progress retains explicit extern, installation and entry assumptions.
+This does not prove universal Python–Lean equivalence or termination.
 
 Start with the [public Python applications](examples/README.md), beginning
 with the [IPv4 router](examples/router/README.md). Each has a complete eDSL
@@ -58,11 +58,7 @@ Bloom-filter false positives and compares all 8,192 register cells against
 unchanged original P4 on BMv2. Stronger probes exposed pinned SpecTec CRC32
 padding and table-mask defects that simpler packet sequences missed. They
 remain strict, precisely classified expected discrepancies—not model changes
-to manufacture agreement. The independent
-[Lean-authored firewall](impl/lean/P4blo/TutorialFirewall.lean) now runs the complete
-program with persistent state. Initialization and Bloom-insertion properties
-are proved under explicit premises; a complete firewall pipeline proof is not
-claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
+to manufacture agreement.
 
 ## Reading order
 
@@ -81,10 +77,9 @@ claimed. See [its README](tests/corpus/tutorial_firewall/README.md).
 4. [`impl/python/p4blo/interp/`](impl/python/p4blo/interp/): the reference
    interpreter, written to be read as an explanation of P4's core.
 5. [`spec/ir/P4bloIR/`](spec/ir/P4bloIR/): the independent executable Lean
-   semantics, checked against P4-SpecTec. The independent
-   [Lean user library](impl/lean/README.md) imports this specification and
-   exposes verified scalar authoring and execution:
-   `import P4blo` for users, `import P4bloIR` for the IR contract.
+   semantics, checked against P4-SpecTec. Core properties are proved here;
+   `spec/arch/` supplies the tested switch and extern models needed to run
+   programs through the `p4blo-lean` endpoint.
 6. [`docs/p4-spec-coverage.md`](docs/p4-spec-coverage.md): every construct of
    P4-SpecTec's elaborated IL and its status in p4blo.
 7. [`docs/assurance.md`](docs/assurance.md): what is claimed for which
@@ -112,9 +107,9 @@ checker. The [firewall and load-balancer demos](examples/README.md) use the
 same environment. No compiler, external oracle or separate service is needed
 to run these Python examples.
 
-To author and run the complete forwarder and persistent firewall in either
-language, follow the [tested quickstart](docs/quickstart.md). It uses the
-existing APIs and executables; no Docker or P4 oracle is needed.
+To author programs in Python and optionally compare their execution with
+Lean, follow the [tested quickstart](docs/quickstart.md). No Docker or P4
+oracle is needed.
 
 ## Development
 
@@ -141,7 +136,7 @@ For repository checks after installing their tools:
 
 ```
 scripts/check.sh              # every Python and schema check CI runs
-scripts/check-lean.sh         # all three Lean packages, audits and tests
+scripts/check-lean.sh         # both Lean packages, core proof audits and tests
 ```
 
 The oracle needs P4-SpecTec: `tests/oracle/build.sh` builds its pinned source; see
@@ -153,9 +148,8 @@ typechecked with p4c through Docker when it is available.
 | Path | What |
 |---|---|
 | `spec/ir/` | the IR specification: Lean syntax, semantics, codecs and scoped proofs, with the wire schema |
-| `spec/arch/` | the reference architecture specification: the contract, the switch, the extern families, and the `p4blo-lean` endpoint |
+| `spec/arch/` | tested executable adapters: architecture bindings, switch, extern families and the `p4blo-lean` endpoint |
 | `impl/python/p4blo/` | IR helpers, validator, interpreter, eDSL, printer, externs, architectures, STF runner, differential loop |
-| `impl/lean/` | user-facing `P4blo`, depending on `P4bloIR` and `P4bloArch`; verified typed scalar authoring under explicit frame premises and reference execution API |
 | `tests/corpus/` | twelve programs: eDSL source, IR golden, README, STF vectors |
 | `examples/` | public Python applications, runnable demos and behavioral contracts |
 | `tests/examples/` | application goldens, packet vectors and independent behavior checks |

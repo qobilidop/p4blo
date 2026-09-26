@@ -4,9 +4,8 @@ Typed Python adaptation of Stephen Ibanez's Apache-2.0 tutorial solution,
 [`p4lang/tutorials@098ce0b7ae486f5b747a6b53ad1585f0d977b42e`](https://github.com/p4lang/tutorials/blob/098ce0b7ae486f5b747a6b53ad1585f0d977b42e/exercises/firewall/solution/firewall.p4).
 The unchanged original is pinned separately in `tests/oracle/firewall.p4`
 by `tests/oracle/firewall.py`; the repository's root LICENSE contains
-Apache-2.0. An independent [Lean source](../../../impl/lean/P4blo/TutorialFirewall.lean)
-constructs the same complete IR without reading the golden. Follow the
-[quickstart](../../../docs/quickstart.md) to author and run either version.
+Apache-2.0. Follow the [quickstart](../../../docs/quickstart.md) to build the
+Python source and run its IR on the Python and Lean interpreters.
 
 ## What the port preserves
 
@@ -119,25 +118,13 @@ cells only, shift CRC32 to SpecTec's index, reset state or admit a
 premature ACK are all rejected; the driver's malformed command, sentinel,
 process and transcript failures are tested separately.
 
-## The Lean port
+## Cross-language execution
 
-`P4blo.TutorialFirewall.program` is authored directly in Lean from the
-typed source library and shared Ethernet, IPv4 and metadata layouts; its
-complete protobuf export equals the Python corpus program and the text
-golden byte for byte. Ordinary parser, action, table, extern and operator
-assembly remains an explicitly unverified seam. `p4blo leanTutorialFirewall run`
-prepares the same in-memory program through the public API and keeps
-extern state across requests; `tests/lean/test_lean_firewall.py` runs both
-vectors, the collision profiles, all byte cuts, the persistence sequences
-and the generated campaigns against the same independent expectations,
-and separately checks a fixed-server transcript so that a server reset
-cannot hide behind generic differential agreement.
-
-Proved under explicit premises: successful initialization of all nine
-roots, whole-Run identity of the invalid-IPv4 body, and exact two-write
-Bloom insertion preserving both arrays and unrelated state. Not proved:
-readback, the drop decision, hash bounds, control composition or any
-whole-firewall correctness property. The theorems are stated in
-[`TutorialFirewallProof.lean`](../../../impl/lean/P4blo/TutorialFirewallProof.lean)
-and [`TutorialFirewallBloom.lean`](../../../impl/lean/P4blo/TutorialFirewallBloom.lean)
-and audited in [`impl/lean/P4bloTest/UserProofAudit.lean`](../../../impl/lean/P4bloTest/UserProofAudit.lean).
+The Python-authored IR runs on the executable Lean switch with persistent
+extern state. Packet and full-state regressions cover connections,
+collisions, truncation and generated flow sequences. Focused tests in
+`tests/programs/test_firewall_semantics.py`, `test_firewall_body_semantics.py`
+and `test_firewall_bloom_semantics.py` exercise initialization and insertion
+against independent expectations. The original-source BMv2 profile also
+observes every register cell. These are executable tests, not proofs of the
+firewall, concrete extern families or architecture.

@@ -54,9 +54,9 @@ Goals:
 - Validate the whole against external oracles on real programs.
 - Publish a coverage table that walks P4's core construct by construct
   and says for each one whether it is in, elaborated away, or excluded.
-- Let people author programs in typed Python and in Lean, and prove
-  selected properties of the Lean-authored ones against the same
-  semantics that runs them.
+- Let people author programs in typed Python and run useful examples.
+- Restrict formal verification to the architecture-free core IR. Test the
+  architecture adapters, concrete externs and applications as executable code.
 
 Non-goals: performance of any component; a P4 parser or typechecker of
 p4blo's own (P4 source enters through P4-SpecTec's typing and
@@ -64,7 +64,9 @@ instantiation and the IL bridge, checked on the corpus, not verified); P4Runtime
 hardware targets or a p4c backend, which is the first thing a community
 version would build with 4ward's route as precedent; replacing any
 existing tool; a browser playground; universal correctness of the Python
-implementation, which is tested against Lean, not proved.
+implementation, which is tested against Lean, not proved; a Lean authoring
+language, architecture-specific proofs, application proofs or execution
+certificates.
 
 ## The four claims
 
@@ -129,8 +131,8 @@ ordinary, with validity a separate predicate and an executable validator,
 so that raw syntax remains useful for diagnostics, malformed-input
 testing and cross-language correspondence. Core library validity is
 defined in Lean over the index and decided by an executable checker proved
-sound; architecture H/M roots and exports have a separate sound binding
-checker. A valid library's well-formed machine never reaches an interpreter
+sound; architecture H/M roots and exports have a separate tested binding
+checker without a formal soundness claim. A valid library's well-formed machine never reaches an interpreter
 error: every finite run ends in success or a declared parser error under
 the documented extern, installation and entry premises.
 Checker completeness, termination and the complete codec proofs are the
@@ -141,8 +143,8 @@ obligations that remain, as assurance.md records.
 The IR is P4 after the frontend has done its work: monomorphic blocks,
 resolved widths, explicit casts, desugared control flow, resolved names.
 That is the gain of being free of frontend sugar, and it is what keeps
-the Lean semantics free of type inference. Every frontend, Python and
-Lean now, others later, owes the IR the same elaboration.
+the Lean semantics free of type inference. Every frontend, including the Python eDSL and P4 importer, owes the IR
+the same elaboration.
 
 Declarations are referenced by name, scoped as P4 scopes them, and never
 looked up dynamically: the validator resolves every reference once. This
@@ -306,60 +308,39 @@ live in architecture support, outside the generic eDSL.
 
 ### The Lean packages
 
-Three Lake packages with one-way dependencies, mirroring the split
-between the IR and the architectures that run it. `spec/ir/` is the IR
-specification, package `p4blo-ir` imported as `P4bloIR`: the abstract IR,
-its executable semantics with parser errors and an abstract extern state,
-the JSON codecs, the scoped proofs and their axiom audits. It holds
-nothing architectural: no ports, no packet fate, no concrete extern. An
-extern instance's logical state is a kind name with optional width and
-cells, and the model that interprets a call on it is a function the
-architecture supplies at load, so the IR's proofs never see a register.
-`spec/arch/` is the reference architecture specification, package
-`p4blo-arch` imported as `P4bloArch`, depending on the IR: the switch, the
-five extern families with their arithmetic and closed behaviors, the
-execution-certificate example, and the `p4blo-lean` endpoint that the
-differential tests drive. `impl/lean/` is the user library, package
-`p4blo` imported as `P4blo`, depending on both: a typed source language whose expressions
-and commands have independent denotations, lowering to the IR with
-semantic-preservation theorems under explicit frame and declaration
-premises, complete Lean-authored programs (the forwarder and the tutorial
-firewall) that export the same bytes as their Python counterparts, and a
-reference execution API. Lean-to-Lean calls pass IR values directly;
-protobuf is for exchanging programs with other languages, files or
-processes. Each boundary has its own kind of assurance:
+Two Lake packages have a one-way dependency. `spec/ir/`, package `p4blo-ir`
+imported as `P4bloIR`, owns abstract syntax, validity, executable semantics,
+JSON codecs and scoped proofs with axiom audits. Nothing architectural lives
+here: no ports, packet fate or concrete extern families. An extern's logical
+state is data; its call model is supplied by the caller. Core progress assumes
+that model satisfies `ExternContract`, installed entries satisfy `InstalledOk`
+and the initial machine meets the theorem's typed-entry premises. These are
+assumptions, not guarantees about the supplied architecture.
 
-| Boundary | Primary assurance |
+`spec/arch/`, package `p4blo-arch` imported as `P4bloArch`, depends on the IR
+and supplies executable bindings, switch, five extern families and the
+`p4blo-lean` endpoint used by differential tests. It compiles and runs tests,
+but carries no formal architecture-specific guarantee. Python is the program
+authoring interface; there is no separate Lean authoring package.
+
+| Boundary | Assurance |
 |---|---|
-| Lean source language to IR | validity and semantic-preservation proofs |
-| Lean execution to IR semantics | the reference interpreter is reused; refinement proofs would accompany a distinct implementation |
-| protobuf to and from abstract IR | codec proofs on the representable domain plus cross-language tests |
+| Core validity and execution | Scoped Lean theorems under their explicit premises |
+| protobuf to and from abstract IR | Component codec laws on the representable domain plus cross-language tests; complete-library composition remains open |
+| Architecture and extern execution | Native tests, Python/Lean comparison and applicable external oracles |
+| Python execution to IR semantics | Differential and property tests, independent answers and deliberate faults |
+| Authored program to intended behavior | Independent packet/state expectations, regressions and applicable oracle comparisons |
 
-Each package root follows the Mathlib and Batteries layout, so which
-directory a Lean file goes in has a one-line answer: under `<Root>/` if a
-client may import it, under `<Root>Test/` if only the gate runs it, and
-at the root only what Lake requires there: the root module,
-`lakefile.toml`, `lean-toolchain`, `lake-manifest.json`, `README.md` and
-at most one `Main.lean`. Tests, proof audits and fixtures are modules and
-files of one library per package, `P4bloIRTest`, `P4bloArchTest` and
-`P4bloTest`, named in the singular because Lake module names are global
-across a workspace, so two bare `Tests` would collide. Each test library
-is a default target, so a plain `lake build` checks every audit's
-`#guard_msgs` pins, and `lake test` runs its driver. The IR and architecture
-packages also keep their wire schemas under `proto/`, and the user package
-its assurance log, `ASSURANCE.md`. `spec/arch/Main.lean` is the
-`p4blo-lean` endpoint;
-`impl/lean/Main.lean` is the `p4blo` executable, whose subcommands are the
-forwarder and firewall servers and the fixture exporters the
-cross-language tests call. `tests/structure/test_package_layout.py` pins the layout.
-| Python execution to IR semantics | differential and property tests, adversarial mutations, scoped certificates |
-| authored program to intended behavior | independent expected answers, and application proofs where they exist |
+Each package puts client modules under `<Root>/` and gate-only modules under
+`<Root>Test/`. Its root contains Lake's files, the root module, README and at
+most one `Main.lean`, with wire schemas under `proto/`. The default test
+libraries are `P4bloIRTest` and `P4bloArchTest`; `lake build` checks the core
+audits and `lake test` runs each driver. `spec/arch/Main.lean` is the only
+application endpoint. `tests/structure/test_package_layout.py` pins the layout.
 
-A correct compiler can faithfully compile an incorrect program, so
-application properties are proved or tested separately, and stronger
-Lean guarantees never upgrade Python's tested conformance into
-equivalence. External oracles and known-answer tests stay because a proof
-can establish the wrong specification.
+Application tests check intent separately from core properties. External
+oracles and known answers stay because a theorem can establish the wrong
+specification; none upgrades Python's tested conformance into equivalence.
 
 ### Printer and oracles
 
@@ -407,8 +388,8 @@ execution in Lean is an explicit continuation machine driven by a
 proof-visible fixpoint, so finite traces support proofs about the actual
 interpreter rather than a model of it. Deliberate faults in both
 implementations, in observers and in codecs check that the tests would
-notice; a bounded execution certificate connects a production Python run
-to a proved Lean checker. Exactly which properties are proved, and what
+notice. Formal proofs cover only the architecture-free core. Exactly which
+properties are proved, and what
 each does not establish, is the subject of assurance.md.
 
 ### Coverage table
@@ -507,16 +488,10 @@ p4blo/
     P4bloIRTest/                    tests, proof audits, fixtures
     proto/p4blo/v0/p4blo.proto      versioned wire encoding
   spec/arch/                        Lake package p4blo-arch (P4bloArch): the
-    P4bloArch/                      reference architecture: switch, extern
-                                    families, certificate example
-    P4bloArchTest/                  tests, proof audit, fixtures
+    P4bloArch/                      executable switch, bindings, extern families
+    P4bloArchTest/                  tests and fixtures
     proto/p4blo/arch/v0/assembly.proto  architecture binding wire encoding
     Main.lean                       the p4blo-lean conformance endpoint
-  impl/lean/                        Lake package p4blo (P4blo): the user library
-    P4blo/                          typed source language, authored programs,
-                                    execution API
-    P4bloTest/                      test driver, proof audit
-    Main.lean                       the p4blo executable: servers, exporters
   impl/python/p4blo/                     the Python package
     v0/                             generated core protobuf code, committed
     ir.py                           load, save, text form
@@ -528,7 +503,7 @@ p4blo/
     arch/                           architecture bindings, contract, filter,
                                     switch, extern families and printer shims
       v0/                           generated architecture protobuf code
-    drt/                            the differential loop and certificates
+    drt/                            the differential loop
   examples/<application>/           public Python programs, demos, READMEs
   tests/                            everything that runs
     unit/, codec/, programs/,       the suites, one directory per question
@@ -538,12 +513,12 @@ p4blo/
     examples/<application>/         application goldens, vectors, tests
     oracle/                         P4-SpecTec and BMv2 drivers, original programs
     pyright/                        the eDSL's static-check fixtures
-  scripts/, .github/workflows/      the gates, and the five CI workflows
+  scripts/, .github/workflows/      the gates, four validation workflows and website publishing
 ```
 
 One Python project is rooted at the repository root so that `uv run
 pytest` works from there. Python dependencies are locked by `uv`; Lean has
-matching `lean-toolchain` pins in `spec/ir/` and `impl/lean/` selected through
+matching `lean-toolchain` pins in `spec/ir/` and `spec/arch/` selected through
 `elan`; schema checks, oracles and other specialist gates have their own
 pinned tools. The README's development section is the single entry point
 for setup.

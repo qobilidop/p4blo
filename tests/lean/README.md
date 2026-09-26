@@ -5,11 +5,13 @@ interpreter, and do both match answers written independently of either?
 
 These are the Lean half of layers 4 and 5 of the testing strategy in
 [`docs/design.md`](../../docs/design.md#testing-strategy): the validity
-checker against the Python validator, programs authored in Lean's typed
-source language (`impl/lean/`) against hand-written expected states,
-and the corpus's forwarder and firewall run step by step, from call entry
-to whole pipelines, on both interpreters. Each file names in its
+checker against the Python validator, architecture-free libraries and
+Python eDSL locals, and parser-error call copyback. Application packet,
+action and state comparisons live under `tests/programs/`; generated
+programs and sequences live under `tests/drt/`. Each file names in its
 docstring the part of execution it observes and what it does not claim.
+Formal proofs belong only to the core IR in `spec/ir/`; running a Lean
+comparison does not prove an application or architecture property.
 
 Build Lean first (`scripts/check-lean.sh`), then:
 

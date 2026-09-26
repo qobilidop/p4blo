@@ -11,7 +11,7 @@ generated programs and request sequences with complete extern state,
 shrinking, retained replays, the coverage-guided families, the adequacy
 criterion that every Lean rule tag is hit (`test_drt_coverage.py`, with
 [`../drt-unhit-tags.json`](../drt-unhit-tags.json)), the pipe protocol
-that must fail rather than hang, and the execution certificate. The
+that must fail rather than hang. The
 fault side checks that a wrong implementation is caught:
 `test_conformance.py` requires every mutant of
 [`../conformance/`](../conformance/README.md) to be killed, and

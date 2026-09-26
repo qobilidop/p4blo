@@ -1,29 +1,27 @@
-# The reference architecture specification
+# Executable reference architecture
 
-Lake package `p4blo-arch`, imported as `P4bloArch`, depending one way on
-the IR specification in `../ir`. It holds everything that runs an IR
-program and that the IR itself does not decide (docs/arch-supports.md):
+Lake package `p4blo-arch`, imported as `P4bloArch`, depends on the core IR
+in `../ir`. It supplies the executable adapters needed to run programs:
 
-- `P4bloArch/Externs.lean`: the extern families the supplied architectures
-  provide (`register`, `counter`, `checksum16`, `crc16`, `crc32`), their
-  shapes and closed behaviors, and the model and registry that
-  `P4bloIR.Externs.bind` takes. The IR sees an extern as a contract and
-  carries its state as data; this package interprets the calls.
-- `P4bloArch/Switch.lean`: the switch, the Lean twin of
-  `impl/python/p4blo/arch/switch.py`, following the rules every supplied
-  architecture shares.
-- `P4bloArch/Certificate.lean`, `CertificateWire.lean`: the fixed
-  register/counter experiment for `P4bloIR.ExecutionCertificate`.
-- `Main.lean`: the `p4blo-lean` conformance endpoint the differential
-  tests drive, which loads a program under the switch with these families.
+- `P4bloArch/Assembly.lean`: architecture bindings and their runtime checks.
+- `P4bloArch/Externs.lean`: register, counter, checksum16, CRC16 and CRC32
+  families, their shapes, registry and call implementations. Core extern
+  state is data; this package supplies its concrete interpretation.
+- `P4bloArch/Switch.lean`: the switch matching the Python adapter and the
+  documented metadata, packet and port rules.
+- `Main.lean`: the `p4blo-lean` conformance endpoint used by differential
+  tests. It loads an architecture assembly and runs its blocks.
 
-Everything a client may import lives under `P4bloArch/`; `Main.lean` is
-the one executable root. Everything only the gate runs lives under
-`P4bloArchTest/`, the modules of the `P4bloArchTest` library: the tests,
-the proof audit `ArchProofAudit.lean`, whose `#guard_msgs` pins every
-default `lake build` checks, and the fixtures under `fixtures/`.
+These are tested executable definitions, with no formal architecture or
+concrete-extern guarantee. The core's progress theorem assumes an
+`ExternContract`; this package does not prove that its families discharge
+that contract. The behavior and evidence boundaries are in
+[architecture support](../../docs/arch-supports.md) and
+[assurance](../../docs/assurance.md).
 
-`lake test` replays the forwarder's vectors under the switch and checks
-the families, the certificate and its wire adapter, reading the fixtures
-from `../ir/P4bloIRTest/`. `scripts/check-lean.sh` from the repository root
-builds and tests all three packages in dependency order.
+Client modules live under `P4bloArch/`; gate-only modules and fixtures live
+under `P4bloArchTest/`. `Main.lean` is the one executable root. `lake test`
+checks bindings, entry behavior, extern families and the switch, including
+forwarder vectors from `../ir/P4bloIRTest/`. From the repository root,
+`scripts/check-lean.sh` builds and tests both Lean packages in dependency
+order and runs the architecture-free core's proof audits.

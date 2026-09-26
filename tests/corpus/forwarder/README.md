@@ -10,22 +10,18 @@ an escape hatch.
 | Source | [p4lang/tutorials](https://github.com/p4lang/tutorials) `exercises/basic/solution/basic.p4` |
 | IR | `forwarder.txtpb`, generated from the eDSL |
 | eDSL | `forwarder.py` |
-| Lean authoring | [`P4blo/Forwarder.lean`](../../../impl/lean/P4blo/Forwarder.lean), checked field paths plus explicit ordinary IR assembly |
 | Vectors | `forward.stf`, `miss.stf`, `non_ipv4.stf`, `lpm_precedence.stf`, `too_short.stf` |
 
 The golden was written by hand for step 1 and is generated from the eDSL
 source since the checksum landed: `python tests/corpus/forwarder/forwarder.py`
 prints it, after the leading comment.
 
-The independent Lean source builds exactly the same complete IR, and its
-in-memory `Program` runs these same vectors through the public Lean switch
-API. The [quickstart](../../../docs/quickstart.md) runs both authored versions.
-Scoped proofs cover the invalid-IPv4 identity, the actual selected forwarding
-action, and bounded installed-table lookup/application families. These are
-not a verified whole frontend or pipeline; see the
-port (`notes/lean-forwarder.md`, archived),
-action (`notes/forwarder-action.md`, archived) and
-application (`notes/forwarder-apply.md`, archived) assurance notes.
+The [quickstart](../../../docs/quickstart.md) builds this Python source and
+runs its IR on both the Python and Lean interpreters. Independent packet,
+action and installed-table expectations live in
+`tests/programs/test_forwarder*_semantics.py`; the BMv2 profile independently
+checks five installed-table configurations. These are regression and oracle
+tests, not a formal forwarding or whole-pipeline guarantee.
 
 ## Elaborated away
 

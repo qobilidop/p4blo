@@ -13,9 +13,10 @@ checkpoints are recorded in the agent status file.
 For the documented profile below, the independent Python implementation
 and the executable Lean specification agree across a reproducible
 conformance suite, independently checked examples and a reviewed
-catalogue of intentional faults. Selected foundational properties are
-proved in Lean. Remaining trust boundaries, known divergences and
-excluded features are explicit.
+catalogue of intentional faults. Formal verification covers only the
+architecture-free core IR. Architecture adapters, concrete extern families
+and applications are tested executable code. Remaining trust boundaries,
+known divergences and excluded features are explicit.
 
 This is tested conformance, not a proof that Python is equivalent to
 Lean. Test, proof and mutation counts are not probabilities of
@@ -68,12 +69,11 @@ verify arbitrary plugins.
 
 The IR is architecture-free. End-to-end regression uses the supplied
 switch and filter adapters and their declared metadata and port rules, not
-every P4 architecture. The twelve-program corpus includes complete Python
-and Lean ports of the forwarder and the persistent tutorial Bloom firewall,
-which admits Bloom false positives and is not exact connection tracking.
-The three public [applications](../examples/README.md) are Python-authored
-and run on both interpreters; they have no Lean-authored counterpart or
-whole-pipeline proof.
+every P4 architecture. The twelve-program corpus includes Python ports of
+the forwarder and persistent tutorial Bloom firewall, which admits Bloom
+false positives and is not exact connection tracking. The corpus and the
+three public [applications](../examples/README.md) run their Python-authored
+IR on both interpreters. No application or whole-pipeline proof is claimed.
 
 ### Inputs and validation
 
@@ -84,9 +84,9 @@ exports and valid host installations. Lean's core library checker,
 validator's order and diagnostic codes; it is proved sound for the
 declarative rules `Validity.Valid`, not complete, and it is not proved
 equivalent to the Python validator. The architecture separately checks
-H/M roots and exports with `P4bloArch.Bindings.check`, whose soundness is
-proved by `P4bloArch.Bindings.check_sound`; `p4blo-lean check` checks the
-combined assembly. The Python and Lean checkers are compared instead,
+H/M roots and exports with the tested `P4bloArch.Bindings.check`;
+`p4blo-lean check` checks the combined assembly. This architecture checker
+has no formal soundness guarantee. The Python and Lean checkers are compared
 program by program, on every corpus program, example, a sample of both
 DRT families and every program `tests/unit/test_validator.py` validates: they
 agree on acceptance and on the first diagnostic code, up to wire problems
@@ -96,18 +96,16 @@ reaches an `InterpError`, under four premises: the extern binding obeys
 the extern contract, the table entries come from a successful
 installation, the initial run fits the block kind, and every value the
 architecture passes for a block parameter has the parameter's type. The
-first is proved for the reference extern families whenever
-`P4bloArch.bind` succeeds, and the second whenever `Installed.build`
-does; the last two are the entry points' calling convention. A control or
-deparser run moreover ends in success: parser errors come only from
-parser runs. Codec tests intentionally include invalid-but-representable
+extern contract remains a caller assumption: no theorem discharges it for
+the supplied families. `Installed.build` establishes `InstalledOk` when it
+succeeds; typed entry values and the initial machine must satisfy the core
+theorems' premises. Architecture entry functions are tested, not proved.
+Under these premises, a finite control or deparser run ends in success:
+parser errors come only from parser runs. Codec tests intentionally include invalid-but-representable
 IR; successful decoding is not permission to execute it.
 
-Selected typed Lean expressions and commands have checked lowering and
-execution theorems under explicit context, index and frame premises. The
-complete applications also assemble raw IR; neither that assembly nor
-Python's complete eDSL is a verified frontend. A human can still write
-the wrong intended program in either language, so independent expected
+Python's eDSL and P4 importer are tested frontends, not verified translations.
+A human can still write the wrong intended program, so independent expected
 examples check intent separately.
 
 ### Wire contract
@@ -163,9 +161,10 @@ hardened service. uint32 wire bounds can still describe impractically
 large allocations; JSON nesting, host memory and runtime limits apply.
 There is no proved global resource bound or validated-program termination
 theorem, and the Lean runner has no semantic fuel counter. Progress is
-proved: a finite run of a valid program ends in success or in a parser
-error the program declares, never in an `InterpError`, and only a parser
-run ends in the error; that every run is finite remains open. The DRT client
+proved under the extern, installation and typed-entry premises above:
+a finite run of a valid program ends in success or in a parser error the
+program declares, never in an `InterpError`, and only a parser run ends in
+the error; that every run is finite remains open. The DRT client
 defaults to a ten-second request deadline; a transport deadline is a
 harness failure, never a semantic `ParserTimeout`.
 
@@ -198,13 +197,6 @@ interchangeable confidence score.
 | `FieldLaws.read_declared`, `update_declared` | Exact field primitive results, validity and siblings, whole-Run preservation under actual nominal declarations and exact container shape | Stored-value typing, persistent nested lvalue writes, global validity |
 | `ScalarTyping.check_sound` | Every accepted closed scalar expression evaluates at its inferred type and preserves the initial Run | Variables, aggregates, whole-program validation, Python |
 | `ScalarTyping.checkIn_sound`, `checkIn_complete` | Contextual scalar checking is sound under actual typed-frame agreement and complete for its relation under a well-formed context | Aggregates, statements, whole-program validation, Python |
-| `Scalar.lower_typed_in`, `evaluate_lower_in` | Typed source expressions lower to contextually typed IR and evaluate to the exact independent source value with the Run unchanged, under exact frame agreement | Intended surface elaboration, arbitrary initialization, writable statements, serialization |
-| `Scalar.Env.frame_matches`, `Modes.scope_agrees` | Every well-formed source context has a constructively related runtime frame and declarations | Validity of an arbitrary block or program |
-| `Scalar.Cmd.steps`, `execute_correct`, `CmdWith.steps_with` | Finite scalar and field command bodies follow the actual machine, produce exact source values, preserve unrelated state and leave arbitrary continuations unexecuted, under explicit block-frame premises | Aggregate paths beyond the discharged leaves, calls, global validity, Python equivalence |
-| `Fields.Ref.evaluate`, `write_matches`, `validities_set`, `Fields.lower_typed`, `evaluate_lower` | Exact aggregate-store correspondence for nested scalar reads and writes, validity and unrelated state, under nominal, index, frame and permission premises | A general aggregate checker, initialization, intended surface selection |
-| `FrameInitialization`, `CallEntry`, `CallReturn`, the guarded control call | Actual frame creation over every scope entry, four-root call entry, fixed-profile normal return and one observer-free whole control call, as bounded named transitions | All calls, parser-fault unwinding, the observer statements, complete applications |
-| `ForwarderTables.lookup_correct`, `ForwarderApply.run_correct`, the selected action | Five installed route shapes, their actual application and hit timing, the forwarder's invalid-control identity | Parsing, checksum maintenance, architecture fate, other configurations |
-| `TutorialFirewall` initialization, invalid body and Bloom insertion | All nine initialized roots; whole-Run identity of the invalid-IPv4 body; exact two-write insertion preserving both arrays and unrelated state | Readback, drop composition, hash bounds, exact connection tracking |
 | `CodecLaws` through Action/Block | Production encoder/decoder left inverses over JSON values under v0 uint32 representability, checked by `spec/ir/P4bloIRTest/CodecProofAudit.lean` | Text parsing, protobuf correctness, semantic validity, version negotiation |
 | `ScalarLaws` | Selected saturation, shift and branch laws of the actual evaluator | Completeness of the scalar semantics against P4 |
 | `DeviationLaws.header_equal_invalid`, `header_equal_valid_invalid`, `header_equal_invalid_valid`, `header_equal_valid`, `header_equal_valid_iff`, `equal_bits_iff`, `equal_bool_iff`, `equalList_cons`, `equalList_scalar_iff`, `evaluate_eq`, `evaluate_eq_invalid_headers`, `evaluate_eq_valid_invalid`, `evaluate_ne`, `evaluate_ne_eq`, `evaluate_ne_eq_error` | Header `==` compares validity first; two valid headers whose fields are bits and booleans of matching kinds are equal exactly when every field value is the same; bits compare by width and value, booleans by value; `!=` gives the negation of `==` on every kind of operand and fails exactly when `==` does; all on `Value.equal` and through the evaluator from any run | That the compared headers share a type; fields that are themselves compound; anything about SpecTec, whose rule differs here |
@@ -215,32 +207,24 @@ interchangeable confidence score.
 | `DeviationLaws.toBytes_padded`, `write_fits` | The emitter's bytes are the emitted bits followed by fewer than eight zero bits, for every emitter whose value fits its width; one fitting write keeps that premise | Deparser traversal; what an architecture appends; the induction over a sequence of writes, which is not stated as a theorem |
 | `DeviationLaws.enterState_revisit`, `enterState_first`, `enterState_again`, `step_state_revisit`, `step_advances`, `reaches_advances`, `reaches_cursor_le`, `recorded_empty`, `recorded_of_advances`, `reaches_recorded`, `enterState_advanced`, `enterState_no_consumption`, `reaches_state_revisit` | Entering a state at the cursor recorded for it raises `ParserTimeout` with the run unchanged, and the machine step starts unwinding with it; no machine step moves the cursor back or drops a record, so a state re-entered without timing out finds the cursor advanced, and a state re-entered in the same block with the cursor unchanged times out whatever ran in between, including a sub-parser's return and second application | That a loop without consumption reaches the second entry; parser termination |
 | `DeviationLaws.lookup_hit`, `lookup_miss`, `lookup_longest_prefix`, `lookup_longest_lpm`, `keyValueMatches_exact`, `keyValueMatches_lpm`, `keyValueMatches_ternary`, `prefixLength_eq`, `prefixLength_single`, `rank_lpm` | A hit runs an installed entry matching every key with the longest total prefix, or the largest priority with a ternary key; a miss means none matches and runs the current default. The helpers are pinned: an exact value matches its number, an `lpm` value exactly the keys agreeing with it on their top prefix bits, a ternary value exactly the keys agreeing under its mask; the prefix length is the sum of the installed `lpm` lengths | Installation's canonicity and tie rejection; that the installed entries came from `Installed.build`; key positions past an entry's own key count, which the match does not check |
-| `DeviationLaws.zero_bits`, `zero_boolean`, `zero_error`, `zeroHeader_eq`, with `Frame.forBlock_initialized` | A fresh activation holds zero bits, `false` and `NoError`, and a declared header's zero is invalid with zero fields | Zero enums, structs and stacks beyond their header elements |
+| `DeviationLaws.zero_bits`, `zero_boolean`, `zero_error`, `zeroHeader_eq` | The zero-value primitives return zero bits, `false` and `NoError`; a declared header's zero is invalid with zero fields | Frame construction; zero enums, structs and stacks beyond their header elements |
 | `Execution.Finishes.sound` | A finite trace of the actual step function determines the actual runner's result | Existence of a trace for every valid program |
 | `Build.build_ok` | `Index.build`'s maps read back into the program's lists: every declaration found by name is the program's under that name, program-level names share one namespace, and each block's scope is built from that block | That every name the program declares is found (only the directions later proofs use are stated) |
 | `Validity.check_sound` | A program the Lean checker accepts satisfies `Validity.Valid`, the validator's rules as relations over the program and its index | That the checker accepts every `Valid` program; agreement with the Python validator, which `tests/lean/test_lean_agrees_validity.py` tests on finite inputs |
 | `Validity.progress`, `Steps.machineOk`, `finishes_documented`, `drive_documented` | From a well-formed machine of a `Valid` library, every step finishes with success or with a parser error the library declares, or reaches another well-formed machine; so no reachable machine and no finite run carries an `InterpError`. Premises: the extern binding obeys `ExternContract`, the entries satisfy `InstalledOk`, the initial run fits the block kind | Termination; the checks the entry points in `P4bloArch.Interp` make outside the machine |
 | `Validity.progress_outside_parser`, `Steps.machineOkNP`, `finishes_outside_parser`, `finishes_kind`, `parse_error_is_parser`, `dispatch_np` | A control or deparser machine of a `Valid` program that starts without a fault or a pending parser state steps without any fault, so a finite run ends in success; with `finishes_documented`, a parser error ends only a parser run. Premises: those of `progress` | Termination |
-| `P4bloArch.Entry.runParser_documented`, `runControl_documented`, `runDeparser_ok` | On the actual entry functions: a parser returns an outcome accepting with `NoError` or rejecting with a declared error, a control returns the final run's headers, metadata and externs, and a deparser returns its emitted bytes, none failing inside the machine. Premises: a `Valid` library's block of the entry's kind and arity, parameter values of their types, externs satisfying the contract, entries from `Installed.build` for a control, and every run of the block finishing | Termination; that the final frame's headers and metadata variables hold structs, which `structVar` still checks |
-| `P4bloArch.Contract.bind_contract`, `call_ok`, `bind_inv` | Whenever `P4bloArch.bind` succeeds on a `Valid` program, the bound state satisfies the invariant of an `ExternContract` whose call obligation holds for `register`, `counter`, `checksum16`, `crc16` and `crc32`; audited by `spec/arch/P4bloArchTest/ArchProofAudit.lean` | That binding succeeds; a valid program's extern types need not match a family |
-| `ArchTests.Csum16.control_start_ok`, `check_ok` | For the corpus program `csum16`, with no `native_decide`: the checker accepts it, binding and installation succeed, and the machine `runControl` starts is `MachineOk` with the reference contract, so every premise of `progress` is satisfiable together on a real program | Any other program; termination |
 | `Validity.build_installedOk` | A successful `Installed.build` satisfies `InstalledOk`: every lookup in a program table succeeds and selects an action of its block with data of its parameters' types | That installation succeeds for given host entries |
 | `Validity.initial_ok`, `entryFrame_ok` | The machines the entry points start, from `Frame.forBlock` with each parameter set to a value of its type, are well formed | That the values an architecture passes are typed |
-| `ExecutionCertificate.check_sound` | Accepted bounded checks bind the supplied initial machine, observation and claim to the runner | Codec correctness, universal Python equivalence, unobserved final state |
 
-The checked theorem inventories are [`spec/ir/P4bloIRTest/ProofAudit.lean`](../spec/ir/P4bloIRTest/ProofAudit.lean),
-[`spec/ir/P4bloIRTest/CodecProofAudit.lean`](../spec/ir/P4bloIRTest/CodecProofAudit.lean),
-[`spec/arch/P4bloArchTest/EntryProofAudit.lean`](../spec/arch/P4bloArchTest/EntryProofAudit.lean) and
-[`impl/lean/P4bloTest/UserProofAudit.lean`](../impl/lean/P4bloTest/UserProofAudit.lean); their exact
-statements and premises, not the labels above, define what is proved.
-The gate builds all three Lean packages with `lake build --wfail`, so a
-warning fails the build, and the audits check the
-transitive axiom sets of advertised theorems, so `sorry`, custom axioms
-and native-evaluation escapes cannot silently replace a proof. The exact
-obligations, exclusions and mutation experiments of the scalar and field
-authoring work are in [`impl/lean/ASSURANCE.md`](../impl/lean/ASSURANCE.md); the
-forwarder, firewall and call theorems are stated in their modules under
-`impl/lean/P4blo/` and audited in `impl/lean/P4bloTest/UserProofAudit.lean`.
+The checked theorem inventories are
+[`spec/ir/P4bloIRTest/ProofAudit.lean`](../spec/ir/P4bloIRTest/ProofAudit.lean) and
+[`spec/ir/P4bloIRTest/CodecProofAudit.lean`](../spec/ir/P4bloIRTest/CodecProofAudit.lean).
+Their exact statements and premises, not the labels above, define what is
+proved. The gate builds both Lean packages with `lake build --wfail`, so a
+warning fails the build. The core audits pin transitive axiom sets; `sorry`,
+custom axioms and native-evaluation escapes cannot silently replace a proof.
+There is no architecture, concrete extern, authoring-language or application
+proof inventory in the active project.
 
 ## What is tested
 
@@ -257,15 +241,15 @@ Python unit suites are not automatically differential tests.
 
 | Family | Independent tests and generated comparisons | Scoped proof, external evidence and limits |
 |---|---|---|
-| Scalars, operators, lazy branches | `tests/unit/test_interp_expr.py`; `tests/drt/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Scalar typing and lowering theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
-| Aggregates, fields, validity, stacks | `tests/drt/test_drt_aggregate_copy.py`, `tests/lean/test_lean_edsl_field_commands.py`, `tests/lean/test_lean_edsl_header_reads.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
-| Calls, initialization, normal return | `tests/drt/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; scoped entry and return suites compare full state and pending continuations | Bounded named transitions, not all calls or parser-fault unwinding. |
+| Scalars, operators, lazy branches | `tests/unit/test_interp_expr.py`; `tests/drt/test_drt_programs.py` exercises every scalar operator, width edges, truth tables, cast/slice/mux, faulting unselected lookahead and shrinking typed programs | Core scalar typing theorems above; not complete P4 scalar semantics. Corpus oracles cover selected uses, not every operator. |
+| Aggregates, fields, validity, stacks | `tests/drt/test_drt_aggregate_copy.py`, `tests/unit/test_interp_expr.py`; strict detached state, alias faults and native/Python stack checks | Field laws under explicit premises; stack and subparser corpus programs supply selected oracle behavior. |
+| Calls, initialization, normal return | `tests/drt/test_drt_call_copy.py` generated in/out/inout with live alias, out-initial and copyback faults; `tests/lean/test_lean_call_copyback.py` checks parser-error copyback | Core validity/progress under explicit premises; generated cases and independent expectations test call behavior. |
 | Packet, parser, deparser | `tests/unit/test_interp_parser.py`, `tests/unit/test_interp_deparser.py`, `spec/arch/P4bloArchTest/Interp.lean`; corpus DRT, masked and range select in `tests/drt/test_drt.py`, byte cuts and persistent sequences in `tests/programs/test_firewall_boundaries.py` | `extract_emit`; pinned corpus and original-firewall oracles. Lookahead, advance, revisit timeout and subparser-error copyback have separate expected answers, not a parser theorem. |
-| Tables, actions, host installation | `tests/unit/test_interp_tables.py`, generated configurations in `tests/drt/test_drt.py`, `tests/lean/test_lean_forwarder_tables.py`, `tests/lean/test_lean_forwarder_action.py`, `tests/lean/test_lean_forwarder_apply.py`; strict configuration, full-state and default-hit observations | Forwarder lookup and application laws for five shapes; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family. |
-| Persistent extern state | `tests/drt/test_drt_stateful_programs.py` shrinking sequences, `tests/drt/test_drt_state.py`, `tests/unit/test_externs.py`, `tests/unit/test_extern_families.py`, `tests/unit/test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Firewall initialization and Bloom insertion; original BMv2 checks packets and complete arrays. No generic extern theorem. |
+| Tables, actions, host installation | `tests/unit/test_interp_tables.py`, generated configurations in `tests/drt/test_drt.py`, `tests/programs/test_forwarder_tables_semantics.py`, `tests/programs/test_forwarder_action_semantics.py`, `tests/programs/test_forwarder_apply_semantics.py`; strict configuration, full-state and default-hit observations | Core lookup laws; exact, LPM and ternary corpus and five explicit BMv2 application profiles, not every table family or a forwarding proof. |
+| Persistent extern state | `tests/drt/test_drt_stateful_programs.py` shrinking sequences, `tests/drt/test_drt_state.py`, `tests/unit/test_externs.py`, `tests/unit/test_extern_families.py`, `tests/unit/test_crc.py`; firewall full-array collision, truncation and generated-flow tests | Original BMv2 checks packets and complete arrays. Concrete externs and firewall behavior are tested, not proved. |
 | Architecture outcomes and errors | `tests/drt/test_drt.py` drop, flood, ports and error reasons; `tests/drt/test_drt_replay.py` matching-error policy; corpus switch and filter vectors | Supplied architecture profiles only. Success, drop, parser rejection, execution error and protocol failure stay distinct. |
 | Serialization and observation | `tests/codec/test_codec_{leaves,expr,lvalue,stmt,declarations,tables,parser,blocks,program,entries}.py`; `tests/codec/test_wire_decimal.py`; `tests/drt/test_drt_protocol.py`, `tests/drt/test_drt_replay.py`; strict JSON type and frozen-state regressions | Component codec laws through Action/Block; independent wire answers catch roundtrip-preserving defects. Complete library, architecture export and host Entries fixtures cover the public conversions; rejected-host sequences are tested, not proved. |
-| Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `tests/lean/test_lean_forwarder*.py`, `tests/lean/test_lean_firewall*.py`, `tests/programs/test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Complete examples execute in both languages; selected proofs do not verify raw construction or the whole pipeline. |
+| Authored applications | Exact-golden source comparisons and independent packet and full-state profiles in `tests/programs/test_forwarder*_semantics.py` and `tests/programs/test_firewall*.py`; twelve-program corpus rebuild and typecheck; `tests/examples/` for the three applications | Python-authored examples execute on both interpreters. Application construction and behavior are tested, with no application or whole-pipeline proof. |
 
 ### Corpus programs
 
@@ -275,7 +259,7 @@ replayed on the Python interpreter, on Lean and on both oracles.
 
 | Program | Source | Vectors | Oracles |
 |---|---|---|---|
-| forwarder | p4lang tutorial basic; Python and Lean sources equal the golden | 5 hand-derived STF files plus TTL0/1 and invalid-control state checks | both, checksum included |
+| forwarder | p4lang tutorial basic; Python source reproduces the golden | 5 hand-derived STF files plus TTL0/1 and invalid-control state checks | both, checksum included |
 | acl | p4c `ternary2-bmv2` | p4c STF, 6 adds, 4 packets | both |
 | stacks | p4c `header-stack-ops-bmv2` | p4c STF, 15 packets | both |
 | subparser_stack | p4c `subparser-with-header-stack-bmv2` | p4c STF, 1 packet | both |
@@ -285,7 +269,7 @@ replayed on the Python interpreter, on Lean and on both oracles.
 | verify_error | p4c `issue1824-bmv2` | p4c STF, 1 packet | both |
 | priority | p4c `table-entries-priority-bmv2`, priorities by the specification's numbering | p4c STF, 3 packets, two expectations re-derived from P4-SpecTec | both for the golden; BMv2 on p4c's own source routes two packets the other way by p4c's numbering [below](#known-disagreements-with-the-oracles) |
 | register_bounds | own program | 9 hand-derived packets | SpecTec; two packets diverge on BMv2 by the register rule [below](#known-disagreements-with-the-oracles) |
-| tutorial_firewall | pinned p4lang tutorial solution; Python and Lean sources equal the golden | connection and Bloom-collision vectors, byte cuts, generated host-policy sequences | original BMv2 packets and all 8192 register cells at 30 prefix boundaries; SpecTec controls pass, its CRC and mask defects are classified below |
+| tutorial_firewall | pinned p4lang tutorial solution; Python source reproduces the golden | connection and Bloom-collision vectors, byte cuts, generated host-policy sequences | original BMv2 packets and all 8192 register cells at 30 prefix boundaries; SpecTec controls pass, its CRC and mask defects are classified below |
 | vlan_gateway (added after the milestone, at `38d740e`; no Lean-authored counterpart) | original homepage example | one STF file with 11 packets; a 53-request packet, diagnostic and counter sequence in Python and Lean | both for packets; counters checked by independent expectations |
 
 The public applications under `examples/` (router, stateful firewall,
@@ -576,34 +560,12 @@ bounded sensitivity evidence, not a mutation score.
 Recorded campaigns beyond the catalogue killed eager branches, state-only
 out-of-bounds and persistence faults, copy aliasing, skipped copyback,
 CRC XOR faults that preserve packets but permute register indices, and
-the application source faults above. The user-package proof experiments
-in `impl/lean/ASSURANCE.md` distinguish proof rejection from compiled wrong
-intent from runtime mismatch.
-
-## Execution certificates
-
-A narrow experiment connects proofs to actual execution.
-`ExecutionCertificate.check_sound` proves that an accepted observation
-equals the Lean execution result for the supplied initial machine; the
-checker reexecutes the machine with a budget, and exhaustion is a verdict,
-not a language fault. The fixed program reads register `r[0]`, increments
-its `bit<8>` value, writes it back and increments counter `k[0]`.
-
-```
-uv run python -m p4blo.drt.certificate create --register 41 --counter 9 -o claim.json
-uv run python -m p4blo.drt.certificate verify claim.json
-```
-
-The Python adapter decodes the exported program unchanged, builds its own
-index and bindings, runs the production interpreter and serializes what
-actually happened; only the compiled Lean checker's `accepted` verdict is
-acceptance. The artifact carries the complete program as protobuf JSON
-and canonical hexadecimal state; the decoded AST must equal the fixed
-example. Running the checker trusts the compiler, runtime, codecs and
-observation adapter, and a JSON artifact is not a kernel proof. Tampered
-programs, initial values, results and budgets are rejected in
-`tests/drt/test_drt_certificate.py`. Generalizing beyond the fixed fragment
-needs explicit validity and observation contracts first.
+application source faults. The retired Lean authoring, application-proof,
+architecture-proof and execution-certificate experiments are historical
+only. Their sources and precise earlier boundaries remain recoverable at
+[revision `5ee52d9`](https://github.com/qobilidop/p4blo/tree/5ee52d90f19d5d5a81bf972a115298ae167e691b),
+including `impl/lean/ASSURANCE.md` and that revision's assurance page.
+They supply no guarantee for the current project.
 
 ## Release evidence
 

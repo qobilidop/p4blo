@@ -18,9 +18,11 @@ is deliberately not supported.
 The filter and the switch exist to make [claim 3](design.md#the-four-claims)
 measurable: each is about fifty lines with no P4 in it, and every corpus
 program runs under both unchanged. They are reference architectures in
-the sense that the differential tests, the oracles and the proofs about
-authored applications run programs under them, not in the sense of a
-standard anyone else implements.
+the sense that differential tests and oracles run programs under them,
+not in the sense of a standard anyone else implements. They and their
+concrete extern families are tested executable adapters with no formal
+architecture-specific guarantee. Core progress assumes an extern contract;
+this package does not prove that the supplied families discharge it.
 
 The generic Python loader, `p4blo.arch.load`, requires an explicit extern
 registry, metadata contract and mapping of required roles to block kinds.

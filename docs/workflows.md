@@ -31,14 +31,14 @@ Check exit codes, not output.
 | Gate | Command | Expected |
 |---|---|---|
 | Python and schema | `scripts/check.sh` | ends with `all checks passed`, exit 0 |
-| Lean | `scripts/check-lean.sh` | all three packages build in dependency order, each audit/test driver passes, exit 0 |
+| Lean | `scripts/check-lean.sh` | both packages build in dependency order, core audits and both test drivers pass, exit 0 |
 | Lean vs Python | `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | all conformance suites; missing or broken Lean is a failure |
 | Oracle | `uv run pytest tests/external/test_oracle.py` | every `test_vector_passes_on_the_oracle` passes; skips without the oracle binary (see below) |
 | BMv2 oracle | `uv run pytest tests/external/test_oracle_bmv2.py` | every `test_vector_passes_on_bmv2` passes, `register_bounds/bounds.stf` a strict `xfail` for the divergence `tests/oracle/bmv2/README.md` analyses; skips without Docker or the `p4blo-bmv2` image |
 | Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs tests with `-n auto`; dedicated oracle jobs bound their worker count and keep coverage measurement serial) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
 | Original-source SpecTec probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py -k spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
 | Original-source BMv2 probes | `uv run pytest tests/unit/test_crc.py tests/programs/test_firewall.py tests/programs/test_firewall_boundaries.py tests/programs/test_firewall_generated.py -k bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
-| Forwarding application BMv2 profile | `uv run pytest tests/lean/test_lean_forwarder_apply.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
+| Forwarding application BMv2 profile | `uv run pytest tests/programs/test_forwarder_apply_semantics.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
 | Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 | Repository file sizes | `uv run python scripts/check-file-sizes.py`, also in the structure tests | every indexed blob and tracked working file is at most 5 MiB; stage new deliverables first |
@@ -75,7 +75,7 @@ with `test_lean_agrees`; CI discovers them across the complete test tree.
 Two Lean jobs split this collection by a stable hash of the full test node ID
 (`--ci-shard 1/2` and `--ci-shard 2/2`), then use pytest's load scheduler within
 each runner. Their disjoint union is the full selection; no seed or case count
-is reduced. Both jobs build and audit all packages before testing; only the
+is reduced. Both jobs build both packages and audit the core before testing; only the
 first saves main's compiled-module cache. Omit `--ci-shard` for the complete
 local collection. Each shard retains its own failure replays.
 In authored-program gates, retain differential failure bundles before a
@@ -98,10 +98,9 @@ What is claimed, for which programs, and what backs it is
 open obligations separate in every checkpoint; passing differential tests
 is not a proof of equivalence.
 The Lean gate builds with `lake build --wfail`, so any warning fails
-the build, a `sorry` included. The proof audits,
+the build, a `sorry` included. The core proof audits,
 `spec/ir/P4bloIRTest/ProofAudit.lean` and `CodecProofAudit.lean`,
-`spec/arch/P4bloArchTest/ArchProofAudit.lean` and
-`impl/lean/P4bloTest/UserProofAudit.lean`, pin the transitive axiom sets
+pin the transitive axiom sets
 of advertised theorems with `#guard_msgs`, and every default `lake build`
 checks them as modules of the test libraries; `sorry`, custom axioms and
 native-evaluation escapes cannot silently replace those proofs. Update an
@@ -128,12 +127,6 @@ executables while it runs. The exact inventory, intentional observer survivor
 and independent detector are in [assurance.md](assurance.md#adversarial-checks).
 This supplements the ordinary gates; it is not a universal equivalence proof
 or a requirement to rerun every historical mutation experiment.
-
-The fixed execution-claim experiment is in [assurance.md](assurance.md#execution-certificates).
-`python -m p4blo.drt.certificate create` executes production Python and
-writes a claim; `verify` asks the compiled Lean checker to accept or reject
-it. This is distinct from ordinary differential fuzzing and is not a
-standalone proof term or universal equivalence claim.
 
 `tests/drt/test_drt_programs.py` changes expressions inside validated programs,
 not just packets for a fixed corpus. It includes systematic operator/width
@@ -162,7 +155,7 @@ It checks JavaScript syntax and the generated gateway source before uploading
 and deploying the static files. Changes to the canonical gateway source or
 renderer also trigger it; regenerate with
 `uv run python scripts/render-website-example.py` before committing.
-Pages publishing is separate from the five implementation-validation
+Pages publishing is separate from the four implementation-validation
 workflows and supplies no additional semantic assurance. Preview instructions
 and maintenance boundaries are in `website/README.md`.
 
@@ -170,7 +163,7 @@ and maintenance boundaries are in `website/README.md`.
 |---|---|---|
 | Optional pinned development tools | [`flake.lock`](../flake.lock) | see [development setup](../README.md#development); review lock updates |
 | Python packages | `uv.lock` | `uv lock --upgrade-package <name>` |
-| Lean toolchain | `spec/ir/lean-toolchain`, `spec/arch/lean-toolchain`, `impl/lean/lean-toolchain` (must match) | edit all three; user package depends on local `../ir`, manifests committed |
+| Lean toolchain | `spec/ir/lean-toolchain` and `spec/arch/lean-toolchain` (must match) | edit both; architecture package depends on local `../ir`, manifests committed |
 | P4-SpecTec | `P4_SPECTEC_COMMIT` in `tests/oracle/build.sh` | edit; the CI cache key reads it; then regenerate `tests/oracle/spectec-rules.json` with `scripts/spectec-rules.py` and re-check every `SpecTec:` citation in [ir-semantics.md](ir-semantics.md) (`tests/external/test_spectec_rules.py`) |
 | opam package universe | `OPAM_REPO_COMMIT` in `tests/oracle/build.sh` | edit together with the commit above |
 | p4c for typechecking | index digest of `ghcr.io/qobilidop/p4lang-builds/p4c` in `tests/unit/test_printer.py` | `docker buildx imagetools inspect ghcr.io/qobilidop/p4lang-builds/p4c:<tag>` |
