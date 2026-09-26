@@ -17,7 +17,6 @@ result
 # Lean
 spec/ir/.lake/
 spec/arch/.lake/
-impl/lean/.lake/
 
 # Editors
 .vscode/

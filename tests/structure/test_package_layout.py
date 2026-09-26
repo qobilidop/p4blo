@@ -20,24 +20,16 @@ def test_specification_executable_location() -> None:
 def test_lean_package_dependency_is_one_way() -> None:
     spec = tomllib.loads((ROOT / "spec/ir/lakefile.toml").read_text())
     arch = tomllib.loads((ROOT / "spec/arch/lakefile.toml").read_text())
-    library = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
     assert spec["name"] == "p4blo-ir"
     assert arch["name"] == "p4blo-arch"
-    assert library["name"] == "p4blo"
-    # The IR spec depends on nothing; the architecture spec on the IR; the
-    # user library on both. Nothing architectural lives in the IR spec.
+    # The IR spec depends on nothing; the executable architecture adapter
+    # depends on the IR. Nothing architectural lives in the IR spec.
     assert not spec.get("require")
     assert arch["require"] == [{"name": "p4blo-ir", "path": "../ir"}]
-    assert library["require"] == [
-        {"name": "p4blo-ir", "path": "../../spec/ir"},
-        {"name": "p4blo-arch", "path": "../../spec/arch"},
-    ]
     assert "P4bloIR" in {lib["name"] for lib in spec["lean_lib"]}
     assert "P4bloArch" in {lib["name"] for lib in arch["lean_lib"]}
-    assert "P4blo" in {lib["name"] for lib in library["lean_lib"]}
     assert "P4bloIR" in spec["defaultTargets"]
     assert "P4bloArch" in arch["defaultTargets"]
-    assert "P4blo" in library["defaultTargets"]
     assert "p4blo-lean" not in {exe["name"] for exe in spec["lean_exe"]}
     assert {exe["name"]: exe["root"] for exe in arch["lean_exe"]}["p4blo-lean"] == "Main"
     assert not (ROOT / "spec/ir/P4bloIR/Switch.lean").exists()
@@ -45,9 +37,8 @@ def test_lean_package_dependency_is_one_way() -> None:
     assert (ROOT / "spec/arch/P4bloArch/Externs.lean").is_file()
     assert (ROOT / "spec/ir/P4bloIR.lean").is_file()
     assert (ROOT / "spec/ir/P4bloIR/IR.lean").is_file()
-    assert (ROOT / "impl/lean/P4blo.lean").is_file()
-    assert (ROOT / "impl/lean/P4blo/Scalar.lean").is_file()
     for old in (
+        "impl/lean",
         "spec/ir/P4blo",
         "spec/ir/P4blo.lean",
         "impl/lean/P4bloLean",
@@ -61,19 +52,15 @@ def test_lean_package_dependency_is_one_way() -> None:
     )
     assert spec["testDriver"]
     assert arch["testDriver"]
-    assert library["testDriver"]
     toolchain = (ROOT / "spec/ir/lean-toolchain").read_bytes()
     assert (ROOT / "spec/arch/lean-toolchain").read_bytes() == toolchain
-    assert (ROOT / "impl/lean/lean-toolchain").read_bytes() == toolchain
 
 
 # Each Lean package's root module, and the tracked entries its root may hold
-# beyond the layout's own: the IR's wire schema and the user package's
-# assurance log.
+# beyond the layout's own: each package's wire schema.
 LEAN_PACKAGES = {
     "spec/ir": ("P4bloIR", {"proto"}),
     "spec/arch": ("P4bloArch", {"proto"}),
-    "impl/lean": ("P4blo", {"ASSURANCE.md"}),
 }
 
 
@@ -110,8 +97,6 @@ def test_lean_package_roots_follow_the_layout() -> None:
     for audit in (
         "spec/ir/P4bloIRTest/ProofAudit.lean",
         "spec/ir/P4bloIRTest/CodecProofAudit.lean",
-        "spec/arch/P4bloArchTest/ArchProofAudit.lean",
-        "impl/lean/P4bloTest/UserProofAudit.lean",
     ):
         assert (ROOT / audit).is_file(), audit
     for old in (
@@ -125,12 +110,6 @@ def test_lean_package_roots_follow_the_layout() -> None:
         "impl/lean/ForwarderMain.lean",
     ):
         assert not (ROOT / old).exists(), old
-
-
-def test_user_executable_is_one_main_with_subcommands() -> None:
-    library = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {exe["name"]: exe["root"] for exe in library["lean_exe"]}["p4blo"] == "Main"
-    assert "p4blo" in library["defaultTargets"]
 
 
 def test_schema_descriptor_identity_survives_move() -> None:

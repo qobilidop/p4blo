@@ -67,4 +67,4 @@ jobs:
       - name: Check forwarding overlap and default profiles
         run: |
           nix develop -c uv run python -c 'from tests.oracle.bmv2 import run; reason = run.unavailable(run.default_image()); assert reason is None, reason'
-          nix develop -c uv run pytest tests/lean/test_lean_forwarder_apply.py::test_apply_packets_bmv2 -v
+          nix develop -c uv run pytest tests/programs/test_forwarder_apply_semantics.py::test_apply_packets_bmv2 -v

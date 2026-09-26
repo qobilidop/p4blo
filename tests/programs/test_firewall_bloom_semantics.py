@@ -15,9 +15,9 @@ from p4blo.interp import ExternResult, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.lean.test_lean_firewall import firewall as firewall
-from tests.lean.test_lean_firewall_body import invalid_env
-from tests.lean.test_lean_forwarder import freeze
+from tests.programs.test_firewall_body_semantics import invalid_env
+from tests.programs.test_firewall_semantics import firewall as firewall
+from tests.programs.test_forwarder_semantics import freeze
 
 ARRAYS = [([], []), ([0], [0]), ([1], [1]), ([1, 0, 0, 1], [0, 1, 0]), ([0] * 4096, [1] * 4096)]
 POSITIONS = [(0, 0), (1, 2), (3, 1), (4095, 4095), (4096, 4096), (0xFFFFFFFF, 0xFFFFFFFF), (1, 1)]
@@ -107,7 +107,7 @@ def test_bloom_profile_inventory() -> None:
 
 
 @pytest.mark.parametrize("shape,positions,overlay", PROFILES)
-def test_lean_agrees_bloom_insertion(
+def test_python_bloom_insertion(
     firewall: apb.BlockAssembly,
     monkeypatch: pytest.MonkeyPatch,
     shape: int,
@@ -125,7 +125,7 @@ def test_lean_agrees_bloom_insertion(
 @pytest.mark.parametrize(
     "fault", ["other-cell", "other-extern", "local", "overlay", "cursor-type", "repair"]
 )
-def test_lean_agrees_bloom_observer_rejects_effects(
+def test_python_bloom_observer_rejects_effects(
     firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch, fault: str
 ) -> None:
     env = initial(firewall, 3, 1, 2, True)
@@ -161,7 +161,7 @@ def test_lean_agrees_bloom_observer_rejects_effects(
     assert hits == 1
 
 
-def test_lean_agrees_bloom_order_survives_final_cells(
+def test_python_bloom_order_survives_final_cells(
     firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     body = insertion_body(firewall)
@@ -177,7 +177,7 @@ def test_lean_agrees_bloom_order_survives_final_cells(
         )
 
 
-def test_lean_agrees_bloom_read_alias_is_not_expected(
+def test_python_bloom_read_alias_is_not_expected(
     firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     env = initial(firewall, 3, 1, 2, True)

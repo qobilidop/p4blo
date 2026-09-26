@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import inspect
 import itertools
-import json
 import subprocess
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
@@ -264,12 +263,3 @@ def test_lean_agrees_validity_on_the_rule_each_validator_test_targets(
         and not any(DECODE in CODES[d.code] for d in v.validate(case.program))
     ]
     assert hidden == []
-
-
-def test_csum16_fixture_is_the_golden() -> None:
-    """`spec/arch/P4bloArchTest/NonVacuity.lean` writes csum16 as a Lean term,
-    and the Lean tests check that term against this fixture; the fixture
-    must be the corpus golden."""
-    fixture = ROOT / "spec/arch/P4bloArchTest/fixtures/csum16.json"
-    golden = arch_wire.load_text(CORPUS / "csum16" / "csum16.txtpb")
-    assert json.loads(fixture.read_text()) == json.loads(arch_wire.dump_json(golden))

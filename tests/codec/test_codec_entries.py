@@ -36,7 +36,7 @@ from tests.codec.test_codec_leaves import (
     leaves,
     same_json,
 )
-from tests.lean.test_lean_forwarder import freeze
+from tests.programs.test_forwarder_semantics import freeze
 
 
 @dataclass(frozen=True)

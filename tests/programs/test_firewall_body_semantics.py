@@ -18,9 +18,9 @@ from p4blo.interp.env import Env
 from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.lean.test_lean_firewall import firewall as firewall
-from tests.lean.test_lean_forwarder import freeze
 from tests.programs.test_firewall import connection
+from tests.programs.test_firewall_semantics import firewall as firewall
+from tests.programs.test_forwarder_semantics import freeze
 
 
 def expected_vars() -> dict[str, Value]:
@@ -120,7 +120,7 @@ def observe_body(env: Env) -> None:
     assert freeze(env) == before, "invalid IPv4 changed complete firewall Env"
 
 
-def test_lean_agrees_firewall_actual_initialization(firewall: apb.BlockAssembly) -> None:
+def test_python_firewall_actual_initialization(firewall: apb.BlockAssembly) -> None:
     loaded = arch.reference.load(firewall)
     frame = Env.for_block(loaded.index, loaded.index.blocks["MyIngress"], loaded.externs)
     assert freeze(frame.vars) == freeze(expected_vars())
@@ -132,7 +132,7 @@ def test_lean_agrees_firewall_actual_initialization(firewall: apb.BlockAssembly)
     "ev,drop,overlay,dirty,tcp_shape",
     list(itertools.product([False, True], [False, True], [False, True], [False, True], range(3))),
 )
-def test_lean_agrees_firewall_invalid_body(
+def test_python_firewall_invalid_body(
     firewall: apb.BlockAssembly, ev: bool, drop: bool, overlay: bool, dirty: bool, tcp_shape: int
 ) -> None:
     observe_body(invalid_env(firewall, ev, drop, overlay, dirty, tcp_shape))
@@ -141,7 +141,7 @@ def test_lean_agrees_firewall_invalid_body(
 @pytest.mark.parametrize(
     "fault", ["local", "tcp", "bloom", "index", "scope", "entries", "cursor-type", "overlay"]
 )
-def test_lean_agrees_firewall_invalid_observer_rejects_effects(
+def test_python_firewall_invalid_observer_rejects_effects(
     firewall: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch, fault: str
 ) -> None:
     original = stmt.execute_one

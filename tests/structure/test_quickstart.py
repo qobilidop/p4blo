@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,26 +19,21 @@ DOCUMENT = ROOT / "docs/quickstart.md"
 OUTPUT = "forwarder: output ports [[2]]\ntutorial_firewall: output ports [[], [2], [1], []]\n"
 
 
-def snippet(name: str, language: str) -> str:
+def snippet(name: str) -> str:
     text = DOCUMENT.read_text()
     marker = f"<!-- quickstart: {name} -->\n```sh\n"
     assert text.count(marker) == 1
     block = text.split(marker)[1].split("\n```", 1)[0]
     header, source = block.split("\n", 1)
-    if language == "python":
-        assert header == "uv run python - <<'PY'"
-        delimiter = "PY"
-    else:
-        toolchain = (ROOT / "impl/lean/lean-toolchain").read_text().strip()
-        assert header == f"lake +{toolchain} -d impl/lean env lean --stdin <<'LEAN'"
-        delimiter = "LEAN"
+    assert header == "uv run python - <<'PY'"
+    delimiter = "PY"
     assert source.endswith("\n" + delimiter)
     return source.removesuffix("\n" + delimiter) + "\n"
 
 
 def python_demo(name: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-c", snippet(name, "python")],
+        [sys.executable, "-c", snippet(name)],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -59,34 +52,6 @@ def test_lean_agrees_quickstart_sources_and_persistence(lean_binary: Path) -> No
     result = python_demo("lean-run")
     assert result.returncode == 0, result.stderr
     assert result.stderr == "" and result.stdout == OUTPUT
-
-
-def lean_fragment(source: str) -> subprocess.CompletedProcess[str]:
-    lake = shutil.which("lake")
-    assert lake is not None, "the documented Lean snippet needs the pinned Lake toolchain"
-    toolchain = (ROOT / "impl/lean/lean-toolchain").read_text().strip()
-    return subprocess.run(
-        [lake, f"+{toolchain}", "-d", str(ROOT / "impl/lean"), "env", "lean", "--stdin"],
-        cwd=ROOT,
-        input=source,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-
-
-def test_lean_agrees_quickstart_fragment_and_imports(lean_binary: Path) -> None:
-    assert lean_binary.is_file()
-    source = snippet("lean-fragment", "lean")
-    result = lean_fragment(source)
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stderr == "" and result.stdout.startswith("0\n")
-    for name in ["Forwarder.program", "TutorialFirewall.program", "prepareSwitch", "runSwitch"]:
-        assert f"P4blo.{name}" in result.stdout
-    assert source.count("bits[8, 255]") == 1
-    invalid = lean_fragment(source.replace("bits[8, 255]", "bits[8, 256]"))
-    assert invalid.returncode != 0 and "error:" in invalid.stdout
-    assert "256" in invalid.stdout, "literal diagnostic should identify the overflowing value"
 
 
 def test_python_quickstart_diagnostics() -> None:
@@ -112,25 +77,3 @@ def test_python_quickstart_diagnostics() -> None:
     switch = arch.Switch(ports=4)
     assert switch.run(loaded, loaded.entries(entries), packet.port, packet.data) == []
     assert switch.diagnostics == ["egress_port 5 is not a port of this switch"]
-
-
-@pytest.mark.parametrize("name", ["leanForwarder", "leanTutorialFirewall"])
-def test_lean_agrees_quickstart_server_errors(lean_binary: Path, name: str) -> None:
-    assert lean_binary.is_file()
-    command = [str(ROOT / "impl/lean/.lake/build/bin/p4blo"), name]
-    usage = subprocess.run(command + ["unknown"], capture_output=True, text=True, timeout=30)
-    assert usage.returncode == 2 and usage.stdout == ""
-    assert usage.stderr == f"usage: p4blo {name} [run]\n"
-    stream = subprocess.run(
-        command + ["run"],
-        input='{"ingress_port":4,"packet":""}\n',
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert stream.returncode == 0 and stream.stderr == ""
-    lines = stream.stdout.splitlines()
-    assert len(lines) == 1
-    reply = json.loads(lines[0])
-    assert set(reply) == {"error", "state"}
-    assert reply["error"] == "ingress_port 4 is not a port of this switch"

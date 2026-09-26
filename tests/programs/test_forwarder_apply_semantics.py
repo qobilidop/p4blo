@@ -1,28 +1,22 @@
-"""Actual apply: independent full states and once-only key/lookup/action hooks.
+"""Actual apply with independent states and key/lookup/action observations.
 
-The 30×9 routing inventory cycles the 24 stored-state boundaries, not their
-full Cartesian product. The Lean theorem separately quantifies every store.
-Every expected stage is frozen before execution; public apply returns normally.
+The 30 by 9 routing inventory cycles the 24 stored-state boundaries. Every
+expected stage is frozen before execution; public apply returns normally.
 """
 
 from __future__ import annotations
 
 import itertools
-import subprocess
-import tomllib
 from collections.abc import Callable, Iterable
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
 
 import pytest
-from google.protobuf import json_format
 
 from p4blo import arch
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
-from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
@@ -32,24 +26,23 @@ from p4blo.interp.env import Env
 from p4blo.interp.tables import InstalledEntries, Match, TableRef
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.codec.test_codec_leaves import same_json
-from tests.lean.test_lean_edsl_fields import target
-from tests.lean.test_lean_forwarder import assert_program_identity, freeze
-from tests.lean.test_lean_forwarder_action import environment as action_environment
-from tests.lean.test_lean_forwarder_action import run_json, selected_action
-from tests.lean.test_lean_forwarder_tables import (
+from tests.corpus.forwarder.forwarder import build
+from tests.oracle.bmv2 import run as bmv2_run
+from tests.programs.ir_helpers import target
+from tests.programs.test_forwarder_action_semantics import environment as action_environment
+from tests.programs.test_forwarder_action_semantics import selected_action
+from tests.programs.test_forwarder_semantics import assert_program_identity, freeze
+from tests.programs.test_forwarder_tables_semantics import (
     ADDRESSES,
     REF,
     SHAPES,
     call,
-    encode,
     entry,
     expected,
     inputs,
     packet_case,
 )
-from tests.lean.test_lean_forwarder_tables import PROFILES as ROUTES
-from tests.oracle.bmv2 import run as bmv2_run
+from tests.programs.test_forwarder_tables_semantics import PROFILES as ROUTES
 
 ROOT = Path(__file__).resolve().parents[2]
 STATES = list(itertools.product([False, True], [False, True], [False, True], [0, 1, 255]))
@@ -114,7 +107,7 @@ def expected_runs(program: apb.BlockAssembly, name: str) -> dict[str, Env]:
         dst, port = (int(arg.bits.value) for arg in selected.args)
         params = {"dstAddr": Bits(48, dst), "port": Bits(9, port)}
         # Complete initial fields come from independent literal constructors;
-        # these answers do not use authored Ref paths or the source policy.
+        # these literal answers do not use the runtime field helpers.
         ether.fields[0] = Bits(48, dst)
         ether.fields[1] = Bits(48, 0x010203040506)
         ttl = CASES[name][2][3]
@@ -130,10 +123,6 @@ def expected_runs(program: apb.BlockAssembly, name: str) -> dict[str, Env]:
         "activeEnd": replace(after, action=selected.action, action_vars=dict(params)),
         "after": after,
     }
-
-
-def count(name: str) -> int:
-    return {"ipv4_forward": 13, "drop": 7, "NoAction": 5}[action(name).action]
 
 
 def body(program: apb.BlockAssembly, name: str) -> list[pb.Stmt]:
@@ -157,60 +146,6 @@ def body(program: apb.BlockAssembly, name: str) -> list[pb.Stmt]:
     else:
         assert actual == pb.Action(name="NoAction")
     return list(actual.body)
-
-
-def checked_snapshots(raw: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
-    assert type(raw) is dict and set(raw) == {"program", "snapshots"}
-    program = json_format.ParseDict(raw["program"], apb.BlockAssembly())
-    assert_program_identity(program)
-    table = next(b for b in program.blocks if b.name == "MyIngress").tables[0]
-    assert list(table.keys) == [pb.Key(expr=KEY, match_kind=pb.MATCH_KIND_LPM)]
-    assert len(CASES) == 270 and len({state for _, _, state in CASES.values()}) == 24
-    assert type(raw["snapshots"]) is list and len(raw["snapshots"]) == 270
-    found: dict[str, Any] = {}
-    for record in raw["snapshots"]:
-        assert type(record) is dict and set(record) == {
-            "name",
-            "input",
-            "call",
-            "hit",
-            "before",
-            "entered",
-            "activeEnd",
-            "after",
-            "steps",
-        }
-        name = record["name"]
-        assert type(name) is str and name in CASES and name not in found
-        route, address, _ = CASES[name]
-        assert same_json(record["input"], encode(inputs(route))), "installed input identity"
-        assert same_json(record["call"], encode(action(name))), "selected call identity"
-        assert same_json(record["hit"], expected(route, address).hit), "selected hit"
-        assert type(record["steps"]) is int and record["steps"] == count(name), "literal count"
-        for phase, env in expected_runs(program, name).items():
-            assert same_json(record[phase], run_json(env)), f"complete {phase}: {name}"
-        found[name] = record
-    assert set(found) == set(CASES)
-    return program, found
-
-
-@pytest.fixture(scope="module")
-def export(lean_binary: Path) -> Any:
-    assert lean_binary.is_file()
-    process = subprocess.run(
-        [str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "forwarderApply"],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    assert process.stderr == "", "exporter stderr"
-    return strict_loads(process.stdout)
-
-
-@pytest.fixture(scope="module")
-def checked(export: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
-    return checked_snapshots(export)
 
 
 def observe(program: apb.BlockAssembly, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -275,62 +210,13 @@ def observe(program: apb.BlockAssembly, name: str, monkeypatch: pytest.MonkeyPat
 
 
 @pytest.mark.parametrize("name", CASES)
-def test_lean_agrees_forwarder_apply(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]],
+def test_python_forwarder_apply(
+    checked: apb.BlockAssembly,
     name: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    program, snapshots = checked
-    assert name in snapshots
+    program = checked
     observe(program, name, monkeypatch)
-
-
-def test_forwarder_apply_default_targets() -> None:
-    package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
-
-
-@pytest.mark.parametrize(
-    "fault",
-    [
-        "missing",
-        "duplicate",
-        "count",
-        "hit-int",
-        "wrong-call",
-        "cursor",
-        "entries",
-        "scope",
-        "layer",
-        "paired-query",
-    ],
-)
-def test_lean_agrees_apply_snapshot_negatives(export: Any, fault: str) -> None:
-    bad = deepcopy(export)
-    record = bad["snapshots"][0]
-    if fault == "missing":
-        bad["snapshots"].pop()
-    elif fault == "duplicate":
-        bad["snapshots"][1] = record
-    elif fault == "count":
-        record["steps"] -= 1
-    elif fault == "hit-int":
-        record["hit"] = 0
-    elif fault == "wrong-call":
-        record["call"] = encode(call("noop"))
-    elif fault == "cursor":
-        record["after"]["packet"][2] = 3.0
-    elif fault == "entries":
-        record["after"]["entries"]["entries"].clear()
-    elif fault == "scope":
-        record["entered"]["frame"]["scope"]["actions"].clear()
-    elif fault == "layer":
-        record["after"]["frame"]["action"] = "drop"
-    else:
-        for phase in ["before", "entered", "activeEnd", "after"]:
-            record[phase]["frame"]["vars"]["hdr"][2][1][3][11][2] = 1
-    with pytest.raises(AssertionError):
-        checked_snapshots(bad)
 
 
 def profile(route: str, address: int) -> str:
@@ -350,12 +236,12 @@ def profile(route: str, address: int) -> str:
         "restore-outer",
     ],
 )
-def test_lean_agrees_apply_observer_faults(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]],
+def test_python_apply_observer_faults(
+    checked: apb.BlockAssembly,
     monkeypatch: pytest.MonkeyPatch,
     fault: str,
 ) -> None:
-    program, _ = checked
+    program = checked
     name = (
         profile("empty/drop/false", 0)
         if fault == "skip-default"
@@ -436,13 +322,13 @@ def test_lean_agrees_apply_observer_faults(
 
 
 @pytest.mark.parametrize("name", list(CASES)[:24])
-def test_lean_agrees_apply_hit_and_error_controls(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]],
+def test_python_apply_hit_and_error_controls(
+    checked: apb.BlockAssembly,
     name: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Different operational target, not the original body's absent hit field."""
-    program, _ = checked
+    program = checked
     env = environment(program, name, actual_entries=True)
     env.entries = InstalledEntries.build(env.index)
     pending, after = deepcopy(env), deepcopy(env)
@@ -543,9 +429,9 @@ def application_output(name: str) -> list[tuple[int, bytes]]:
 
 @pytest.mark.parametrize("name", PACKET_PROFILES)
 def test_lean_agrees_apply_packets(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]], lean_binary: Path, name: str
+    checked: apb.BlockAssembly, lean_binary: Path, name: str
 ) -> None:
-    program, _ = checked
+    program = checked
     case = application_packet(name)
     bundle = ROOT / ".artifacts/drt" / ("forwarder-apply-" + name.replace("/", "-") + ".json")
     try:
@@ -563,12 +449,12 @@ def test_lean_agrees_apply_packets(
 
 
 def test_lean_agrees_skip_default_packet_replay(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]],
+    checked: apb.BlockAssembly,
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    program, _ = checked
+    program = checked
     name = "empty/drop/false"
     case = application_packet(name)
     original = stmt.run_action_call
@@ -636,3 +522,10 @@ def test_apply_packets_bmv2(tmp_path: Path) -> None:
     verdicts = bmv2_run.run(image, ROOT / "tests/corpus/forwarder/forwarder.txtpb", vectors)
     assert len(verdicts) == 5 and {v.vector for v in verdicts} == set(vectors)
     assert all(v.status == "pass" for v in verdicts), "\n".join(map(str, verdicts))
+
+
+@pytest.fixture(scope="module")
+def checked() -> apb.BlockAssembly:
+    program = build()
+    assert_program_identity(program)
+    return program

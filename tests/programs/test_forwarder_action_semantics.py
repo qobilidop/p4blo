@@ -1,17 +1,12 @@
-"""Actual selected table action, not direct calls or the whole pipeline.
+"""Complete-state observations of the selected table action.
 
-Snapshots are validated once per module. Python completes normally through
-run_action_call; the execution hook observes entry/exit without throwing a
-sentinel or reimplementing the action. Operational parameter-name decoys are
-not claimed to be validator-accepted block declarations.
+Python completes normally through run_action_call; an execution hook observes
+entry and exit. Operational parameter-name decoys test layer separation.
 """
 
 from __future__ import annotations
 
 import itertools
-import json
-import subprocess
-import tomllib
 from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import replace
@@ -19,13 +14,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from google.protobuf import json_format
 
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.externs.register import Register
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
-from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.replay import save
 from p4blo.drt.run import compare_program
 from p4blo.interp import expr, stmt
@@ -35,10 +28,9 @@ from p4blo.interp.packet import Emitter, Packet
 from p4blo.interp.tables import InstalledEntries
 from p4blo.interp.values import Bits, Header, Struct, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.codec.test_codec_leaves import same_json
-from tests.lean.test_lean_call_return import run_json as return_run_json
-from tests.lean.test_lean_edsl_fields import target
-from tests.lean.test_lean_forwarder import assert_program_identity, edge_case, freeze
+from tests.corpus.forwarder.forwarder import build
+from tests.programs.ir_helpers import target
+from tests.programs.test_forwarder_semantics import assert_program_identity, edge_case, freeze
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = {
@@ -154,20 +146,6 @@ def expected_runs(program: apb.BlockAssembly, name: str) -> dict[str, Env]:
     }
 
 
-def run_json(env: Env) -> dict[str, Any]:
-    result = return_run_json(env)
-    assert env.entries is not None
-    # The reused return profile had no nested LPM names. Match the public
-    # wire spelling here without weakening or changing its shared helper.
-    result["entries"]["entries"] = {
-        json.dumps(key, separators=(",", ":")): [
-            json_format.MessageToDict(entry, preserving_proto_field_name=True) for entry in entries
-        ]
-        for key, entries in env.entries.entries.items()
-    }
-    return result
-
-
 def selected_action(program: apb.BlockAssembly) -> pb.Action:
     action = next(
         a
@@ -214,56 +192,6 @@ def selected_action(program: apb.BlockAssembly) -> pb.Action:
     return action
 
 
-def checked_snapshots(export: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
-    assert type(export) is dict and set(export) == {"program", "action", "snapshots"}
-    program = json_format.ParseDict(export["program"], apb.BlockAssembly())
-    assert_program_identity(program)
-    assert json_format.ParseDict(export["action"], pb.Action()) == selected_action(program)
-    snapshots = export["snapshots"]
-    assert type(snapshots) is list and len(snapshots) == 48, "snapshot count"
-    found: dict[str, Any] = {}
-    for snapshot in snapshots:
-        assert type(snapshot) is dict and set(snapshot) == {
-            "name",
-            "call",
-            "before",
-            "entered",
-            "pending",
-            "after",
-            "steps",
-        }
-        name = snapshot["name"]
-        assert type(name) is str and name in PROFILES and name not in found, "snapshot identity"
-        assert type(snapshot["steps"]) is int and snapshot["steps"] == 11, "literal count"
-        assert same_json(snapshot["call"], json_format.MessageToDict(action_call(name))), (
-            "literal bindings"
-        )
-        for phase, expected in expected_runs(program, name).items():
-            assert same_json(snapshot[phase], run_json(expected)), f"independent {phase}: {name}"
-        found[name] = snapshot
-    assert set(found) == set(PROFILES)
-    return program, found
-
-
-@pytest.fixture(scope="module")
-def action_export(lean_binary: Path) -> Any:
-    assert lean_binary.is_file()
-    process = subprocess.run(
-        [str(ROOT / "impl/lean/.lake/build/bin/p4blo"), "forwarderAction"],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert process.stderr == "", "action exporter stderr"
-    return strict_loads(process.stdout)
-
-
-@pytest.fixture(scope="module")
-def checked(action_export: Any) -> tuple[apb.BlockAssembly, dict[str, Any]]:
-    return checked_snapshots(action_export)
-
-
 def observe_action(program: apb.BlockAssembly, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     outer = environment(program, name)
     expectations = expected_runs(program, name)
@@ -306,65 +234,12 @@ def observe_action(program: apb.BlockAssembly, name: str, monkeypatch: pytest.Mo
     assert freeze(outer) == frozen["after"], "parameter writes leaked into the block layer"
 
 
-def test_forwarder_action_default_target() -> None:
-    package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
-
-
 @pytest.mark.parametrize("name", PROFILES)
-def test_lean_agrees_forwarder_action(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]], name: str, monkeypatch: pytest.MonkeyPatch
+def test_python_forwarder_action(
+    checked: apb.BlockAssembly, name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    program, snapshots = checked
-    assert name in snapshots
+    program = checked
     observe_action(program, name, monkeypatch)
-
-
-@pytest.mark.parametrize(
-    "fault",
-    [
-        "duplicate",
-        "missing",
-        "count_bool",
-        "count_short",
-        "cursor_float",
-        "visit_bool",
-        "entry_clear",
-        "scope_clear",
-        "parameter_swap",
-        "paired_mac",
-        "return_layer",
-    ],
-)
-def test_action_snapshot_observer_rejects_faults(action_export: Any, fault: str) -> None:
-    broken = deepcopy(action_export)
-    record = broken["snapshots"][0]
-    if fault == "duplicate":
-        broken["snapshots"][1] = record
-    elif fault == "missing":
-        broken["snapshots"].pop()
-    elif fault == "count_bool":
-        record["steps"] = True
-    elif fault == "count_short":
-        record["steps"] = 10
-    elif fault == "cursor_float":
-        record["after"]["packet"][2] = 3.0
-    elif fault == "visit_bool":
-        record["after"]["visits"]['["sentinel","one"]'] = True
-    elif fault == "entry_clear":
-        record["after"]["entries"]["entries"] = {}
-    elif fault == "scope_clear":
-        record["after"]["frame"]["scope"]["actions"] = {}
-    elif fault == "parameter_swap":
-        record["call"]["args"].reverse()
-    elif fault == "paired_mac":
-        for phase in ["before", "entered", "pending", "after"]:
-            fields = record[phase]["frame"]["vars"]["hdr"][2][0][3]
-            fields[0], fields[1] = fields[1], fields[0]
-    else:
-        record["after"]["frame"]["action"] = "ipv4_forward"
-    with pytest.raises(AssertionError):
-        checked_snapshots(broken)
 
 
 @pytest.mark.parametrize(
@@ -384,7 +259,7 @@ def test_action_snapshot_observer_rejects_faults(action_export: Any, fault: str)
     ],
 )
 def test_action_observer_rejects_actual_environment_faults(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]], fault: str, monkeypatch: pytest.MonkeyPatch
+    checked: apb.BlockAssembly, fault: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original, read, write = Env.enter_action, Env.read, Env.write
     hits = 0
@@ -443,7 +318,7 @@ def test_action_observer_rejects_actual_environment_faults(
         if fault in {"probe_port_bool", "probe_clobber_dst"}:
             mutant.setattr(Env, "write", damaged_probe)
         with pytest.raises(AssertionError):
-            observe_action(checked[0], "false-false-true-0-false", monkeypatch)
+            observe_action(checked, "false-false-true-0-false", monkeypatch)
     assert hits == 1
     if fault in {"probe_port_bool", "probe_clobber_dst"}:
         assert probe_hits == 1
@@ -451,7 +326,7 @@ def test_action_observer_rejects_actual_environment_faults(
 
 @pytest.mark.parametrize("fault", ["old_destination_order", "full_outer_restore", "saturating_ttl"])
 def test_action_observer_rejects_semantic_faults(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]], fault: str, monkeypatch: pytest.MonkeyPatch
+    checked: apb.BlockAssembly, fault: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     execute, arithmetic = stmt.execute, expr.bits_binary
     hits = 0
@@ -481,14 +356,14 @@ def test_action_observer_rejects_semantic_faults(
         if fault == "saturating_ttl":
             mutant.setattr(expr, "bits_binary", saturating)
         with pytest.raises(AssertionError, match="active completed state"):
-            observe_action(checked[0], "true-true-false-0-false", monkeypatch)
+            observe_action(checked, "true-true-false-0-false", monkeypatch)
     assert hits == 1
 
 
-def test_lean_agrees_action_wrong_arity(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]], monkeypatch: pytest.MonkeyPatch
+def test_python_action_wrong_arity(
+    checked: apb.BlockAssembly, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    env = environment(checked[0], "true-true-false-1-false")
+    env = environment(checked, "true-true-false-1-false")
     before = freeze(env)
 
     def forbidden(*_: Any) -> Env:
@@ -504,7 +379,7 @@ def test_lean_agrees_action_wrong_arity(
 
 
 def test_lean_agrees_action_field_fault_replay(
-    checked: tuple[apb.BlockAssembly, dict[str, Any]],
+    checked: apb.BlockAssembly,
     lean_binary: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -519,7 +394,7 @@ def test_lean_agrees_action_field_fault_replay(
             return
         original(lvalue, value, env)
 
-    program = checked[0]
+    program = checked
     case, expected = edge_case(0)
     bundle = tmp_path / "action-missing-destination.json"
     with monkeypatch.context() as mutant:
@@ -543,3 +418,10 @@ def test_lean_agrees_action_field_fault_replay(
         assert hits == 3
     restored = replay.replay(bundle, [lean_binary])
     assert restored.passed and restored.agreed == 1 and restored.both_errored == 0
+
+
+@pytest.fixture(scope="module")
+def checked() -> apb.BlockAssembly:
+    program = build()
+    assert_program_identity(program)
+    return program

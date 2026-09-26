@@ -39,7 +39,7 @@ jobs:
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.elan
-          key: elan-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain', 'spec/arch/lean-toolchain', 'impl/lean/lean-toolchain') }}
+          key: elan-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain', 'spec/arch/lean-toolchain') }}
       - name: Install the pinned toolchain
         run: |
           # The $(cat) must expand in the inner shell, not here.
@@ -58,11 +58,9 @@ jobs:
             spec/ir/.lake/build/ir
             spec/arch/.lake/build/lib
             spec/arch/.lake/build/ir
-            impl/lean/.lake/build/lib
-            impl/lean/.lake/build/ir
-          key: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-${{ hashFiles('spec/**/*.lean', 'impl/lean/**/*.lean', 'spec/*/lakefile.toml', 'impl/lean/lakefile.toml', 'spec/*/lake-manifest.json', 'impl/lean/lake-manifest.json') }}
+          key: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-${{ hashFiles('spec/**/*.lean', 'spec/*/lakefile.toml', 'spec/*/lake-manifest.json') }}
           restore-keys: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-
-      - name: Build, audit and test the three Lean packages
+      - name: Build, audit and test the two Lean packages
         run: nix develop -c scripts/check-lean.sh
       - name: Save the Lean build
         if: github.ref == 'refs/heads/main' && matrix.shard == 1
@@ -73,9 +71,7 @@ jobs:
             spec/ir/.lake/build/ir
             spec/arch/.lake/build/lib
             spec/arch/.lake/build/ir
-            impl/lean/.lake/build/lib
-            impl/lean/.lake/build/ir
-          key: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-${{ hashFiles('spec/**/*.lean', 'impl/lean/**/*.lean', 'spec/*/lakefile.toml', 'impl/lean/lakefile.toml', 'spec/*/lake-manifest.json', 'impl/lean/lake-manifest.json') }}
+          key: lean-build-${{ runner.os }}-${{ hashFiles('spec/ir/lean-toolchain') }}-${{ hashFiles('spec/**/*.lean', 'spec/*/lakefile.toml', 'spec/*/lake-manifest.json') }}
       - name: Differential test against the Python reference
         env:
           P4BLO_REQUIRE_LEAN: "1"

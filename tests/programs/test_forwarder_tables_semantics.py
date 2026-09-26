@@ -1,29 +1,21 @@
-"""Actual installed selection, not table application or action execution.
+"""Installed selection with independent finite known answers.
 
-Finite answers are written independently of the universal Lean interval policy.
-Every lookup observes the complete immutable-before installed/index state, not
-only its return value. The exporter carries actual inputs/results, never expected
-answers computed from the source policy.
+Every lookup observes the complete initial installed/index state as well as
+its selected action. Packet tests compare both interpreters and inject an
+incorrect shortest-prefix implementation.
 """
 
 from __future__ import annotations
 
 import itertools
-import json
-import subprocess
-import tomllib
-from copy import deepcopy
 from pathlib import Path
-from typing import Any
 
 import pytest
-from google.protobuf import json_format
 
 from p4blo import arch
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt import replay
-from p4blo.drt._json import loads as strict_loads
 from p4blo.drt.case import Case
 from p4blo.drt.replay import save
 from p4blo.drt.run import ProtocolError, compare_program, run_python
@@ -32,9 +24,8 @@ from p4blo.interp.api import InterpError
 from p4blo.interp.tables import InstalledEntries, InstallError, Match
 from p4blo.interp.values import Bits
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.codec.test_codec_leaves import same_json
-from tests.lean.test_lean_call_return import index_json
-from tests.lean.test_lean_forwarder import assert_program_identity, freeze
+from tests.corpus.forwarder.forwarder import build
+from tests.programs.test_forwarder_semantics import assert_program_identity, freeze
 
 ROOT = Path(__file__).resolve().parents[2]
 REF = ("MyIngress", "ipv4_lpm")
@@ -111,65 +102,6 @@ def expected(name: str, address: int) -> Match:
     return Match(call(mode, high), False)
 
 
-def encode(message: Any) -> dict[str, Any]:
-    return json_format.MessageToDict(message, preserving_proto_field_name=True)
-
-
-def match_json(match: Match) -> dict[str, Any]:
-    return {"hit": match.hit, "action": None if match.action is None else encode(match.action)}
-
-
-def expected_maps(name: str) -> dict[str, Any]:
-    shape, mode, high = PROFILES[name]
-    key = json.dumps(REF, separators=(",", ":"))
-    return {
-        "entries": {key: [encode(entry(which, high)) for which in SHAPES[shape]]},
-        "defaults": {key: encode(call(mode, high))},
-    }
-
-
-def checked_export(raw: Any) -> tuple[apb.BlockAssembly, dict[str, dict[str, Any]]]:
-    assert type(raw) is dict and set(raw) == {"program", "index", "configurations"}
-    program = json_format.ParseDict(raw["program"], apb.BlockAssembly())
-    assert_program_identity(program)
-    assert same_json(raw["index"], index_json(BoundIndex.build(program))), "complete index"
-    assert type(raw["configurations"]) is list and len(raw["configurations"]) == 30
-    result: dict[str, dict[str, Any]] = {}
-    for record in raw["configurations"]:
-        assert type(record) is dict and set(record) == {"name", "input", "maps", "lookups"}
-        name = record["name"]
-        assert type(name) is str and name in PROFILES and name not in result
-        assert same_json(record["input"], encode(inputs(name))), "independent input identity"
-        assert same_json(record["maps"], expected_maps(name)), "complete installed maps"
-        assert type(record["lookups"]) is list and len(record["lookups"]) == 9
-        for address, observed in zip(ADDRESSES, record["lookups"], strict=True):
-            assert same_json(
-                observed, {"address": address, "match": match_json(expected(name, address))}
-            ), name
-        result[name] = record
-    assert set(result) == set(PROFILES)
-    return program, result
-
-
-@pytest.fixture(scope="module")
-def export(lean_binary: Path) -> dict[str, Any]:
-    assert lean_binary.is_file()
-    executable = ROOT / "impl/lean/.lake/build/bin/p4blo"
-    assert executable.is_file(), "build the Lean packages first"
-    result = subprocess.run(
-        [str(executable), "forwarderTables"], check=True, capture_output=True, text=True, timeout=30
-    )
-    assert result.stderr == ""
-    raw = strict_loads(result.stdout)
-    assert isinstance(raw, dict)
-    return raw
-
-
-@pytest.fixture(scope="module")
-def validated(export: dict[str, Any]) -> tuple[apb.BlockAssembly, dict[str, dict[str, Any]]]:
-    return checked_export(export)
-
-
 def observe(program: apb.BlockAssembly, name: str) -> None:
     index = BoundIndex.build(program)
     original_index = freeze(index)
@@ -194,70 +126,21 @@ def observe(program: apb.BlockAssembly, name: str) -> None:
 
 
 @pytest.mark.parametrize("name", PROFILES)
-def test_lean_agrees_forwarder_tables(
-    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
+def test_python_forwarder_tables(
+    validated: apb.BlockAssembly,
     name: str,
 ) -> None:
-    program, snapshots = validated
-    assert name in snapshots
+    program = validated
     observe(program, name)
 
 
-def test_forwarder_tables_default_targets() -> None:
-    package = tomllib.loads((ROOT / "impl/lean/lakefile.toml").read_text())
-    assert {"P4bloTest", "p4blo"} <= set(package["defaultTargets"])
-
-
-@pytest.mark.parametrize(
-    "fault",
-    [
-        "missing",
-        "duplicate",
-        "wrong-input",
-        "reordered",
-        "default-none",
-        "hit-int",
-        "address-float",
-        "extra-map",
-        "index",
-        "wrong-answer",
-    ],
-)
-def test_lean_agrees_table_snapshot_rejects(export: dict[str, Any], fault: str) -> None:
-    wrong = deepcopy(export)
-    record = wrong["configurations"][0]
-    if fault == "missing":
-        wrong["configurations"].pop()
-    elif fault == "duplicate":
-        wrong["configurations"][-1] = record
-    elif fault == "wrong-input":
-        record["input"] = encode(inputs("host/drop/false"))
-    elif fault == "reordered":
-        target = next(r for r in wrong["configurations"] if r["name"] == "network-host/drop/false")
-        target["input"]["tables"][0]["entries"].reverse()
-    elif fault == "default-none":
-        record["maps"]["defaults"][json.dumps(REF, separators=(",", ":"))] = None
-    elif fault == "hit-int":
-        record["lookups"][0]["match"]["hit"] = 0
-    elif fault == "address-float":
-        record["lookups"][0]["address"] = 0.0
-    elif fault == "extra-map":
-        record["maps"]["entries"]["extra"] = []
-    elif fault == "index":
-        wrong["index"]["scopes"]["MyIngress"]["actions"].pop("drop")
-    else:
-        record["lookups"][0]["match"]["action"] = encode(call("noop"))
-    with pytest.raises(AssertionError):
-        checked_export(wrong)
-
-
 @pytest.mark.parametrize("fault", ["first", "last", "miss-hit", "default", "mutate", "bool-hit"])
-def test_lean_agrees_lookup_observer_faults(
-    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
+def test_python_lookup_observer_faults(
+    validated: apb.BlockAssembly,
     monkeypatch: pytest.MonkeyPatch,
     fault: str,
 ) -> None:
-    program, _ = validated
+    program = validated
     real_lookup = InstalledEntries.lookup
     hits = 0
 
@@ -291,10 +174,10 @@ def test_lean_agrees_lookup_observer_faults(
     assert hits > 0
 
 
-def test_lean_agrees_table_rejections(
-    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
+def test_python_table_rejections(
+    validated: apb.BlockAssembly,
 ) -> None:
-    program, _ = validated
+    program = validated
     index = BoundIndex.build(program)
     for which in ["network", "host"]:
         installed = InstalledEntries.build(index)
@@ -356,11 +239,11 @@ def packet_expected(host: bool = True) -> list[tuple[int, bytes]]:
 
 
 def test_lean_agrees_overlapping_routes_packet(
-    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
+    validated: apb.BlockAssembly,
     lean_binary: Path,
 ) -> None:
     """Executable end-to-end anchor, not a newly proved application contract."""
-    program, _ = validated
+    program = validated
     bundle = ROOT / ".artifacts/drt/forwarder-tables-lpm.json"
     try:
         report = compare_program(program, [packet_case()], 4, [lean_binary])
@@ -377,12 +260,12 @@ def test_lean_agrees_overlapping_routes_packet(
 
 
 def test_lean_agrees_shortest_prefix_fault_replay(
-    validated: tuple[apb.BlockAssembly, dict[str, dict[str, Any]]],
+    validated: apb.BlockAssembly,
     lean_binary: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    program, _ = validated
+    program = validated
     original = tables.beats
     hits = 0
 
@@ -415,3 +298,10 @@ def test_lean_agrees_shortest_prefix_fault_replay(
         assert divergence.lean.state == divergence.python.state
     restored = replay.replay(bundle, [lean_binary])
     assert restored.passed and restored.agreed == 1 and restored.both_errored == 0
+
+
+@pytest.fixture(scope="module")
+def validated() -> apb.BlockAssembly:
+    program = build()
+    assert_program_identity(program)
+    return program

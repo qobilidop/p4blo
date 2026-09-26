@@ -190,7 +190,7 @@ def test_provenance_covers_both_engines_fixtures_and_tools() -> None:
         "uv.lock",
         "flake.lock",
         "spec/ir/lean-toolchain",
-        "tests/lean/test_lean_firewall_bloom.py",
+        "tests/programs/test_firewall_bloom_semantics.py",
         "tests/assurance/runner.py",
         "scripts/check-assurance.py",
     ]:

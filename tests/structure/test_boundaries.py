@@ -181,7 +181,7 @@ def test_importable_lean_modules_never_import_gate_only_ones() -> None:
     """What a client may import, and each package's executable, stands
     without the tests and audits under `<Root>Test/`."""
     offenders = []
-    for package in ("spec/ir", "spec/arch", "impl/lean"):
+    for package in ("spec/ir", "spec/arch"):
         for path in sorted((ROOT / package).rglob("*.lean")):
             relative = path.relative_to(ROOT / package)
             if relative.parts[0] in LEAN_TEST_LIBRARIES or ".lake" in relative.parts:
