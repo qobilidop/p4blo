@@ -6,13 +6,11 @@ Lean semantics validated against a runnable reference.
 That sentence is the project. p4blo is a personal, educational prototype
 whose purpose is to make the sentence concrete enough to argue about, so
 that a serious version can later be proposed to the P4 community as an
-RFC rather than built alone. This document records what p4blo is, what
-it claims, how it is built and what is out of scope. The closed behaviors
-are in [ir-semantics.md](ir-semantics.md), what the supplied architectures
-and extern families decide in [arch-supports.md](arch-supports.md), the
-construct table in
-[p4-spec-coverage.md](p4-spec-coverage.md), and what is proved, tested and checked
-against which oracle in [assurance.md](assurance.md).
+RFC rather than built alone. This document describes the intended architecture,
+its responsibilities and its scope. [Assurance](assurance.md) owns delivered
+guarantees and their premises; [core semantics](ir-semantics.md) and
+[architecture support](arch-supports.md) define behavior;
+[P4 coverage](p4-spec-coverage.md) maps supported constructs.
 
 ## Context and motivation
 
@@ -70,9 +68,9 @@ certificates.
 
 ## The four claims
 
-Each claim has one experiment and one way to fail. The project makes
-these claims and no others; their current status is in
-[assurance.md](assurance.md).
+These four design goals guide the experiments. Their delivered scope,
+proof premises and finite evidence are stated in [assurance.md](assurance.md);
+the goals below are not additional guarantees.
 
 1. **The core is small and post-elaboration.** The schema and its
    contract fit in a few pages: no generics, no `int`, no implicit casts,
@@ -100,13 +98,16 @@ these claims and no others; their current status is in
 There is one p4blo IR with three representations, and each concern has
 one intended authority:
 
-| Concern | Intended authority | Today |
-|---|---|---|
-| Abstract syntax: expressions, statements, declarations | Lean, `spec/ir/P4bloIR/IR.lean` | in place |
-| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/` | a core-library checker proved sound for the declarative rules, agreeing with the Python validator on tested libraries, with progress proved for valid libraries; architecture bindings are checked separately; checker completeness and termination are open |
-| Meaning: execution and observable behavior | Lean, `spec/ir/P4bloIR/` | in place |
-| Serialization: messages, field numbers, encoding versions | the core and architecture protobuf schemas under `spec/ir/proto/` and `spec/arch/proto/` | in place |
-| Correspondence between wire values and abstract libraries | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; BlockLibrary and architecture-binding composition are open |
+| Concern | Authority |
+|---|---|
+| Abstract syntax: expressions, statements, declarations | Lean, `spec/ir/P4bloIR/IR.lean` |
+| Validity: types, scopes, widths, legal combinations | Lean, `spec/ir/P4bloIR/Validity/`; architecture bindings are checked separately |
+| Meaning: execution and observable behavior | Lean, `spec/ir/P4bloIR/` |
+| Wire syntax: messages, field numbers, encoding versions | Core and architecture protobuf schemas under `spec/ir/proto/` and `spec/arch/proto/` |
+| Correspondence between wire values and abstract libraries | Lean codecs |
+
+[Assurance](assurance.md#what-is-proved) states which of these contracts have
+proofs, their representability and execution premises, and the open obligations.
 
 The text form of the protobuf is the golden format; binary and JSON are
 transports. The Lean boundary uses the Protobuf JSON profile implemented by
@@ -134,13 +135,9 @@ unset, widths illegal, references unresolved. Raw abstract syntax stays
 ordinary, with validity a separate predicate and an executable validator,
 so that raw syntax remains useful for diagnostics, malformed-input
 testing and cross-language correspondence. Core library validity is
-defined in Lean over the index and decided by an executable checker proved
-sound; architecture H/M roots and exports have a separate tested binding
-checker without a formal soundness claim. A valid library's well-formed machine never reaches an interpreter
-error: every finite run ends in success or a declared parser error under
-the documented extern, installation and entry premises.
-Checker completeness, termination and the complete codec proofs are the
-obligations that remain, as assurance.md records.
+defined over the index; architecture H/M roots and exports have a separate
+binding checker. The [validation and progress guarantees](assurance.md#inputs-and-validation)
+state exactly which accepted inputs and machine premises the core theorems cover.
 
 ### The IR is post-elaboration
 
@@ -190,11 +187,10 @@ There is one `Block` message with a kind tag, parse, control or deparse,
 and an explicit parameter list. The three kinds differ in which statements
 they may contain, and the validator enforces those rules per kind.
 
-A parser may loop, since a state may be revisited while extracting into
-a header stack. The bound is the no-consumption revisit rule: a state
-that consumed no bits since it was last entered may not be entered
-again, and doing so is a parse error. Fuel was rejected because it makes
-the meaning of a program depend on a number nobody specifies.
+A parser may revisit a state while extracting into a header stack. The
+no-consumption revisit rule raises a parse error when the same state is
+entered again at the same cursor. The semantics uses no arbitrary fuel
+counter; this rule does not establish termination of every valid program.
 
 ### Metadata contract
 
@@ -282,13 +278,12 @@ fixtures:
 | action argument names, count and widths, in calls, defaults and entries | whether a `Bool`, `Enum` or `Error` value is a place |
 | extern method names and argument count; an `Out`/`InOut` argument being a place of the declared width | every rule the validator owns |
 
-Four places deviate from the original design because the type checker
-forced them: the width aliases and typed literals type as places, so a
-literal used as a target is caught only at run time; `Bool`, `Enum` and
-`Error` targets have no static place split; extern `in` parameters accept
-any value with the width checked at run time; and a failed `assign`
-surfaces as `reportCallIssue` because `assign` is overloaded over target
-kinds.
+The type interface has four limits: width aliases and typed literals type as
+places, so a literal target fails at run time; `Bool`, `Enum` and `Error`
+targets have no static place split; extern `in` widths are checked at run
+time; and sub-block arguments are checked against their parameters at run
+time. Separately, a failed `assign` surfaces as `reportCallIssue` because
+`assign` is overloaded over target kinds.
 
 The [Python authoring guide](python-edsl.md) explains independent blocks,
 block libraries, readability patterns from the three applications, and the explicit extern
@@ -312,13 +307,10 @@ and supplies executable bindings, v1model, five extern families and the
 but carries no formal architecture-specific guarantee. Python is the program
 authoring interface; there is no separate Lean authoring package.
 
-| Boundary | Assurance |
-|---|---|
-| Core validity and execution | Scoped Lean theorems under their explicit premises |
-| protobuf to and from abstract IR | Component codec laws on the representable domain plus cross-language tests; complete-library composition remains open |
-| Architecture and extern execution | Native tests, Python/Lean comparison and applicable external oracles |
-| Python execution to IR semantics | Differential and property tests, independent answers and deliberate faults |
-| Authored program to intended behavior | Independent packet/state expectations, regressions and applicable oracle comparisons |
+The [assurance guide](assurance.md) owns the distinction between core proofs,
+codec laws, tested architecture behavior and application expectations. An
+architecture's supplied extern implementation must not be confused with a
+proof that it satisfies the generic extern contract.
 
 Each package puts client modules under `<Root>/` and gate-only modules under
 `<Root>Test/`. Its root contains Lake's files, the root module, README and at
@@ -512,30 +504,29 @@ for setup.
 
 ## Alternatives considered
 
-- **Protobuf as the abstract syntax authority**, the original
-  arrangement, with Lean only for meaning. Replaced by one IR defined in
-  Lean with a protobuf encoding, so that validity and meaning are stated
-  over the same syntax the proofs use and the encoding can change without
-  touching the semantics.
-- **Three block messages instead of one with a kind tag.** Rejected; it
-  triples the shared machinery for locals, parameters and calls.
-- **Fuel as the parser loop bound.** Rejected; it makes meaning depend on
-  an unspecified number.
-- **BMv2 as the first oracle.** Replaced by P4-SpecTec, which needs no
-  Docker and is the spec's own mechanization; BMv2 stays as the second,
-  for what SpecTec cannot judge.
-- **pcap as the vector format.** Rejected in favor of STF, which is text
-  and already understood by both oracles.
-- **A decorator-based eDSL that reads Python source.** Rejected because
-  it hides the IR, and the IR is the product.
-- **The string-referenced eDSL.** Table action lists, state targets and
-  exports named things by string, so a typo surfaced at build time at
-  best. Replaced by the typed surface; the builder stays as
-  `p4blo.edsl.core`.
-- **An FFI between Python and Lean.** Rejected; a pipe is enough, and an
-  FFI would be a throughput choice, not an additional guarantee.
-- **A browser playground.** Removed to keep the project to its four
-  claims; pure Python and Python 3.13 are kept so that it stays cheap.
+- **Lean abstract syntax with a protobuf encoding.** Validity and meaning
+  are stated over the same syntax used by proofs; an encoding change need
+  not redefine execution. Making protobuf the abstract authority would
+  couple those concerns.
+- **One block type with a kind tag.** Parser, control and deparser share
+  locals, parameters and call machinery; separate messages would duplicate it.
+- **No arbitrary parser fuel.** The no-consumption revisit rule gives a
+  specified parser error without making meaning depend on an unspecified
+  execution budget. It is not a termination theorem.
+- **P4-SpecTec and BMv2 as complementary oracles.** P4-SpecTec supplies the
+  executable language account without Docker; BMv2 supplies target behavior
+  that the simulator or its adapters cannot independently judge.
+- **STF rather than pcap vectors.** STF is readable text and already accepted
+  by both oracle toolchains, including table configuration and expected packets.
+- **An explicit typed eDSL over a dynamic builder.** Python objects expose
+  misspelled references earlier than string names. Recording explicit
+  operations keeps the IR visible; decorators that inspect Python source
+  would hide the elaboration. The string-based builder remains useful for
+  generated programs.
+- **A pipe between Python and Lean.** The protocol is sufficient for independent
+  execution; an FFI would be a throughput choice, not another guarantee.
+- **A small local tool rather than a browser playground.** Pure Python and
+  Python 3.13 keep authoring inexpensive without adding another product surface.
 
 ## Relation to p4-spectec-lean
 
@@ -599,17 +590,7 @@ reads the same bytes both projects use.
   followed, because P4's core has a fixed handful of operators and the
   typed schema is the grammar the Lean side decodes.
 
-The construct-by-construct survey of these IRs that shaped the schema is
-archived in git as `docs/notes/prior-art-ir.md` at commit
-`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6`.
-
 ## Appendix: naming
 
-*p4blo*: `p4` plus `blo`, block cut short, read aloud as *Pablo*. Pablo
-descends from Latin *Paulus*, "small", so the name says small blocks in
-two languages. Name-shaped rather than claim-shaped, so the tagline
-carries the claim. Considered and rejected: `p4sem` and `p4ir` name the
-method, and `p4ir` is one letter from P4HIR; `p4blocks` is claim-shaped
-and invites the µP4 reading; `p4nah` reads as dismissive of P4 the moment
-it heads a community proposal; the small lane (`p4mini`, `p4nano`) is
-Nano-P4's; `p4core` reads as core.p4.
+*p4blo*: `p4` plus `blo`, block cut short, read aloud as *Pablo*. The
+name's Latin root, *Paulus*, means "small".

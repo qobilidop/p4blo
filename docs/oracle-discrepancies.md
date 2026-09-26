@@ -10,8 +10,9 @@ The observations below target P4-SpecTec
 **1.15.4** `simple_switch`. The [build script](../tests/oracles/build.sh) pins
 P4-SpecTec and our driver patches; the [Dockerfile](../tests/oracles/bmv2/Dockerfile)
 pins p4c and BMv2 by immutable image digests. These are claims about those
-inputs, not every release of either project. Broader guarantees and remaining
-single-oracle limitations are in [assurance](assurance.md).
+inputs, not every release of either project. This guide owns the selected
+behavior, reproducers and comparison limits; [assurance](assurance.md) states
+what those observations establish for the project.
 
 ## Reproducing the differences
 
@@ -68,6 +69,24 @@ string. p4blo therefore preserves the exact input length. Broader CRC16,
 even-byte and explicit-leading-zero controls remain in
 [test_crc.py](../tests/oracles/test_crc.py).
 
+The broader native CRC probes retain these independently checked answers:
+
+| Exact input bytes | CRC32 of those bytes (BMv2) | Pinned P4-SpecTec |
+|---|---|---|
+| `0a0000010a0000023039005006` | `7dd597c3` | `a31aa886` |
+| thirteen zero bytes | `0f744682` | `d1bb79c7` |
+| ASCII `123456789` | `cbf43926` | `ce7745fe` |
+| `01` | `a505df1b` | `36de2269` |
+| `0001` | `36de2269` | `36de2269` |
+
+CRC16's zero initial value makes the prepended zero byte harmless for that
+algorithm. The firewall's 104-bit tuple instead selects CRC32 register index
+1987 on BMv2 and 2182 on P4-SpecTec. Simple packet sequences can still agree:
+a consistent wrong hash can preserve the collision relationships they observe.
+Primitive known answers and complete register observations expose the error;
+packet agreement alone does not. The block-runner tests also retain the
+odd-byte CRC32 state discrepancy on the firewall's Bloom-filter cells.
+
 ## Out-of-range register reads
 
 [Source](../tests/oracles/discrepancies/register_bounds.p4),
@@ -89,7 +108,9 @@ ignored by its caller. BMv2 preserves the destination; P4-SpecTec returns zero.
 **p4blo chooses zero as its deterministic policy**, without claiming BMv2 is
 incorrect. Applications requiring portability must check bounds. The
 [existing bounds corpus](../tests/programs/corpus/register_bounds/README.md) also checks
-ignored out-of-range writes and persistent in-range state.
+ignored out-of-range writes and persistent in-range state. Its two divergent
+packets start with nonzero read destinations, making the preserved value
+observable. In-range reads and out-of-range writes agree.
 
 ## Control-plane table masks
 
@@ -111,6 +132,11 @@ uses `0a` as the mask, under which both packets match. This defect concerns
 control-plane entry construction; an equivalent const entry in the P4 source
 does not exhibit it. Existing firewall tests retain the full `/32` LPM
 manifestation, where `10.0.0.3` incorrectly matches `10.0.0.2/32`.
+Python, Lean and unchanged original BMv2 drop that route miss; P4-SpecTec
+forwards it. Strict tests cover both the unchanged firewall source and printed
+IR in [test_firewall.py](../tests/programs/corpus/tutorial_firewall/test_firewall.py).
+Generated mask classifications additionally require agreement with a model of
+this exact simulator defect, rather than accepting any wrong route.
 
 ## Const-entry priority annotations
 
@@ -133,6 +159,17 @@ uses standard entry ordering. The discrepancy alone is not a blanket claim
 that BMv2 violates P4. p4blo retains standard ordering and its printer makes
 priorities explicit using supported language properties. The
 [corpus derivation](../tests/programs/corpus/priority/README.md) records each row.
+
+The backend numbers const entries with a running counter, using the annotation
+where present, and BMv2 interprets those numbers as smaller-wins. The portable
+language defaults use larger-wins with each implicit priority one below its
+predecessor. In this donor, the numeric values coincide but precedence differs.
+The corpus's second and third packets therefore use port 1, while the original
+BMv2 program uses port 3; P4-SpecTec disagrees with the original donor's STF
+expectations for those same packets. The printed golden passes both oracles
+because it supplies explicit priorities and `largest_priority_wins`.
+This characterizes the annotated donor and the selected portable interpretation,
+not a general claim about all BMv2 const tables.
 
 ## Egress destination and egress_spec initialization
 
@@ -165,12 +202,54 @@ from destination selection and from ingress/egress drop gating.
 
 ## Other limits and classification discipline
 
-[Assurance](assurance.md#known-disagreements-with-the-oracles) also records
-P4-SpecTec's shift-size implementation limit, non-byte deparser/payload
-composition, header equality/validity and stack `pop_front` behavior. Their
-existing core/generated-program tests and semantic rulings remain the
-references. They are not promoted here into new paired BMv2 reproductions;
-this catalog's standalone paired cases establish only the observations above.
+The following limits have existing semantic rulings and focused tests. They
+are not additional paired BMv2 reproductions; the four standalone paired
+programs above establish only their own recorded observations.
+
+### Shift amounts above 2048
+
+P4-SpecTec's `$bin_shl` rule is unbounded, but its simulator builtins stop with
+"shift amount too large" for amounts over 2048. The IR returns zero when the
+shift is at least the operand width, including the generated cases that expose
+this limit. This is a simulator execution limit, not a language-rule conflict.
+[Generated oracle tests](../tests/oracles/test_oracle_generated.py) either keep
+amounts within the supported range or require the exact diagnosed error shape;
+unrelated simulator errors do not qualify.
+
+### Payload after a partial byte
+
+The IR pads emitted bits to a byte before the architecture appends unconsumed
+payload. P4-SpecTec's v1model joins the payload at the bit level. P4 leaves this
+to the target; p4blo's choice is recorded in [Deparsers](ir-semantics.md#deparsers).
+The generated test `test_unaligned_emission_before_a_payload` emits the seven
+bits `0010110` followed by payload `abcd`: p4blo expects `2cabcd`, while the
+pinned simulator emits `2d579a`. Only that exact mismatch receives a strict
+expected failure. Scalar and parser-condition generated programs include an
+explicit pad field so their other comparisons concern the computed result.
+
+### Header equality and stack state
+
+P4-SpecTec's header `$bin_eq` ignores validity, and its `pop_front(n)` sets
+`nextIndex` to `S - n`. The [values and operations ledger](ir-semantics.md#values-and-operations)
+records these deviations against P4 §§8.17–8.18; p4blo follows the language
+rules. The block comparisons in
+[test_oracle_block.py](../tests/oracles/test_oracle_block.py) also observe stored
+fields and indices after `push_front` and `pop_front`, including fields of
+invalid headers that no deparser emits. Their strict classification models only
+the simulator's differing stack behavior, after checking the interpreter's own
+answer; a wrong p4blo stack implementation must still fail.
+
+### Longest-prefix matching
+
+The first oracle lacks an independent longest-prefix rule. The STF translation
+in [run.py](../tests/oracles/run.py) supplies LPM prefix lengths as priorities,
+so P4-SpecTec confirms outputs under that translation. BMv2 independently
+judges longest prefix, const entries and runtime ternary priorities. Table
+installation remains adapter-mediated in block comparisons, and the block
+runner uses the simulator's v1model extern families; it does not check an
+architecture or wire format. Flood/multicast is outside the supplied profile.
+
+### Classification policy
 
 For a mismatch, first preserve the source, packet sequence, table entries and
 full available extern state. Determine the governing language rule,

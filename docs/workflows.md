@@ -1,7 +1,7 @@
 # Workflows
 
-How to build, check and change p4blo, for a person or an agent who has
-never seen it. Every command below runs from the repository root after the
+How to build, check and change p4blo. Every command below runs from the
+repository root after the
 [development setup](../README.md#development). Python commands use `uv`;
 Lean, schema, workflow and oracle checks additionally need the specialist
 tools listed there. `uv` does not install those external tools.
@@ -22,11 +22,9 @@ Pull requests are classified from their merge base to the complete head;
 a prose follow-up does not hide earlier code changes. Pushes compare the
 before and after revisions. A failed classifier stays red and cannot skip
 specialist jobs. Superseded PR runs cancel; pushes to `main` do not.
-Run the full local gate before pushing, plus specialist gates affected by
-the change; record unavailable tools and skipped checks explicitly. Remote
-CI must pass on the exact integrated `main` revision before the work is
-complete. If a PR is used, its final revision must pass before merge.
-Check exit codes, not output.
+A local pass, a remote CI pass and a skipped check are different evidence.
+Check command exit codes and use the affected specialist gates alongside the
+local Python/schema gate.
 
 | Gate | Command | Expected |
 |---|---|---|
@@ -91,14 +89,10 @@ BMv2 invocation a separate container. One test owns the coverage measurement.
 The optional p4c check runs in the Docker job and skips if its image is absent.
 In concurrent worktrees use distinct image tags and
 `P4BLO_BMV2_IMAGE`, never replace an image while another gate is using it.
-If local disk capacity is insufficient, use a reviewed isolated-branch CI
-experiment; never prune unrelated Docker data or count an unavailable local
-gate as successful execution.
+An unavailable local gate supplies no execution evidence.
 
-What is claimed, for which programs, and what backs it is
-[assurance.md](assurance.md). Keep proved properties, tested agreement and
-open obligations separate in every checkpoint; passing differential tests
-is not a proof of equivalence.
+[Assurance](assurance.md) states the guarantees and evidence boundaries;
+passing differential tests is not a proof of equivalence.
 The Lean gate builds with `lake build --wfail`, so any warning fails
 the build, a `sorry` included. The core proof audits,
 `spec/ir/P4bloIRTest/ProofAudit.lean` and `CodecProofAudit.lean`,
@@ -108,7 +102,7 @@ checks them as modules of the test libraries; `sorry`, custom axioms and
 native-evaluation escapes cannot silently replace those proofs. Update an
 audit expectation only after reviewing the changed trust boundary.
 
-The milestone's finite adversarial acceptance command is:
+The finite adversarial acceptance command is:
 
 ```sh
 uv sync --locked
@@ -135,9 +129,8 @@ not just packets for a fixed corpus. It includes systematic operator/width
 boundaries and 200 deterministic, shrinking Hypothesis examples. Failures
 write concrete program/input bundles under `.artifacts/drt/` (override with
 `P4BLO_DRT_FAILURE_DIR`), replayable with the same command above. The
-source-fault campaign recipes for the applications are kept in
-`.agents/notes/mutations/`; campaign reports are archived in git after
-each compaction.
+retained application regressions check independent intended behavior as well
+as agreement; their scope is described in [assurance](assurance.md#adversarial-checks).
 `tests/conformance/execution/test_drt_stateful_programs.py` varies widths, independent register and
 counter capacities, arithmetic, conditional effects and write ordering. It
 compares complete packet sequences, including every extern cell after each
@@ -194,39 +187,9 @@ translates the STF dialect. The build script creates the pinned OCaml switch;
 
 ## Changing things
 
-During the personal-project phase, changes do not require a pull request,
-including substantive changes, tooling and policy. Use feature branches and
-worktrees when useful, or commit directly to `main`. Integrate completed
-feature branches locally and push `main`. Use a pull request when explicitly
-requested or required by repository protections.
-Keep each commit a coherent change with its tests and necessary
-documentation; explain the prior problem and why the chosen approach
-solves it. Stage new deliverables before the full local gate so checks of
-the index see the intended submission. Review the staged diff and commit
-message before committing.
-
-When a PR is used, its description explains the problem, resulting behavior,
-consequential tradeoffs and validation for a reader without the conversation. Distinguish
-local checks from remote CI and name meaningful skips or limitations. Link
-supporting evidence, but keep enough context in the description to make it
-useful if a link disappears. Update it against the final diff after review.
-These practices follow [Google's change-description guidance](https://google.github.io/eng-practices/review/developer/cl-descriptions.html),
-[small-change guidance](https://google.github.io/eng-practices/review/developer/small-cls.html),
-[Git's contribution guidance](https://git-scm.com/docs/SubmittingPatches)
-and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes).
-
-Obtain independent review of the final patch, fix findings and run the full
-local gate before pushing. After pushing, check applicable CI on the exact
-integrated `main` SHA; a passing run for an earlier revision is not sufficient.
-Feature-branch pushes can checkpoint unfinished work but do not replace
-validation of the integrated revision.
-Required jobs that are missing, pending, cancelled or skipped do not
-establish a pass. Repair failures with follow-up commits and rerun affected
-checks before declaring completion. Follow repository protections without
-bypasses. For a PR, require final-head review and applicable CI before merge.
-Prefer merge commits when the individual commits form a useful history;
-squash a WIP/fixup sequence with a considered message. Agent coordination
-and attribution rules are in `AGENTS.md`.
+The procedures below describe implementation and validation dependencies.
+Repository contribution, review and publication policy is in
+[AGENTS.md](../AGENTS.md).
 
 Generated artifacts must have a reproducible source and regeneration
 command. The protobuf check generates into a temporary directory and
@@ -241,7 +204,6 @@ with its raw-content checksum, or a checksum-pinned external artifact.
 Ignored logs and build outputs remain local. Review expected history growth
 when updating snapshots; removing a large file later does not remove its
 old blobs. See [GitHub's repository-size guidance](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
-Published-history changes require explicit agreement on the affected refs.
 
 **A closed behavior.** Write it in `docs/ir-semantics.md` first, or in
 `docs/arch-supports.md` when an architecture or extern family owns it, then
@@ -268,7 +230,6 @@ the printer and the STF reader also use), the printer
 `docs/p4-spec-coverage.md`, then regenerate every corpus golden from its eDSL
 source (`uv run python tests/programs/corpus/<name>/<name>.py > tests/programs/corpus/<name>/<name>.txtpb`)
 and the printer goldens (`P4BLO_UPDATE_GOLDENS=1 uv run pytest impl/python/tests/printer/test_program.py`).
-Record the decision in `.agents/decisions.md`.
 
 Architecture binding syntax lives separately in
 `spec/arch/proto/p4blo/arch/v0/assembly.proto`. Mirror changes there in
@@ -357,58 +318,22 @@ both oracle catalogs pick up `tests/programs/examples/*/*.stf`. Each program kee
 headers, parser, actions, tables, control and deparser together; extract
 shared abstractions only when concrete usage shows a readability benefit.
 
-An application is complete when it has a reviewed contract and runnable
-demo; readable typed source; independent exact packet, fate and state
-expectations; golden reconstruction; Python/Lean comparison and
-applicable oracle evidence with precise exclusions; targeted deliberate
-faults; and a fresh-reader review that runs and modifies the example
-without conversation context. Setup or compilation failures do not count
-as semantic fault detection, and agreement between implementations does
-not replace intended-behavior checks. Work each application through this
-loop:
+Check each application through its public API:
 
-1. Specify the application story, packet profile, host assumptions and failure
-   behavior. Establish independent expected outcomes before relying on replay.
-   For an authoring API change, first write representative caller examples
-   and a boundary counterexample: a block library must compile and validate a
-   scalar-only control without inventing a packet pipeline or global H/M roots.
-   Trace that witness through source, wire, validation and execution. Include
-   multiple blocks of each kind so the example cannot hide a fixed pipeline.
-2. Build the smallest complete runnable scenario through public APIs. Record
-   concrete authoring, configuration, inspection and diagnostic difficulties.
-3. Challenge correctness with boundary and persistent-sequence tests,
-   Python/Lean comparison, applicable oracles and targeted deliberate faults.
-   Preserve reproducers and distinguish setup failures from detected faults.
-4. Obtain independent read-only correctness and usability review after each
-   build step. The reviewer runs the documented demo and tries a small policy
-   modification using scratch copies or local configuration overrides in
-   their isolated worktree, without editing canonical sources.
-   Retain the report under `.agents/reviews/` and resolve confirmed findings.
-5. Improve the responsible layer: application, eDSL, diagnostics, runtime or
-   test infrastructure. Validate a reusable change with concrete usage. Record
-   speculative opportunities as backlog rather than expanding acceptance.
-   For behavior-preserving authoring changes, retain the existing IR goldens
-   and compare both their text and binary form before considering new syntax.
-6. Repeat affected checks/review, run required integration gates, and record
-   the resulting revision, exact commands, skips and outstanding obligations.
-
-A commit represents a coherent improvement that can be reviewed on its own
-and leaves the project working. Keep behavior with its tests and explanation;
-separate mechanical moves and reusable API changes from application policy.
-Avoid both incomplete file-by-file commits and a collection-wide omnibus
-commit. There is no line-count quota. Guidance:
-[Google's small changes](https://google.github.io/eng-practices/review/developer/small-cls.html),
-[review criteria](https://google.github.io/eng-practices/review/reviewer/looking-for.html),
-and [Git's logical steps](https://git-scm.com/docs/gitworkflows).
-
-At each checkpoint, update `.agents/status.md` (including Open threads), the
-acceptance checklist and any changed decisions. Record the current iteration,
-unresolved findings, active branch/worktree, durable evidence and next action.
-Update `AGENTS.md` when scope or navigation changes. Another agent should be
-able to resume from these files without chat history or temporary worktrees.
-
-## Working with agents and resuming
-
-Sub-agent coordination, review placement, checkpoints, compaction and
-the reading order for resuming are in `AGENTS.md`; nothing needed to
-continue the work lives outside the repository.
+1. State its packet profile, host assumptions, expected outcomes and limits.
+   Keep packet, fate and persistent-state expectations independent of the
+   implementation being checked.
+2. Supply readable typed source, a runnable demo, an exactly rebuilt golden,
+   and boundary and persistent-sequence cases. Compare Python and Lean, then
+   run applicable oracles with precise exclusions.
+3. Challenge the checks with targeted source faults. Setup or compilation
+   failures do not count as semantic fault detection. Retain minimal
+   regressions and concrete failure reproducers.
+4. Have a fresh reader run the documented demo and make a small policy change
+   in a scratch copy. Use that exercise to improve the responsible layer:
+   application, authoring API, diagnostics, runtime or test infrastructure.
+5. For behavior-preserving authoring changes, compare the existing goldens'
+   text and binary forms. For reusable API changes, include an independent
+   scalar-only block library with multiple blocks of each kind, so a test
+   cannot accidentally require a packet pipeline or global H/M roots. Follow
+   that example through source, wire, validation and execution.

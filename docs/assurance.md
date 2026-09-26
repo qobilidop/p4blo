@@ -1,12 +1,11 @@
 # Assurance
 
-What p4blo claims, for which programs, and what backs each claim: proofs,
-tests, external oracles and deliberate faults. Read this before inferring
-a guarantee from a test count or a theorem name. The finite assurance
-milestone closed on 2026-09-23 at code revision `3148a52`; the
-[release evidence](#release-evidence) at the end records exactly what
-ran then and at the application checkpoint that followed; later
-checkpoints are recorded in the agent status file.
+The delivered guarantees, supported inputs and exact premises of p4blo's
+proofs, tests, external comparisons and deliberate faults. A test count or
+theorem name alone does not establish a broader guarantee. [Design](design.md)
+explains the intended architecture; [workflows](workflows.md) explains how to
+run the checks. [Historical release evidence](#release-evidence) describes
+its own revisions and must not be read as validation of a changed checkout.
 
 ## The claim
 
@@ -88,7 +87,8 @@ H/M roots and exports with the tested `P4bloArch.Bindings.check`;
 `p4blo-lean check` checks the combined assembly. This architecture checker
 has no formal soundness guarantee. The Python and Lean checkers are compared
 program by program, on every corpus program, example, a sample of both
-DRT families and every program `impl/python/tests/validator/test_validator.py` validates: they
+DRT families and the shared [validator scenario catalog](../tests/support/validator_scenarios.py)
+used by the Python validator tests: they
 agree on acceptance and on the first diagnostic code, up to wire problems
 that Lean's decoder rejects before any rule runs. For a program the
 checker accepts, `P4bloIR.Progress` proves that the step machine never
@@ -270,7 +270,7 @@ replayed on the Python interpreter, on Lean and on both oracles.
 | priority | p4c `table-entries-priority-bmv2`, priorities by the specification's numbering | p4c STF, 3 packets, two expectations re-derived from P4-SpecTec | both for the golden; BMv2 on p4c's own source routes two packets the other way by p4c's numbering [below](#known-disagreements-with-the-oracles) |
 | register_bounds | own program | 9 hand-derived packets | SpecTec; two packets diverge on BMv2 by the register rule [below](#known-disagreements-with-the-oracles) |
 | tutorial_firewall | pinned p4lang tutorial solution; Python source reproduces the golden | connection and Bloom-collision vectors, byte cuts, generated host-policy sequences | original BMv2 packets and all 8192 register cells at 30 prefix boundaries; SpecTec controls pass, its CRC and mask defects are classified below |
-| vlan_gateway (added after the milestone, at `38d740e`; no Lean-authored counterpart) | original homepage example | one STF file with 11 packets; a 53-request packet, diagnostic and counter sequence in Python and Lean | both for packets; counters checked by independent expectations |
+| vlan_gateway | original homepage example | one STF file with 11 packets; a 53-request packet, diagnostic and counter sequence in Python and Lean | both for packets; counters checked by independent expectations |
 
 The public applications under `examples/` (router, stateful firewall,
 load balancer) each have goldens, vectors and independent expectations
@@ -300,8 +300,8 @@ copies, sub-block calls, and corpus programs with random entries and
 packets), and `tests/oracles/test_oracle_generated.py` runs sixty of them in CI.
 A larger local campaign over seeds 0 to 1099, 1,100 programs and 3,851
 vectors, passed with no unexplained disagreement; every non-pass was one
-of two classified simulator defects below, the shift limit and the table
-mask, each accepted only by a classifier that checks the exact failure
+of two [classified simulator defects](oracle-discrepancies.md), the shift
+limit and the table mask, each accepted only by a classifier that checks the exact failure
 and, for the mask, that the simulator agrees with the corrected model.
 
 The adequacy criterion is coverage of the semantics' own rules, not test
@@ -341,8 +341,8 @@ later than uniform choice did, a mean of 73 programs against 57, and it
 was removed. Witness pairs in
 `spec/arch/P4bloArchTest/fixtures/` pin each rule's condition from both
 sides, one program that must report it and one that must not, with the
-recorded reply anchoring what actually ran. An independent review of the
-observer and its fixes are archived in git with the agent reviews.
+recorded reply anchoring what actually ran. The witness checks constrain both positive and negative classification,
+separately from packet agreement.
 
 The conformance corpus under `tests/conformance/` is the Lean semantics'
 answers kept as data: one fixture per input, each a program, an ordered request
@@ -395,7 +395,7 @@ accept is `NoError` by construction on both sides, so its comparison has
 content only for a rejecting parser. Two documented differences are strict expected
 failures, each explained entirely by a model of the simulator applied to
 the reference interpreter, which checks the interpreter's own answer
-before changing only what the deviation names: odd-byte CRC32, below, on
+before changing only what the deviation names: [odd-byte CRC32](oracle-discrepancies.md#crc32-of-an-odd-number-of-bytes) on
 the tutorial firewall's Bloom filter cells that the pipeline comparison
 cannot see; and the stored fields and index a stack keeps after
 `push_front` and `pop_front`, the ledger's *deviates* entry, which no
@@ -437,100 +437,31 @@ runtime serializes packets; this does not model BMv2's cross-pipeline scheduling
 
 ## Known disagreements with the oracles
 
-The [discrepancy catalog](oracle-discrepancies.md) gives minimal paired
-reproductions, exact pins, observed results, and the adopted behavior with its
-reason. Correctness suites use strict expected failures restricted to the
-observed mismatch; the separate characterization suite asserts each oracle's
-complete distinct answer. Unrelated errors or corrected behavior fail the
-classification. Native source probes are never rewritten to agree. Printed
-programs explicitly bind the documented architecture profile, including the
-local egress drop request and preserved output destination.
+The [discrepancy guide](oracle-discrepancies.md) owns exact pins, native
+reproducers, observed answers, governing contracts and selected behavior.
+These differences bound what oracle agreement establishes:
 
-For egress destination and initialization, p4blo follows the documented/pinned
-BMv2 profile: destination is selected before egress; egress starts with a zero
-drop request; non-drop egress assignments cannot redirect the output. The two
-minimal native probes expose P4-SpecTec's differing behavior independently.
+- CRC32 input length and table masks follow the documented algorithms and
+  language rules; the pinned P4-SpecTec implementations differ.
+- Out-of-range register reads are unspecified by v1model. p4blo chooses zero;
+  BMv2 preserves the destination. That difference does not make BMv2 wrong.
+- Const-entry annotations in the p4c donor are a nonstandard extension.
+  p4blo follows portable language ordering and prints explicit priorities.
+- Egress destination and initialization follow the pinned BMv2 profile:
+  ingress selects the destination, egress starts with a zero drop request,
+  and a non-drop egress assignment cannot redirect output.
+- Shift-size limits, partial-byte payload composition, header equality and
+  stack operations further restrict P4-SpecTec comparisons. Its STF adapter
+  supplies LPM priorities, so BMv2 supplies the independent longest-prefix
+  check. Flood/multicast remains outside the supported profile.
 
-
-**BMv2: an out-of-range register read.** p4blo's closed behavior is that a
-read at or beyond a register's size yields zero and a write there is
-ignored. BMv2 agrees about the write but leaves the read's destination
-untouched, so a field keeps its parsed value. P4 leaves this
-unspecified; zero is p4blo's deterministic refinement, not evidence that BMv2 is wrong, and
-shows on exactly the two `register_bounds` packets whose out-of-range read
-destination is non-zero. The [BMv2 adapter README](../tests/oracles/bmv2/README.md)
-has the diagnosis.
-
-**BMv2: p4c's numbering of const-entry priorities.** p4c's BMv2 backend
-numbers const entries with a running counter that BMv2 reads
-smaller-wins, inverting section 14.2.1.4 of the specification, under which
-an entry without a priority takes the previous entry's minus one and the
-larger wins (P4-SpecTec's `$set_priorities_of_tableEntryListIR`); the
-backend also reads p4c's `@priority` annotation, which the specification
-does not. p4blo follows the specification. Compiled from p4c's own
-`table-entries-priority-bmv2.p4`, BMv2 sends the `priority` vector's
-second and third packets to port 3, where p4blo, the vector and
-P4-SpecTec send them to port 1; P4-SpecTec on p4c's unedited program and
-file fails the same two packets the same way. The printed golden passes
-on both oracles, since the printer states each priority and
-`largest_priority_wins` explicitly. The
-[priority README](../tests/programs/corpus/priority/README.md) has the derivation
-entry by entry and the [BMv2 adapter README](../tests/oracles/bmv2/README.md)
-the exact mismatch.
-
-**Pinned P4-SpecTec: odd-byte CRC32.** SpecTec's simulator pads every hash
-input to an even byte count by prepending a zero byte, which changes CRC32
-of odd-length input. CRC16 has initial value zero and is unaffected.
-Independent known answers from a hand-written P4 probe, confirmed by BMv2:
-
-| Exact input bytes | Correct CRC32 (BMv2) | Pinned SpecTec |
-|---|---|---|
-| `0a0000010a0000023039005006` | `7dd597c3` | `a31aa886` |
-| thirteen zero bytes | `0f744682` | `d1bb79c7` |
-| ASCII `123456789` | `cbf43926` | `ce7745fe` |
-| `01` | `a505df1b` | `36de2269` |
-| `0001` | `36de2269` | `36de2269` |
-
-The [pinned implementation](https://github.com/kaist-plrg/p4-spectec/blob/2730cfd9e74048bb5439da0f8afcef124079a064/p4spec/lib/backend-sim/hash.ml)
-calls `pad_right_to_16` for every algorithm. This matters for the
-firewall: its 104-bit tuple hashes to register index 1987 on BMv2 and 2182
-on SpecTec, yet simple packet sequences pass on both, because a consistent
-wrong hash preserves collision relationships. That is why primitive known
-answers and complete register observations are required, and why BMv2 is
-the CRC authority until upstream resolves the padding.
-
-**Pinned P4-SpecTec: shift amounts above 2048.** The rule `$bin_shl` is
-unbounded, but the simulator's builtins stop with "shift amount too
-large" for any amount over 2048, where the IR's shift gives zero. This is
-a limit of the simulator, not a rule disagreement; generated programs on
-SpecTec must keep shift amounts within it or classify the error.
-
-**Pinned P4-SpecTec: the payload after a partial byte.** The IR pads the
-deparser's bits to a byte before the architecture appends the payload;
-the simulator's v1model code joins the payload at the bit level. P4
-leaves this to the target, and the semantics page records the choice.
-The generated oracle test pins one exact mismatch as a strict expected
-failure, and the generated scalar and parser-condition programs carry an
-explicit pad field so that the comparison is about their result.
-
-**Pinned P4-SpecTec: header equality and `pop_front`.** SpecTec's
-`$bin_eq` on headers ignores the validity bit, and its `pop_front(n)`
-sets `nextIndex` to `S - n`; both contradict the P4 specification
-(§8.17, §8.18) and are recorded as deviations in the semantics page,
-where p4blo follows the specification. They are candidates for upstream
-reports.
-
-**Pinned P4-SpecTec: LPM and ternary mask construction.** Its
-[table interface](https://github.com/kaist-plrg/p4-spectec/blob/2730cfd9e74048bb5439da0f8afcef124079a064/spec/9-arch/9.1-table-interface.watsup)
-casts the key's base where it should cast the computed mask, so an exact
-`/32` route `10.0.0.2` admits `10.0.0.3`. Python, Lean and unchanged
-original BMv2 drop the route miss; SpecTec forwards it. Two strict tests
-observe this on the unchanged original firewall and on the printed IR.
-
-The first oracle also lacks a longest-prefix rule; the translation in
-`tests/oracles/run.py` supplies prefix lengths as priorities, so SpecTec
-confirms outputs while BMv2 independently decides longest prefix, const
-entries and runtime ternary priorities. Flood/multicast is outside the supported profile.
+Correctness suites restrict strict expected failures to diagnosed mismatches;
+characterization suites assert each oracle's complete distinct answer.
+Unrelated errors and newly corrected answers fail the old classification.
+Native probes retain their source. Printed programs bind the documented
+architecture profile explicitly, including the local egress drop request and
+saved output destination. None of these exceptions grants blanket agreement
+for an architecture or a program.
 
 ## Adversarial checks
 
@@ -577,39 +508,9 @@ They supply no guarantee for the current project.
 
 ## Release evidence
 
-Milestone 1 closed at code revision `3148a52f2212238da00fe76ebe8eab81d86b6023`
-from a fresh detached checkout with no Python environment, Lean build
-directories or retained artifacts, in the pinned environment. Installed
-toolchains and external oracle caches were shared: this is a clean project
-checkout, not a claim that every external tool was rebuilt from source on
-a new machine. The corpus then had eleven programs. P4-SpecTec was checked
-at commit `2730cfd9` (executable SHA-256 `c75a2129…`); BMv2 used the
-immutable image
-`sha256:2b255b53…`. Builds finished before their consumers ran.
-
-| Gate | Result |
-|---|---|
-| `uv sync --locked` | exit 0 |
-| `scripts/check-lean.sh` | exit 0; default audits, 627 spec checks, user-package tests |
-| `P4BLO_REQUIRE_LEAN=1 scripts/check.sh` | exit 0; 4793 passed, five exact expected discrepancies, one optional local XDP skip |
-| `P4BLO_REQUIRE_LEAN=1 uv run pytest tests -k lean_agrees` | exit 0; 2886 passed, no skips |
-| `uv run python scripts/check-assurance.py` | exit 0; fresh builds, all selected detections, restored replays |
-
-The five expected discrepancies are the CRC known answers on SpecTec for
-original and printed programs, the firewall route miss on SpecTec for
-original and printed programs, and the BMv2 register vector, each under
-its dedicated classifier. The one skip is the optional local XDP compile
-image; the separate required XDP workflow ran without skips. Remote
-workflows at the same revision: [CI](https://github.com/qobilidop/p4blo/actions/runs/35960620942),
-[Lean](https://github.com/qobilidop/p4blo/actions/runs/35960620935),
-[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/35960620865),
-[BMv2](https://github.com/qobilidop/p4blo/actions/runs/35960620846),
-[XDP](https://github.com/qobilidop/p4blo/actions/runs/35960620983).
-An independent release review checked the JUnit identities, source and
-mutant hashes and replayed the retained inputs.
-
-At that revision, XDP was a separate compile-only experiment with pinned
-sources and its own required workflow; it established no kernel execution
-and played no role in this P4 profile. The application collection that followed
-the milestone was checked the same way on 2026-09-24 at `c94336d`, with 4837 tests
-passing under the same skip and discrepancies.
+The [immutable release record at the documentation baseline](https://github.com/qobilidop/p4blo/blob/de6aa7d9437ffc65c413b0adda7d3f8c558f84f6/docs/assurance.md#release-evidence)
+preserves the milestone and application-checkpoint commands, results, exact
+revisions, oracle identities, skips and remote CI links. It includes components
+and proof scopes since retired. Those results establish only what ran at their
+recorded revisions; the current guarantee is the scoped claim above, and a
+changed checkout needs its own applicable validation.
