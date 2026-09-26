@@ -638,8 +638,8 @@ workflows at the same revision: [CI](https://github.com/qobilidop/p4blo/actions/
 An independent release review checked the JUnit identities, source and
 mutant hashes and replayed the retained inputs.
 
-XDP is a separate compile-only experiment with pinned sources and its own
-required workflow; it establishes no kernel execution and plays no role in
-this P4 profile. The application collection that followed the milestone
-was checked the same way on 2026-09-24 at `c94336d`, with 4837 tests
+At that revision, XDP was a separate compile-only experiment with pinned
+sources and its own required workflow; it established no kernel execution
+and played no role in this P4 profile. The application collection that followed
+the milestone was checked the same way on 2026-09-24 at `c94336d`, with 4837 tests
 passing under the same skip and discrepancies.

@@ -274,8 +274,15 @@ pages hold the contracts; this register keeps choices, reasons and boundaries.
   Strict XPASS rejects stale exceptions; BMv2 xfails name exact vector/status/
   mismatch. Discover Lean `test_lean_agrees` tests across the tree. (2026-09-23)
 - **Own and verify every Docker check container; never prune globally.**
-  **XDP is pinned compile-only preflight**, no kernel or equivalence claim.
   (2026-09-23)
+- **Remove the premature XDP compile-only experiment.** The user requested
+  removal: it compiled an upstream program but neither executed it nor
+  validated a p4blo application, so its workflow, pinned toolchain, inspector
+  and tests added maintenance without supporting the P4 claims. Revisit only
+  for a concrete application and an independent execution oracle. Historical
+  evidence stays intact; the removed files are recoverable from `b7860a5`.
+  Confidence: high; no interpreter/schema depends on the experiment.
+  (2026-09-25)
 
 ## Verification and proof boundaries
 
@@ -349,7 +356,7 @@ and the audit files; these entries record choices and limits.
   (2026-09-23) **Three complete, frozen scopes:** assurance milestone 1 at `3148a52`
   (2026-09-23), router/firewall/load-balancer collection at `c94336d`
   (2026-09-24), architecture-free semantics at `26c9348` (2026-09-25).
-  Architecture/applications/XDP/claim 3 stay green, not extended: value is
+  Architecture/applications/claim 3 stay green, not extended: value is
   the IR and meaning. Playground out; p4c backend deferred behind verification,
   the community version's first job. (2026-09-22 to 2026-09-25)
 - **Website is static/dependency-free**, GitHub Pages from `website/`, with

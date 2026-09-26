@@ -8,9 +8,9 @@ tools listed there. `uv` does not install those external tools.
 
 ## Gates
 
-`main` is green when all applicable gates pass. Five validation workflows
-run on pull requests and pushes to `main`: Python and schema, Lean, two P4
-oracles and compile-only XDP. Python and schema always run. The specialist
+`main` is green when all applicable gates pass. Four validation workflows
+run on pull requests and pushes to `main`: Python and schema, Lean and two P4
+oracles. Python and schema always run. The specialist
 jobs skip only when `scripts/ci-scope.py` proves the complete change is
 narrative Markdown: root README/AGENTS, direct `docs/` Markdown, agent state,
 notes or reviews. Quickstart, IR semantics and P4-spec coverage remain full
@@ -42,7 +42,6 @@ not output.
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
 | Repository file sizes | `uv run python scripts/check-file-sizes.py`, also in the structure tests | every indexed blob and tracked working file is at most 5 MiB; stage new deliverables first |
 | Generated protobuf files | `uv run python scripts/check-generated.py`, part of the local and schema CI gates | fresh output inventory and bytes equal both index and working tree; no missing, stale or untracked generated files |
-| Original XDP compile profile | `P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py` | pinned original compiles; offline ELF/BTF positive/negative checks pass without BPF syscalls; separate CI requires image, local missing image skips without required flag |
 
 A larger differential sweep, for a change to either interpreter:
 
@@ -89,14 +88,9 @@ Each simulator input uses a private temporary directory, each BMv2 invocation
 a separate container. The coverage probe and its measurement remain serial.
 In concurrent worktrees use distinct image tags and
 `P4BLO_BMV2_IMAGE`, never replace an image while another gate is using it.
-For XDP build `docker build -t p4blo-xdp-build tests/oracle/xdp`; concurrent
-trees use distinct tags and `P4BLO_XDP_BUILD_IMAGE`. This is compilation and
-metadata checking only, with no kernel load/attach/map creation. The job
-retains object/provenance and corresponding upstream archives for 14 days.
-Exact pins, restrictions and the independently reviewed acceptance evidence
-are in `tests/oracle/xdp/README.md`. If local disk capacity is insufficient,
-use a reviewed isolated-branch CI experiment; never prune unrelated Docker
-data or count an unavailable local gate as successful native execution.
+If local disk capacity is insufficient, use a reviewed isolated-branch CI
+experiment; never prune unrelated Docker data or count an unavailable local
+gate as successful execution.
 
 What is claimed, for which programs, and what backs it is
 [assurance.md](assurance.md). Keep proved properties, tested agreement and
@@ -182,8 +176,6 @@ and maintenance boundaries are in `website/README.md`.
 | GitHub Actions | commit SHAs in `.github/workflows/*.yml` | `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`; `actionlint` checks the files parse |
 | p4c test-suite sources | copies under `tests/corpus/*/` with SPDX headers | not updated; they are the vectors |
 | Original tutorial firewall | `tests/oracle/firewall.py` commit/path/SHA-256; vendored `firewall.p4` | review source/profile and update pin together; both oracle jobs run it directly |
-| Original XDP feature build and libbpf | commits/archive SHA-256 in `tests/oracle/xdp/Dockerfile` | review source, ABI/profile and licenses; rerun required compile/negative gate |
-| XDP build environment | Ubuntu image digest, dated authenticated archive snapshot and CA bundle SHA-256 in `tests/oracle/xdp/` | update together; retain compiler/package/dependency provenance and same-build object repeat check |
 
 `uv.lock` fixes the Python dependency versions. The interpreter selection
 and optional pinned external-tool setup are documented in
