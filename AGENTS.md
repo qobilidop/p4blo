@@ -227,9 +227,9 @@ hold detailed evidence; Decisions holds changed choices. Keep resume information
 in the repository, with local-only recovery limits explicitly distinguished from
 published evidence.
 
-Use [tend-repo](.agents/skills/tend-repo/SKILL.md) for general upkeep. When a
-milestone closes or the resume read exceeds roughly a thousand lines, use
-[compact-agent-state](.agents/skills/compact-agent-state/SKILL.md). Record the
+Use [tend-repo](.agents/skills/tend-repo/SKILL.md) for general upkeep, including
+working-state compaction when a milestone closes or the resume read exceeds
+roughly a thousand lines. Record the
 pre-compaction archive commit, consolidate by topic, promote artifact knowledge
 to its public owner and preserve every current choice/reason/date, open thread,
 known discrepancy and evidence identity. Independently compare with the archive;

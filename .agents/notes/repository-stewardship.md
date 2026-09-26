@@ -64,3 +64,34 @@ matches the retained identity. Native oracle and Lean builds were not rerun
 locally for prose changes; their full remote workflows apply to the skill edits.
 Baseline CI is linked in Status; publishing revision's Actions runs own the new
 remote verdict. No baseline/local pass is presented as that verdict.
+
+## Maintenance skill consolidation
+
+User-requested on 2026-09-26, based on `dcc2a841b8b95574f7d9043c374c501de52cacc9`.
+Move compaction safeguards into tend-repo and retire the separate skill. The
+optional `relink.py` had no maintained callers beyond that skill; its broad
+rewrites still required manual review and historical-text restoration. Remove
+it rather than create a new maintenance-tool location. Both original files
+remain recoverable at the base revision under `.agents/skills/compact-agent-state/`.
+No runtime, schema, test-input, pin or proof changes.
+
+Independent read-only AI-agent review by `minimal_arch_review`, not human review,
+approved patch SHA-256
+`8ca76fd88e58822866d1cd3ef531d6d51e763aa5ce0cd3df1e4d17f57d75a57a`
+against that base, with no confirmed defects or authorization expansion. All
+archive/preservation/navigation/independent-review safeguards survive. Dry runs
+kept compaction-only scope narrow, proposal-only work read-only without gates,
+and interrupted compaction tied to its recorded branch/archive. Unresolved
+reviews and unique parked refs remain; no maintenance was executed by the reviewer.
+
+Reviewer checks: 53 Markdown files' links/anchors/public boundary, metadata shape,
+whitespace, recoverability of removed files and helper-caller search. Runtime,
+schemas, tests, pins, proofs and machine recipes were unchanged. No heavy or
+remote gate was run by the reviewer.
+
+Root checks: skill-creator metadata validator passed with ephemeral PyYAML;
+required-Lean `scripts/check.sh` exited 0 with 5,007 passed in 96.07 seconds,
+no skips/expected failures, plus format/lint/types/schema/generation/workflow
+checks. Skill directory removal was verified by listing its parent. Native/Lean
+builds were not rerun locally for the instruction-only change; all four remote
+workflows apply. The publishing revision's CI provides the remote result.

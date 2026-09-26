@@ -68,21 +68,51 @@ pin changes and campaign execution; invocation supplies no additional authority.
 
 ## Compact working state when due
 
-Inventory hidden `.agents/` files explicitly. Assess the milestone/read-budget
-triggers in AGENTS; do not compact automatically during active engineering.
-When due, use [compact-agent-state](../compact-agent-state/SKILL.md) for the
-archive point, promotion, reconciliation, review and integration procedure.
-Keep that procedure in one place rather than reimplementing it here.
+Use at a completed finite scope, an oversized resume read under AGENTS, or
+stale plans beside current work. Do not hide unfinished work or compact during
+active engineering. An explicitly scoped documentation reorganization may
+consolidate the closed work it names while recording its own pending checks.
+A request limited to compaction does not expand into a repository-wide audit.
 
-Consolidate working knowledge by topic before moving files. Keep reviews beside
-their topic, preserving original verdicts and distinguishing later resolutions.
-Preserve open obligations, uncertainty, current decision reasons/dates and
-recovery instructions. Skills and machine-consumed recipes are maintained
-artifacts, not disposable completed notes. Before removing a redundant source,
-check its consumers and preserve useful content with its topic owner. Durable
-artifact knowledge belongs in `docs/` or beside code; public docs must remain
-independent of `.agents/`. Keep exact evidence identities and review limits
-without requiring ignored logs or session transcripts to resume.
+1. **Record the archive point.** Start from a clean committed tree. Record its
+   full HEAD in status, recovery notes and the compaction commit's body; create
+   no tag. Resume unfinished compaction from its recorded branch and archive,
+   not from a same-day date alone.
+2. **Map content to owners.** Inventory hidden notes, topic reviews, skills and
+   checked data before moving files. Assign each current choice, open finding,
+   evidence claim and recovery reference a retained owner. Promote durable
+   artifact knowledge to existing public docs or code; commit substantive
+   promotions separately before deleting their sources. Consolidate rationale
+   and reviews by topic rather than relocating an accumulated archive.
+3. **Preserve meaning before removing history.** Keep binding reasons/dates,
+   uncertainty/revisit conditions, proof premises, discrepancies, paused work
+   and recovery boundaries. Preserve reviewer identity, reviewed revision and
+   independence limits; distinguish original verdicts from later resolutions.
+   Archive completed plans/resolved reviews only after useful content survives
+   and every removed version is recoverable at the archive commit. Skills and
+   machine-consumed recipes are maintained artifacts, not disposable notes;
+   check consumers and require a navigation benefit for moves.
+4. **Rewrite entry points.** Status holds current scope, checked evidence,
+   immediate obligations and next action. Decisions holds cross-cutting reasons
+   and links to topic choices; preserve original dates and supersede explicitly.
+   Roadmap holds deferred work and entry conditions. Keep detailed validation
+   with its topic, linked from status; prefer one useful note to many fragments.
+5. **Repair navigation.** Update links and live consumers in the same change,
+   including slash-free path fragments and path computations. Preserve historical
+   review text and label archived identifiers rather than treating them as live
+   links. Public docs remain independent of `.agents/`. Verify deleted files
+   and empty directories by listing their targets.
+6. **Compare and review.** Independently compare the result against the archive,
+   not recollection: every still-binding choice/reason/date, obligation, evidence
+   identity and recovery constraint must survive. Commit hashes must resolve;
+   old success cannot become validation of a changed tree. Record the review
+   and fixes beside the maintenance topic, then follow the validation and
+   publication requirements below. Keep compaction separate from substantive
+   artifact promotion and cite the archive commit in its body.
+
+Compaction preserves meaning, not every sentence. No claim grows stronger,
+parked work stays parked, and the next agent can resume from retained files
+without ignored logs or session transcripts.
 
 ## Learn without accumulating rules
 
@@ -96,7 +126,7 @@ smallest lasting improvement and its existing owner:
 | Design choice, reason and uncertainty | Decisions register; a live note for detailed ongoing work |
 | Current obligation or deferred research | Status or roadmap |
 | Behavior, guarantee, usage or implementation explanation | Owning public document or code |
-| Demonstrated weakness in maintenance procedure | This skill, or the compaction skill when it owns the step |
+| Demonstrated weakness in maintenance procedure | This skill |
 
 Do not create a lessons journal or duplicate policy across these owners.
 One incident may justify a regression check without justifying a universal

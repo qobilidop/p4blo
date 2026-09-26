@@ -108,6 +108,13 @@ together, replacing the separate reviews directory; start with one useful note,
 not a hierarchy of empty topic folders. This register carries cross-cutting choices
 and links detailed reasons to their owners. (ownership refinement 2026-09-26)
 
+Use one `tend-repo` skill for upkeep and compaction. The user requested merging
+the separate procedure to reduce navigation and coordination overhead while
+retaining archive, preservation and independent-review safeguards. Keep it
+instruction-only; the optional link-rewrite helper had no maintained callers
+outside the retired skill. Revisit automation only for demonstrated repeated
+maintenance work. (2026-09-26)
+
 For existing source comments that cite this register by topic: schema/v0, the
 four eDSL deviations and Entry priority are in
 [IR design rationale](notes/ir-design-rationale.md); printed ternary entries,

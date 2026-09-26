@@ -4,22 +4,18 @@ Current checkpoint, 2026-09-26. No active implementation work.
 
 ## Current scope and evidence
 
-The approved documentation refactor is implemented: short public README,
-policy-focused AGENTS, topic-owned rationale/reviews, a small current checkpoint,
-and current assurance separated from historical release evidence. No implementation,
-schemas, test inputs, pins or proof premises changed. Unique parked branches and
-local-only recovery snapshots remain retained.
+The user requested one repository-maintenance skill. `tend-repo` now owns the
+compaction procedure and preservation safeguards; AGENTS routes to it. The
+separate skill and its optional link-rewrite helper are retired. This changes
+maintenance instructions, not runtime behavior or the deferred research scope.
 
-Independent review compared all 68 decision entries and found no confirmed losses
-or stronger claims. Both skill validators passed. Required-Lean `scripts/check.sh`
-exited 0: 5,007 passed in 95.72 seconds, no skips/expected failures, plus all
-lint/type/schema/generation/workflow checks. [Repository stewardship](notes/repository-stewardship.md)
-records exact slice revisions, reviewed patch, preservation checks and limits.
-The publishing commit's Actions runs own the remote result; check the exact SHA
-before treating publication as complete. Baseline CI below is separate evidence.
-
-After confirming publication, select a new bounded scope with the user. No feature
-work follows from this refactor; [Roadmap](roadmap.md) remains deferred research.
+Metadata validation and independent preservation/scenario review passed with
+no findings. Required-Lean `scripts/check.sh` exited 0: 5,007 tests passed in
+96.07 seconds, no skips/expected failures, plus lint/types/schema/generation/
+workflow checks. [Repository stewardship](notes/repository-stewardship.md) records
+the exact reviewed patch and limits. The publishing commit's Actions runs own
+its remote verdict; verify the exact SHA before treating publication as complete.
+No further skill changes are planned; select a new bounded scope after publication.
 
 ## Checked baseline and archive
 
