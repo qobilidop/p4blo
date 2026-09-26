@@ -1,23 +1,21 @@
-"""The two architectures and the metadata contract (docs/design.md, claim 3).
+"""The v1model metadata contract and packet behavior.
 
-The forwarder replays under both architectures unchanged; the rules every
-architecture shares (metadata initialization, the control after a parser
-rejection, byte-aligned parsing, the payload) and the switch's fates are
-checked on tiny programs written in text format below.
+Replay the canonical forwarder and pin initialization, parser-error
+continuation, payload alignment, port diagnostics and persistent state.
+The six-stage composition and profile boundaries have additional witnesses
+in test_v1model.py.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
 from p4blo import arch, ir, stf
-from p4blo.arch import CONTRACT, Architecture, ContractError, Filter, Switch, stf_driver
+from p4blo.arch import CONTRACT, ContractError, stf_driver, v1model
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
-from p4blo.v0 import p4blo_pb2 as pb
 
 CORPUS = Path(__file__).resolve().parents[2] / "tests" / "corpus" / "forwarder"
 VECTORS = sorted(CORPUS.glob("*.stf"))
@@ -92,21 +90,19 @@ def program(
           body {{ emit {{ value {{ {HDR_G} }} }} }}
         }}
         exports {{ role: "parser" block: "P" }}
-        exports {{ role: "control" block: "C" }}
+        exports {{ role: "ingress" block: "C" }}
         exports {{ role: "deparser" block: "D" }}
         """)
 
 
-DROP = 'fields { name: "drop" type { boolean {} } }'
-FLOOD = 'fields { name: "flood" type { boolean {} } }'
-EGRESS = 'fields { name: "egress_port" type { bits: 9 } }'
+EGRESS = 'fields { name: "egress_spec" type { bits: 9 } }'
 INGRESS = 'fields { name: "ingress_port" type { bits: 9 } }'
 PARSER_ERROR = 'fields { name: "parser_error" type { error {} } }'
 
 
 @pytest.fixture(scope="module")
 def forwarder() -> arch.Loaded:
-    return arch.reference.load(arch_wire.load_text(CORPUS / "forwarder.txtpb"))
+    return v1model.load(arch_wire.load_text(CORPUS / "forwarder.txtpb"))
 
 
 # ---------------------------------------------------------------------------
@@ -114,32 +110,32 @@ def forwarder() -> arch.Loaded:
 # ---------------------------------------------------------------------------
 
 
-def test_the_forwarder_declares_three_contract_fields(forwarder: arch.Loaded) -> None:
-    assert CONTRACT.present(forwarder.index) == {"ingress_port", "egress_port", "drop"}
+def test_the_forwarder_declares_two_contract_fields(forwarder: arch.Loaded) -> None:
+    assert CONTRACT.present(forwarder.index) == {"ingress_port", "egress_spec"}
 
 
 def test_a_program_may_declare_no_contract_field() -> None:
-    loaded = arch.reference.load(program(metadata='fields { name: "color" type { bits: 3 } }'))
+    loaded = v1model.load(program(metadata='fields { name: "color" type { bits: 3 } }'))
     assert CONTRACT.present(loaded.index) == set()
     # Undeclared fields read as their zero value and swallow writes.
     m = loaded.metadata.zero()
     loaded.metadata.write(m, "ingress_port", 3)
     assert loaded.metadata.number(m, "egress_port") == 0
-    assert loaded.metadata.flag(m, "drop") is False
+    assert loaded.metadata.number(m, "egress_spec") == 0
     assert loaded.metadata.error(m, "parser_error").name == "NoError"
 
 
 @pytest.mark.parametrize(
     ("field", "message"),
     [
-        ('fields { name: "drop" type { bits: 1 } }', "M.drop must be bool, got bit<1>"),
+        ('fields { name: "egress_spec" type { bits: 1 } }', "M.egress_spec must be bit<9>"),
         ('fields { name: "egress_port" type { bits: 8 } }', "M.egress_port must be bit<9>"),
         ('fields { name: "parser_error" type { bits: 3 } }', "M.parser_error must be error"),
     ],
 )
 def test_a_contract_field_of_the_wrong_type_refuses_to_load(field: str, message: str) -> None:
     with pytest.raises(ContractError, match=message):
-        arch.reference.load(program(metadata=field))
+        v1model.load(program(metadata=field))
 
 
 def test_a_missing_role_is_refused_at_load() -> None:
@@ -149,19 +145,15 @@ def test_a_missing_role_is_refused_at_load() -> None:
     without = apb.BlockAssembly()
     without.CopyFrom(full)
     del without.exports[:]
-    with pytest.raises(arch.LoadError, match="exports no 'parser' block"):
-        arch.reference.load(without)
+    with pytest.raises(arch.LoadError, match="missing v1model roles: deparser, ingress, parser"):
+        v1model.load(without)
     without.exports.add(role="parser", block="P")
-    without.exports.add(role="control", block="C")
-    with pytest.raises(arch.LoadError, match="exports no 'deparser' block"):
-        arch.reference.load(without)
-    # The filter runs without a deparser when asked for only what it needs.
-    loaded = arch.reference.load(without, roles=("parser", "control"))
-    assert dict(loaded.blocks) == {"parser": "P", "control": "C"}
-    assert Filter().run(loaded, loaded.entries(), 0, b"\x01") == [(0, b"\x01")]
-    assert dict(arch.reference.load(full).blocks) == {
+    without.exports.add(role="ingress", block="C")
+    with pytest.raises(arch.LoadError, match="missing v1model roles: deparser"):
+        v1model.load(without)
+    assert dict(v1model.load(full).blocks) == {
         "parser": "P",
-        "control": "C",
+        "ingress": "C",
         "deparser": "D",
     }
 
@@ -171,188 +163,103 @@ def test_the_contract_is_the_design_table() -> None:
     assert table == {
         ("ingress_port", True),
         ("parser_error", True),
-        ("egress_port", False),
-        ("drop", False),
-        ("flood", False),
+        ("egress_spec", False),
+        ("egress_port", True),
     }
 
 
 # ---------------------------------------------------------------------------
-# The forwarder under both architectures, on the same vectors
+# The forwarder under v1model, on the canonical vectors
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
-def test_forwarder_under_the_switch(forwarder: arch.Loaded, vector: Path) -> None:
+def test_forwarder_under_v1model(forwarder: arch.Loaded, vector: Path) -> None:
     statements = stf.parse(vector.read_text())
-    stf.assert_replay(forwarder.index, statements, stf_driver(Switch(ports=4), forwarder))
-
-
-def as_the_filter_sees_it(text: str) -> str:
-    """The vector with every `expect` carrying its packet's own bytes.
-
-    The filter has no deparser, so the control's rewrites never reach the
-    wire: the forwarder's new MAC addresses and decremented TTL in
-    forward.stf and lpm_precedence.stf are invisible, and only the port
-    decision remains. The other three vectors expect the input bytes
-    already, so this leaves them as they are.
-    """
-    lines: list[str] = []
-    data = ""
-    for line in text.splitlines():
-        words = line.split()
-        if words[:1] == ["packet"]:
-            data = " ".join(words[2:])
-        elif words[:1] == ["expect"]:
-            line = f"expect {words[1]} {data}"
-        lines.append(line)
-    return "\n".join(lines)
-
-
-@pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
-def test_forwarder_under_the_filter(forwarder: arch.Loaded, vector: Path) -> None:
-    statements = stf.parse(as_the_filter_sees_it(vector.read_text()))
-    stf.assert_replay(forwarder.index, statements, stf_driver(Filter(), forwarder))
-
-
-def test_the_filter_does_not_rewrite(forwarder: arch.Loaded) -> None:
-    """forward.stf as written fails under the filter: right port, old bytes."""
-    statements = stf.parse((CORPUS / "forward.stf").read_text())
-    failures = stf.replay(forwarder.index, statements, stf_driver(Filter(), forwarder))
-    assert len(failures) == 1
-    assert "expected 000000000202" in str(failures[0])
-    assert "got 000000000101" in str(failures[0])
-
-
-def test_the_filter_forwards_the_original_bytes(forwarder: arch.Loaded) -> None:
-    packet = bytes.fromhex(
-        "000000000101 000000000001 0800 4500001a0001000040110000 0a000101 0a000202 deadbeefcafe"
-    )
-    run = stf_driver(Filter(), forwarder)
-    host = stf_entries(
-        forwarder.index,
-        "add ipv4_lpm hdr.ipv4.dstAddr:0x0a000200/24 ipv4_forward(dstAddr:0x000000000202, port:2)",
-    )
-    assert run(host, 0, packet) == [(2, packet)]
-
-
-def stf_entries(index: ir.Index, text: str) -> pb.Entries:
-    """The `pb.Entries` an STF `add` line installs, via the runner itself."""
-    seen: list[pb.Entries] = []
-
-    def capture(entries: pb.Entries, port: int, packet: bytes) -> list[tuple[int, bytes]]:
-        seen.append(entries)
-        return []
-
-    stf.replay(index, stf.parse(text + "\npacket 0 00\n"), capture)
-    return seen[0]
+    stf.assert_replay(forwarder.index, statements, stf_driver(v1model.V1Model(ports=4), forwarder))
 
 
 # ---------------------------------------------------------------------------
-# The switch's fates
+# v1model packet fate
 # ---------------------------------------------------------------------------
 
 
-def test_flood_sends_to_every_port_but_the_ingress_one() -> None:
-    loaded = arch.reference.load(
-        program(metadata=FLOOD, control=assign(meta("flood"), "literal { boolean: true }"))
-    )
-    switch = Switch(ports=4)
-    packet = b"\x0a\xbb"
-    assert switch.run(loaded, loaded.entries(), 1, packet) == [
-        (0, packet),
-        (2, packet),
-        (3, packet),
-    ]
-    assert switch.run(loaded, loaded.entries(), 3, packet) == [
-        (0, packet),
-        (1, packet),
-        (2, packet),
-    ]
-
-
-def test_drop_wins_over_flood() -> None:
-    loaded = arch.reference.load(
-        program(
-            metadata=DROP + FLOOD + EGRESS,
-            control=assign(meta("flood"), "literal { boolean: true }")
-            + assign(meta("egress_port"), bits(9, 2))
-            + assign(meta("drop"), "literal { boolean: true }"),
-        )
-    )
-    assert Switch(ports=4).run(loaded, loaded.entries(), 1, b"\x00") == []
-    assert Filter().run(loaded, loaded.entries(), 1, b"\x00") == []
-
-
-def test_unicast_goes_to_egress_port_with_the_payload_appended() -> None:
-    loaded = arch.reference.load(
+def test_unicast_goes_to_egress_spec_with_the_payload_appended() -> None:
+    loaded = v1model.load(
         program(
             metadata=EGRESS + INGRESS,
-            # egress_port = ingress_port + 1; hdr.h.f = 0x42
+            # egress_spec = ingress_port + 1; hdr.h.f = 0x42
             control=assign(
-                meta("egress_port"),
+                meta("egress_spec"),
                 f"binary {{ op: BINARY_OP_ADD left {{ {meta('ingress_port')} }} "
                 f"right {{ {bits(9, 1)} }} }}",
             )
             + assign(H_F, bits(8, 0x42)),
         )
     )
-    assert Switch(ports=4).run(loaded, loaded.entries(), 2, b"\x01payload") == [(3, b"\x42payload")]
-    # The filter takes the same decision but leaves the bytes alone.
-    assert Filter().run(loaded, loaded.entries(), 2, b"\x01payload") == [(3, b"\x01payload")]
+    assert v1model.V1Model(ports=4).run(loaded, loaded.entries(), 2, b"\x01payload") == [
+        (3, b"\x42payload")
+    ]
 
 
 def egress_to(port: int) -> apb.BlockAssembly:
-    return program(metadata=EGRESS, control=assign(meta("egress_port"), bits(9, port)))
+    return program(metadata=EGRESS, control=assign(meta("egress_spec"), bits(9, port)))
 
 
-@pytest.mark.parametrize("port", [4, 511])
-def test_an_egress_port_the_switch_does_not_have_drops_with_a_diagnostic(port: int) -> None:
-    """The filter has no port count and passes any bit<9> port through;
-    511, BMv2's drop port, is just an out-of-range port here."""
-    loaded = arch.reference.load(egress_to(port))
-    switch = Switch(ports=4)
-    assert switch.run(loaded, loaded.entries(), 0, b"\x01") == []
-    assert switch.diagnostics == [f"egress_port {port} is not a port of this switch"]
-    assert Filter().run(loaded, loaded.entries(), 0, b"\x01") == [(port, b"\x01")]
+def test_an_unconfigured_egress_spec_drops_with_a_diagnostic() -> None:
+    loaded = v1model.load(egress_to(4))
+    pipeline = v1model.V1Model(ports=4)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01") == []
+    assert pipeline.diagnostics == ["egress_spec 4 is not a configured v1model port"]
+
+
+def test_egress_spec_511_drops_without_a_diagnostic() -> None:
+    loaded = v1model.load(egress_to(511))
+    pipeline = v1model.V1Model(ports=4)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01") == []
+    assert pipeline.diagnostics == []
 
 
 def test_the_last_port_is_a_port() -> None:
-    loaded = arch.reference.load(egress_to(3))
-    switch = Switch(ports=4)
-    assert switch.run(loaded, loaded.entries(), 0, b"\x01") == [(3, b"\x01")]
-    assert switch.diagnostics == []
+    loaded = v1model.load(egress_to(3))
+    pipeline = v1model.V1Model(ports=4)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01") == [(3, b"\x01")]
+    assert pipeline.diagnostics == []
 
 
-def test_an_ingress_port_the_switch_does_not_have_is_the_callers_error() -> None:
-    loaded = arch.reference.load(counting_program())
-    switch = Switch(ports=4)
-    with pytest.raises(ValueError, match="ingress_port 4 is not a port of this switch"):
-        switch.run(loaded, loaded.entries(), 4, b"\x00")
-    with pytest.raises(ValueError, match="ingress_port 600 is not a port of this switch"):
-        switch.run(loaded, loaded.entries(), 600, b"\x00")
+def test_an_unconfigured_ingress_port_is_the_callers_error() -> None:
+    loaded = v1model.load(counting_program())
+    pipeline = v1model.V1Model(ports=4)
+    with pytest.raises(ValueError, match="ingress_port 4 is not a configured v1model port"):
+        pipeline.run(loaded, loaded.entries(), 4, b"\x00")
+    with pytest.raises(ValueError, match="ingress_port 600 is not a configured v1model port"):
+        pipeline.run(loaded, loaded.entries(), 600, b"\x00")
     # Before anything runs: the register was never touched.
-    assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
 
 
-def test_an_ingress_port_wider_than_bit9_is_the_callers_error_under_the_filter() -> None:
-    loaded = arch.reference.load(counting_program())
-    with pytest.raises(ValueError, match="ingress_port 512 does not fit in bit<9>"):
-        Filter().run(loaded, loaded.entries(), 512, b"\x00")
-    assert Filter().run(loaded, loaded.entries(), 511, b"\x00") == [(0, b"\x00")]
+def test_an_ingress_port_outside_the_supported_range_is_the_callers_error() -> None:
+    loaded = v1model.load(counting_program())
+    pipeline = v1model.V1Model(ports=511)
+    for port in (511, 512):
+        with pytest.raises(
+            ValueError, match=f"ingress_port {port} is not a configured v1model port"
+        ):
+            pipeline.run(loaded, loaded.entries(), port, b"\x00")
+    # The maximum configured port works, and invalid requests did not execute.
+    assert pipeline.run(loaded, loaded.entries(), 510, b"\x00") == [(0, b"\x01")]
 
 
 # ---------------------------------------------------------------------------
-# Rules every architecture shares
+# Parser outcomes and payloads
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("make", [Filter, lambda: Switch(ports=2)], ids=["filter", "switch"])
-def test_a_misaligned_parse_drops_with_a_diagnostic(make: Callable[[], Architecture]) -> None:
-    loaded = arch.reference.load(program(metadata=EGRESS, h_width=4))
-    architecture = make()
-    assert architecture.run(loaded, loaded.entries(), 0, b"\x12") == []
-    assert architecture.diagnostics == ["parser consumed 4 bits, not whole bytes; packet dropped"]
+def test_a_misaligned_parse_drops_with_a_diagnostic() -> None:
+    loaded = v1model.load(program(metadata=EGRESS, h_width=4))
+    pipeline = v1model.V1Model(ports=2)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x12") == []
+    assert pipeline.diagnostics == ["parser consumed 4 bits, not whole bytes; packet dropped"]
 
 
 PARSER_ERROR_IS_TOO_SHORT = (
@@ -362,9 +269,9 @@ PARSER_ERROR_IS_TOO_SHORT = (
 
 
 def test_parser_error_reaches_the_control_and_the_wire() -> None:
-    """The parser fails on g; the control writes the error into h; the
-    switch emits h and the byte g could not take as payload."""
-    loaded = arch.reference.load(
+    """The parser fails on g; the control writes the error into h; v1model
+    emits h and the byte g could not take as payload."""
+    loaded = v1model.load(
         program(
             metadata=PARSER_ERROR,
             parser_body=EXTRACT_H + EXTRACT_G,
@@ -375,38 +282,40 @@ def test_parser_error_reaches_the_control_and_the_wire() -> None:
             ),
         )
     )
-    switch = Switch(ports=2)
-    assert switch.run(loaded, loaded.entries(), 0, b"\x01\x02") == [(0, b"\xff\x02")]
-    assert switch.run(loaded, loaded.entries(), 0, b"\x01\x02\x03") == [(0, b"\x01\x02\x03")]
-    assert switch.diagnostics == []
+    pipeline = v1model.V1Model(ports=2)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01\x02") == [(0, b"\xff\x02")]
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01\x02\x03") == [(0, b"\x01\x02\x03")]
+    assert pipeline.diagnostics == []
 
 
-def test_the_filter_can_drop_on_parser_error() -> None:
-    loaded = arch.reference.load(
+def test_ingress_can_drop_on_parser_error() -> None:
+    loaded = v1model.load(
         program(
-            metadata=PARSER_ERROR + DROP,
+            metadata=PARSER_ERROR + EGRESS,
             parser_body=EXTRACT_H + EXTRACT_G,
             control=(
                 f"body {{ conditional {{ condition {{ {PARSER_ERROR_IS_TOO_SHORT} }} "
-                f"then {{ assign {{ target {{ {meta('drop')} }} "
-                f"value {{ literal {{ boolean: true }} }} }} }} }} }}"
+                f"then {{ assign {{ target {{ {meta('egress_spec')} }} "
+                f"value {{ {bits(9, 511)} }} }} }} }} }}"
             ),
         )
     )
-    filter = Filter()
-    assert filter.run(loaded, loaded.entries(), 0, b"\x01\x02") == []
-    assert filter.run(loaded, loaded.entries(), 0, b"\x01\x02\x03") == [(0, b"\x01\x02\x03")]
+    pipeline = v1model.V1Model(ports=4)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01\x02") == []
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x01\x02\x03") == [(0, b"\x01\x02\x03")]
 
 
 def test_without_parser_error_the_control_still_runs_after_a_rejection() -> None:
-    loaded = arch.reference.load(
+    loaded = v1model.load(
         program(
             metadata=EGRESS,
             parser_body=EXTRACT_H + EXTRACT_G,
-            control=assign(meta("egress_port"), bits(9, 1)),
+            control=assign(meta("egress_spec"), bits(9, 1)),
         )
     )
-    assert Switch(ports=2).run(loaded, loaded.entries(), 0, b"\x01\x02") == [(1, b"\x01\x02")]
+    assert v1model.V1Model(ports=2).run(loaded, loaded.entries(), 0, b"\x01\x02") == [
+        (1, b"\x01\x02")
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -455,17 +364,17 @@ def counting_program() -> apb.BlockAssembly:
 
 
 def test_a_register_counts_across_packets() -> None:
-    loaded = arch.reference.load(counting_program())
-    switch = Switch(ports=2)
-    assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
-    assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x02")]
-    # The state is the loaded program's, not the architecture's.
-    assert Filter().run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x00")]
-    assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x04")]
+    loaded = v1model.load(counting_program())
+    pipeline = v1model.V1Model(ports=2)
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x02")]
+    # A fresh pipeline instance shares the loaded program's existing state.
+    assert v1model.V1Model(ports=2).run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x03")]
+    assert pipeline.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x04")]
 
 
 def test_loading_again_starts_the_register_over() -> None:
-    switch = Switch(ports=2)
+    pipeline = v1model.V1Model(ports=2)
     for _ in range(2):
-        loaded = arch.reference.load(counting_program())
-        assert switch.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
+        loaded = v1model.load(counting_program())
+        assert pipeline.run(loaded, loaded.entries(), 0, b"\x00") == [(0, b"\x01")]
