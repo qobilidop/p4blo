@@ -1,75 +1,19 @@
-"""The v1model shim in reverse: a V1Switch program bound to p4blo's roles.
+"""Translate a scoped native V1Switch program into six independent core blocks.
 
-`p4blo.arch.v1model` prints an IR program inside a v1model shim: the
-metadata contract becomes `standard_metadata`, the checksum and egress
-controls are added empty, and the three exported blocks fill V1Switch's
-parser, ingress and deparser slots. This module undoes exactly that for a
-program P4-SpecTec has typed and instantiated, and states what it does with
-everything else V1Switch has:
-
-- **Roles.** The parser is V1Switch's parser, the deparser its deparser,
-  and the control is its verify-checksum, ingress, egress and
-  compute-checksum controls merged into one, in that order, parameters
-  renamed to the ingress control's. Nothing between them is observable
-  under the contract except the drop decision, which the merge makes
-  explicit: v1model drops after ingress when `egress_spec` is 511, so
-  where ingress writes it an egress part is preceded by `M.drop =
-  (M.egress_port == 511)`, and it runs only when the packet is not
-  dropped. With no egress part the decision
-  needs no statement: 511 is no port of p4blo's switch, which drops what
-  is sent there.
-- **`standard_metadata`.** Each field maps onto a contract field of the
-  program's `M` (docs/design.md, "Metadata contract"), added to `M` when
-  the source uses it:
-
-  | v1model                           | IR                                          |
-  |-----------------------------------|---------------------------------------------|
-  | read `ingress_port`               | `M.ingress_port`                            |
-  | read `parser_error` in a control  | `M.parser_error`                            |
-  | `egress_spec = e` in ingress      | `M.egress_port = e`                         |
-  | read `egress_spec` before egress  | `M.egress_port`                             |
-  | read `egress_spec` in egress      | `M.drop ? 511 : M.egress_port`              |
-  | read `egress_port` in egress      | `M.egress_port`                             |
-  | `mark_to_drop(sm)` in ingress     | `M.egress_port = 511`                       |
-  | `mark_to_drop(sm)` in egress      | `M.drop = true`                             |
-
-  This is v1model's own rule, so a source that writes a real port after
-  `mark_to_drop` forwards, and one that writes 511 drops and skips egress,
-  as in v1model. A field of `M` named like a contract field is user
-  metadata and is renamed, unless the source copies it to or from
-  `standard_metadata` exactly as the printer's shim does (`_Fusion`).
-  Any other field of `standard_metadata` is excluded by thesis.
-- **Extern functions.** `mark_to_drop` as above. `hash` with `csum16`,
-  `crc16` or `crc32` calls a `checksum16`, `crc16` or `crc32` instance
-  (`csum`, `hash16`, `hash32`) on the concatenated data, then applies
-  v1model's `base + result % max` for a power-of-two `max`.
-  `update_checksum` with `csum16` is a conditional `checksum16` call.
-  `verify_checksum` is left out: it only sets
-  `standard_metadata.checksum_error`, and a program that reads that field
-  is refused where it reads it. Every other v1model function is excluded
-  by thesis.
-- **Extern objects.** `register<T>(size)` is the `register` family with
-  `T`'s width and `counter(size, CounterType.packets)` the `counter`
-  family; every other v1model object is excluded by thesis.
-
-This inverts the printer's `standard_metadata_binding` and extern
-placement: a printed program translates back to the program printed.
+Standard metadata uses the adapter's reserved flat fields. User fields with
+those names are renamed so that their semantics remain distinct. Unsupported
+native fields and functions fail explicitly; stages are never fused.
 """
 
 from __future__ import annotations
 
-import copy
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from google.protobuf.message import Message
-
-from p4blo import ir
 from p4blo.arch.v0 import assembly_pb2 as apb
+from p4blo.arch.v1model_profile import FORBIDDEN_FIELDS, READABLE
 from p4blo.frontend import il
 from p4blo.frontend.blocks import Architecture, BlockCx
 from p4blo.frontend.common import (
-    BOOL,
     ERROR,
     Bits,
     EnumVal,
@@ -84,17 +28,13 @@ from p4blo.frontend.common import (
     binary,
     bits_type,
     lit_bits,
-    lit_bool,
     lmember,
     lvalue_to_expr,
     member,
     prefixed_name,
-    rename_block_vars,
     strip_alias,
     typed_parts,
-    unary,
     var,
-    walk_stmts,
 )
 from p4blo.frontend.il import Node
 from p4blo.frontend.spectec_il import Translator
@@ -108,16 +48,15 @@ DROP_PORT = 511
 CONTRACT: dict[str, pb.Type] = {
     "ingress_port": bits_type(9),
     "parser_error": ERROR,
+    "egress_spec": bits_type(9),
     "egress_port": bits_type(9),
-    "drop": BOOL,
 }
 # Where V1Switch's blocks take M: the parser third, `(packet_in, out H,
 # inout M, inout standard_metadata_t)`, and the four controls second.
 PARSER_META_INDEX = 2
 CONTROL_META_INDEX = 1
-# Every name the architectures read or write in M (p4blo.arch.contract),
-# `flood` included although v1model has no counterpart for it.
-CONTRACT_NAMES = frozenset({*CONTRACT, "flood"})
+# Keep user fields distinct from supported and explicitly unsupported native fields.
+CONTRACT_NAMES = frozenset(CONTRACT) | FORBIDDEN_FIELDS
 # v1model.p4's extern objects and functions, which the architecture owns.
 V1MODEL_OBJECTS = frozenset(
     {
@@ -157,57 +96,31 @@ class V1Model(Architecture):
     hash_instances: dict[str, str] = field(default_factory=dict)
     # Contract name -> the IR name of the user field of M that had it.
     renamed: dict[str, str] = field(default_factory=dict)
-    # Whether verify or ingress writes egress_spec, so that v1model's drop
-    # decision has to be computed at the end of ingress.
-    egress_written: bool = False
 
     # -- metadata
 
     def metadata_read(self, cx: BlockCx, fieldname: str) -> pb.Expr:
-        match fieldname:
-            case "ingress_port":
-                return self._contract(cx, "ingress_port")
-            case "parser_error":
-                if cx.kind != "control":
-                    raise Excluded(
-                        "standard_metadata and other intrinsic metadata parameters",
-                        "by thesis",
-                        "parser_error read in a parser, before the parser has one",
-                    )
-                return self._contract(cx, "parser_error")
-            case "egress_spec" | "egress_port":
-                if fieldname == "egress_port" and cx.part != "egress":
-                    raise Excluded(
-                        "standard_metadata and other intrinsic metadata parameters",
-                        "by thesis",
-                        "egress_port read before egress",
-                    )
-                port = self._contract(cx, "egress_port")
-                if fieldname == "egress_spec" and cx.part == "egress":
-                    # Egress starts with egress_spec equal to egress_port and
-                    # not dropped; only mark_to_drop changes egress_spec
-                    # there, to 511, and it is what sets `drop` in egress.
-                    drop = self._contract(cx, "drop")
-                    return pb.Expr(
-                        mux=pb.Mux(condition=drop, then=lit_bits(9, DROP_PORT), otherwise=port)
-                    )
-                return port
-        raise Excluded(
-            "standard_metadata and other intrinsic metadata parameters",
-            "by thesis",
-            f"standard_metadata.{fieldname} has no contract field",
-        )
+        role = "parser" if cx.kind == "parser" else cx.part
+        if fieldname not in READABLE.get(role, set()):
+            raise Excluded(
+                "standard_metadata and other intrinsic metadata parameters",
+                "by thesis",
+                f"standard_metadata.{fieldname} is unavailable in {role}",
+            )
+        return self._contract(cx, fieldname)
 
     def metadata_write(self, cx: BlockCx, fieldname: str, value: pb.Expr) -> list[pb.Stmt]:
-        if fieldname != "egress_spec" or cx.kind != "control" or cx.part == "egress":
+        if (
+            fieldname != "egress_spec"
+            or cx.kind != "control"
+            or cx.part not in {"ingress", "egress"}
+        ):
             raise Excluded(
                 "standard_metadata and other intrinsic metadata parameters",
                 "by thesis",
                 f"a write to standard_metadata.{fieldname} in {cx.part}",
             )
-        target = self._contract(cx, "egress_port")
-        self.egress_written = True
-        return [assign(_as_lvalue(target), value)]
+        return [assign(_as_lvalue(self._contract(cx, "egress_spec")), value)]
 
     def _contract(self, cx: BlockCx, name: str) -> pb.Expr:
         if cx.meta is None:
@@ -227,26 +140,17 @@ class V1Model(Architecture):
         match name:
             case "mark_to_drop" if len(args) == 1:
                 self._intrinsic_arg(cx, args[0])
-                if cx.part == "egress":
-                    # Egress drops when egress_spec is 511 at its end, and
-                    # only mark_to_drop can make it so there.
-                    return [assign(_as_lvalue(self._contract(cx, "drop")), lit_bool(True))]
-                # v1model's mark_to_drop writes the drop port to egress_spec
-                # and nothing else; the drop is decided from egress_spec at
-                # the end of ingress (`_merge`), so a later write undoes it.
-                self.egress_written = True
-                port = self._contract(cx, "egress_port")
-                return [assign(_as_lvalue(port), lit_bits(9, DROP_PORT))]
+                return self.metadata_write(cx, "egress_spec", lit_bits(9, DROP_PORT))
             case "hash":
                 return self._hash(cx, args)
             case "update_checksum":
                 return self._update_checksum(cx, args)
             case "verify_checksum":
-                self.tr.notes.append(
-                    f"{cx.block.name}: verify_checksum left out; it only sets "
-                    "standard_metadata.checksum_error, which the program does not read"
+                raise Excluded(
+                    "externFunctionDeclarationIR: an architecture's functions",
+                    "by thesis",
+                    "verify_checksum requires unsupported checksum_error metadata",
                 )
-                return []
         raise Excluded(
             "externFunctionDeclarationIR: an architecture's functions", "by thesis", name
         )
@@ -513,7 +417,7 @@ def _package(tr: Translator) -> tuple[Node, list[Node]]:
                 raise Excluded(
                     "instantiationIR of a package (main)",
                     "by thesis",
-                    f"{t.text(0)}; only V1Switch has a reverse shim",
+                    f"{t.text(0)}; only V1Switch is supported",
                 )
             return d, d.nodes(3)
     raise FrontendError("the program instantiates no package named main")
@@ -560,40 +464,33 @@ def bind(tr: Translator) -> apb.BlockAssembly:
                 )
 
     _rename_user_contract_fields(tr, arch, roles.parser[0])
-    parser = tr.role_block(roles.parser[0], roles.parser[1], "parser", "ingress", PARSER_META_INDEX)
+    parser = tr.role_block(roles.parser[0], roles.parser[1], "parser", "parser", PARSER_META_INDEX)
     parts = []
     for part, (decl, cargs) in (
-        ("verify", roles.verify),
+        ("verify_checksum", roles.verify),
         ("ingress", roles.ingress),
         ("egress", roles.egress),
-        ("compute", roles.compute),
+        ("compute_checksum", roles.compute),
     ):
         parts.append((part, tr.role_block(decl, cargs, "control", part, CONTROL_META_INDEX)))
-    deparser = tr.role_block(roles.deparser[0], roles.deparser[1], "deparser", "ingress", None)
-    control, tail_only = _merge(tr, arch, parts)
+    deparser = tr.role_block(roles.deparser[0], roles.deparser[1], "deparser", "deparser", None)
 
     headers_t = _param_type(roles.parser[0], 1)
     meta_t = _param_type(roles.parser[0], 2)
     headers = tr.type_of(headers_t).struct
     metadata = tr.type_of(meta_t).struct
-    _Fusion(tr, arch, metadata, parser, control, tail_only).run()
     _extend_metadata(tr, arch, metadata)
-    blocks = tr.ordered_blocks([parser.name, control.name, deparser.name])
-    return tr.assemble(
-        blocks,
-        headers,
-        metadata,
-        [("parser", parser.name), ("control", control.name), ("deparser", deparser.name)],
-    )
+    exports = [
+        ("parser", parser.name),
+        *((role, block.name) for role, block in parts),
+        ("deparser", deparser.name),
+    ]
+    blocks = tr.ordered_blocks([name for _, name in exports])
+    return tr.assemble(blocks, headers, metadata, exports)
 
 
 def _rename_user_contract_fields(tr: Translator, arch: V1Model, parser: Node) -> None:
-    """A field of `M` named like a contract field is user metadata: in
-    v1model it is not standard_metadata, and left as it is the architecture
-    would read or overwrite it. It is renamed, to a name no field of any
-    type has, so that `_Fusion` can find it again by name alone. Only
-    `_Fusion` gives a field its contract name back, when the source keeps
-    the two exactly synchronized."""
+    """Keep ordinary user metadata distinct from reserved adapter fields."""
     meta_t = strip_alias(_param_type(parser, 2))
     if meta_t.c != "STRUCT % <%> {%}":
         return
@@ -622,335 +519,6 @@ def _rename_user_contract_fields(tr: Translator, arch: V1Model, parser: Node) ->
 
 def _param_type(decl: Node, i: int) -> Node:
     return ParamIL.of(decl.nodes(4)[i]).type
-
-
-def _merge(
-    tr: Translator, arch: V1Model, parts: Sequence[tuple[str, pb.Block]]
-) -> tuple[pb.Block, bool]:
-    """V1Switch's four controls as one block, named and parameterized as
-    the ingress control, and whether nothing follows the ingress part.
-
-    v1model drops the packet after ingress when `egress_spec` is 511, which
-    the IR's `egress_port` stands for, and then skips egress. When there is
-    an egress part and verify or ingress writes `egress_spec`, that decision
-    is written out after the ingress part, `drop = (egress_port == 511)`,
-    and the egress part runs only when the packet is not dropped. Without
-    an egress part the rule would decide nothing: 511 is no port of
-    p4blo's switch (`p4blo.arch.switch`), which drops what is sent there."""
-    ingress = next(b for p, b in parts if p == "ingress")
-    merged = copy.deepcopy(ingress)
-    del merged.body[:]
-    taken = {v.name for v in [*merged.params, *merged.locals]}
-    taken |= {a.name for a in merged.actions} | {t.name for t in merged.tables}
-    bodies: dict[str, list[pb.Stmt]] = {}
-    for part, block in parts:
-        if part == "ingress":
-            bodies[part] = list(ingress.body)
-            continue
-        if not (block.body or block.locals or block.actions or block.tables):
-            tr.blocks.pop(block.name, None)
-            continue
-        block = copy.deepcopy(block)
-        mapping = {p.name: merged.params[i].name for i, p in enumerate(block.params)}
-        for v in block.locals:
-            new = v.name
-            i = 0
-            while new in taken:
-                new = f"{v.name}_{i}"
-                i += 1
-            if new != v.name:
-                mapping[v.name] = new
-                tr.notes.append(
-                    f"{block.name}: local {v.name} renamed {new} on merging into {merged.name}"
-                )
-        rename_block_vars(block, mapping)
-        for a in block.actions:
-            if a.name in taken:
-                raise NotTranslated(
-                    "controlDeclarationIR", f"{block.name}.{a.name} clashes on merging"
-                )
-            taken.add(a.name)
-        for t in block.tables:
-            if t.name in taken:
-                raise NotTranslated(
-                    "controlDeclarationIR", f"{block.name}.{t.name} clashes on merging"
-                )
-            taken.add(t.name)
-        for v in block.locals:
-            taken.add(v.name)
-        merged.locals.extend(block.locals)
-        merged.actions.extend(block.actions)
-        merged.tables.extend(block.tables)
-        bodies[part] = list(block.body)
-        tr.blocks.pop(block.name, None)
-        tr.notes.append(f"{block.name} merged into {merged.name} as its {part} part")
-    body: list[pb.Stmt] = []
-    body += bodies.get("verify", [])
-    body += bodies.get("ingress", [])
-    meta = merged.params[1].name if len(merged.params) > 1 else None
-    egress = bodies.get("egress", [])
-    if egress and arch.egress_written:
-        # Only verify and ingress can write egress_spec, so a meta
-        # parameter exists here.
-        assert meta is not None
-        arch.contract.add("drop")
-        body.append(_drop_rule(meta))
-    if egress:
-        if "drop" in arch.contract and meta is not None:
-            guard = unary(pb.UNARY_OP_NOT, member(var(meta), "drop"))
-            body.append(pb.Stmt(conditional=pb.If(condition=guard, then=egress)))
-        else:
-            body += egress
-    body += bodies.get("compute", [])
-    merged.body.extend(body)
-    tr.blocks[merged.name] = merged
-    return merged, not egress and not bodies.get("compute")
-
-
-def _drop_rule(meta: str) -> pb.Stmt:
-    """`meta.drop = (meta.egress_port == 511)`: v1model's drop decision."""
-    port = member(var(meta), "egress_port")
-    is_drop_port = binary(pb.BINARY_OP_EQ, port, lit_bits(9, DROP_PORT))
-    return assign(_as_lvalue(member(var(meta), "drop")), is_drop_port)
-
-
-class _Fusion:
-    """Give renamed user fields of M their contract names back where the
-    source keeps them synchronized with standard_metadata exactly as the
-    printer's shim does (`p4blo.arch.v1model.standard_metadata_binding`),
-    so that a printed program reads back as printed. Each step is taken only
-    when the whole translated program shows that no execution can tell the
-    two apart; otherwise the field stays renamed and the copies stay.
-
-    - `ingress_port`, `parser_error`, which the architecture provides: the
-      user field is written only by copies `M.f_ = M.f` from the contract
-      field, nothing writes M whole or as an `out` argument, and a copy runs
-      before anything reads the user field: the first statement of the
-      parser's start state for `ingress_port`; one of the copies that open
-      the merged control for `parser_error`, which no parser then reads. The
-      user field always equals the contract field then, which nothing
-      writes.
-    - `egress_port`, which the architecture consumes: nothing follows the
-      ingress part, whose end is `M.egress_port = M.egress_port_`, perhaps
-      followed by the translated drop epilogue, and nothing else in the
-      program mentions the contract field. The user field holds at the end
-      what the copy would have put there.
-    - `drop`: nothing follows the ingress part, which ends in `if (M.drop_)
-      { M.egress_port = 511; }`, and nothing mentions a contract `drop`. The
-      statement sends the packet to 511 when the flag is set; it is removed
-      and the flag becomes the contract's `drop`, which drops the packet
-      instead. The two agree because 511 is no port of p4blo's switch
-      (`p4blo.arch.switch`), which drops what is sent there; the printer's
-      epilogue relies on the same.
-    """
-
-    def __init__(
-        self,
-        tr: Translator,
-        arch: V1Model,
-        metadata: str,
-        parser: pb.Block,
-        control: pb.Block,
-        tail_only: bool,
-    ) -> None:
-        self.tr = tr
-        self.arch = arch
-        self.metadata = metadata
-        self.parser = parser
-        self.control = control
-        self.tail_only = tail_only
-        self.blocks = list(tr.blocks.values())
-
-    def run(self) -> None:
-        if not self.arch.renamed or self.metadata not in self.tr.struct_types:
-            return
-        self._provided("ingress_port")
-        self._provided("parser_error")
-        if self.tail_only:
-            self._consumed()
-
-    # -- the steps
-
-    def _provided(self, name: str) -> None:
-        user = self._user(name)
-        if user is None:
-            return
-        copies = [s for s in self._statements() if self._is_copy(s, user, name)]
-        if not copies or self._refs(user)[1] != len(copies) or self._refs(name)[1]:
-            return
-        if self._m_written_whole():
-            return
-        if name == "ingress_port":
-            start = next((s for s in self.parser.states if s.name == self.parser.start_state), None)
-            if start is None or not start.body or not self._is_copy(start.body[0], user, name):
-                return
-        else:
-            opening: list[pb.Stmt] = []
-            for s in self.control.body:
-                # A copy of a field already given its name back is `X.f = X.f`.
-                if not any(self._is_copy(s, self.arch.renamed.get(f, f), f) for f in CONTRACT):
-                    break
-                opening.append(s)
-            if not any(self._is_copy(s, user, name) for s in opening):
-                return
-            parsers = [b for b in self.blocks if b.kind == pb.BLOCK_KIND_PARSER]
-            if self._refs(user, parsers)[0]:
-                return
-        self._fuse(user, name)
-
-    def _consumed(self) -> None:
-        body = self.control.body
-        if len(self.control.params) < 2 or self.control.params[1].type.struct != self.metadata:
-            return
-        meta = self.control.params[1].name
-        end = len(body)
-        drop_user = self._user("drop")
-        epilogue = drop_user is not None and end >= 1 and body[-1] == _epilogue(meta, drop_user)
-        if epilogue:
-            end -= 1
-        egress_user = self._user("egress_port")
-        port = member(var(meta), "egress_port")
-        if (
-            egress_user is not None
-            and end >= 1
-            and body[end - 1] == assign(_as_lvalue(port), member(var(meta), egress_user))
-            and self._refs("egress_port") == (0, 1 + epilogue)
-        ):
-            del body[end - 1]
-            self._fuse(egress_user, "egress_port")
-        if epilogue and drop_user is not None and self._refs("drop") == (0, 0):
-            del body[-1]
-            self._fuse(drop_user, "drop")
-            self.arch.contract.add("drop")
-            if self._refs("egress_port") == (0, 0):
-                self.arch.contract.discard("egress_port")
-
-    # -- what the program does
-
-    def _user(self, name: str) -> str | None:
-        """The renamed user field that had the contract name, when its type
-        is the contract's."""
-        user = self.arch.renamed.get(name)
-        if user is None:
-            return None
-        fields = {f.name: f.type for f in self.tr.struct_types[self.metadata].fields}
-        return user if fields.get(user) == CONTRACT[name] else None
-
-    def _statements(self) -> list[pb.Stmt]:
-        out: list[pb.Stmt] = []
-        for b in self.blocks:
-            out += walk_stmts(b.body)
-            for st in b.states:
-                out += walk_stmts(st.body)
-            for a in b.actions:
-                out += walk_stmts(a.body)
-        return out
-
-    @staticmethod
-    def _is_copy(s: pb.Stmt, target: str, source: str) -> bool:
-        """`X.target = X.source` for one variable X."""
-        if s.WhichOneof("kind") != "assign":
-            return False
-        t, v = s.assign.target, s.assign.value
-        return (
-            t.WhichOneof("kind") == "member"
-            and t.member.field == target
-            and t.member.base.WhichOneof("kind") == "var"
-            and v.WhichOneof("kind") == "member"
-            and v.member.field == source
-            and v.member.base.WhichOneof("kind") == "var"
-            and v.member.base.var == t.member.base.var
-        )
-
-    def _refs(self, name: str, blocks: Sequence[pb.Block] | None = None) -> tuple[int, int]:
-        """How many field reads and field writes (lvalues, `out` arguments
-        included) name `name`, whatever the type they are on."""
-        reads = writes = 0
-        for m in _messages(self.blocks if blocks is None else blocks):
-            if isinstance(m, pb.Member) and m.field == name:
-                reads += 1
-            elif isinstance(m, pb.LMember) and m.field == name:
-                writes += 1
-        return reads, writes
-
-    def _m_written_whole(self) -> bool:
-        """Whether some statement assigns a variable of type M as a whole,
-        or some block or action has an `out` parameter of type M."""
-        m = pb.Type(struct=self.metadata)
-        for b in self.blocks:
-            params = [*b.params, *(p for a in b.actions for p in a.params)]
-            if any(p.type == m and p.direction == pb.DIRECTION_OUT for p in params):
-                return True
-            whole = {v.name for v in [*b.params, *b.locals] if v.type == m}
-            whole |= {p.name for a in b.actions for p in a.params if p.type == m}
-            for s in self._statements_of(b):
-                if s.WhichOneof("kind") == "assign" and s.assign.target.var in whole:
-                    return True
-        return False
-
-    @staticmethod
-    def _statements_of(b: pb.Block) -> list[pb.Stmt]:
-        out = list(walk_stmts(b.body))
-        for st in b.states:
-            out += walk_stmts(st.body)
-        for a in b.actions:
-            out += walk_stmts(a.body)
-        return out
-
-    # -- the change
-
-    def _fuse(self, user: str, name: str) -> None:
-        """Rename the user field `name` again, in M and wherever it is read
-        or written; its renamed name is unique to it (the renaming saw every
-        field of every type)."""
-        for m in _messages(self.blocks):
-            if isinstance(m, pb.Member | pb.LMember) and m.field == user:
-                m.field = name
-        for f in self.tr.struct_types[self.metadata].fields:
-            if f.name == user:
-                f.name = name
-        for b in self.blocks:
-            for t in b.tables:
-                for k in t.keys:
-                    if k.name and k.name == ir.dotted_path(k.expr):
-                        k.name = ""
-        del self.arch.renamed[name]
-        self.tr.field_renames = {k: v for k, v in self.tr.field_renames.items() if v != user}
-        struct = self.metadata
-        self.tr.notes.remove(
-            f"{struct}.{name} renamed {user}: user metadata, not the contract field"
-        )
-        self.tr.notes.append(
-            f"{struct}.{name} is the contract field: the source copies it to or from "
-            "standard_metadata exactly as the printer's shim does"
-        )
-
-
-def _epilogue(meta: str, drop_user: str) -> pb.Stmt:
-    """`if (meta.drop_) { meta.egress_port = 511; }`: the printer's `if
-    (M.drop) { mark_to_drop(sm); }` translated with M.drop renamed."""
-    port = assign(_as_lvalue(member(var(meta), "egress_port")), lit_bits(9, DROP_PORT))
-    return pb.Stmt(conditional=pb.If(condition=member(var(meta), drop_user), then=[port]))
-
-
-def _messages(blocks: Sequence[pb.Block]) -> list[Message]:
-    """Every message inside `blocks`, pre-order."""
-    out: list[Message] = []
-
-    def visit(m: Message) -> None:
-        out.append(m)
-        for fd, value in m.ListFields():
-            if fd.message_type is None:
-                continue
-            if isinstance(value, Message):
-                visit(value)
-            else:
-                for x in value:
-                    visit(x)
-
-    for b in blocks:
-        visit(b)
-    return out
 
 
 def _extend_metadata(tr: Translator, arch: V1Model, metadata: str) -> None:

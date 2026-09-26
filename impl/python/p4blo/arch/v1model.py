@@ -1,41 +1,43 @@
-"""The v1model shim: an IR program printed for v1model.
+"""The supported v1model pipeline, its loader and P4 printer.
 
-This is the repository's v1model support, and all of it: not an
-implementation of the architecture but the mapping that lets the P4
-oracles run a printed program (docs/arch-supports.md, "The v1model shim").
-The IR has no architecture; `p4blo.printer` prints its declarations and
-blocks, and this module binds them to v1model so that the program compiles
-with p4c and runs on BMv2 or P4-SpecTec's simulator:
-
-- the metadata contract mapped onto `standard_metadata`
-  (`standard_metadata_binding`), the whole architecture binding;
-- `standard_metadata` added to the exported parser and control;
-- the extern families in their v1model form (`print_extern_instance` and
-  `V1modelStmtPrinter`), which the p4blo block architecture shares;
-- the includes, the empty checksum and egress controls, and `main`.
-
-Entry point: `print_program`. A program handed to it is assumed valid;
-what the printer or the shim cannot express raises `PrintError`.
+Core blocks remain independent. This module binds six V1Switch stages,
+with explicit standard metadata and single-pass unicast/drop behavior.
 """
 
 from __future__ import annotations
 
 from p4blo import ir
 from p4blo.arch.bindings import BoundIndex
-from p4blo.arch.printer import MISSING_ROLE_NAMES, BoundProgramPrinter
+from p4blo.arch.contract import ContractError
+from p4blo.arch.loader import LoadError
+from p4blo.arch.printer import BoundProgramPrinter
 from p4blo.arch.v0 import assembly_pb2 as apb
+from p4blo.arch.v1model_profile import (
+    DROP_PORT,
+    ROLE_KINDS,
+    V1Model,
+    assemble,
+    check_profile,
+    load,
+)
 from p4blo.printer import (
     PrintError,
     StmtPrinter,
     print_arg,
     print_literal,
     print_lvalue,
+    print_param,
     print_type,
 )
 from p4blo.v0 import p4blo_pb2 as pb
 
 __all__ = [
     "PrintError",
+    "V1Model",
+    "assemble",
+    "load",
+    "ROLE_KINDS",
+    "DROP_PORT",
     "V1modelPrinter",
     "V1modelStmtPrinter",
     "print_extern_instance",
@@ -43,13 +45,21 @@ __all__ = [
     "standard_metadata_binding",
 ]
 
-# Fixed names of the shim's own blocks.
+# Names used for omitted, empty stages.
 VERIFY_CHECKSUM = "MyVerifyChecksum"
 EGRESS = "MyEgress"
 COMPUTE_CHECKSUM = "MyComputeChecksum"
 
-# The name of the parameter the shim adds to the exported parser and control.
+# Native standard metadata parameter on parser, ingress and egress.
 STANDARD_METADATA = "standard_metadata"
+ROLE_NAMES = {
+    "parser": "MyParser",
+    "verify_checksum": VERIFY_CHECKSUM,
+    "ingress": "MyIngress",
+    "egress": EGRESS,
+    "compute_checksum": COMPUTE_CHECKSUM,
+    "deparser": "MyDeparser",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -58,67 +68,33 @@ STANDARD_METADATA = "standard_metadata"
 
 
 def standard_metadata_binding(
-    index: BoundIndex, meta: str, role: str = "control"
+    index: BoundIndex, meta: str, role: str = "ingress"
 ) -> tuple[list[str], list[str]]:
-    """The v1model shim: the metadata contract mapped onto `standard_metadata`.
+    """Mirror the supported standard fields at their native stage boundary."""
+    from p4blo.arch.contract import CONTRACT
 
-    This is the whole architecture binding. The IR's blocks read and write
-    fields of their metadata struct M and perform no effect; v1model
-    expresses the same decisions through `standard_metadata`. The mapping is
-    by field name, each field optional (docs/design.md, "Metadata contract"):
-
-    | M field        | type     | direction              | v1model                             |
-    |----------------|----------|------------------------|-------------------------------------|
-    | `ingress_port` | `bit<9>` | provided, parser start | `M.ingress_port = sm.ingress_port;` |
-    | `parser_error` | `error`  | provided, control      | `M.parser_error = sm.parser_error;` |
-    | `egress_port`  | `bit<9>` | consumed               | `sm.egress_spec = M.egress_port;`   |
-    | `drop`         | `bool`   | consumed               | `if (M.drop) { mark_to_drop(sm); }` |
-
-    The architectures write `ingress_port` before the parser runs, so the
-    shim copies it in at the top of the parser's start state, and again at
-    the start of the ingress control's `apply`, where it still holds the
-    same value; `parser_error` is set after the parser, so only the control
-    copies it. Consumed fields are acted on at the end of the control's
-    `apply`, drop last so that it wins over the egress port. `flood` has no
-    v1model mapping and is left to the architectures. Any other field of M
-    is plain user metadata.
-
-    Returns the prologue and epilogue statements of the block exported as
-    `role`, "parser" or "control", `meta` being that block's name for its M
-    parameter; a parser's epilogue is empty. A contract field with the wrong
-    type is a `PrintError`, since the architectures would refuse it too.
-    """
-    if role not in ("parser", "control"):
+    CONTRACT.check(index)
+    fields = {f.name for f in index.fields(index.bindings.metadata)}
+    inputs = {
+        "parser": ("ingress_port",),
+        "ingress": ("ingress_port", "parser_error", "egress_spec"),
+        "egress": ("ingress_port", "parser_error", "egress_spec", "egress_port"),
+        "verify_checksum": (),
+        "compute_checksum": (),
+        "deparser": (),
+    }
+    if role not in inputs:
         raise PrintError(f"no standard_metadata binding for role {role!r}")
-    fields = {f.name: f.type for f in index.fields(index.bindings.metadata)}
-
-    def has(name: str, expected: pb.Type) -> bool:
-        actual = fields.get(name)
-        if actual is None:
-            return False
-        if actual != expected:
-            raise PrintError(
-                f"metadata field {name!r} is {print_type(actual)}, "
-                f"the contract needs {print_type(expected)}"
-            )
-        return True
-
-    prologue: list[str] = []
-    epilogue: list[str] = []
-    sm = STANDARD_METADATA
-    control = role == "control"
-    if has("ingress_port", pb.Type(bits=9)):
-        prologue.append(f"{meta}.ingress_port = {sm}.ingress_port;")
-    if has("parser_error", pb.Type(error=pb.ErrorType())) and control:
-        prologue.append(f"{meta}.parser_error = {sm}.parser_error;")
-    if has("egress_port", pb.Type(bits=9)) and control:
-        epilogue.append(f"{sm}.egress_spec = {meta}.egress_port;")
-    if has("drop", pb.Type(boolean=pb.BoolType())) and control:
-        epilogue.append(f"if ({meta}.drop) {{ mark_to_drop({sm}); }}")
+    prologue = [
+        f"{meta}.{name} = {STANDARD_METADATA}.{name};" for name in inputs[role] if name in fields
+    ]
+    epilogue = []
+    if role in {"ingress", "egress"} and "egress_spec" in fields:
+        epilogue.append(f"{STANDARD_METADATA}.egress_spec = {meta}.egress_spec;")
     return prologue, epilogue
 
 
-# The extern families the shim knows, by ExternType name. Each matches an
+# Supported extern families, by ExternType name. Each matches an
 # implementation under impl/python/p4blo/arch/externs/.
 REGISTER = "register"
 COUNTER = "counter"
@@ -222,12 +198,16 @@ def print_program(program: apb.BlockAssembly, *, index: BoundIndex | None = None
     """The complete P4-16 program for v1model, as text."""
     if index is None:
         index = BoundIndex.build(program)
+    try:
+        check_profile(index, require_pipeline=False)
+    except (LoadError, ContractError) as exc:
+        raise PrintError(str(exc)) from exc
     return V1modelPrinter(index, roles={e.role: e.block for e in index.bindings.exports}).render()
 
 
 class V1modelPrinter(BoundProgramPrinter):
     """The printer bound to v1model: its includes, `standard_metadata`,
-    the extern families' forms, the shim's own controls and `main`."""
+    the extern families' forms, empty stages and `main`."""
 
     stmt_printer = V1modelStmtPrinter
 
@@ -240,7 +220,14 @@ class V1modelPrinter(BoundProgramPrinter):
         return print_extern_instance(self.index, instance)
 
     def role_params(self, role: str) -> list[str]:
-        return [_sm_param()] if role in ("parser", "control") else []
+        return [_sm_param()] if role in ("parser", "ingress", "egress") else []
+
+    def _signature(self, block: pb.Block) -> str:
+        role = self.role(block)
+        if role in {"verify_checksum", "ingress", "egress", "compute_checksum"}:
+            self._expect_params(block, [pb.DIRECTION_INOUT, pb.DIRECTION_INOUT])
+            return ", ".join([*(print_param(p) for p in block.params), *self.role_params(role)])
+        return super()._signature(block)
 
     def binding(self, block: pb.Block) -> tuple[list[str], list[str]]:
         role = self.role(block)
@@ -248,41 +235,60 @@ class V1modelPrinter(BoundProgramPrinter):
         assert isinstance(self.index, BoundIndex)
         return standard_metadata_binding(self.index, block.params[1].name, role)
 
+    def apply(self, block: pb.Block) -> None:
+        prologue, epilogue = (
+            self.binding(block)
+            if self.role(block) in {"verify_checksum", "ingress", "egress", "compute_checksum"}
+            else ([], [])
+        )
+        self.line(1, "apply {")
+        for line in prologue:
+            self.line(2, line)
+        self.lines(self.stmts.block(block.body, 2))
+        for line in epilogue:
+            self.line(2, line)
+        self.line(1, "}")
+
     def postamble(self) -> None:
         self.missing_roles()
-        self.shim_controls()
         self.main()
 
-    def shim_controls(self) -> None:
+    def missing_roles(self) -> None:
         assert isinstance(self.index, BoundIndex)
         h, m = self.index.bindings.headers, self.index.bindings.metadata
-        checksum_params = f"inout {h} hdr, inout {m} meta"
-        egress_params = f"{checksum_params}, {_sm_param()}"
-        for name, params in [
-            (VERIFY_CHECKSUM, checksum_params),
-            (EGRESS, egress_params),
-            (COMPUTE_CHECKSUM, checksum_params),
-        ]:
+        for role, name in ROLE_NAMES.items():
+            if role in self.roles:
+                continue
             if name in self.index.program_names:
-                raise PrintError(f"the shim needs the name {name!r}, which the program uses")
+                raise PrintError(f"the v1model adapter needs the name {name!r}")
             self.line(0)
-            self.line(0, f"control {name}({params}) {{")
-            self.line(1, "apply {")
-            self.line(1, "}")
+            if role == "parser":
+                self.line(
+                    0,
+                    f"parser {name}(packet_in packet, out {h} hdr, "
+                    f"inout {m} meta, {_sm_param()}) {{",
+                )
+                self.line(1, "state start {")
+                prologue, _ = standard_metadata_binding(self.index, "meta", role)
+                for line in prologue:
+                    self.line(2, line)
+                self.line(2, "transition accept;")
+                self.line(1, "}")
+            else:
+                if role == "deparser":
+                    params = ["packet_out packet", f"in {h} hdr"]
+                else:
+                    params = [f"inout {h} hdr", f"inout {m} meta", *self.role_params(role)]
+                self.line(0, f"control {name}({', '.join(params)}) {{")
+                self.line(1, "apply {")
+                prologue, epilogue = standard_metadata_binding(self.index, "meta", role)
+                for line in [*prologue, *epilogue]:
+                    self.line(2, line)
+                self.line(1, "}")
             self.line(0, "}")
 
     def main(self) -> None:
-        def block(role: str) -> str:
-            return self.roles.get(role, MISSING_ROLE_NAMES[role])
-
-        parts = [
-            block("parser"),
-            VERIFY_CHECKSUM,
-            block("control"),
-            EGRESS,
-            COMPUTE_CHECKSUM,
-            block("deparser"),
-        ]
+        parts = [self.roles.get(role, name) for role, name in ROLE_NAMES.items()]
         self.line(0)
         self.line(0, f"V1Switch({', '.join(f'{p}()' for p in parts)}) main;")
 

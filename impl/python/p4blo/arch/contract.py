@@ -151,8 +151,7 @@ CONTRACT = Contract(
     (
         Field("ingress_port", pb.Type(bits=9), provided=True),
         Field("parser_error", pb.Type(error=pb.ErrorType()), provided=True),
-        Field("egress_port", pb.Type(bits=9), provided=False),
-        Field("drop", pb.Type(boolean=pb.BoolType()), provided=False),
-        Field("flood", pb.Type(boolean=pb.BoolType()), provided=False),
+        Field("egress_spec", pb.Type(bits=9), provided=False),
+        Field("egress_port", pb.Type(bits=9), provided=True),
     )
 )
