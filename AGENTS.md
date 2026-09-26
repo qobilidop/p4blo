@@ -51,8 +51,8 @@ creates no git tags.
    the architecture-free IR semantics scope, are complete and frozen;
    maintenance does not reopen parked proofs. The status file names any
    active engineering work. The example-guided authoring and CI-efficiency
-   scopes are complete. Core-only assurance simplification is active; see
-   the status file. Independent blocks and optional BlockLibrary bundles are
+   scopes and core-only assurance simplification are complete. Retired
+   application/architecture proofs are historical, not continuation work. Independent blocks and optional BlockLibrary bundles are
    documented in `docs/python-edsl.md`; architecture assembly stays separate.
    `docs/assurance.md`
    states the claim, the input domain and exact evidence boundaries; do

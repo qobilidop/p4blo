@@ -1,188 +1,110 @@
 # Status
 
-Last updated: 2026-09-25. **No active work: core-only simplification is complete.**
-The user approved removing Lean authoring/application proofs, concrete
-architecture proofs and the execution-certificate experiment. Preserve the
-core IR proofs, executable architecture adapters, Python authoring/examples,
-wire formats and independent oracle/differential testing. Integration branch:
-`work/simplify-core`, based on `5ee52d90f19d5d5a81bf972a115298ae167e691b`.
-[Scope, ownership and acceptance](notes/simplify-core.md). Implementation
-and final independent review are complete at `f9cb19e`. Both Lean packages
-passed; the full required-Lean gate passed 4,785 tests with four expected
-failures and no skips. Frozen adversarial replay passed all 28 phases;
-the retained BMv2 forwarding profile passed. Exact integrated main
-`090fb6813600cbd56bc375a6ff6cdc81b893bb4d` passed all applicable workflows:
-[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36215857990),
-[Lean](https://github.com/qobilidop/p4blo/actions/runs/36215858104),
-[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36215858109),
-[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36215858092) and
-[website](https://github.com/qobilidop/p4blo/actions/runs/36215857977).
-All specialist validation jobs ran. The scope is closed; only the required
-milestone compaction and its validation remain.
-[Review](reviews/core-simplification-2026-09-25.md).
+Last updated: 2026-09-25. **No active work.** Core-only assurance
+simplification is complete and integrated into `main` at
+`090fb6813600cbd56bc375a6ff6cdc81b893bb4d`; all applicable remote CI passed.
+The next action is a new user-scoped task. The roadmap is backlog, and
+retired application/architecture proofs are not a continuation queue.
 
-The user
-has made PRs optional for this personal-project phase. Feature branches
-remain available when useful, and direct commits to `main` are allowed;
-PRs are used for explicit requests or repository protections. Independent
-review, the full local gate before push and applicable remote CI on the
-integrated `main` revision remain required. This policy checkpoint updates
-AGENTS, workflow documentation and the compaction procedure. Independent
-review found no confirmed defects; the full required-Lean local gate passed
-with 5,271 tests and four expected failures, no skips. Review details are in
-[the policy review](reviews/optional-pr-policy-2026-09-25.md). Remote results
-are recorded by GitHub Actions against the policy commit; the local result
-alone does not establish remote success.
+Formal assurance now targets the architecture-free core IR. Python supplies
+public authoring, examples, validation, interpretation and the P4 importer.
+Two Lean packages remain: `spec/ir` owns core syntax/meaning/proofs;
+`spec/arch` supplies tested executable adapters and the `p4blo-lean` endpoint.
+Lean authoring/applications, concrete architecture proofs and execution
+certificates are retired. Core progress still assumes a generic extern
+contract; no concrete architecture discharge is claimed.
 
-The simplification audit is complete and implementation is authorized.
-The optional-PR policy at `5ee52d9` passed all four validation workflows;
-feature branches remain useful and no PR is required for this scope.
-
-XDP removal
-is complete: [PR #7](https://github.com/qobilidop/p4blo/pull/7) merged as
-`da6f6202e3014b195bba864844f9923d1223ddd7` after independent review and all
-final-head checks passed. The workflow, container sources, inspector and
-dedicated tests are gone; current commands, pins and structural inventories
-are updated. The P4 interpreters, schemas, proofs and oracle inputs are unchanged.
-Historical XDP evidence stays historical; only a short revisit condition
-remains in the roadmap. The eDSL, closure and CI-efficiency scopes also remain
-complete. Ask for a new scope; the roadmap is backlog.
-
-Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
-It includes the final eDSL reflection, implementation plans and reviews.
-Earlier archives: `26c93485861bc5442076a1060fcc8d1743952702` and
-`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6`. Recover a note with
-`git show <archive>:.agents/notes/<name>.md` (`docs/notes/` at the first).
-Logs in `.artifacts/` are conveniences, not portable evidence.
+Archive before this compaction:
+`34ce204e4a8be7633133a715e10c9ac6a8b891b1`. It contains the simplification,
+CI-efficiency and XDP plans/reviews, final implementation evidence and earlier
+checkpoints. Retired feature sources remain at
+`5ee52d90f19d5d5a81bf972a115298ae167e691b`.
+Earlier archives: `9fc6c19febf839fa56873be10788b515c4e29ae9`,
+`26c93485861bc5442076a1060fcc8d1743952702` and
+`9e8f7d47e582de3d9813d4d0d4d91c152efdb2b6`.
+Recover with `git show <archive>:.agents/notes/<name>.md`
+(`docs/notes/` at the first archive). Local logs are conveniences, not
+portable evidence. No tags are created.
 
 ## Completed scopes
 
 | Scope | Result / revision | Evidence |
 |---|---|---|
-| Assurance milestone 1 | complete, `3148a52` | [assurance](../docs/assurance.md#release-evidence) |
+| Assurance milestone 1 | complete, `3148a52` | [historical release evidence](../docs/assurance.md#release-evidence) |
 | Python application collection | complete, `c94336d` | [router, firewall, load balancer](../examples/README.md) |
-| Website / VLAN gateway walkthrough | published, `38d740e` | [website](https://qobilidop.github.io/p4blo/) |
+| Website / VLAN gateway | published, `38d740e`; simplified at `090fb68` | [website](https://qobilidop.github.io/p4blo/) |
 | Architecture-free IR semantics | complete, `26c9348` | [semantics](../docs/ir-semantics.md), [ledger](../docs/ledger-xref.md), [coverage](../docs/p4-spec-coverage.md) |
-| Engineering practices | merged, `264fd63`, PR #1 | [workflows](../docs/workflows.md); archived engineering-practices note/review |
-| Example-guided eDSL / library boundary | merged, `f6c3a6e`, PR #2 | [authoring guide](../docs/python-edsl.md); archived reflection and library-boundary review |
-| CI speed | merged, `fffbac7`, PR #3 | [workflow](../.github/workflows/lean.yml); archived ci-speed and ci-speed-final reviews |
-| CI efficiency | merged, `967e0a3`, PR #5 | [measurements](notes/ci-efficiency.md), [independent review](reviews/ci-efficiency-2026-09-25.md) |
-| XDP retirement | merged, `da6f620`, PR #7 | [independent review](reviews/xdp-removal-2026-09-25.md); removed experiment recoverable from `b7860a5` |
+| Engineering practices | merged, `264fd63`, PR #1 | [workflows](../docs/workflows.md) |
+| Example-guided eDSL / library boundary | merged, `f6c3a6e`, PR #2 | [authoring guide](../docs/python-edsl.md) |
+| CI speed and runner cleanup | merged, `fffbac7` / `5de0d9e`, PRs #3 / #4 | archived final reviews and buffered-stdin regression evidence |
+| CI efficiency | merged, `967e0a3`, PR #5 | measurements and review archived at `090fb68` |
+| XDP retirement | merged, `da6f620`, PR #7 | review archived at `090fb68`; experiment recoverable from `b7860a5` |
+| Optional PR policy | complete, `5ee52d9` | [workflows](../docs/workflows.md); archived independent review |
+| Core-only assurance simplification | complete, `090fb68` | local and remote evidence below; review archived at this revision |
 
-The completed semantic milestones describe their recorded revisions.
-This simplification retires authoring/application/architecture proof scopes;
-retained core proofs keep their original premises and no new proof is opened.
-The eDSL scope supplies architecture-free Python/protobuf/Lean BlockLibrary,
-with arbitrary block counts/signatures and declarations; architecture bindings
-own H/M roots and exports, and an optional flat BlockAssembly preserves old
-payloads. Core validity/progress retain their premises; architecture bindings
-remain tested runtime checks without a formal soundness claim. Registration is explicit; binding creates fresh per-instance state. Custom
-extern and six-block witnesses test beyond the reference switch. The three applications
-retain exact text/binary goldens and behavior, using ordinary readability
-helpers. Python registration grants neither Lean semantics nor printer support.
+Earlier semantic milestones describe their recorded revisions, including
+proofs since retired. Current guarantees are in [assurance](../docs/assurance.md).
+Independent blocks and optional BlockLibrary bundles have arbitrary block
+counts/signatures and declarations; architecture bindings select H/M roots
+and exports. Flat BlockAssembly preserves old payloads. Registration is
+explicit and creates fresh per-instance state; Python registration grants
+neither Lean semantics nor printer support. Scalar/six-block and custom-extern
+witnesses test beyond the reference switch. Python application goldens and
+behavior are unchanged.
 
 ## Four claims
 
 | Claim | Status and boundary |
 |---|---|
-| Small, post-elaboration core | Green for twelve corpus programs and three applications without a new core construct. The P4-SpecTec IL frontend reproduces six original P4 goldens byte for byte; 98 of 191 pinned v1model programs with vectors run from source (`tests/oracle/frontend-census.json`). No general P4 compiler claim. |
-| Supports tested real programs | Green with explicit discrepancies: BMv2 register/priority differences, P4-SpecTec mask failure on the printed firewall, three block-level expected failures behind checked models, and classified original-source CRC/mask and generated-program simulator defects. See assurance for exact input/evidence boundaries. |
-| A block is a function; architecture is ordinary code | Frozen: the supplied filter is 45 lines and switch 50, neither contains P4, every corpus program runs under both. Their H/M convention is not a core restriction. |
-| Mechanized and agrees with reference | Sound core library checker; progress under the [stated execution premises](../docs/assurance.md), including an assumed generic extern contract. Architecture bindings/families are tested, without formal discharge. Core semantic/codec laws and all 157 rule tags/89 fixtures remain. No application proof, universal Python equivalence, termination or whole-library codec-composition theorem. |
+| Small, post-elaboration core | Twelve corpus programs and three applications without a new core construct. The P4-SpecTec IL frontend reproduces six original P4 goldens byte for byte; 98 of 191 pinned v1model programs with vectors run from source. No general P4 compiler claim. |
+| Supports tested real programs | Explicit discrepancies remain: BMv2 register/priority behavior, P4-SpecTec firewall masks, three block-level expected failures behind checked models, and classified source CRC/mask and generated-program simulator defects. Assurance records exact boundaries. |
+| A block is a function; architecture is ordinary code | Frozen: supplied filter is 45 lines and switch 50, neither contains P4, every corpus program runs under both. Their H/M convention is not a core restriction. |
+| Mechanized and agrees with reference | Sound core library checker; progress under stated execution premises, including an assumed generic extern contract. Architecture bindings/families are tested without formal discharge. Core semantic/codec laws and all 157 rule tags/89 fixtures remain. No application proof, universal Python equivalence, termination or whole-library codec-composition theorem. |
 
 ## Last checked evidence
 
-All hashes below resolve. Earlier reviews are available at the archive point;
-AI-agent review is independent of the author, not human review.
-The [closure review](reviews/closure-2026-09-25.md) compares the compacted
-state at `9bd5434` with the archive and separately approves cleanup `a31ff19`.
+Independent AI-agent review approved implementation
+`f9cb19ee1b9afbb1b512a584eb147a01be331e03` and the three-file evidence
+follow-up integrated as `090fb68`. It is not human review. One confirmed
+finding, a lost firewall required-vector inventory assertion, was repaired
+in `d848cf3`; removing `collisions.stf` fails the restored guard.
+The full report is `.agents/reviews/core-simplification-2026-09-25.md` at
+the archive revision.
 
-- XDP removal final head `c3d8a76e6c1d7e68851ecffd8dab04b661ff96c2`:
-  independent review approved; all seven validation jobs and three scope jobs
-  passed: [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36210833516),
-  [Lean](https://github.com/qobilidop/p4blo/actions/runs/36210833804),
-  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36210833820),
-  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36210833677).
-  Full required-Lean local gate exited 0: 5,271 passed, four expected failures,
-  no skips. All 154 structure tests also passed. All 3,045 Lean cases remain;
-  the 19 removed collection entries are XDP's 17 tests and its two structural
-  registrations. No local Lean/Docker rebuild or assurance mutation rerun was
-  needed for unchanged semantics; remote specialist gates all ran and passed.
+At unchanged implementation `f9cb19e`, local commands exited 0:
 
-- CI-efficiency final head `e4c1d759549dfa3c8518184e2a9b4818993071fd`:
-  independent review approved; all eight validation jobs and four scope jobs
-  passed remotely: [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36207118848),
-  [Lean](https://github.com/qobilidop/p4blo/actions/runs/36207118970),
-  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36207118915),
-  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36207118971),
-  [XDP](https://github.com/qobilidop/p4blo/actions/runs/36207118925).
-  Full required-Lean local gate exited 0: 5,289 passed, one optional local XDP
-  skip, four expected failures. Remote Lean shards passed 1,509 + 1,536 cases.
-  Observed job times: Lean maximum 521 to 256 s, BMv2 393 to 252 s,
-  P4-SpecTec 643 to 556 s. These are individual run comparisons, not latency
-  guarantees. Python/schema always run; only proven narrative-only changes
-  skip specialist jobs. XDP's remote compile pass is not kernel execution.
+- `scripts/check-lean.sh`: both Lean packages, audits and tests passed.
+- `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: 4,785 passed, four expected
+  failures, no skips; lint/format/types/schema/workflows/fresh generation passed.
+- `P4BLO_REQUIRE_LEAN=1 uv run python scripts/check-assurance.py --output
+  <new directory>`: all 28 phases passed with the tracked tree frozen.
+  All ten Python fault cases, Lean CRC fault, paired codec/observer faults,
+  independent anchors and restored baseline retain the original three input
+  hashes/six requests. Local result: `.artifacts/assurance/simplify-f9cb19e`.
+- `uv run pytest tests/programs/test_forwarder_apply_semantics.py::test_apply_packets_bmv2 -q`:
+  one test passed, exercising all five forwarding profiles.
 
-- Closure follow-up `a31ff19`: the post-merge macOS
-  [run](https://github.com/qobilidop/p4blo/actions/runs/36203599815) exposed a
-  buffered-stdin close error masking ProtocolError after peer exit. A narrow
-  cleanup fix has a deterministic real-pipe regression that independently
-  fails old code and passes the repair. Full required-Lean local gate exited
-  0: 5200 passed, one optional XDP skip, four expected failures. The incident
-  does not invalidate PR #3's successful final-head checks; its post-merge run
-  is distinct. PR #4 merged as `5de0d9e` after independent review and all seven
-  checks passed on final head `e5cf214`: Python/schema, Lean, both P4 oracles
-  and the compile-only XDP profile. Its temporary branches/worktrees are removed.
+These commands ran in the pinned `nix develop -c` environment. The final
+Markdown evidence follow-up passed link checks and independent review.
+Exact integrated main `090fb6813600cbd56bc375a6ff6cdc81b893bb4d` passed
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36215857990),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36215858104),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36215858109),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36215858092) and
+[website deployment](https://github.com/qobilidop/p4blo/actions/runs/36215857977).
+All specialist validation jobs ran; these were not scope skips.
 
-- eDSL final head `26d3f38`, merged by PR #2: all seven remote checks passed:
-  [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36201014298),
-  [Lean](https://github.com/qobilidop/p4blo/actions/runs/36201014346),
-  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36201014311),
-  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36201014332),
-  [XDP](https://github.com/qobilidop/p4blo/actions/runs/36201014286).
-  Full local gate: 5199 passed, one optional local XDP-image skip, four
-  expected failures. The bare-Python coverage build and fresh coverage
-  measurement also passed (nine coverage tests).
-- CI-speed final head `30c567c`, merged by PR #3: independent final-head
-  review found no confirmed defects; all seven remote checks passed:
-  [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36202637770),
-  [Lean](https://github.com/qobilidop/p4blo/actions/runs/36202637944),
-  [P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36202637833),
-  [BMv2](https://github.com/qobilidop/p4blo/actions/runs/36202637772),
-  [XDP](https://github.com/qobilidop/p4blo/actions/runs/36202637734).
-  Local Lean and full gate passed with the same 5199/1/4 counts.
-  Remote differential time was 428 s versus the prior 851 s; cold build
-  335 s. PR #4 at `c8e5b46` then completed the Lean build/audit/test stage
-  in 32 s after cache restore ([run](https://github.com/qobilidop/p4blo/actions/runs/36204465410));
-  this timing is stage evidence, not a claim that that whole run passed.
-- Fresh closure checks on the tree recorded by `9fc6c19`:
-  `scripts/check-lean.sh` and `P4BLO_REQUIRE_LEAN=1 scripts/check.sh` exited
-  0; 5199 passed, one optional XDP skip, four expected failures. A second
-  full `scripts/check.sh` after the prose fixes also passed with those counts.
-  No semantics changed; local oracle and mutation gates were not repeated.
-- Implementation `37356009137d7f1bad5a284c01d59eace1841726`: all three
-  Lean packages/audits, full gate (5195/1/4), and all 89 retained conformance
-  fixtures reproduced unchanged answers. Original fixture provenance is
-  retained; the changed semantics-source digest is reported, not answer drift.
-- Frozen `70b51cdd28b331832fc9a6182b60218e68be38a6`: main P4-SpecTec/BMv2
-  corpus suites passed 79 tests with two documented expected failures;
-  `scripts/check-assurance.py` exited 0 for Python faults, Lean CRC fault,
-  paired codec/observer faults, independent anchors and restored baselines.
-  Independent boundary review approved this implementation with 43 focused
-  passes, including scalar/six-block acceptance and nine malformed bindings.
-  On equivalent adapter commit `f6ec9ef`, block oracle 67 passed/3 xfailed,
-  frontend 98 passed, main P4-SpecTec corpus 35 passed.
-- Earlier successful assurance at `58275b8` covered the pre-extension API,
-  not the final split. The attempt invalidated by concurrent tracked edits
-  never counted as a pass. Historical evidence for the frozen semantic scope
-  remains at archive `26c9348` and in [assurance](../docs/assurance.md).
-
-The closure reflection records the actual architectural counterexamples,
-shared-API/dependency coordination, immutable migration anchors, frozen
-assurance trees, conceptual documentation sweeps and bare-interpreter checks.
-These lessons are enforced or prescribed in AGENTS.md, workflows and boundary
-tests. The recovery corrected a stale post-merge status; authentication errors
-in the prior Codex session were not repository build failures.
+Independent old/new executable comparison preserved exit/stdout/stderr for
+89 fixtures, 514 packet requests and 363 CLI pairs. Git comparison preserved
+280 runtime/input/wire files byte for byte; the only additional retained
+Python package edit is a provenance docstring. Exactly 486 collected cases
+retired with their features (5,765 to 5,279); all 710 runtime cases in seven
+mixed suites remain. 547 Python-only cases were honestly renamed, and real
+Lean comparisons retain discovery prefixes. Main/codec axiom audits retain
+140/48 declarations; removed pins name deleted declarations. Tracked Lean
+source shrank from 163 files/33,694 physical lines to 81 files/21,432 lines,
+including tests/comments/blanks; this is a size count, not an assurance or
+latency estimate.
 
 ## Open threads (parked / backlog)
 
@@ -200,7 +122,7 @@ in the prior Codex session were not repository build failures.
 - Some Lean/Python module headers still use former semantics section names.
 - Firewall readback and forwarder ingress drafts are on three pushed parked
   branches; [inventory and gaps](notes/parked-proofs.md),
-  [readback plan](notes/firewall-readback-next.md),
+  readback plan archived at `090fb68`,
   [local recovery archives](notes/worktree-cleanup.md). They predate current
   layout/externs and are not landed evidence; no worktree needs retaining.
 - Unconfirmed review points: checksum16 padding for non-multiples of 16;
@@ -222,7 +144,7 @@ in the prior Codex session were not repository build failures.
   The stdlib-only guard uses Python 3.13,
   while Docker scripts use distro Python; current imports are compatible.
 
+
 ## Blocked
 
-Nothing. Simplification is complete; compact the finished work notes, then
-ask for a new scope. Do not reopen retired proofs or unrelated roadmap work.
+Nothing. Ask for a new scope; do not reopen retired proofs or roadmap work.

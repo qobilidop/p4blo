@@ -78,6 +78,6 @@ All retained non-main HEADs and statuses match the initial inventory.
 
 No project implementation changed, so Python/schema, Lean, oracle and
 adversarial runtime gates were not rerun. `git diff --check` covers the
-handoff edits. Keep the five non-main trees until their unique contents are
-reviewed or the parked work receives a new scope. The cleanup is complete;
+handoff edits. The five non-main trees were subsequently removed after
+unique contents were preserved as documented above. The cleanup is complete;
 there is no instruction to resume proof development or delete those drafts.
