@@ -96,6 +96,17 @@ Design and semantics pages hold contracts; this register keeps choices and bound
 
 ## IR and wire syntax
 
+- **Retain Protobuf for the IR wire schema and JSON at the Lean boundary.**
+  Generated bindings support current Python and intended frontends in other
+  languages, including Rust, without maintaining a separate message model for
+  each. Lean consumes the specified Protobuf JSON profile through its existing
+  codec; JSON is an encoding of the same wire schema, not a second IR. Lean
+  continues to own abstract syntax and semantics. Native Lean Protobuf support
+  has not met the user's maturity threshold; replacing Protobuf with a custom
+  JSON schema would trade existing tooling for new binding work. Keep current
+  text goldens and codecs. Confidence high for the current scope; revisit only
+  for demonstrated interoperability or performance needs and mature tooling.
+  No migration or speculative frontend implementation is authorized. (2026-09-26)
 - **Use codec consistently for an encoder/decoder pair**, and encode/decode for
   the individual operations. Keep codec component and suite names; serialization
   may describe the process or representation but is not a competing component

@@ -2,6 +2,15 @@
 
 Last updated: 2026-09-26. **No active engineering work.**
 
+Serialization decision: retain Protobuf as the IR wire schema and its specified
+JSON profile for Lean, with generated bindings for current Python and future
+frontends. Abstract syntax and meaning remain in Lean. The decision is recorded
+in the register and the representation boundary clarified in `docs/design.md`.
+This documentation checkpoint changes no implementation, schema or assurance claim.
+Independent [review](reviews/serialization-decision.md) found no defects. The
+required-Lean full local gate passed 5,007 tests with no skips or expected
+failures, plus lint/type/schema/generation checks.
+
 Terminology follow-up: retain codec for encoder/decoder pairs and encode/decode
 for their operations. The convention is recorded in AGENTS and the codec guide;
 stale pre-refactor test-layout wording in the decisions register is corrected.

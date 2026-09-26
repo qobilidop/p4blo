@@ -109,8 +109,13 @@ one intended authority:
 | Correspondence between wire values and abstract libraries | codecs specified in Lean | roundtrip laws proved through Action and Block on the representable domain; BlockLibrary and architecture-binding composition are open |
 
 The text form of the protobuf is the golden format; binary and JSON are
-transports. These are distinct contracts, and passing one does not
-establish the next:
+transports. The Lean boundary uses the Protobuf JSON profile implemented by
+`P4bloIR.Json`, converting wire values to and from Lean's abstract IR types.
+This is an encoding of the same wire schema, not a separate JSON IR. Protobuf
+supplies generated Python message types and a shared schema for future frontends
+in other languages; Lean does not need a native binary Protobuf codec.
+
+These are distinct contracts, and passing one does not establish the next:
 
 ```text
 Serialized data
