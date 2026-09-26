@@ -138,3 +138,17 @@ On frozen `2bcd84e9233865511d4046cbaab6c361a8fff416`, the integrator ran:
 
 The independent reviewer did not claim to rerun the integrator's heavy gates.
 Remote CI on integrated main remains to be recorded before scope closure.
+
+## Exact-main remote results
+
+Main `516cbdf67519a1af360ac1d9f442e70133bf77b7` passed all five workflows:
+Python/schema 36220833330, Lean 36220833562, P4-SpecTec 36220833542,
+BMv2 36220833512 and website 36220833313. Specialist jobs ran, not scope-skipped.
+The longest workflow was P4-SpecTec, 8 minutes 11 seconds including queue/setup.
+This closes the implementation and validation scope.
+
+Both implementation worktrees were removed after clean-tree and patch-equivalence
+checks. All handoff branches were deleted after confirming integration; the docs
+handoff's range-diff differed only by the now-removed provisional section.
+The independent review worktree remains only for the compaction review.
+Three unique retired-proof branches remain preserved, as their inventory requires.

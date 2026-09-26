@@ -1,6 +1,18 @@
 # Status
 
-Last updated: 2026-09-25. **Active: minimal architectures.**
+Last updated: 2026-09-25. **Minimal architectures complete.**
+
+Integrated main `516cbdf67519a1af360ac1d9f442e70133bf77b7` passed every
+applicable remote workflow with specialist jobs actually running:
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36220833330),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36220833562),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36220833542),
+[BMv2](https://github.com/qobilidop/p4blo/actions/runs/36220833512), and
+[website](https://github.com/qobilidop/p4blo/actions/runs/36220833313).
+The scope is closed. Remaining checkpoint prose below is historical and will
+be compacted against this committed archive point. No implementation work is
+active; the three unique parked branches remain historical.
+
 The user authorized core block execution plus scoped v1model, retiring the
 custom Filter/Switch. Branch `work/minimal-arch`, base `14e6f44`.
 [Scope and shared contract](notes/minimal-architectures.md).
