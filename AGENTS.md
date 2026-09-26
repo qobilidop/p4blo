@@ -136,7 +136,7 @@ See `tests/README.md` for ownership and commands.
   a clean diff of tracked files alone cannot detect omitted outputs.
 - **Keep generated artifacts small and reproducible.** Tracked files
   must be at most 5 MiB in both the index and working tree, enforced by
-  `scripts/check-file-sizes.py` through the structure tests. No exceptions.
+  `scripts/check-file-sizes.py` through the repository tests. No exceptions.
   Prefer reproducible generation, small losslessly compressed snapshots
   with raw-content checksums, or checksum-pinned external artifacts.
   Consider history growth as well as checkout size; reducing size does

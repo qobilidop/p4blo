@@ -19,7 +19,7 @@ prints it, after the leading comment.
 The [quickstart](../../../../docs/quickstart.md) builds this Python source and
 runs its IR on both the Python and Lean interpreters. Independent packet,
 action and installed-table expectations live in
-`tests/programs/test_forwarder*_semantics.py`; the BMv2 profile independently
+`tests/programs/corpus/forwarder/test_forwarder*_semantics.py`; the BMv2 profile independently
 checks five installed-table configurations. These are regression and oracle
 tests, not a formal forwarding or whole-pipeline guarantee.
 

@@ -263,8 +263,10 @@ Design and semantics pages hold contracts; this register keeps choices and bound
   2026-09-23)
 - **Challenge original-program oracles; do not copy them.** Strict pinned discrepancy tests
   have passing controls; never adapt inputs for agreement. Strict XPASS rejects stale
-  exceptions; BMv2 xfails name exact vector/status/mismatch. Discover Lean
-  `test_lean_agrees` tests across the tree. (2026-09-23)
+  exceptions; BMv2 xfails name exact vector/status/mismatch. (2026-09-23)
+  Discover real-Lean checks through the explicit `lean` marker and shared
+  `lean_binary` fixture across both test roots; test names do not select CI
+  coverage. (2026-09-26, aligned with the completed test organization)
 - **Own and verify every Docker check container; never prune globally.** (2026-09-23)
 - **Remove the premature XDP compile-only experiment.** User-requested: compiling an
   upstream program neither executed it nor validated a p4blo application, so the

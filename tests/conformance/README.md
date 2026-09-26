@@ -37,8 +37,10 @@ A fixture is a JSON object with exactly these fields,
   commit that touched them; `binary`, a SHA-256 digest of the
   `p4blo-lean` executable.
 - `ports`: the v1model profile's configured port count (1–511).
-- `program`: the program in the protobuf JSON wire profile
-  (`spec/ir/proto/p4blo/v0/p4blo.proto`, proto field names).
+- `program`: a `p4blo.arch.v0.BlockAssembly` in the protobuf JSON wire
+  profile (proto field names), defined in
+  `spec/arch/proto/p4blo/arch/v0/assembly.proto`, with core declarations
+  imported from `spec/ir/proto/p4blo/v0/p4blo.proto`.
 - `steps`: a nonempty array, one `{"request": ..., "reply": ...}` per
   request, in order.
 

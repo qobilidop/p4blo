@@ -136,7 +136,8 @@ one verdict per vector:
 
 The process exits non-zero on anything but pass and prints the exact
 command for the first vector that did not pass. `tests/oracles/test_oracle.py`
-is parametrized over every `tests/programs/corpus/*/*.stf` and fails with `DIVERGENCE`
+is parametrized over every `tests/programs/corpus/*/*.stf` and
+`tests/programs/examples/*/*.stf` and fails with `DIVERGENCE`
 or `ORACLE ERROR (not a divergence)` in the message, so a red CI run
 says which it was.
 

@@ -19,7 +19,7 @@ its extern constructions moved to `P4bloArch`, before it can build.
 | `work/parked-reviews` | `d18436b` | the reviews of the two drafts above and eight variant review versions whose final forms are archived | nothing; reference only |
 
 The review worktree's other 74 files were identical to notes at the
-archive tag and were not duplicated. Two further branches from the same
+archive commit and were not duplicated. Two further branches from the same
 cleanup, `work/firewall-adversarial` and `work/program-codec-next`, held
 only content byte-identical to what `main` had already integrated and
 were deleted on 2026-09-24. Recovery archives of the 86

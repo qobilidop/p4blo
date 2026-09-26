@@ -1,6 +1,18 @@
 # Status
 
-Last updated: 2026-09-26. **No active engineering work.**
+Last updated: 2026-09-26. **Repository cleanup checked locally; exact-main CI pending.**
+
+The cleanup corrects stale test paths, selection guidance, the p4c gate
+command and the conformance fixture schema reference. Runtime code, schemas,
+fixtures, pinned oracle inputs and parked recovery branches are unchanged.
+The read-only inventory audit found no confirmed dead implementation files;
+large generated files and the website example copy are checked deliverables.
+Independent [review](reviews/repository-cleanup.md) found no defects.
+Required-Lean `scripts/check.sh` passed 5,007 tests with no skips or expected
+failures in 99.52 seconds, plus lint/type/schema/generation/workflow checks.
+The temporary audit and review worktrees were removed. Native oracle execution
+and Lean builds were not rerun locally for these prose-only changes; the
+conservative scope classifier requires full remote CI for test README edits.
 
 Serialization decision: retain Protobuf as the IR wire schema and its specified
 JSON profile for Lean, with generated bindings for current Python and future
@@ -149,8 +161,7 @@ correctness or a latency guarantee.
 
 ## Blocked / next action
 
-Nothing is blocked or active. The three unique pushed parked branches remain;
-implementation, recipe and review worktrees are removed. The compaction was
-independently reviewed with no findings; its required-Lean full local gate passed
-5,007 tests. See [review](reviews/test-organization-compaction.md). Wait for a new
-scope; parked work is not an instruction to resume.
+Verify all four validation workflows on the exact pushed cleanup revision
+before declaring it complete. No implementation changes remain. The three
+unique pushed parked branches remain; parked work is not an instruction to
+resume. After CI passes, wait for a new scope.

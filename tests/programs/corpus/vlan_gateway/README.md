@@ -69,4 +69,4 @@ is entirely the Python eDSL source. Reusing `loaded` preserves counter state.
 The homepage's highlighted source is generated directly from this file by
 `scripts/render-website-example.py`; it contains no elisions or parallel
 implementation. The ordinary corpus gate, both P4 oracles and required
-`test_lean_agrees` discovery automatically include this program.
+`lean` marker selection automatically include this program.

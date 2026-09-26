@@ -38,10 +38,10 @@ Check exit codes, not output.
 | Oracle-driven suites locally | `P4BLO_ALL_TESTS=1 scripts/check.sh`, or `uv run pytest -m oracle` (the gate runs tests with `-n auto`; dedicated oracle jobs bound their worker count) | `scripts/check.sh` alone deselects the `oracle` marker (the simulator, its probe, the IL export and BMv2 suites), which the oracle workflows run |
 | Original-source SpecTec probes | `uv run pytest tests/oracles/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py -m spectec` | passing controls plus four exact strict CRC/mask discrepancies; unrelated failures fail |
 | Original-source BMv2 probes | `uv run pytest tests/oracles/test_crc.py tests/programs/corpus/tutorial_firewall/test_firewall.py tests/programs/corpus/tutorial_firewall/test_firewall_boundaries.py tests/programs/corpus/tutorial_firewall/test_firewall_generated.py -m bmv2` | CRC known answers, firewall packets and complete register arrays after connection/collision/truncation/generated-flow prefixes pass |
-| Forwarding application BMv2 profile | `uv run pytest tests/programs/corpus/forwarder/test_forwarder_apply_semantics.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects it explicitly and checks image availability first, without requiring Lean binaries |
-| Printer goldens under p4c | part of `scripts/check.sh` | runs when Docker is up, skips otherwise |
+| Forwarding application BMv2 profile | `uv run pytest tests/programs/corpus/forwarder/test_forwarder_apply_semantics.py::test_apply_packets_bmv2` | both overlapping-route orders and three defaults pass; dedicated BMv2 CI selects its `bmv2` marker and checks image availability first, without requiring Lean binaries |
+| Printer goldens under p4c | `uv run pytest -m p4c`, also in `P4BLO_ALL_TESTS=1 scripts/check.sh` | requires Docker and the pinned p4c image; skips if unavailable |
 | Workflows parse and lint | `actionlint`, part of `scripts/check.sh` | exit 0; a workflow that does not parse never runs |
-| Repository file sizes | `uv run python scripts/check-file-sizes.py`, also in the structure tests | every indexed blob and tracked working file is at most 5 MiB; stage new deliverables first |
+| Repository file sizes | `uv run python scripts/check-file-sizes.py`, also in the repository tests | every indexed blob and tracked working file is at most 5 MiB; stage new deliverables first |
 | Generated protobuf files | `uv run python scripts/check-generated.py`, part of the local and schema CI gates | fresh output inventory and bytes equal both index and working tree; no missing, stale or untracked generated files |
 
 A larger differential sweep, for a change to either interpreter:
