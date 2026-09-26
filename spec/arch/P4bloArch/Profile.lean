@@ -62,6 +62,10 @@ private def checkReads (stage : String) (fields : List String) : Except String U
     if !canRead stage field then throw s!"v1model stage '{stage}' cannot read '{field}'"
 
 private def checkWrite (stage : String) (aliases : Aliases) (target : LValue) : Except String Unit := do
+  if let some (name, path) := lvaluePath target then
+    let guarded := (aliases.lookup name).getD []
+    if guarded.any (fun (fieldPath, _) => path != fieldPath && pathPrefix path fieldPath) then
+      throw "v1model cannot write whole standard metadata"
   let fields := affected aliases (lvaluePath target)
   for field in fields do
     if field != "egress_spec" || !(stage == "ingress" || stage == "egress") then

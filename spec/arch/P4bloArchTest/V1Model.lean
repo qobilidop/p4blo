@@ -104,7 +104,13 @@ def tests : T Unit := do
     "v1model stage 'ingress' cannot write 'egress_port'"
   checkError "whole metadata replacement cannot hide readonly writes"
     (profile (replaceBody program "I" [.assign (.var "m") (.var "m")]))
-    "v1model stage 'ingress' cannot write 'ingress_port'"
+    "v1model cannot write whole standard metadata"
+  let oneField := { (replaceBody program "I" [.assign (.var "m") (.var "m")]) with
+    structTypes := program.structTypes.map fun t =>
+      if t.name == "M" then { t with fields := [⟨"egress_spec", .bits 9⟩] } else t }
+  check "whole metadata assignment remains valid core syntax" (oneField.check matches .ok _)
+  checkError "whole metadata replacement is rejected even with only writable egress_spec"
+    (profile oneField) "v1model cannot write whole standard metadata"
   let child : Block := { (default : Block) with
     name := "Child", kind := .control,
     params := [⟨"x", .bits 9, .inout⟩], body := [.assign (.var "x") (lit 9 1)] }
