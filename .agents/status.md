@@ -47,6 +47,17 @@ helpers. Python registration grants neither Lean semantics nor printer support.
 
 All hashes below resolve. Earlier reviews are available at the archive point;
 AI-agent review is independent of the author, not human review.
+The [closure review](reviews/closure-2026-09-25.md) compares the compacted
+state at `9bd5434` with the archive and separately approves cleanup `a31ff19`.
+
+- Closure follow-up `a31ff19`: the post-merge macOS
+  [run](https://github.com/qobilidop/p4blo/actions/runs/36203599815) exposed a
+  buffered-stdin close error masking ProtocolError after peer exit. A narrow
+  cleanup fix has a deterministic real-pipe regression that independently
+  fails old code and passes the repair. Full required-Lean local gate exited
+  0: 5200 passed, one optional XDP skip, four expected failures. The incident
+  does not invalidate PR #3's successful final-head checks; its post-merge run
+  is distinct. Final closure PR CI must pass before this fix reaches main.
 
 - eDSL final head `26d3f38`, merged by PR #2: all seven remote checks passed:
   [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36201014298),
