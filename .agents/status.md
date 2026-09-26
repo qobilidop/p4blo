@@ -129,6 +129,11 @@ and queue time; this is one observation, not a latency guarantee.
 
 ## Blocked / next action
 
-Nothing is blocked and no new implementation scope is active. Finish the
-independent compaction review and documentation gate, then verify applicable
-remote CI on that final narrative revision. After that, wait for the next scope.
+Nothing is blocked and no implementation scope is active.
+[Independent compaction review](reviews/minimal-architecture-compaction.md)
+approved b81bd54 plus the repaired historical archive hash; all 65 decisions
+and all open threads survive. Its full required-Lean local gate passed 4,798
+cases with four expected failures and no skips. The follow-up is narrative
+only; implementation evidence above is unchanged. All temporary worktrees
+and integrated branches are removed; the three unique parked branches remain.
+Wait for the next user-scoped task.
