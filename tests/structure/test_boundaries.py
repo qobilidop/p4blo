@@ -54,14 +54,13 @@ def crossings(files: list[Path], forbidden: tuple[str, ...]) -> list[str]:
 
 
 # Scripts CI or a container runs with a bare interpreter, before or without
-# the p4blo package: the coverage probe's `build`, the BMv2 and XDP
-# containers' drivers and the website renderer. Their module-level imports must come from
+# the p4blo package: the coverage probe's `build`, the BMv2 container's
+# driver and the website renderer. Their module-level imports must come from
 # the standard library; p4blo imports stay inside the functions that need it.
 BARE_INTERPRETER_SCRIPTS = (
     "scripts/ci-scope.py",
     "tests/oracle/coverage.py",
     "tests/oracle/bmv2/driver.py",
-    "tests/oracle/xdp/check.py",
     "scripts/render-website-example.py",
 )
 

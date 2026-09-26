@@ -84,14 +84,10 @@ tests/oracle/build.sh                              # the P4-SpecTec oracle, once
 uv run pytest tests/external/test_oracle.py        # corpus vectors on that oracle
 docker build -t p4blo-bmv2 tests/oracle/bmv2       # the BMv2 oracle image, once
 uv run pytest tests/external/test_oracle_bmv2.py   # corpus vectors on BMv2
-docker build -t p4blo-xdp-build tests/oracle/xdp   # compile-only XDP profile
-P4BLO_REQUIRE_XDP_BUILD=1 uv run pytest tests/structure/test_xdp_build.py # offline XDP gate
 ```
 
-Keep `main` green on all of them; check exit codes, not output. Five
-workflows run them in CI: Python and schema, Lean, two P4 oracles and the
-compile-only XDP profile. The latter is not a kernel execution oracle.
-Its missing local image is an explicit skip; its dedicated CI requires it.
+Keep `main` green on all of them; check exit codes, not output. Four
+validation workflows run them in CI: Python and schema, Lean and two P4 oracles.
 Python/schema always run. Specialist jobs skip only proven narrative-only
 changes under `scripts/ci-scope.py`; executable/parsed docs and uncertain
 changes run full CI. The Lean differential collection is split into two

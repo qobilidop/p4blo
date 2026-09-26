@@ -57,10 +57,8 @@ p4-spectec-lean"; `decisions.md`, 2026-09-24).
 
 - [ ] Tutorial stateful firewall: the two-read prefix (parked draft),
   drop/no-op composition, hash bounds, control composition.
-- [ ] xdp-filter: kernel execution, the p4blo port, behavioral
-  equivalence, capability and licensing handling. No kernel claim.
+- [ ] Revisit XDP only for a concrete p4blo application with an independent
+  execution oracle; compilation alone does not justify support.
 - [ ] Conditional flowlet bridge: needs a controlled time/randomness
   oracle first.
-- [ ] Bounded Katran: needs a profile audit first; no whole-Katran or
-  general eBPF-translator claim.
 - [ ] The p4c backend, the experiment that would really test claim 1.

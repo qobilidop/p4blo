@@ -128,7 +128,7 @@ package manager.
 | Full Python/schema/workflow gate | Node.js, `buf`, `protoc`, `actionlint` |
 | Lean packages and real differential tests | `elan`/`lake`; the checked-in `lean-toolchain` files select the compiler |
 | P4-SpecTec oracle | Git, Make, opam, a C toolchain, pkg-config, GMP and zstd development files; [builder details](tests/oracle/README.md) |
-| BMv2, P4 printer typechecks and XDP compilation | Docker and the corresponding pinned images; [workflow details](docs/workflows.md) |
+| BMv2 and P4 printer typechecks | Docker and the corresponding pinned images; [workflow details](docs/workflows.md) |
 
 Optional: [Nix](https://nixos.org/download/) provides pinned development tools
 through `flake.nix` and `flake.lock`. With [direnv](https://direnv.net/) shell

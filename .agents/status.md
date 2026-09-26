@@ -1,12 +1,19 @@
 # Status
 
-Last updated: 2026-09-25. **No implementation scope is active.** The eDSL,
-closure and CI-efficiency scopes are complete. [PR #5](https://github.com/qobilidop/p4blo/pull/5)
-merged as `967e0a35bf1d0939c26eb4c8b4636259e886b14b` after independent review
-and all final-head checks passed. [Measurements and limits](notes/ci-efficiency.md)
-record the result. No semantic scope or parked proof was reopened. XDP removal
-remains a separate proposal, not an implemented change. Ask for a new scope;
-the roadmap is backlog.
+Last updated: 2026-09-25. **XDP removal is active** on `work/remove-xdp`,
+based on `b7860a5`. The user requested removal of the premature compile-only
+experiment. Its workflow, container sources, inspector and dedicated tests
+are removed, and current commands/pins/structural inventories are updated.
+The P4 interpreters, schemas, proofs and oracle inputs are unchanged.
+Historical XDP evidence is retained as historical evidence; the roadmap keeps
+one revisit condition. Independent [review](reviews/xdp-removal-2026-09-25.md)
+approved `fe927ef` with no findings; all 154 structure tests passed. Collection
+retains all 3,045 Lean cases; the 19 removed entries belong only to XDP and its
+two structural registrations. Next: full required-Lean local gate, final-head
+remote CI and integration. No Lean/Docker rebuild or assurance mutation rerun
+is needed for unchanged semantics; remote specialist gates still apply.
+The eDSL, closure and CI-efficiency scopes remain complete;
+[CI measurements](notes/ci-efficiency.md) record their limits.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.
@@ -156,9 +163,9 @@ in the prior Codex session were not repository build failures.
   generated table-invoked actions/parser-error copyback across sequences.
 - Text parsing, semantic-version policy, whole-program codec proofs, resource
   limits and unknown-field policy remain interchange questions.
-- XDP is compile-only (FD-only strict adapter and capability-scoped preflight),
-  with no kernel claim; flowlet time/randomness and bounded Katran need audits.
-  BMv2 cannot observe `flood` until a corpus program declares it. The p4c
+- Flowlet time/randomness needs an independent oracle. XDP is deferred until
+  a concrete application and execution oracle justify it. BMv2 cannot observe
+  `flood` until a corpus program declares it. The p4c
   backend remains deferred behind verification; it would test claim 1 and
   elaborations beyond the current IL bridge.
 - Nonblocking eDSL review observation: public library settings are reassignable
@@ -169,4 +176,4 @@ in the prior Codex session were not repository build failures.
 
 ## Blocked
 
-Nothing. Ask for a new scope before starting more implementation.
+Nothing. Finish the reviewed XDP-removal PR and its applicable checks.
