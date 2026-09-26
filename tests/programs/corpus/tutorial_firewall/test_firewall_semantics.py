@@ -6,88 +6,28 @@ against Python and independent packet/state expectations.
 
 from __future__ import annotations
 
-import hashlib
-import os
 from pathlib import Path
 
 import pytest
 from hypothesis import given, settings
 
 from p4blo import arch, stf
-from p4blo.arch import v1model, validator
-from p4blo.arch import wire as arch_wire
+from p4blo.arch import v1model
 from p4blo.arch.bindings import BoundIndex
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.case import Case
-from p4blo.drt.replay import save
-from p4blo.drt.run import (
-    ProtocolError,
-    compare_program,
-    python_outcome,
-    request_json,
-)
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.programs.corpus.forwarder.test_forwarder_semantics import freeze
-from tests.programs.corpus.tutorial_firewall.test_firewall import (
-    Step,
-    bypass,
-    collision,
-    connection,
-    edges,
-    shapes,
+from tests.support.firewall import Step, bypass, collision, connection, edges, shapes
+from tests.support.firewall_boundaries import persistence, truncated
+from tests.support.firewall_generated import Event, campaigns, model, targeted
+from tests.support.firewall_semantics import (
+    VECTORS,
+    check_sequence,
+    compare_and_save,
 )
-from tests.programs.corpus.tutorial_firewall.test_firewall_boundaries import persistence, truncated
-from tests.programs.corpus.tutorial_firewall.test_firewall_generated import (
-    Event,
-    campaigns,
-    model,
-    targeted,
+from tests.support.firewall_semantics import (
+    firewall as firewall,
 )
-from tests.programs.corpus.tutorial_firewall.tutorial_firewall import build
-
-ROOT = Path(__file__).resolve().parents[4]
-CORPUS = ROOT / "tests/programs/corpus/tutorial_firewall"
-VECTORS = sorted(CORPUS.glob("*.stf"))
-
-
-def assert_program_identity(program: apb.BlockAssembly) -> None:
-    assert program == build(), "program differs from Python authoring"
-    assert program == arch_wire.load_text(CORPUS / "tutorial_firewall.txtpb"), (
-        "frozen golden differs"
-    )
-    assert validator.validate(program) == []
-
-
-def compare_and_save(program: apb.BlockAssembly, cases: list[Case], lean_binary: Path) -> None:
-    try:
-        report = compare_program(program, cases, 4, [lean_binary])
-    except ProtocolError as error:
-        if error.report is None:
-            raise
-        report = error.report
-    if not report.passed:
-        digest = hashlib.sha256(program.SerializeToString(deterministic=True))
-        for case in cases:
-            digest.update(request_json(case).encode())
-        directory = Path(os.environ.get("P4BLO_DRT_FAILURE_DIR", ROOT / ".artifacts/drt"))
-        directory.mkdir(parents=True, exist_ok=True)
-        path = directory / f"lean-firewall-{digest.hexdigest()[:24]}.json"
-        save(report, path)
-        pytest.fail(f"complete mismatch saved to {path}: {report}")
-    assert report.agreed == len(cases)
-
-
-def check_sequence(program: apb.BlockAssembly, sequence: list[Step], lean_binary: Path) -> None:
-    cases = [item.case for item in sequence]
-    # Save real engine inconsistencies before asserting independent policy answers.
-    compare_and_save(program, cases, lean_binary)
-    loaded = v1model.load(program)
-    for expected in sequence:
-        python = python_outcome(loaded, expected.case, 4)
-        assert python.error is None
-        assert freeze(expected.outputs) == freeze(python.outputs)
-        assert freeze(expected.state) == freeze(python.state)
-        assert python.diagnostic is None
 
 
 @pytest.mark.parametrize("vector", VECTORS, ids=lambda path: path.stem)
@@ -148,11 +88,3 @@ def test_lean_agrees_firewall_generated(
     firewall: apb.BlockAssembly, lean_binary: Path, events: list[Event]
 ) -> None:
     check_sequence(firewall, model(events), lean_binary)
-
-
-@pytest.fixture(scope="module")
-def firewall() -> apb.BlockAssembly:
-    assert {"connection.stf", "collisions.stf"} <= {p.name for p in VECTORS}
-    program = build()
-    assert_program_identity(program)
-    return program

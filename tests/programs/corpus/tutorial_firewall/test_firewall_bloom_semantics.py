@@ -15,9 +15,9 @@ from p4blo.interp import ExternResult, stmt
 from p4blo.interp.env import Env
 from p4blo.interp.values import Bits, Value
 from p4blo.v0 import p4blo_pb2 as pb
-from tests.programs.corpus.forwarder.test_forwarder_semantics import freeze
-from tests.programs.corpus.tutorial_firewall.test_firewall_body_semantics import invalid_env
-from tests.programs.corpus.tutorial_firewall.test_firewall_semantics import firewall as firewall
+from tests.support.firewall_body import invalid_env
+from tests.support.firewall_semantics import firewall as firewall
+from tests.support.forwarder import freeze
 
 ARRAYS = [([], []), ([0], [0]), ([1], [1]), ([1, 0, 0, 1], [0, 1, 0]), ([0] * 4096, [1] * 4096)]
 POSITIONS = [(0, 0), (1, 2), (3, 1), (4095, 4095), (4096, 4096), (0xFFFFFFFF, 0xFFFFFFFF), (1, 1)]

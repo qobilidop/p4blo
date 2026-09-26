@@ -4,9 +4,10 @@
 side proves sound for `Valid` and which progress builds on. This test
 requires the two validators to agree on which programs are valid, over
 every corpus program, every public example, a sample of generated
-programs from the DRT families, and every program `impl/python/tests/validator/test_validator.py`
-hands to `validator.validate`: its base program and each program it breaks
-in one place.
+programs from the DRT families, and the shared validator scenario catalog:
+its base program and each program it breaks in one place. The Python tests
+consume the same builders
+while retaining their independent diagnostic assertions.
 
 On a rejected program the first codes must correspond. The Lean checker
 stops at the first problem and uses the Python codes, so the table below
@@ -18,22 +19,18 @@ so `DECODE` corresponds to a wire problem anywhere in Python's list.
 
 from __future__ import annotations
 
-import inspect
 import itertools
 import subprocess
-from collections.abc import Callable, Iterator
-from dataclasses import dataclass
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
 
-import pytest
-
-from impl.python.tests.validator import test_validator
 from p4blo.arch import validator as v
 from p4blo.arch import wire as arch_wire
 from p4blo.arch.v0 import assembly_pb2 as apb
 from p4blo.drt.families import FAMILIES, sample
 from tests.programs.examples import catalog
+from tests.support.validator_scenarios import Case
+from tests.support.validator_scenarios import cases as validator_cases
 
 ROOT = Path(__file__).resolve().parents[3]
 CORPUS = ROOT / "tests/programs/corpus"
@@ -42,8 +39,6 @@ CORPUS = ROOT / "tests/programs/corpus"
 SEEDS = range(40)
 
 DECODE = "DECODE"
-# The type of `pytest.param(...)`, which pytest does not export.
-PARAM: Any = type(pytest.param(None))
 
 # Python's code to the Lean codes that may name the same first problem.
 CODES: dict[str, frozenset[str]] = {
@@ -108,12 +103,6 @@ def test_the_table_covers_every_code() -> None:
     assert set(CODES) == documented
 
 
-@dataclass(frozen=True)
-class Case:
-    name: str
-    program: apb.BlockAssembly
-
-
 def positive_cases() -> Iterator[Case]:
     for path in sorted(CORPUS.glob("*/*.txtpb")):
         yield Case(f"corpus/{path.stem}", arch_wire.load_text(path))
@@ -121,67 +110,6 @@ def positive_cases() -> Iterator[Case]:
         yield Case(f"example/{name}", catalog.build(name))
     for family, profile, seed in itertools.product(FAMILIES, ("lean", "spectec"), SEEDS):
         yield Case(f"drt/{family}/{profile}/{seed}", sample(family, seed, profile).program)
-
-
-def _parameter_sets(fn: Callable[..., Any]) -> list[dict[str, Any]] | None:
-    """Every keyword set pytest would call `fn` with, or None when it needs
-    a fixture."""
-    marks: list[Any] = [m for m in getattr(fn, "pytestmark", []) if m.name == "parametrize"]
-    axes: list[list[dict[str, Any]]] = []
-    for mark in marks:
-        spec: Any = mark.args[0]
-        names: list[str] = (
-            [n.strip() for n in spec.split(",")] if isinstance(spec, str) else list(spec)
-        )
-        values: list[dict[str, Any]] = []
-        for raw in mark.args[1]:
-            value: Any = raw.values if isinstance(raw, PARAM) else raw
-            if isinstance(raw, PARAM) and len(names) == 1:
-                value = value[0]
-            values.append(
-                dict(zip(names, value, strict=True)) if len(names) > 1 else {names[0]: value}
-            )
-        axes.append(values)
-    sets = [
-        dict(itertools.chain.from_iterable(d.items() for d in combo))
-        for combo in itertools.product(*axes)
-    ]
-    wanted = set(inspect.signature(fn).parameters)
-    if any(set(s) != wanted for s in sets):
-        return None
-    return sets
-
-
-def validator_cases() -> list[Case]:
-    """Every program `impl/python/tests/validator/test_validator.py` validates, recorded by
-    running its tests with `validator.validate` wrapped."""
-    recorded: list[Case] = []
-    original = v.validate
-    current = ""
-
-    def record(
-        program: apb.BlockAssembly, *, bindings: apb.BlockBindings | None = None
-    ) -> list[v.Diagnostic]:
-        assert bindings is None
-        copy = apb.BlockAssembly()
-        copy.CopyFrom(program)
-        recorded.append(Case(f"{current}#{len(recorded)}", copy))
-        return original(program)
-
-    v.validate = record  # type: ignore[assignment]
-    try:
-        for name, fn in inspect.getmembers(test_validator, inspect.isfunction):
-            if not name.startswith("test_") or name == "test_corpus_programs_validate":
-                continue
-            sets = _parameter_sets(fn)
-            if sets is None:
-                continue
-            for i, kwargs in enumerate(sets):
-                current = f"test_validator/{name}[{i}]"
-                fn(**kwargs)
-    finally:
-        v.validate = original  # type: ignore[assignment]
-    return recorded
 
 
 def lean_verdicts(lean: Path, programs: list[apb.BlockAssembly], tmp: Path) -> list[str]:

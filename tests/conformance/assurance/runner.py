@@ -36,7 +36,7 @@ NODES = (
     "tests/programs/corpus/tutorial_firewall/test_firewall_bloom_semantics.py::test_python_bloom_order_survives_final_cells",
     "tests/programs/corpus/tutorial_firewall/test_firewall_bloom_semantics.py::test_python_bloom_observer_rejects_effects[repair]",
     "tests/conformance/execution/test_drt_aggregate_copy.py::test_lean_agrees_copy_observer_kills_aliasing",
-    "tests/conformance/execution/test_drt_replay.py::test_ambiguous_peer_cannot_produce_false_agreement",
+    "impl/python/tests/drt/test_drt_replay.py::test_ambiguous_peer_cannot_produce_false_agreement",
 )
 EXPECTED_TESTS = 10
 # Canonical complete inputs, not report metadata or interpreter-generated answers.
@@ -139,10 +139,10 @@ class Input:
 
 
 def inputs() -> tuple[Input, ...]:
-    from tests.programs.corpus.forwarder.test_forwarder_apply_semantics import application_packet
-    from tests.programs.corpus.forwarder.test_forwarder_tables_semantics import packet_case
-    from tests.programs.corpus.tutorial_firewall.test_firewall import connection
     from tests.programs.corpus.tutorial_firewall.tutorial_firewall import build
+    from tests.support.firewall import connection
+    from tests.support.forwarder_apply import application_packet
+    from tests.support.forwarder_tables import packet_case
 
     forwarder = arch_wire.load_text(ROOT / "tests/programs/corpus/forwarder/forwarder.txtpb")
     firewall = build()
@@ -329,9 +329,9 @@ class Run:
 
 
 def baseline_known_answers(selected: tuple[Input, ...]) -> None:
-    from tests.programs.corpus.forwarder.test_forwarder_apply_semantics import application_output
-    from tests.programs.corpus.forwarder.test_forwarder_tables_semantics import packet_expected
-    from tests.programs.corpus.tutorial_firewall.test_firewall import connection
+    from tests.support.firewall import connection
+    from tests.support.forwarder_apply import application_output
+    from tests.support.forwarder_tables import packet_expected
 
     for item in selected:
         loaded = v1model.load(item.program)

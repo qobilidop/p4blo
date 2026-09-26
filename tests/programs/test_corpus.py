@@ -16,16 +16,7 @@ import pytest
 
 from p4blo import arch, stf
 from p4blo.arch import v1model, validator
-from p4blo.arch import wire as arch_wire
-from p4blo.arch.v0 import assembly_pb2 as apb
-
-CORPUS = Path(__file__).resolve().parents[2] / "tests/programs/corpus"
-PROGRAMS = sorted(p for p in CORPUS.iterdir() if (p / f"{p.name}.txtpb").exists())
-VECTORS = sorted(v for p in PROGRAMS for v in p.glob("*.stf"))
-
-
-def golden(program_dir: Path) -> apb.BlockAssembly:
-    return arch_wire.load_text(program_dir / f"{program_dir.name}.txtpb")
+from tests.support.catalog import PROGRAMS, VECTORS, golden
 
 
 @pytest.mark.parametrize("program_dir", PROGRAMS, ids=lambda p: p.name)

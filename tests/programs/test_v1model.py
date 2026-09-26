@@ -149,7 +149,7 @@ def test_disagreement_classifier_rejects_unrelated_failures(name: str) -> None:
 
 @pytest.mark.parametrize("role", ["egress", "compute_checksum"])
 def test_egress_spec_is_reset_before_egress(role: str) -> None:
-    from impl.python.tests.arch.test_v1model import assign, block, path, program, read, run
+    from tests.support.program_v1model import assign, block, path, program, read, run
 
     model = program()
     if role == "compute_checksum":
