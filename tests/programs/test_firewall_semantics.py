@@ -140,6 +140,7 @@ def test_lean_agrees_firewall_generated(
 
 @pytest.fixture(scope="module")
 def firewall() -> apb.BlockAssembly:
+    assert {"connection.stf", "collisions.stf"} <= {p.name for p in VECTORS}
     program = build()
     assert_program_identity(program)
     return program
