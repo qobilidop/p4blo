@@ -173,8 +173,8 @@ def test_ir_specification_holds_nothing_architectural() -> None:
     assert not (ROOT / "spec/ir/Main.lean").exists()
 
 
-# The gate-only libraries of the three Lean packages.
-LEAN_TEST_LIBRARIES = ("P4bloIRTest", "P4bloArchTest", "P4bloTest")
+# The gate-only libraries of the two Lean packages.
+LEAN_TEST_LIBRARIES = ("P4bloIRTest", "P4bloArchTest")
 
 
 def test_importable_lean_modules_never_import_gate_only_ones() -> None:

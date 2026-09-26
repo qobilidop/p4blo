@@ -415,7 +415,7 @@ def semantics_files(root: Path = ROOT) -> list[Path]:
     proof module to an umbrella changes no answer either. Each package's
     `lean-toolchain` is included, since the toolchain compiles the rest.
     Proof-support modules that an umbrella imports without a proof name
-    (the typing and certificate modules) stay in: a change there costs a
+    (including typing support) stay in: a change there costs a
     needless note, never a missed one.
     """
     found: set[Path] = set()

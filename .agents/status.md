@@ -57,12 +57,14 @@ Logs in `.artifacts/` are conveniences, not portable evidence.
 | CI efficiency | merged, `967e0a3`, PR #5 | [measurements](notes/ci-efficiency.md), [independent review](reviews/ci-efficiency-2026-09-25.md) |
 | XDP retirement | merged, `da6f620`, PR #7 | [independent review](reviews/xdp-removal-2026-09-25.md); removed experiment recoverable from `b7860a5` |
 
-The three semantic scopes remain frozen. Maintenance does not reopen proofs.
+The completed semantic milestones describe their recorded revisions.
+This simplification retires authoring/application/architecture proof scopes;
+retained core proofs keep their original premises and no new proof is opened.
 The eDSL scope supplies architecture-free Python/protobuf/Lean BlockLibrary,
 with arbitrary block counts/signatures and declarations; architecture bindings
 own H/M roots and exports, and an optional flat BlockAssembly preserves old
-payloads. Core validity/progress and architecture binding soundness retain
-their premises. Registration is explicit; binding creates fresh per-instance state. Custom
+payloads. Core validity/progress retain their premises; architecture bindings
+remain tested runtime checks without a formal soundness claim. Registration is explicit; binding creates fresh per-instance state. Custom
 extern and six-block witnesses test beyond the reference switch. The three applications
 retain exact text/binary goldens and behavior, using ordinary readability
 helpers. Python registration grants neither Lean semantics nor printer support.
@@ -74,7 +76,7 @@ helpers. Python registration grants neither Lean semantics nor printer support.
 | Small, post-elaboration core | Green for twelve corpus programs and three applications without a new core construct. The P4-SpecTec IL frontend reproduces six original P4 goldens byte for byte; 98 of 191 pinned v1model programs with vectors run from source (`tests/oracle/frontend-census.json`). No general P4 compiler claim. |
 | Supports tested real programs | Green with explicit discrepancies: BMv2 register/priority differences, P4-SpecTec mask failure on the printed firewall, three block-level expected failures behind checked models, and classified original-source CRC/mask and generated-program simulator defects. See assurance for exact input/evidence boundaries. |
 | A block is a function; architecture is ordinary code | Frozen: the supplied filter is 45 lines and switch 50, neither contains P4, every corpus program runs under both. Their H/M convention is not a core restriction. |
-| Mechanized and agrees with reference | Sound core library and separate architecture binding checkers; progress under the [stated execution premises](../docs/assurance.md), with the extern contract discharged for reference families. 63 deviation/helper laws; all 157 Lean rule tags hit; 89 retained fixtures. No universal Python equivalence, termination or whole-library codec-composition theorem. |
+| Mechanized and agrees with reference | Sound core library checker; progress under the [stated execution premises](../docs/assurance.md), including an assumed generic extern contract. Architecture bindings/families are tested, without formal discharge. Core semantic/codec laws and all 157 rule tags/89 fixtures remain. No application proof, universal Python equivalence, termination or whole-library codec-composition theorem. |
 
 ## Last checked evidence
 
@@ -177,8 +179,8 @@ in the prior Codex session were not repository build failures.
   Its P4-SpecTec pin `8c8e0c6f` (Nano-P4 branch) and ours `2730cfd9` differ;
   its program export should replace patch `0002`. [Design](../docs/design.md)
   records the interfaces; this repository builds no duplicate rendering.
-- Termination C2 and codec composition through core BlockLibrary and
-  architecture Export/BlockAssembly C3 remain open; see [roadmap](roadmap.md).
+- Core termination C2 and codec composition through BlockLibrary C3 remain
+  open; architecture codec proof obligations retire. See [roadmap](roadmap.md).
 - Printer declaration order: an action calling a later declaration fails
   P4-SpecTec typing; order by dependency or require that order in validation.
 - Two reachable P4-SpecTec rules remain unhit: `Expr_eval/non-default-abort`
@@ -192,9 +194,9 @@ in the prior Codex session were not repository build failures.
 - Unconfirmed review points: checksum16 padding for non-multiples of 16;
   `<block>_inst` names unchecked against caller scope; Python/Lean error
   ordering when entry and port are both invalid. No oracle judgment yet.
-- General assignment preservation, further extern contracts, application
-  properties beyond initialization/Bloom insertion/forwarding laws, and
-  generated table-invoked actions/parser-error copyback across sequences.
+- General core assignment preservation and generated table-invoked actions/
+  parser-error copyback across sequences. Further concrete extern/application
+  proofs are retired, not pending continuation work.
 - Text parsing, semantic-version policy, whole-program codec proofs, resource
   limits and unknown-field policy remain interchange questions.
 - Flowlet time/randomness needs an independent oracle. XDP is deferred until

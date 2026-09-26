@@ -176,7 +176,7 @@ field. A stack of size `S` holds `S` header values and a `nextIndex` in
   and it gives initialization a deterministic value.
   - P4: §6.8
   - SpecTec: `$default`, `VarDecl_eval/non-initializer`, `Copy_in_arg/out`
-  - Lean: `Value.zero`, `Frame.forBlock`, `argumentValue`, `Frame.forBlock_initialized`, `DeviationLaws.zero_bits`, `DeviationLaws.zero_boolean`, `DeviationLaws.zero_error`, `DeviationLaws.zeroHeader_eq`
+  - Lean: `Value.zero`, `Frame.forBlock`, `argumentValue`, `DeviationLaws.zero_bits`, `DeviationLaws.zero_boolean`, `DeviationLaws.zero_error`, `DeviationLaws.zeroHeader_eq`
   - Python: `p4blo.interp.values.zero`, `p4blo.interp.env.Env.for_block`, `p4blo.interp.stmt.argument_value`
   - Test: `tests/unit/test_interp_expr.py::test_variables_start_at_zero`, `tests/unit/test_values.py::test_zero_is_recursive_with_invalid_headers_and_first_members`, `tests/unit/test_interp_control.py::test_an_out_parameter_starts_at_zero`
   - Class: same. SpecTec initializes a declared variable and an `out` parameter with `$default`, which gives zero bits, `false`, the first enum member, `NoError`, invalid headers with default fields and stacks with next index `0`; its source marks the choice as a placeholder for a target-specific one.

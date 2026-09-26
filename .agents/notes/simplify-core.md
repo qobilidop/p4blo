@@ -61,4 +61,10 @@ in one worktree, no shared Docker-image rebuild.
 - Applicable remote CI passes on exact integrated main revision; clean up task
   worktrees/branches afterward. Preserve unique historical parked branches.
 
-Current state: author slices in progress; no integrated build or new evidence yet.
+Current state: all author slices integrated. Lean `88922c4` -> `a9c01e4`,
+Python `e3fab89` -> `57f81b9`, guard fix `d94ddf18` -> `d848cf3`,
+docs `d6c3856` -> `4dfa1c1`; root scope `583ebf0`. Independent slice review
+approved, one restored firewall vector guard. Both Lean packages passed
+locally. Runtime equivalence: 89 fixtures/514 requests/363 CLI pairs unchanged.
+Full repository gate, frozen assurance replay and final integrated review/CI
+remain pending. See [review](../reviews/core-simplification-2026-09-25.md).
