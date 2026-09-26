@@ -42,3 +42,9 @@ rejected each intended behavior and all baselines/restored tests passed.
 Remote CI also exposed three Ruff import orderings cached before catalog.py
 existed locally. The follow-up pins tests as first-party and passes no-cache
 lint. See the next checkpoint for exact final remote evidence.
+
+The six-file follow-up (6b3b2eb/b899103) was independently approved: all five
+concrete recipe targets exist; all thirteen anchors occur once; three Python
+ASTs differ only in import order; no-cache lint and diff whitespace checks
+pass. Final main b899103 passed all four remote validation workflows; status
+and the scope note retain the exact links and evidence boundaries.

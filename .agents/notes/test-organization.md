@@ -98,3 +98,12 @@ and real-Lean expectations; every baseline/restored run passes. The worktree
 is restored clean. No core/spec/fixture answers change. Full gate and exact-main
 remote CI will cover this follow-up; full assurance need not be repeated for
 import ordering and optional recipe edits.
+
+Closed 2026-09-26 on main b89910353f783b7fa3bb0fa09a748fab0937538c.
+All four applicable exact-main validation workflows passed: CI36225701275,
+Lean36225701488, P4-SpecTec36225701448, BMv2/p4c36225701446. Specialist jobs
+ran; Python 2,840 per OS, Lean shards 1,083+1,084. Website36225143006 passed
+at d095104; later changes leave its source untouched. The six-file follow-up
+received independent read-only approval: all thirteen anchors match once,
+paths resolve, import ASTs differ only in order and no-cache lint passes.
+No work remains except the narrative compaction/checkpoint cleanup.

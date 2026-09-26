@@ -1,26 +1,27 @@
 # Status
 
-Last updated: 2026-09-25. **Active: test organization refactor.**
+Last updated: 2026-09-26. **No active engineering work.**
 
-User-authorized scope at base 0e55340, branch work/test-organization:
-[ownership and acceptance](notes/test-organization.md). Keep spec/ unchanged,
-preserve test responsibilities and reorganize Python, conformance, oracle,
-program and repository checks. Ownership, shared helpers and explicit dependency selection are implemented.
-All 5,320 original cases remain; six printer compile cases and five boundary
-checks bring collection to 5,331. All 310 validator input identities survive.
-Final implementation 74a678f passed independent review, the full required-Lean
-local gate (5,007 passes), Lean package gates, P4-SpecTec (237 passes/15 exact
-expected failures), BMv2/p4c (70 passes/two exact expected failures) and all
-28 frozen assurance phases. No checks skipped. spec/ and fixture answers remain
-unchanged. Integrated main d095104 passed website deployment; Python CI found
-three import-order errors hidden by the local Ruff cache. Explicit first-party
-classification and a no-cache check fix them. Closure also repaired three live
-mutation-recipe paths and two stale metadata anchors; all 13 source faults
-were detected by Python/Lean and all baselines restored. Next: verify follow-up
-local/remote gates, then close/compact.
-[Final review](reviews/test-organization-final.md) records preserved case/input
-identities and the repaired pre-deselection guard finding.
-The completed implementation evidence below predates this refactor.
+The test organization refactor is complete on main
+`b89910353f783b7fa3bb0fa09a748fab0937538c`. Package tests live beside the
+Python package; root suites have five responsibilities. Every original case
+and all fixture answers remain, and spec/ is byte-identical to 0e55340.
+[Scope/evidence](notes/test-organization.md),
+[independent review](reviews/test-organization-final.md),
+[test guide](../tests/README.md).
+
+Exact-main remote CI passed:
+[Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36225701275),
+[Lean](https://github.com/qobilidop/p4blo/actions/runs/36225701488),
+[P4-SpecTec](https://github.com/qobilidop/p4blo/actions/runs/36225701448),
+[BMv2/p4c](https://github.com/qobilidop/p4blo/actions/runs/36225701446).
+All specialist jobs ran. Both Python runners passed 2,840 ordinary checks;
+Lean shards passed 1,083 and 1,084 cases. Website deployment passed at d095104
+([run](https://github.com/qobilidop/p4blo/actions/runs/36225143006)); subsequent
+changes do not affect its source. Local full gate: 5,007 passes, no skips;
+native oracle totals: 307 passes/17 precise expected failures; all 28 frozen
+assurance phases and all 13 optional source-fault recipes pass. See the scope
+note for exact revision/evidence boundaries. Next: compact completed notes.
 
 Minimal architectures and the discrepancy catalogue are complete on main
 `516cbdf67519a1af360ac1d9f442e70133bf77b7`, with all applicable remote CI green.
@@ -150,11 +151,7 @@ and queue time; this is one observation, not a latency guarantee.
 
 ## Blocked / next action
 
-Nothing is blocked. The active test organization scope is described above.
-[Independent compaction review](reviews/minimal-architecture-compaction.md)
-approved b81bd54 plus the repaired historical archive hash; all 65 decisions
-and all open threads survive. Its full required-Lean local gate passed 4,798
-cases with four expected failures and no skips. The follow-up is narrative
-only; implementation evidence above is unchanged. All temporary worktrees
-and integrated branches are removed; the three unique parked branches remain.
-Complete the active refactor, review and applicable local/remote gates.
+Nothing is blocked or active. All implementation/recipe worktrees and integrated
+branches are removed; the read-only review worktree remains through compaction.
+The three unique parked branches remain. Compact this completed scope, validate
+that narrative checkpoint, then wait for the user's next scope.
