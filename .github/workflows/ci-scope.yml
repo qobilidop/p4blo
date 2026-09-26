@@ -1,0 +1,29 @@
+name: CI scope
+
+on:
+  workflow_call:
+    outputs:
+      full:
+        description: Whether specialist validation must run
+        value: ${{ jobs.scope.outputs.full }}
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    name: Classify changed files
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.scope.outputs.full }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Require full CI unless all changes are narrative Markdown
+        id: scope
+        run: >-
+          python3 scripts/ci-scope.py
+          --event-path "$GITHUB_EVENT_PATH"
+          --event-name "$GITHUB_EVENT_NAME"
+          --github-output "$GITHUB_OUTPUT"

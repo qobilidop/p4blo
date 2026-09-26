@@ -1,9 +1,17 @@
 # Status
 
-Last updated: 2026-09-25. **No implementation scope is active.** The eDSL
-and CI-speed scopes are complete. Do not resume the roadmap without a new
-scope. If [PR #4](https://github.com/qobilidop/p4blo/pull/4) is not yet merged, finish
-its final-head remote CI and integration, then remove its branch.
+Last updated: 2026-09-25. **CI efficiency is active** on `work/ci-efficiency`,
+based on `5de0d9e` (merged [PR #4](https://github.com/qobilidop/p4blo/pull/4)).
+The eDSL and first CI-speed scopes are complete. The user authorized the next
+optimization and delegated the prose-only policy choice. See
+[the working note](notes/ci-efficiency.md) for measurements, ownership and gates.
+No semantic scope or parked proof is reopened; XDP removal remains a separate
+proposal, not an implemented change.
+Implementation is independently reviewed, including a corrected failed-scope
+guard and regression. The initial full required-Lean gate passed 5,284/1/4
+(pass/optional XDP skip/expected failure); repeat with the five added guard
+checks, then push and measure final-head remote CI. Review and measurement
+records are linked from the working note.
 
 Archive before this compaction: `9fc6c19febf839fa56873be10788b515c4e29ae9`.
 It includes the final eDSL reflection, implementation plans and reviews.
@@ -57,7 +65,9 @@ state at `9bd5434` with the archive and separately approves cleanup `a31ff19`.
   fails old code and passes the repair. Full required-Lean local gate exited
   0: 5200 passed, one optional XDP skip, four expected failures. The incident
   does not invalidate PR #3's successful final-head checks; its post-merge run
-  is distinct. Final closure PR CI must pass before this fix reaches main.
+  is distinct. PR #4 merged as `5de0d9e` after independent review and all seven
+  checks passed on final head `e5cf214`: Python/schema, Lean, both P4 oracles
+  and the compile-only XDP profile. Its temporary branches/worktrees are removed.
 
 - eDSL final head `26d3f38`, merged by PR #2: all seven remote checks passed:
   [Python/schema](https://github.com/qobilidop/p4blo/actions/runs/36201014298),
@@ -149,4 +159,5 @@ in the prior Codex session were not repository build failures.
 
 ## Blocked
 
-Nothing. After closure integration, ask for a new scope.
+Nothing. Finish the CI-efficiency implementation, independent review, full local
+gate and final-head remote checks before integration.

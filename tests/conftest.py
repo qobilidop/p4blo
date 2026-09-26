@@ -6,11 +6,17 @@ so that `scripts/check.sh` can deselect them with `-m "not oracle"`. They
 take a quarter of an hour once the oracle is built locally, and CI runs
 them in their own workflows. `P4BLO_ALL_TESTS=1 scripts/check.sh` runs
 everything.
+
+The optional --ci-shard INDEX/COUNT selects a deterministic partition by test
+node ID. It composes with -k and -m; without it the inventory is unchanged.
 """
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -47,27 +53,48 @@ ORACLE_MODULES = {
 }
 
 
-# Modules whose module-scoped fixture is expensive (a Lean export, a compiled
-# program): their tests stay on one worker under `--dist loadgroup`, so the
-# fixture runs once instead of once per worker.
-GROUPED_MODULES = {
-    "test_lean_forwarder_apply",
-    "test_lean_forwarder_tables",
-    "test_lean_forwarder_action",
-    "test_lean_guarded_control_call",
-    "test_lean_guarded_call_prefix",
-    "test_corpus_forwarder",
-    "test_firewall",
-    "test_firewall_generated",
-    "test_firewall_boundaries",
-}
+def ci_shard(value: str) -> tuple[int, int]:
+    """Parse a one-based shard index and a positive shard count."""
+    message = "--ci-shard must be INDEX/COUNT with 1 <= INDEX <= COUNT"
+    if re.fullmatch(r"[0-9]+/[0-9]+", value) is None:
+        raise argparse.ArgumentTypeError(message)
+    try:
+        index, count = map(int, value.split("/"))
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(message) from error
+    if not 1 <= index <= count:
+        raise argparse.ArgumentTypeError(message)
+    return index, count
 
 
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--ci-shard",
+        type=ci_shard,
+        default=None,
+        metavar="INDEX/COUNT",
+        help="Select a stable SHA256(nodeid) shard (one-based); default: all tests",
+    )
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    # Mark before either our shard selection or pytest's -m/-k selection so
+    # every deselection observer sees the same oracle classification.
     for item in items:
         # BMv2 tests also live in mixed modules; the BMv2 workflow selects
         # them by name (`-k bmv2`), so the name is the rule here too.
         if item.path.stem in ORACLE_MODULES or "bmv2" in item.name:
             item.add_marker(pytest.mark.oracle)
-        if item.path.stem in GROUPED_MODULES:
-            item.add_marker(pytest.mark.xdist_group(name=item.path.stem))
+    shard: tuple[int, int] | None = config.getoption("ci_shard")
+    if shard is None:
+        return
+    index, count = shard
+    selected: list[pytest.Item] = []
+    deselected: list[pytest.Item] = []
+    for item in items:
+        slot = int.from_bytes(hashlib.sha256(item.nodeid.encode("utf-8")).digest(), "big") % count
+        (selected if slot == index - 1 else deselected).append(item)
+    items[:] = selected
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)

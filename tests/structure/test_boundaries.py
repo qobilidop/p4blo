@@ -58,6 +58,7 @@ def crossings(files: list[Path], forbidden: tuple[str, ...]) -> list[str]:
 # containers' drivers and the website renderer. Their module-level imports must come from
 # the standard library; p4blo imports stay inside the functions that need it.
 BARE_INTERPRETER_SCRIPTS = (
+    "scripts/ci-scope.py",
     "tests/oracle/coverage.py",
     "tests/oracle/bmv2/driver.py",
     "tests/oracle/xdp/check.py",
