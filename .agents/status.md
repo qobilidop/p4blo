@@ -25,8 +25,12 @@ eight xfails and exposed two failures: a core generator-family key accidentally
 renamed to ingress, and stale coverage call/vector counts (both fixed at
 cd1e06e; focused replay 10 passed). Fresh measurement preserves all 2,296 items
 and every hit/instruction count. Independent review also found a retired BMv2
-flood skip being repaired with an explicit rejection test. Final full gate,
-frozen assurance, commits/push and exact-main CI remain outstanding.
+flood skip, fixed and independently reviewed at 2bcd84e (two new negative
+tests pass; full BMv2 module 46 passed, two xfails). Final full required-Lean
+gate at 2bcd84e passed 4,798 cases with four xfails, no skips. Frozen assurance
+at that clean revision passed all 28 phases. Final independent review approves
+the implementation; all 710 detailed semantic cases remain. Remote integration
+and exact-main CI are the remaining obligations, followed by closure/compaction.
 The evidence below describes the preceding completed scope, not this work.
 
 

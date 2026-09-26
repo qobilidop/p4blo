@@ -470,7 +470,7 @@ def judge(plan: Plan, reply: dict) -> tuple[str, str]:
 @dataclass(frozen=True)
 class Verdict:
     vector: Path
-    status: str  # "pass" | "fail" | "error" | "skip"
+    status: str  # "pass" | "fail" | "error"
     detail: str
     command: tuple[str, ...]
     notes: tuple[str, ...] = ()

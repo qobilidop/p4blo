@@ -92,3 +92,49 @@ batch passed 340 cases with eight expected failures, exposing the repaired
 family key and stale coverage measurement. Fresh measurement preserves every
 hit and instruction count; final replay, driver fix, frozen assurance and
 exact-main CI remain required before completion.
+
+## Final review and integration evidence
+
+Independent reviewer approved final implementation `2bcd84e` with no remaining
+confirmed behavioral defects; its own printer fixture authorship is excluded
+from that approval and covered by the other reviewer above. The BMv2 regression
+was independently replayed: two passes, 46 deselected, Docker forbidden by the
+test. All supported-stage, frontend, backend and core-only proof claims match
+the reviewed implementation. The last stale status comment is corrected in
+this narrative checkpoint, without executable change.
+
+Earlier independent implementation findings are fixed:
+
+- `b8c2f39`: dynamic argument-index reads could escape phase restrictions via
+  inout block/action calls; forbidden egress_port indices now fail, permitted
+  ingress_port indices pass.
+- `7cb3ce7`: whole-M assignment was core-valid but disagreed between profile
+  checkers; both now reject it without changing core validity.
+- `1c04361`: Lean now checks unused declared table keys like Python and agrees
+  on configured ports, diagnostics and initial egress request behavior.
+- `2bcd84e`: retired flood metadata can no longer turn an invalid program into
+  a successful BMv2 skip.
+
+Final collection: 5,279 to 5,320 cases, with 28 retired architecture-only cases,
+54 renamed cases and 69 new cases. The independent coverage JSON comparison
+found exactly 179 changed items, only in call/vector counts; all 2,296 item
+identities, hits and instruction counts remain unchanged.
+
+On frozen `2bcd84e9233865511d4046cbaab6c361a8fff416`, the integrator ran:
+
+- `P4BLO_REQUIRE_LEAN=1 scripts/check.sh`: exit 0, 4,798 passes, four expected
+  failures, no skips; all lint/format/types/schema/generation/workflow checks.
+- `P4BLO_REQUIRE_LEAN=1 uv run python scripts/check-assurance.py --output
+  <new directory>`: exit 0, all 28 phases passed, including ten Python faults,
+  Lean CRC fault, paired codec/observer faults, independent anchors and restored
+  baselines. Tracked provenance remained frozen; six requests and three reviewed
+  program hashes match. Local evidence `.artifacts/assurance/minimal-arch-final`.
+- The earlier integrated `scripts/check-lean.sh` exited 0 on identical Lean
+  sources; both packages, native tests and proof audits pass.
+- Corpus oracle modules: 146 passes, five precise expected failures. Remaining
+  oracle batch: 340 passes, eight expected failures, then repaired family/coverage
+  checks: ten passes. Final changed BMv2 module: 46 passes, two expected failures.
+  These overlapping module counts are not a distinct-case total.
+
+The independent reviewer did not claim to rerun the integrator's heavy gates.
+Remote CI on integrated main remains to be recorded before scope closure.
