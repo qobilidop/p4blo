@@ -116,6 +116,8 @@ private partial def checkBlock (index : Index) (stageBlocks : List String) (stag
   checkStmts index stageBlocks stage aliases seen block block.body
   for action in block.actions do
     checkAction index stageBlocks stage aliases seen block action.name []
+  for table in block.tables do
+    for key in table.keys do checkExpr stage aliases key.expr
   for state in block.states do
     checkStmts index stageBlocks stage aliases seen block state.body
     if let .select keys _ := state.transition then

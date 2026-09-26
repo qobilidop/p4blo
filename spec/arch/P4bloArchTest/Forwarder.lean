@@ -130,9 +130,9 @@ def portRuleTests (sw : V1Model) : T Unit := do
     | check "port rules: packet decodes" false
   let noEntries : Entries := { tables := [] }
   checkError "ingress port beyond the count" (sw.run externs noEntries 4 packet)
-    "ingress_port 4 is not a port of this v1model"
+    "ingress_port 4 is not a configured v1model port"
   checkError "ingress port beyond bit<9>" (sw.run externs noEntries 600 packet)
-    "ingress_port 600 is not a port of this v1model"
+    "ingress_port 600 is not a configured v1model port"
   -- Forward every packet to `port`; the fate is the output ports and the
   -- diagnostic.
   let fate (port : Nat) : Except String (List Nat × Option String) :=
@@ -142,7 +142,7 @@ def portRuleTests (sw : V1Model) : T Unit := do
                                              args := [.bits 48 0, .bits 9 port] } }] }
     (sw.run externs host 0 packet).map fun (r, _) => (r.outputs.map (·.1), r.diagnostic)
   checkOk "egress port beyond the count drops with a diagnostic" (fate 7)
-    (· == ([], some "egress_spec 7 is not a port of this v1model"))
+    (· == ([], some "egress_spec 7 is not a configured v1model port"))
   checkOk "egress spec 511 is the drop sentinel" (fate 511)
     (· == ([], none))
   checkOk "the last port is a port" (fate 3) (· == ([3], none))

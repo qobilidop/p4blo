@@ -70,9 +70,15 @@ def tests : T Unit := do
       result.outputs.map (fun (port, bytes) => (port, bytesToHex bytes)) == [(2, "0baa")] &&
       cellCounts externs == some #[1, 1, 1, 0]
   let snapshot := replaceBody program "E" [
-    .assign target (.cast (.bits 8) (.member (.var "m") "egress_port")), destination 3]
-  checkPacket "egress sees the selected port, and cannot redirect it" (execute snapshot)
+    .assign target (.cast (.bits 8) (.binary .add
+      (.member (.var "m") "egress_port") (.member (.var "m") "egress_spec"))), destination 3]
+  checkPacket "egress sees the selected port and reset egress_spec, and cannot redirect" (execute snapshot)
     fun (result, _, _) => result.outputs.map (fun (port, bytes) => (port, bytesToHex bytes)) == [(2, "06aa")]
+  let noEgress := { (replaceBody program "C" [
+      .assign target (.cast (.bits 8) (.member (.var "m") "egress_spec"))]) with
+    exports := program.exports.filter (·.role != "egress") }
+  checkPacket "egress_spec is reset even when egress is omitted" (execute noEgress)
+    fun (result, _, _) => result.outputs.map (fun (port, bytes) => (port, bytesToHex bytes)) == [(2, "00aa")]
   let ingressDrop := replaceBody program "I" [destination 511]
   checkPacket "ingress drop suppresses every later effect and coverage" (execute ingressDrop)
     fun (result, externs, tags) => result.outputs.isEmpty && result.diagnostic.isNone &&
@@ -118,5 +124,9 @@ def tests : T Unit := do
   let stageCall := replaceBody program "I" [.callBlock "E" [.lvalue (.var "h"), .lvalue (.var "m")]]
   checkError "native stage blocks cannot be nested calls" (profile stageCall)
     "v1model stage block 'E' cannot be called as a sub-block"
+  for ports in [0, 512] do
+    checkError s!"v1model rejects invalid port count {ports}"
+      (do V1Model.load (← Index.build program) program.toBlockBindings ports)
+      "v1model ports must be between 1 and 511"
 
 end V1ModelTests

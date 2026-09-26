@@ -157,6 +157,9 @@ def run (sw : V1Model) (externs : Externs) (host : Entries) (ingress : Nat)
   if let some field := sw.egressPort then
     let .ok m := setField metadata field.position (.bits (Bits.wrap 9 destination)) | return tags
     metadata := m
+  if let some field := sw.egressSpec then
+    let .ok m := setField metadata field.position (.bits (Bits.wrap 9 0)) | return tags
+    metadata := m
   if let some name := sw.egress then
     let (_, nextTags) := traceControl sw.index name headers metadata installed externs ctx
     tags := tags.union nextTags

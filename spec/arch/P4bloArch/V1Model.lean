@@ -10,7 +10,9 @@ compute_checksum, deparser. The optional control stages are identities when
 absent. The flattened metadata contract and supported subset are specified in
 `docs/arch-supports.md`. `egress_spec = 511` drops at the ingress or egress
 boundary, before any later stage can run. The destination is selected before
-egress; rewriting egress_spec there does not redirect it. There are no
+egress; rewriting egress_spec there does not redirect it. As in BMv2
+simple_switch 1.15.4, egress_spec resets to zero before egress. This is the
+chosen target policy, not a P4-language guarantee. There are no
 architecture-specific proof claims.
 -/
 
@@ -63,6 +65,7 @@ private def contractField (index : Index) (metadataType name : String) (expected
 
 /-- Load `index` under v1model with `ports` ports. -/
 def load (index : Index) (bindings : BlockBindings) (ports : Nat) : Except String V1Model := do
+  if ports < 1 || ports > 511 then throw "v1model ports must be between 1 and 511"
   (Bindings.check bindings index).mapError toString
   V1ModelProfile.check index bindings
   let role (r : String) (kind : BlockKind) : Except String String := do
@@ -107,7 +110,7 @@ def runStage (vm : V1Model) (name : Option String) (headers metadata : Value)
 /-- Run one packet arriving on `ingress` through the six v1model stages. -/
 def run (sw : V1Model) (externs : Externs) (host : Entries) (ingress : Nat) (packet : ByteArray) :
     Except String (V1ModelResult × Externs) := do
-  if ingress ≥ sw.ports then throw s!"ingress_port {ingress} is not a port of this v1model"
+  if ingress ≥ sw.ports then throw s!"ingress_port {ingress} is not a configured v1model port"
   if ingress ≥ 2 ^ 9 then throw s!"ingress_port {ingress} does not fit in bit<9>"
   let installed ← Installed.build sw.index (some host)
   let mut initial ← Value.zero (.struct sw.metadataType) sw.index
@@ -128,10 +131,15 @@ def run (sw : V1Model) (externs : Externs) (host : Entries) (ingress : Nat) (pac
   let destination ← portField metadata sw.egressSpec
   if destination == 511 then return ({ outputs := [] }, externs)
   if destination ≥ sw.ports then
-    let why := s!"egress_spec {destination} is not a port of this v1model"
+    let why := s!"egress_spec {destination} is not a configured v1model port"
     return ({ outputs := [], diagnostic := some why }, externs)
   let metadata ← match sw.egressPort with
     | some f => setField metadata f.position (.bits (Bits.wrap 9 destination))
+    | none => pure metadata
+  -- BMv2 simple_switch clears egress_spec after selecting the destination.
+  -- This also applies when the optional egress stage is empty.
+  let metadata ← match sw.egressSpec with
+    | some f => setField metadata f.position (.bits (Bits.wrap 9 0))
     | none => pure metadata
   let (headers, metadata, externs) ← sw.runStage sw.egress headers metadata installed externs
   if (← portField metadata sw.egressSpec) == 511 then return ({ outputs := [] }, externs)
